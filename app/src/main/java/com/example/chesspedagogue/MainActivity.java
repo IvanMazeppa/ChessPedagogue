@@ -1,5 +1,9 @@
 package com.example.chesspedagogue;
-// Add these imports at the top
+
+import android.widget.Button;
+import java.util.ArrayList;
+import android.content.Intent;
+import androidx.appcompat.app.AlertDialog;
 import android.content.Context;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
@@ -35,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView moveHistoryTextView;
     private StringBuilder moveHistoryBuilder = new StringBuilder();
     private int moveNumber = 1;
+    private Button analyzeGameButton;
 
 
     // Combine the two onCreate methods - keep just one:
@@ -57,6 +62,12 @@ public class MainActivity extends AppCompatActivity {
         moveHistoryBuilder = new StringBuilder();
         moveNumber = 1;
 
+        // Add this to your onCreate method after finding other UI elements
+        analyzeGameButton = findViewById(R.id.analyzeGameButton);
+        analyzeGameButton.setOnClickListener(v -> openGameAnalysis());
+        // Initially disable the button until we have moves to analyze
+        analyzeGameButton.setEnabled(false);
+
         // Initialize sound manager
         SoundManager.initialize(this);
 
@@ -68,6 +79,36 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize the engine using the native library approach
         initializeStockfishEngine(skillLevel);
+    }
+
+    /**
+     * Open the game analysis activity with the current move history
+     */
+    private void openGameAnalysis() {
+        if (gameManager == null) {
+            Toast.makeText(this, "No game data available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create an ArrayList from the move history
+        ArrayList<String> movesForAnalysis = new ArrayList<>();
+
+        // Log what we're passing
+        Log.d(TAG, "Passing move history to analysis screen:");
+        for (String move : gameManager.getMoveHistory()) {
+            Log.d(TAG, "Move: " + move);
+            movesForAnalysis.add(move);
+        }
+
+        if (movesForAnalysis.isEmpty()) {
+            Toast.makeText(this, "No moves to analyze yet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Launch the analysis activity
+        Intent intent = new Intent(this, GameAnalysisActivity.class);
+        intent.putStringArrayListExtra("MOVE_HISTORY", movesForAnalysis);
+        startActivity(intent);
     }
 
 
@@ -443,13 +484,43 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Check if the game has ended (checkmate, stalemate, etc.)
      */
+    // Update your checkGameStatus method to enable analysis when game ends
     private void checkGameStatus() {
         // Get and parse the FEN to check for check/checkmate
         String fen = engine.getCurrentFEN();
         if (fen == null) return;
 
-        // This is where you'd add logic to detect checkmate, etc.
-        // For now, we'll leave this as a placeholder
+        // Check if the game has ended
+        boolean gameEnded = false;
+        String endReason = "";
+
+        // Add your existing game end detection logic here
+
+        // For now, we'll just enable the analyze button once there are some moves
+        if (moveNumber > 1) {
+            analyzeGameButton.setEnabled(true);
+        }
+
+        // If game ended, show a dialog offering analysis
+        if (gameEnded) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Game Over")
+                    .setMessage(endReason + "\nWould you like to analyze this game?")
+                    .setPositiveButton("Analyze", (dialog, which) -> openGameAnalysis())
+                    .setNegativeButton("New Game", (dialog, which) -> {
+                        // Reset the game
+                        gameManager.newGame();
+                        updateBoardDisplay();
+                        moveHistoryBuilder = new StringBuilder();
+                        moveNumber = 1;
+                        moveHistoryTextView.setText("");
+                        isPlayerTurn = playerColorChoice.equalsIgnoreCase("white");
+                        if (!isPlayerTurn) {
+                            makeEngineMove();
+                        }
+                    })
+                    .show();
+        }
     }
 
     /**

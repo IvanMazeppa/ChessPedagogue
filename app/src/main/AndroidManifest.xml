@@ -24,11 +24,21 @@
             </intent-filter>
         </activity>
 
-        <!-- MainActivity will be launched from SplashActivity -->
+        <!-- This is what's missing! Add this: -->
         <activity
             android:name=".MainActivity"
-            android:exported="false" />
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- And add this for our new analysis activity: -->
+        <activity
+            android:name=".GameAnalysisActivity"
+            android:exported="false" />
     </application>
 
 </manifest>
