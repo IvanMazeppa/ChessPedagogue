@@ -20,6 +20,16 @@ public class ChessGameManager {
         engine.setPositionFromMoves(moveHistory.toArray(new String[0]));
     }
 
+    /**
+     * Get a copy of the current move history.
+     * This is useful for analysis and reviewing the game.
+     *
+     * @return A copy of the current move history
+     */
+    public List<String> getMoveHistory() {
+        return new ArrayList<>(moveHistory);
+    }
+
     public String getCurrentFEN() {
         return engine.getCurrentFEN();
     }

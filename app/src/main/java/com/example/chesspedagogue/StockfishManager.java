@@ -229,13 +229,6 @@ public class StockfishManager {
         }
     }
 
-    /**
-     * Sets the position on the internal engine board from the starting position
-     * followed by a sequence of moves.
-     *
-     * @param moves Array of moves in UCI notation (e.g., "e2e4", "e7e5")
-     * @return true if the position was set successfully
-     */
     public boolean setPositionFromMoves(String... moves) {
         try {
             StringBuilder command = new StringBuilder("position startpos");
@@ -245,7 +238,13 @@ public class StockfishManager {
                     command.append(" ").append(move);
                 }
             }
+            Log.d(TAG, "Setting position with command: " + command.toString());
             sendCommand(command.toString());
+
+            // Verify the position was set correctly
+            String fen = getCurrentFEN();
+            Log.d(TAG, "Position set, resulting FEN: " + fen);
+
             return waitForReady(1000);
         } catch (IOException e) {
             Log.e(TAG, "Error setting position from moves", e);
@@ -269,6 +268,214 @@ public class StockfishManager {
         }
     }
 
+    // Add these methods to your existing StockfishManager.java class
+
+    /**
+     * Sets a UCI option for the engine.
+     *
+     * @param name Option name
+     * @param value Option value
+     * @return true if the option was set successfully
+     */
+    public boolean setOption(String name, String value) {
+        try {
+            sendCommand("setoption name " + name + " value " + value);
+            return waitForReady(1000);
+        } catch (IOException e) {
+            Log.e(TAG, "Error setting option: " + name, e);
+            return false;
+        }
+    }
+
+    /**
+     * Gets a detailed analysis of the current position.
+     *
+     * @param thinkTimeMs Time in milliseconds for the engine to analyze
+     * @return Detailed analysis including multiple best moves and evaluations
+     */
+    public String getDetailedAnalysis(int thinkTimeMs) {
+        try {
+            // Clear output buffer
+            outputBuffer.clear();
+
+            // Tell engine to analyze
+            Log.d(TAG, "Starting analysis with time: " + thinkTimeMs + "ms");
+            sendCommand("go depth 15 multipv 3 movetime " + thinkTimeMs);
+
+            // Wait for analysis to complete
+            long endTime = System.currentTimeMillis() + thinkTimeMs + 1000;  // Add buffer
+            boolean foundBestMove = false;
+
+            while (System.currentTimeMillis() < endTime && !foundBestMove) {
+                for (String line : outputBuffer) {
+                    if (line.startsWith("bestmove")) {
+                        foundBestMove = true;
+                        break;
+                    }
+                }
+
+                if (!foundBestMove) {
+                    try {
+                        Thread.sleep(50);  // Short sleep to prevent CPU spinning
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            }
+
+            // Stop analysis if it's still running
+            if (!foundBestMove) {
+                sendCommand("stop");
+            }
+
+            // Collect all the relevant output
+            StringBuilder analysis = new StringBuilder();
+            for (String line : outputBuffer) {
+                if (line.contains("info depth") && line.contains("score") && line.contains("pv")) {
+                    analysis.append(line).append("\n");
+                }
+            }
+
+            Log.d(TAG, "Analysis complete, found " + analysis.toString().split("\n").length + " lines");
+            return analysis.toString();
+        } catch (IOException e) {
+            Log.e(TAG, "Error getting detailed analysis", e);
+            return "Error analyzing position: " + e.getMessage();
+        }
+    }
+
+    /**
+     * Gets the current output buffer from the engine.
+     * This is useful for analyzing the engine's responses.
+     *
+     * @return A copy of the current output buffer
+     */
+    public List<String> getOutputBuffer() {
+        return new ArrayList<>(outputBuffer);
+    }
+
+    /**
+     * Check if analysis is complete (bestmove received)
+     */
+    private boolean containsBestMove() {
+        for (String line : outputBuffer) {
+            if (line.startsWith("bestmove")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if analysis is complete (bestmove received)
+     */
+    private boolean isAnalysisDone() {
+        for (String line : outputBuffer) {
+            if (line.startsWith("bestmove")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get the evaluation of a specific move.
+     *
+     * @param move The move to evaluate in UCI format
+     * @param thinkTimeMs Time to analyze
+     * @return The evaluation score in centipawns
+     */
+    public float evaluateMove(String move, int thinkTimeMs) {
+        try {
+            // Make the move
+            String fen = getCurrentFEN();
+            sendCommand("position fen " + fen + " moves " + move);
+
+            // Clear output buffer
+            outputBuffer.clear();
+
+            // Analyze the resulting position
+            sendCommand("go depth 16 movetime " + thinkTimeMs);
+
+            // Wait for analysis to complete
+            long endTime = System.currentTimeMillis() + thinkTimeMs + 2000;
+            while (System.currentTimeMillis() < endTime && !isAnalysisDone()) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+
+            // Stop the analysis if it's still running
+            sendCommand("stop");
+
+            // Find the score
+            float score = 0.0f;
+            for (String line : outputBuffer) {
+                if (line.contains("score cp ")) {
+                    int scoreIndex = line.indexOf("score cp ") + 9;
+                    int endIndex = line.indexOf(" ", scoreIndex);
+                    if (endIndex > scoreIndex) {
+                        try {
+                            score = Float.parseFloat(line.substring(scoreIndex, endIndex)) / 100.0f;
+                            // Negate score because we're looking from the opponent's perspective
+                            score = -score;
+                            break;
+                        } catch (NumberFormatException e) {
+                            // Skip this line
+                        }
+                    }
+                }
+            }
+
+            // Restore the original position
+            sendCommand("position fen " + fen);
+
+            return score;
+        } catch (IOException e) {
+            Log.e(TAG, "Error evaluating move", e);
+            return 0.0f;
+        }
+    }
+
+    /**
+     * Find the best move with an explanation of why it's good.
+     *
+     * @param thinkTimeMs Time to analyze
+     * @return A description of the best move and why it's good
+     */
+    public String getBestMoveWithExplanation(int thinkTimeMs) {
+        String bestMove = getBestMove(thinkTimeMs);
+        if (bestMove == null || bestMove.isEmpty()) {
+            return "No best move found";
+        }
+
+        float evaluation = evaluateMove(bestMove, thinkTimeMs / 2);
+
+        StringBuilder explanation = new StringBuilder();
+        explanation.append("Best move: ").append(bestMove);
+        explanation.append(" (Evaluation: ").append(String.format("%.2f", evaluation)).append(")");
+
+        // Add some basic positional understanding
+        // (This would be expanded with more sophisticated pattern recognition)
+        if (evaluation > 2.0) {
+            explanation.append("\nThis move gives a winning advantage!");
+        } else if (evaluation > 0.5) {
+            explanation.append("\nThis move gives a clear advantage.");
+        } else if (evaluation > 0.2) {
+            explanation.append("\nThis move gives a slight advantage.");
+        } else if (evaluation < -2.0) {
+            explanation.append("\nTrying to minimize a losing position.");
+        } else if (evaluation < -0.5) {
+            explanation.append("\nTrying to equalize from a worse position.");
+        } else {
+            explanation.append("\nThis move keeps the position balanced.");
+        }
+
+        return explanation.toString();
+    }
     /**
      * Stops the engine process.
      */
