@@ -11,11 +11,14 @@ import android.os.VibrationEffect;
 import android.speech.tts.TextToSpeech;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
@@ -27,6 +30,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -102,6 +106,12 @@ public class MainActivity extends AppCompatActivity {
         askFollowUpButton.setOnClickListener(v -> promptForFollowUpQuestion());
         dismissCoachButton.setOnClickListener(v -> hideCoachMessage());
 
+        // Add this code right around where your other buttons are initialized
+        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
+        if (conversationButton != null) {
+            conversationButton.setOnClickListener(v -> startChessConversation());
+        }
+
         // Initialize sound manager
         SoundManager.initialize(this);
 
@@ -110,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Show initial status
         updateStatusText("Starting game...");
+
+        updateMainMenuOptions();
 
         // Initialize speech recognition
         initializeSpeechRecognition();
@@ -816,6 +828,21 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // Add this method to MainActivity.java
+    private void startChessConversation() {
+        Intent intent = new Intent(this, ChessConversationActivity.class);
+        intent.putExtra("FEN", engine.getCurrentFEN());
+        intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(algebraicMoveHistory));
+        intent.putExtra("PLAYER_COLOR", playerColorChoice);
+        startActivity(intent);
+    }
+
+    // Add a new conversation button to your existing layout or
+// update your existing menu options to include it:
+    private void updateMainMenuOptions() {
+        // Find your menu button or create a new one
+    }
+
     /**
      * Update the status text view
      */
@@ -823,6 +850,77 @@ public class MainActivity extends AppCompatActivity {
         if (statusTextView != null) {
             statusTextView.setText(message);
         }
+    }
+
+    // Add this method to MainActivity.java
+    private void showSaveGameDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Save Game");
+
+        // Add an edit text for the game description
+        final EditText input = new EditText(this);
+        input.setHint("Enter a description for this game");
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        builder.setView(input);
+
+        builder.setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                String description = input.getText().toString().trim();
+                if (description.isEmpty()) {
+                    description = "Game on " + new Date().toString();
+                }
+
+                // Save the game
+                GameDatabaseHelper dbHelper = new GameDatabaseHelper(MainActivity.this);
+                dbHelper.saveGame(
+                        playerColorChoice,
+                        algebraicMoveHistory,
+                        engine.getCurrentFEN(),
+                        description
+                );
+
+                Toast.makeText(MainActivity.this, "Game saved successfully!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+            }
+        });
+
+        builder.show();
+    }
+
+    // Also add this method to view saved games
+    private void openSavedGamesScreen() {
+        Intent intent = new Intent(this, SavedGamesActivity.class);
+        startActivity(intent);
+    }
+
+    // In MainActivity.java, add:
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_save_game) {
+            showSaveGameDialog();
+            return true;
+        }
+        else if (id == R.id.action_load_game) {
+            openSavedGamesScreen();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 
     @Override

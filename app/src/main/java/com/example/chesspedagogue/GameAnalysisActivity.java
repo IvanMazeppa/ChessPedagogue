@@ -81,6 +81,22 @@ public class GameAnalysisActivity extends AppCompatActivity {
             Toast.makeText(this, "Error initializing analysis: " + e.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
+
+        // Check if we're loading a saved game
+        long gameId = getIntent().getLongExtra("GAME_ID", -1);
+        if (gameId != -1) {
+            // We're loading a saved game
+            loadSavedGame(gameId);
+        } else {
+            // Normal behavior - loading from move history passed in intent
+            moveHistory = getIntent().getStringArrayListExtra("MOVE_HISTORY");
+            if (moveHistory == null) {
+                moveHistory = new ArrayList<>();
+            }
+            generatePositions();
+            updateToPosition(0);
+        }
+
     }
 
     /**
@@ -440,6 +456,27 @@ public class GameAnalysisActivity extends AppCompatActivity {
         // If we timed out, try stopping the analysis
         engine.sendCommand("stop");
         return "none";
+    }
+
+    private void loadSavedGame(long gameId) {
+        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+        GameDatabaseHelper.SavedGame savedGame = dbHelper.getGame(gameId);
+
+        if (savedGame != null) {
+            // Set the move history from the saved game
+            moveHistory = new ArrayList<>(savedGame.getMoves());
+
+            // Generate positions based on these moves
+            generatePositions();
+
+            // Update the display to show the initial position
+            updateToPosition(0);
+
+            Toast.makeText(this, "Loaded: " + savedGame.getDescription(), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Could not load the saved game", Toast.LENGTH_SHORT).show();
+            finish();
+        }
     }
 
     @Override

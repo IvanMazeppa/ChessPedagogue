@@ -1,37 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
+    <!-- Status Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#F8F8F8"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="#F8F8F8">
+        android:padding="8dp">
 
         <TextView
             android:id="@+id/statusTextView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="16sp"
+            android:text="Welcome to Chess AI Tutor!"
             android:textColor="#333333"
-            android:text="Welcome to Chess AI Tutor!" />
+            android:textSize="16sp" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/voiceInputButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
             android:layout_gravity="center_vertical"
+            android:layout_marginEnd="8dp"
             android:contentDescription="Voice Input"
-            app:fabSize="mini"
-            android:src="@android:drawable/ic_btn_speak_now" />
+            android:src="@android:drawable/ic_btn_speak_now"
+            app:fabSize="mini" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/chessCoachButton"
@@ -39,21 +40,32 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:contentDescription="Ask Chess Coach"
-            app:fabSize="mini"
-            android:src="@android:drawable/ic_dialog_info" />
+            android:src="@android:drawable/ic_dialog_info"
+            app:fabSize="mini" />
+        <!-- Add the conversation button here -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/conversationButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:contentDescription="Chat with Coach"
+            android:src="@android:drawable/ic_dialog_email"
+            app:fabSize="mini" />
     </LinearLayout>
 
+    <!-- Chess Board - Now it gets proper space! -->
     <com.example.chesspedagogue.ChessBoardView
         android:id="@+id/chessBoardView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
 
+    <!-- Bottom Section -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:background="#F0F0F0"
+        android:orientation="vertical"
         android:padding="8dp">
 
         <!-- Coach dialog section -->
@@ -76,8 +88,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Coach Magnus"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/coachMessageText"
@@ -89,29 +101,30 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="12dp">
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
                     <Button
                         android:id="@+id/askFollowUpButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Ask Follow-up"
-                        android:textSize="12sp"
                         android:layout_marginEnd="8dp"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                        android:text="Ask Follow-up"
+                        android:textSize="12sp" />
 
                     <Button
                         android:id="@+id/dismissCoachButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Dismiss"
-                        android:textSize="12sp"
-                        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
+        <!-- Move History -->
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="120dp">
@@ -126,8 +139,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Move History"
-                    android:textStyle="bold"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/moveHistoryTextView"
@@ -135,8 +148,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textSize="14sp" />
-
             </LinearLayout>
         </ScrollView>
+
+        <!-- Conversation Button in a better position -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="8dp">
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>
