@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Vibrator;
@@ -13,17 +14,22 @@ import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.content.Intent;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -57,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     private Button dismissCoachButton;
     private FloatingActionButton chessCoachButton;
     private FloatingActionButton voiceInputButton;
+    private FloatingActionButton conversationButton;
 
     private Vibrator vibrator;
     private static final int PERMISSION_REQUEST_MICROPHONE = 101;
@@ -67,6 +74,14 @@ public class MainActivity extends AppCompatActivity {
     private int moveNumber = 1;
     private List<String> algebraicMoveHistory = new ArrayList<>();
 
+    // Chat panel variables
+    private View chatPanel;
+    private View dragHandle;
+    private float initialY;
+    private float initialTouchY;
+    private boolean isPanelVisible = false;
+    private Animation slideUpAnimation;
+    private Animation slideDownAnimation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,25 +107,88 @@ public class MainActivity extends AppCompatActivity {
         dismissCoachButton = findViewById(R.id.dismissCoachButton);
         chessCoachButton = findViewById(R.id.chessCoachButton);
         voiceInputButton = findViewById(R.id.voiceInputButton);
+        conversationButton = findViewById(R.id.conversationButton);
+
+
+
+
+        // Initialize chat panel components
+        chatPanel = findViewById(R.id.chatPanel);
+        if (chatPanel != null) {
+            dragHandle = chatPanel.findViewById(R.id.dragHandle);
+
+            // Set up slide animations
+            slideUpAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_up);
+            slideDownAnimation = AnimationUtils.loadAnimation(this, R.anim.slide_down);
+
+            // Set up drag handle touch listener
+            setupDragHandleTouchListener();
+
+            // Set up conversation button
+            if (conversationButton != null) {
+                conversationButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        toggleChatPanel();
+                    }
+                });
+            }
+        }
 
         // Initialize the chess coach
         initializeChessCoach();
 
-        // Setup coach button click listener
-        chessCoachButton.setOnClickListener(v -> showCoachDialog());
+        voiceInputButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Show a simple dialog with options
+                String[] options = {"Voice command", "Type a question"};
 
-        // Setup voice input button
-        voiceInputButton.setOnClickListener(v -> startVoiceRecognition());
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("Chess Coach Input");
+                builder.setItems(options, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (which == 0) {
+                            // Voice input
+                            startVoiceRecognition();
+                        } else {
+                            // Text input - show the chat panel
+                            toggleChatPanel();
+                        }
+                    }
+                });
+                builder.show();
+            }
+        });
+
+        chessCoachButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Get current game analysis
+                String fen = engine.getCurrentFEN();
+                showLoading("Coach is analyzing your position...");
+                chessCoach.getEnhancedChessAdvice(fen, algebraicMoveHistory,
+                        playerColorChoice, new ChessCoachCallback());
+            }
+        });
+
+
 
         // Setup other coach UI elements
-        askFollowUpButton.setOnClickListener(v -> promptForFollowUpQuestion());
-        dismissCoachButton.setOnClickListener(v -> hideCoachMessage());
+        askFollowUpButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                promptForFollowUpQuestion();
+            }
+        });
 
-        // Add this code right around where your other buttons are initialized
-        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
-        if (conversationButton != null) {
-            conversationButton.setOnClickListener(v -> startChessConversation());
-        }
+        dismissCoachButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                hideCoachMessage();
+            }
+        });
 
         // Initialize sound manager
         SoundManager.initialize(this);
@@ -121,17 +199,212 @@ public class MainActivity extends AppCompatActivity {
         // Show initial status
         updateStatusText("Starting game...");
 
-        updateMainMenuOptions();
-
         // Initialize speech recognition
         initializeSpeechRecognition();
+
+        // Load saved game after engine initialization
+        loadSavedGameIfNeeded();
 
         // Check for and prompt for API key if needed
         promptForApiKeyIfNeeded();
 
         // Initialize the engine using the native library approach
         initializeStockfishEngine(skillLevel);
+
+        // Setup game analysis button
+        Button gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
+        if (gameAnalysisButton != null) {
+            gameAnalysisButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(MainActivity.this, GameAnalysisActivity.class);
+                    intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(algebraicMoveHistory));
+                    startActivity(intent);
+                }
+            });
+        }
     }
+
+    /**
+     * Loads a saved game if one was requested when launching the activity.
+     * This method should be called after the engine has been initialized.
+     */
+    private void loadSavedGameIfNeeded() {
+        // Check if we're loading a saved game
+        long gameId = getIntent().getLongExtra("LOAD_GAME_ID", -1);
+        if (gameId != -1) {
+            try {
+                Log.d(TAG, "Starting to load saved game #" + gameId);
+
+                // We're loading a saved game
+                playerColorChoice = getIntent().getStringExtra("PLAYER_COLOR");
+                ArrayList<String> loadedMoves = getIntent().getStringArrayListExtra("MOVE_HISTORY");
+                String finalFen = getIntent().getStringExtra("FINAL_FEN");
+
+                Log.d(TAG, "Game data received: playerColor=" + playerColorChoice +
+                        ", moves=" + (loadedMoves != null ? loadedMoves.size() : 0));
+
+                // Set up the game state from the loaded game
+                if (loadedMoves != null && !loadedMoves.isEmpty()) {
+                    // Store the moves in our history
+                    algebraicMoveHistory = new ArrayList<>(loadedMoves);
+
+                    // Make sure we start with a fresh game
+                    engine.newGame();
+
+                    Log.d(TAG, "Applying moves to rebuild game state...");
+
+                    // Apply each move to rebuild the game state
+                    for (String move : loadedMoves) {
+                        // Make the move
+                        gameManager.makeMove(move);
+                        Log.d(TAG, "Applied move: " + move);
+                    }
+
+                    // Update the board display
+                    updateBoardDisplay();
+                    Log.d(TAG, "Board display updated");
+
+                    // Update move history display text
+                    moveHistoryBuilder = new StringBuilder();
+                    moveNumber = 1;
+                    for (int i = 0; i < loadedMoves.size(); i++) {
+                        boolean isWhiteMove = (i % 2 == 0);
+                        if (isWhiteMove) {
+                            moveHistoryBuilder.append(moveNumber).append(". ").append(loadedMoves.get(i));
+                        } else {
+                            moveHistoryBuilder.append(" ").append(loadedMoves.get(i)).append("\n");
+                            moveNumber++;
+                        }
+                    }
+                    moveHistoryTextView.setText(moveHistoryBuilder.toString());
+                    Log.d(TAG, "Move history text updated");
+
+                    // Determine whose turn it is
+                    isPlayerTurn = (loadedMoves.size() % 2 == 0 && playerColorChoice.equalsIgnoreCase("white")) ||
+                            (loadedMoves.size() % 2 == 1 && playerColorChoice.equalsIgnoreCase("black"));
+
+                    Log.d(TAG, "Turn determined: " + (isPlayerTurn ? "Player's turn" : "Engine's turn"));
+                    updateStatusText("Game loaded. " + (isPlayerTurn ? "Your turn." : "Engine thinking..."));
+
+                    // Flip the board based on player color if needed
+                    boardView.setFlipped(playerColorChoice.equalsIgnoreCase("black"));
+
+                    // If it's the engine's turn, make it move
+                    if (!isPlayerTurn) {
+                        makeEngineMove();
+                    }
+
+                    Toast.makeText(this, "Game loaded successfully!", Toast.LENGTH_SHORT).show();
+                    Log.d(TAG, "Game loaded successfully!");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error loading game: " + e.getMessage(), e);
+                Toast.makeText(this, "Error loading game: " + e.getMessage(), Toast.LENGTH_LONG).show();
+
+                // Fall back to a new game if loading fails
+                setupChessBoard();
+            }
+        } else {
+            Log.d(TAG, "No saved game to load, setting up new game");
+            // No saved game to load, so set up a new game
+            setupChessBoard();
+        }
+    }
+
+    private void setupDragHandleTouchListener() {
+        if (dragHandle == null) return;
+
+        dragHandle.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialY = chatPanel.getY();
+                        initialTouchY = event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        float newY = initialY + (event.getRawY() - initialTouchY);
+                        // Limit panel height between 150dp and screen height - 100dp
+                        float minY = getWindowManager().getDefaultDisplay().getHeight() -
+                                convertDpToPx(450);
+                        float maxY = getWindowManager().getDefaultDisplay().getHeight() -
+                                convertDpToPx(150);
+
+                        if (newY < minY) newY = minY;
+                        if (newY > maxY) newY = maxY;
+
+                        chatPanel.setY(newY);
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        return true;
+
+                    default:
+                        return false;
+                }
+            }
+        });
+    }
+
+    // In MainActivity.java, update the toggleChatPanel method:
+    private void toggleChatPanel() {
+        if (chatPanel == null) return;
+
+        if (isPanelVisible) {
+            // Hide panel
+            chatPanel.startAnimation(slideDownAnimation);
+            chatPanel.setVisibility(View.GONE);
+        } else {
+            // Show panel
+            chatPanel.setVisibility(View.VISIBLE);
+            chatPanel.startAnimation(slideUpAnimation);
+
+            // Initialize chat components if needed
+            RecyclerView recyclerView = chatPanel.findViewById(R.id.recyclerViewChat);
+            if (recyclerView.getAdapter() == null) {
+                recyclerView.setLayoutManager(new LinearLayoutManager(this));
+                List<ChatMessage> messages = new ArrayList<>();
+                messages.add(new ChatMessage(ChatMessage.TYPE_COACH,
+                        "Hello! I'm Coach Magnus. How can I help with your chess game?"));
+                ChatAdapter adapter = new ChatAdapter(messages);
+                recyclerView.setAdapter(adapter);
+
+                // Set up message input
+                EditText messageInput = chatPanel.findViewById(R.id.editTextMessage);
+                ImageButton sendButton = chatPanel.findViewById(R.id.buttonSend);
+
+                sendButton.setOnClickListener(v -> {
+                    String message = messageInput.getText().toString().trim();
+                    if (!message.isEmpty()) {
+                        // Add user message
+                        messages.add(new ChatMessage(ChatMessage.TYPE_USER, message));
+                        // Create a coach response based on the current game state
+                        String response = "I'm analyzing your position...";
+                        messages.add(new ChatMessage(ChatMessage.TYPE_COACH, response));
+                        adapter.notifyDataSetChanged();
+                        recyclerView.scrollToPosition(messages.size() - 1);
+
+                        // Process the message with your coach AI
+                        chessCoach.sendMessage(message, new ChessCoachCallback());
+
+                        // Clear input
+                        messageInput.setText("");
+                    }
+                });
+            }
+        }
+        isPanelVisible = !isPanelVisible;
+    }
+
+    private float convertDpToPx(float dp) {
+        return dp * getResources().getDisplayMetrics().density;
+    }
+
+    /**
+     * Start voice recognition to interact with the coach
+     */
 
     /**
      * Initialize the Chess Coach manager
@@ -161,13 +434,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Set up the speech recognition manager
+     */
     private void setupSpeechRecognition() {
         speechRecognitionManager = new SpeechRecognitionManager(this);
     }
-
-    /**
-     * Start voice recognition to interact with the coach
-     */
     private void startVoiceRecognition() {
         // Stop any ongoing TTS first
         chessCoach.stopSpeaking();
@@ -193,7 +465,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Process voice commands from the user
+     * Process voice commands from the user, connecting them to the current chess position
+     * and providing contextual responses.
+     *
+     * @param command The recognized speech command from the user
      */
     private void processVoiceCommand(String command) {
         Log.d(TAG, "Voice command: " + command);
@@ -201,29 +476,69 @@ public class MainActivity extends AppCompatActivity {
         // Show what was recognized
         Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
 
-        // Process chess move commands (e.g., "move pawn to e4")
-        if (command.toLowerCase().contains("move ")) {
-            // Extract the move information and try to execute it
-            // This would require natural language parsing to UCI format
-            // For now, we'll just pass it to the AI coach
-            showLoading("Coach is analyzing your request...");
-            chessCoach.sendMessage(command, new ChessCoachCallback());
+        // Get current position and game state for context
+        String currentFen = engine.getCurrentFEN();
+
+        // Convert command to lowercase for easier parsing
+        String lowercaseCommand = command.toLowerCase();
+
+        // Check for move commands
+        if (lowercaseCommand.contains("move ")) {
+            // This would need natural language parsing to convert to UCI
+            // For now, we'll just pass it to the coach
+            showLoading("Coach is analyzing your move request...");
+
+            String contextualPrompt =
+                    "Current board position: " + currentFen + "\n" +
+                            "I'm playing as " + playerColorChoice + ".\n" +
+                            "I want to: " + command;
+
+            chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
             return;
         }
 
-        // Process coach questions
-        if (command.toLowerCase().contains("coach") ||
-                command.toLowerCase().contains("advice") ||
-                command.toLowerCase().contains("help")) {
-            // Send to the coach
-            showLoading("Coach is thinking...");
-            chessCoach.sendMessage(command, new ChessCoachCallback());
+        // Check for position advice requests
+        if (lowercaseCommand.contains("what should i do") ||
+                lowercaseCommand.contains("what's my best move") ||
+                lowercaseCommand.contains("help me") ||
+                lowercaseCommand.contains("advice") ||
+                lowercaseCommand.contains("analyze") ||
+                lowercaseCommand.contains("suggestion")) {
+
+            // This is a request for position advice - use the current board state!
+            showLoading("Coach is analyzing your position...");
+            chessCoach.getEnhancedChessAdvice(currentFen, algebraicMoveHistory,
+                    playerColorChoice, new ChessCoachCallback());
             return;
         }
 
-        // Default: treat as a general question to the coach
+        // Check for evaluation requests
+        if (lowercaseCommand.contains("who's winning") ||
+                lowercaseCommand.contains("who is winning") ||
+                lowercaseCommand.contains("evaluation") ||
+                lowercaseCommand.contains("am i winning") ||
+                lowercaseCommand.contains("score")) {
+
+            showLoading("Coach is evaluating the position...");
+            String contextualPrompt =
+                    "Current board position: " + currentFen + "\n" +
+                            "I'm playing as " + playerColorChoice + ".\n" +
+                            "Please evaluate who's winning in this position and by approximately how much.";
+
+            chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
+            return;
+        }
+
+        // Default: treat as a general question, but INCLUDE the board context
         showLoading("Coach is considering your question...");
-        chessCoach.sendMessage(command, new ChessCoachCallback());
+
+        // Create a context-aware prompt that includes the current board state
+        String contextualPrompt =
+                "Current board position: " + currentFen + "\n" +
+                        "I'm playing as " + playerColorChoice + ".\n" +
+                        "My question is: " + command;
+
+        chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
     }
 
     /**
@@ -837,8 +1152,6 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
-    // Add a new conversation button to your existing layout or
-// update your existing menu options to include it:
     private void updateMainMenuOptions() {
         // Find your menu button or create a new one
     }

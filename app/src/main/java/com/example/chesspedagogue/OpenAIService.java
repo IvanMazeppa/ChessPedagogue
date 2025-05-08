@@ -8,7 +8,9 @@ import com.google.gson.annotations.SerializedName;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.ConnectionPool;
@@ -20,7 +22,8 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 /**
- * Service for communicating with OpenAI API
+ * Enhanced service for communicating with OpenAI API
+ * Now with improved context tracking and conversation continuity
  */
 public class OpenAIService {
     private static final String TAG = "OpenAIService";
@@ -39,6 +42,13 @@ public class OpenAIService {
     private final List<Message> conversationHistory = new ArrayList<>();
     private static final int MAX_CONVERSATION_LENGTH = 10;
 
+    // Enhanced context tracking
+    private Map<String, Object> playerContext = new HashMap<>();
+    private List<String> conceptsExplained = new ArrayList<>();
+    private List<String> playerMistakes = new ArrayList<>();
+    private String currentFEN = "";
+    private String playerColor = "white";
+
     private OpenAIService() {
         // Configure OkHttpClient with timeouts
         client = new OkHttpClient.Builder()
@@ -51,11 +61,19 @@ public class OpenAIService {
         gson = new GsonBuilder().create();
 
         // Initialize conversation with system message defining the coach's role
+        initializeSystemMessage();
+    }
+
+    /**
+     * Initialize or reset the system message with the base coach personality
+     */
+    private void initializeSystemMessage() {
+        conversationHistory.clear();
+
         Message systemMessage = new Message("system",
-                "You are an encouraging and patient chess coach. " +
-                        "Your name is Coach Magnus. You provide clear, concise advice about chess " +
-                        "positions and strategies in an accessible way. " +
-                        "Tailor your advice to beginners and intermediate players. " +
+                "You are an encouraging and patient chess coach named Coach Magnus. " +
+                        "You provide clear, concise advice about chess positions and strategies " +
+                        "in an accessible way. Tailor your advice to beginners and intermediate players. " +
                         "Use simple language and explain chess concepts briefly. " +
                         "Be encouraging even when pointing out mistakes. " +
                         "Keep responses under 3 sentences when possible.");
@@ -76,6 +94,90 @@ public class OpenAIService {
 
     public void setModel(String model) {
         this.model = model;
+    }
+
+    /**
+     * Update the context with new information about the player or game
+     */
+    public void updateContext(String key, Object value) {
+        playerContext.put(key, value);
+        updateSystemMessage();
+    }
+
+    /**
+     * Record a chess concept that has been explained to avoid repetition
+     */
+    public void recordConceptExplained(String concept) {
+        if (!conceptsExplained.contains(concept)) {
+            conceptsExplained.add(concept);
+            // Keep the list manageable
+            if (conceptsExplained.size() > 15) {
+                conceptsExplained.remove(0);
+            }
+            updateSystemMessage();
+        }
+    }
+
+    /**
+     * Record a mistake pattern the player is making
+     */
+    public void recordPlayerMistake(String mistakeType) {
+        playerMistakes.add(mistakeType);
+        // Keep only the 5 most recent mistakes
+        if (playerMistakes.size() > 5) {
+            playerMistakes.remove(0);
+        }
+        updateSystemMessage();
+    }
+
+    /**
+     * Update the system message with all current context
+     */
+    private void updateSystemMessage() {
+        if (conversationHistory.isEmpty()) {
+            initializeSystemMessage();
+            return;
+        }
+
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("You are Coach Magnus, a patient and encouraging chess coach. ");
+        prompt.append("Your goal is to help the player improve while maintaining a warm, supportive tone. ");
+
+        // Add current position information if available
+        if (!currentFEN.isEmpty()) {
+            prompt.append("The current board position in FEN notation is: ").append(currentFEN).append(". ");
+            prompt.append("The player is playing as ").append(playerColor).append(". ");
+        }
+
+        // Add information about player's skill level if known
+        if (playerContext.containsKey("skillLevel")) {
+            prompt.append("The player is at a ").append(playerContext.get("skillLevel"))
+                    .append(" skill level. ");
+        }
+
+        // Add information about player's recent struggles
+        if (!playerMistakes.isEmpty()) {
+            prompt.append("The player has recently struggled with: ");
+            prompt.append(String.join(", ", playerMistakes));
+            prompt.append(". Be attentive to these areas without being repetitive. ");
+        }
+
+        // Add information about what's been covered
+        if (!conceptsExplained.isEmpty()) {
+            prompt.append("You've already explained these concepts: ");
+            prompt.append(String.join(", ", conceptsExplained));
+            prompt.append(". You can reference them but avoid re-explaining unless asked. ");
+        }
+
+        // Add any other context keys
+        for (Map.Entry<String, Object> entry : playerContext.entrySet()) {
+            if (!entry.getKey().equals("skillLevel")) { // Already handled above
+                prompt.append(entry.getKey()).append(": ").append(entry.getValue()).append(". ");
+            }
+        }
+
+        // Update the first message which should be the system message
+        conversationHistory.set(0, new Message("system", prompt.toString()));
     }
 
     /**
@@ -132,6 +234,9 @@ public class OpenAIService {
                 // Add the assistant's response to the conversation history
                 conversationHistory.add(new Message("assistant", assistantResponse));
 
+                // Check for concepts explained
+                checkForConceptsExplained(assistantResponse);
+
                 return assistantResponse;
             } else {
                 return "Sorry, I couldn't generate a response. Please try again.";
@@ -144,9 +249,52 @@ public class OpenAIService {
     }
 
     /**
+     * Check a response for chess concepts that should be recorded as explained
+     */
+    private void checkForConceptsExplained(String response) {
+        String responseLower = response.toLowerCase();
+
+        // Check for common chess concepts
+        if (responseLower.contains("pin") || responseLower.contains("pinned")) {
+            recordConceptExplained("pins");
+        }
+        if (responseLower.contains("fork") || responseLower.contains("forking")) {
+            recordConceptExplained("forks");
+        }
+        if (responseLower.contains("skewer")) {
+            recordConceptExplained("skewers");
+        }
+        if (responseLower.contains("discovered") && (responseLower.contains("check") ||
+                responseLower.contains("attack"))) {
+            recordConceptExplained("discovered attacks");
+        }
+        if (responseLower.contains("doubled") && responseLower.contains("pawn")) {
+            recordConceptExplained("doubled pawns");
+        }
+        if (responseLower.contains("isolated") && responseLower.contains("pawn")) {
+            recordConceptExplained("isolated pawns");
+        }
+        if (responseLower.contains("castl")) {
+            recordConceptExplained("castling");
+        }
+        if (responseLower.contains("develop") &&
+                (responseLower.contains("piece") || responseLower.contains("knight") ||
+                        responseLower.contains("bishop"))) {
+            recordConceptExplained("development");
+        }
+        if (responseLower.contains("center") || responseLower.contains("central")) {
+            recordConceptExplained("center control");
+        }
+        // Add more concept detection as needed
+    }
+
+    /**
      * Generate chess advice based on the current position
      */
     public String generateChessAdvice(String fen, String lastMove, String playerColor) {
+        this.currentFEN = fen;
+        this.playerColor = playerColor;
+
         String prompt = "The current chess position in FEN notation is: " + fen + ". ";
 
         if (lastMove != null && !lastMove.isEmpty()) {
@@ -159,8 +307,13 @@ public class OpenAIService {
         return sendMessage(prompt);
     }
 
-    // First, let's update OpenAIService.java with an enhanced method
+    /**
+     * Generate enhanced chess advice with full game context
+     */
     public String generateEnhancedChessAdvice(String fen, List<String> moveHistory, String playerColor) {
+        this.currentFEN = fen;
+        this.playerColor = playerColor;
+
         StringBuilder prompt = new StringBuilder();
         prompt.append("I'm analyzing a chess game in progress.\n\n");
         prompt.append("Current position (FEN): ").append(fen).append("\n\n");
@@ -190,6 +343,9 @@ public class OpenAIService {
      * Evaluate a specific move
      */
     public String evaluateMove(String fen, String move, String playerColor) {
+        this.currentFEN = fen;
+        this.playerColor = playerColor;
+
         String prompt = "In this chess position: " + fen + ", ";
         prompt += "I'm playing as " + playerColor + " and considering the move " + move + ". ";
         prompt += "Is this a good move? Why or why not? Please be concise.";
@@ -201,9 +357,14 @@ public class OpenAIService {
      * Reset the conversation history, keeping only the system message
      */
     public void resetConversation() {
-        Message systemMessage = conversationHistory.get(0);
+        Message systemMessage = conversationHistory.isEmpty() ?
+                new Message("system", "") : conversationHistory.get(0);
+
         conversationHistory.clear();
         conversationHistory.add(systemMessage);
+
+        // Don't reset context tracking - we want to remember concepts explained
+        // across conversation resets
     }
 
     // Request and response classes for OpenAI API

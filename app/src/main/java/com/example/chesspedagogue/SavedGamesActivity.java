@@ -1,6 +1,6 @@
-// Create this new file: SavedGamesActivity.java
 package com.example.chesspedagogue;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -15,6 +15,8 @@ import androidx.appcompat.widget.Toolbar;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 public class SavedGamesActivity extends AppCompatActivity {
     private GameDatabaseHelper dbHelper;
@@ -29,10 +31,13 @@ public class SavedGamesActivity extends AppCompatActivity {
 
         // Set up toolbar with back button
         Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+
+        // Instead, set the navigation icon manually:
+        toolbar.setNavigationIcon(android.R.drawable.ic_lock_lock);
+        toolbar.setNavigationOnClickListener(view -> finish());
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Saved Games");
         }
 
         // Initialize views
@@ -83,12 +88,43 @@ public class SavedGamesActivity extends AppCompatActivity {
         }
     }
 
+    // In SavedGamesActivity.java, update the openGameReview method:
+
     private void openGameReview(long gameId) {
-        // We'll implement this in the next step!
-        Intent intent = new Intent(this, GameAnalysisActivity.class);
-        intent.putExtra("GAME_ID", gameId);
-        startActivity(intent);
+        // Get the game details
+        GameDatabaseHelper.SavedGame game = dbHelper.getGame(gameId);
+
+        if (game == null) return;
+
+        // Ask if the user wants to continue playing or analyze
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Load Game");
+        String[] options = {"Continue Playing", "Analyze Game"};
+
+        builder.setItems(options, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if (which == 0) {
+                    // Continue playing
+                    Intent intent = new Intent(SavedGamesActivity.this, MainActivity.class);
+                    intent.putExtra("LOAD_GAME_ID", game.getId());
+                    intent.putExtra("PLAYER_COLOR", game.getPlayerColor());
+                    intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(game.getMoves()));
+                    intent.putExtra("FINAL_FEN", game.getFinalFen());
+                    startActivity(intent);
+                    finish();
+                } else {
+                    // Analyze game
+                    Intent intent = new Intent(SavedGamesActivity.this, GameAnalysisActivity.class);
+                    intent.putExtra("GAME_ID", game.getId());
+                    startActivity(intent);
+                }
+            }
+        });
+
+        builder.show();
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {

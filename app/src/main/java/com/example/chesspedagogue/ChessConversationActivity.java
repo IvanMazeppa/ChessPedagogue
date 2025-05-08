@@ -1,10 +1,9 @@
-// Create this new file: ChessConversationActivity.java
 package com.example.chesspedagogue;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
-import android.view.View;
+//import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -40,7 +39,11 @@ public class ChessConversationActivity extends AppCompatActivity {
 
         // Set up toolbar with back button
         Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+
+        // Instead, set the navigation icon manually:
+        toolbar.setNavigationIcon(android.R.drawable.ic_menu_revert);
+        toolbar.setNavigationOnClickListener(view -> finish());
+
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
@@ -82,7 +85,7 @@ public class ChessConversationActivity extends AppCompatActivity {
         addUserMessage(text);
         messageInput.setText("");
 
-        // Process message and get response
+        //   message and get response
         chessCoach.sendMessage(text, new CoachResponseCallback());
     }
 

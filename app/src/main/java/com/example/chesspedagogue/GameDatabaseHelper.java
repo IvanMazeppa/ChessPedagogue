@@ -6,8 +6,11 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Date;
+import android.util.Log;
 import java.util.List;
 
 public class GameDatabaseHelper extends SQLiteOpenHelper {
@@ -137,15 +140,31 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         if (cursor.moveToFirst()) {
             do {
-                SavedGame game = new SavedGame();
-                game.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_ID)));
-                game.setDate(cursor.getLong(cursor.getColumnIndex(COLUMN_DATE)));
-                game.setPlayerColor(cursor.getString(cursor.getColumnIndex(COLUMN_PLAYER_COLOR)));
-                game.setMoves(convertStringToMoves(cursor.getString(cursor.getColumnIndex(COLUMN_MOVES))));
-                game.setFinalFen(cursor.getString(cursor.getColumnIndex(COLUMN_FINAL_FEN)));
-                game.setDescription(cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION)));
+                try {
+                    SavedGame game = new SavedGame();
 
-                games.add(game);
+                    // Use getColumnIndexOrThrow for safer column access
+                    int idColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_ID);
+                    int dateColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DATE);
+                    int colorColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_PLAYER_COLOR);
+                    int movesColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_MOVES);
+                    int fenColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_FINAL_FEN);
+                    int descColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION);
+
+                    // Now use these indices to get the actual data
+                    game.setId(cursor.getLong(idColumnIndex));
+                    game.setDate(cursor.getLong(dateColumnIndex));
+                    game.setPlayerColor(cursor.getString(colorColumnIndex));
+                    game.setMoves(convertStringToMoves(cursor.getString(movesColumnIndex)));
+                    game.setFinalFen(cursor.getString(fenColumnIndex));
+                    game.setDescription(cursor.getString(descColumnIndex));
+
+                    games.add(game);
+                } catch (IllegalArgumentException e) {
+                    // Log the error and continue with the next row
+                    Log.e("GameDatabaseHelper", "Column not found in database", e);
+                    // Optionally: games.add(createDefaultGame()); // Create a default game with error info
+                }
             } while (cursor.moveToNext());
         }
 
@@ -170,13 +189,28 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         SavedGame game = null;
 
         if (cursor != null && cursor.moveToFirst()) {
-            game = new SavedGame();
-            game.setId(cursor.getLong(cursor.getColumnIndex(COLUMN_ID)));
-            game.setDate(cursor.getLong(cursor.getColumnIndex(COLUMN_DATE)));
-            game.setPlayerColor(cursor.getString(cursor.getColumnIndex(COLUMN_PLAYER_COLOR)));
-            game.setMoves(convertStringToMoves(cursor.getString(cursor.getColumnIndex(COLUMN_MOVES))));
-            game.setFinalFen(cursor.getString(cursor.getColumnIndex(COLUMN_FINAL_FEN)));
-            game.setDescription(cursor.getString(cursor.getColumnIndex(COLUMN_DESCRIPTION)));
+            try {
+                game = new SavedGame();
+
+                // Get all column indices safely
+                int idColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_ID);
+                int dateColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DATE);
+                int colorColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_PLAYER_COLOR);
+                int movesColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_MOVES);
+                int fenColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_FINAL_FEN);
+                int descColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION);
+
+                // Use the indices to get data
+                game.setId(cursor.getLong(idColumnIndex));
+                game.setDate(cursor.getLong(dateColumnIndex));
+                game.setPlayerColor(cursor.getString(colorColumnIndex));
+                game.setMoves(convertStringToMoves(cursor.getString(movesColumnIndex)));
+                game.setFinalFen(cursor.getString(fenColumnIndex));
+                game.setDescription(cursor.getString(descColumnIndex));
+            } catch (IllegalArgumentException e) {
+                Log.e("GameDatabaseHelper", "Column not found in database for game ID: " + id, e);
+                game = null; // Reset to null if there was an error
+            }
 
             cursor.close();
         }
