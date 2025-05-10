@@ -2,7 +2,7 @@ package com.example.chesspedagogue;
 
 import android.content.Context;
 import android.util.Log;
-
+import androidx.lifecycle.ViewModelProvider;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -231,6 +231,7 @@ public class StockfishManager {
 
     public boolean setPositionFromMoves(String... moves) {
         try {
+            // Build a complete command with ALL previous moves plus the new one
             StringBuilder command = new StringBuilder("position startpos");
             if (moves.length > 0) {
                 command.append(" moves");
@@ -238,14 +239,19 @@ public class StockfishManager {
                     command.append(" ").append(move);
                 }
             }
-            Log.d(TAG, "Setting position with command: " + command.toString());
+
+            // Send the complete position to Stockfish
             sendCommand(command.toString());
 
-            // Verify the position was set correctly
-            String fen = getCurrentFEN();
-            Log.d(TAG, "Position set, resulting FEN: " + fen);
+            // Wait for engine to process
+            boolean success = waitForReady(1000);
 
-            return waitForReady(1000);
+            // This is crucial - update the cached FEN after the move
+            if (success) {
+                currentFEN = getCurrentFEN();
+            }
+
+            return success;
         } catch (IOException e) {
             Log.e(TAG, "Error setting position from moves", e);
             return false;
@@ -376,6 +382,28 @@ public class StockfishManager {
             }
         }
         return false;
+    }
+
+    /**
+     * Sets the skill level to limit engine strength
+     * @param elo The desired Elo rating (1320-3190)
+     */
+    public boolean setEngineStrength(int elo) {
+        try {
+            // Ensure value is within valid range
+            elo = Math.max(1320, Math.min(3190, elo));
+
+            // Enable strength limiting
+            sendCommand("setoption name UCI_LimitStrength value true");
+            waitForReady(100);
+
+            // Set the Elo rating
+            sendCommand("setoption name UCI_Elo value " + elo);
+            return waitForReady(100);
+        } catch (IOException e) {
+            Log.e(TAG, "Error setting engine strength", e);
+            return false;
+        }
     }
 
     /**

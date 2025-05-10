@@ -68,15 +68,13 @@ public class OpenAIService {
      * Initialize or reset the system message with the base coach personality
      */
     private void initializeSystemMessage() {
-        conversationHistory.clear();
-
+        // Add this to your existing system message
         Message systemMessage = new Message("system",
-                "You are an encouraging and patient chess coach named Coach Magnus. " +
-                        "You provide clear, concise advice about chess positions and strategies " +
-                        "in an accessible way. Tailor your advice to beginners and intermediate players. " +
-                        "Use simple language and explain chess concepts briefly. " +
-                        "Be encouraging even when pointing out mistakes. " +
-                        "Keep responses under 3 sentences when possible.");
+                "You are an encouraging chess coach named Coach Tal. " +
+                        "IMPORTANT: Always analyze the current chess position (FEN) and move history provided. " +
+                        "Refer to specific pieces, squares and patterns on the current board when giving advice. " +
+                        "If the player asks about a move or position, always relate your answer to the current game state. " +
+                        "Use standard chess notation (e4, Nf3, etc.) when referring to squares and moves.");
 
         conversationHistory.add(systemMessage);
     }
@@ -140,7 +138,7 @@ public class OpenAIService {
         }
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("You are Coach Magnus, a patient and encouraging chess coach. ");
+        prompt.append("You are Coach Tal, a patient and encouraging chess coach. ");
         prompt.append("Your goal is to help the player improve while maintaining a warm, supportive tone. ");
 
         // Add current position information if available
@@ -199,7 +197,7 @@ public class OpenAIService {
             }
 
             // Create the API request
-            ChatRequest chatRequest = new ChatRequest(model, conversationHistory);
+            ChatRequest chatRequest = new ChatRequest(model, conversationHistory, 150);
             String requestJson = gson.toJson(chatRequest);
 
             RequestBody body = RequestBody.create(requestJson, JSON);
@@ -285,7 +283,6 @@ public class OpenAIService {
         if (responseLower.contains("center") || responseLower.contains("central")) {
             recordConceptExplained("center control");
         }
-        // Add more concept detection as needed
     }
 
     /**
@@ -310,7 +307,12 @@ public class OpenAIService {
     /**
      * Generate enhanced chess advice with full game context
      */
+    /**
+     * Generate enhanced chess advice with full game context
+     */
+    // In OpenAIService.java - update the generateEnhancedChessAdvice method
     public String generateEnhancedChessAdvice(String fen, List<String> moveHistory, String playerColor) {
+        // First, store this information in our state
         this.currentFEN = fen;
         this.playerColor = playerColor;
 
@@ -318,9 +320,9 @@ public class OpenAIService {
         prompt.append("I'm analyzing a chess game in progress.\n\n");
         prompt.append("Current position (FEN): ").append(fen).append("\n\n");
 
-        // Add move history with proper formatting
+        // Add move history with proper formatting - THIS IS KEY!
         if (moveHistory != null && !moveHistory.isEmpty()) {
-            prompt.append("Game moves so far:\n");
+            prompt.append("Complete game moves in sequence:\n");
             int moveNum = 1;
             for (int i = 0; i < moveHistory.size(); i += 2) {
                 prompt.append(moveNum).append(". ");
@@ -334,10 +336,11 @@ public class OpenAIService {
         }
 
         prompt.append("\nI'm playing as ").append(playerColor);
-        prompt.append(".\n\nPlease analyze my position and suggest what I should focus on next. Consider the opening principles, piece development, pawn structure, tactical opportunities, and my overall strategic direction.");
+        prompt.append(".\n\nAnalyze my position and suggest what I should focus on next.");
 
         return sendMessage(prompt.toString());
     }
+
 
     /**
      * Evaluate a specific move
@@ -388,10 +391,29 @@ public class OpenAIService {
         @SerializedName("messages")
         List<Message> messages;
 
-        public ChatRequest(String model, List<Message> messages) {
+        @SerializedName("max_tokens")
+        int maxTokens;
+
+        public ChatRequest(String model, List<Message> messages, int maxTokens) {
             this.model = model;
             this.messages = messages;
+            this.maxTokens = maxTokens;
         }
+    }
+
+
+    private ChatRequest createChatRequest(String userMessage) {
+        // Add the user message to the conversation history
+        conversationHistory.add(new Message("user", userMessage));
+
+        // Add a system instruction for brevity
+        // This temporary message doesn't get stored in conversation history
+        List<Message> requestMessages = new ArrayList<>(conversationHistory);
+        requestMessages.add(new Message("system",
+                "Keep your response brief and focused - ideally 2-3 sentences. Be concise but helpful."));
+
+        // Create the API request with max tokens limit
+        return new ChatRequest(model, requestMessages, 150); // Limit to ~150 tokens
     }
 
     private static class ChatResponse {

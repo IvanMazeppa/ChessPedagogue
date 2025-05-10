@@ -1,13 +1,17 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
-//import android.widget.Toast;
+import android.widget.Toast;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
@@ -25,10 +29,21 @@ public class ChessCoachManager {
     private final OpenAIService openAIService;
     private final ExecutorService executorService;
     private final Handler mainHandler;
+    private String apiKey; // Add missing apiKey field
 
     // Text-to-Speech engine
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
+    private SpeechRecognitionManager speechRecognitionManager;
+    private OpenAITTSService openAITTSService;
+    private String currentVoice = OpenAITTSService.VOICE_GRANDMASTER;
+    private String currentModel = OpenAITTSService.MODEL_STANDARD;
+    private boolean useOpenAIVoice = true;
+
+    // Conversation state tracking
+    private boolean inActiveConversation = false;
+    private int conversationTurns = 0;
+    private static final int MAX_CONVERSATION_TURNS = 5; // Prevent infinite loops
 
     // Callback interface for responses
     public interface ChessCoachCallback {
@@ -37,13 +52,108 @@ public class ChessCoachManager {
         void onSpeechCompleted();
     }
 
+    // Add this interface for voice recognition control
+    public interface VoiceRecognitionController {
+        void startListening();
+        boolean isInConversationMode();
+    }
+
+    private VoiceRecognitionController voiceController;
+    private ChessCoachCallback currentCallback;
+
+    public void setVoiceController(VoiceRecognitionController controller) {
+        this.voiceController = controller;
+    }
+
     private ChessCoachManager(Context context) {
         this.context = context.getApplicationContext();
         this.openAIService = OpenAIService.getInstance();
         this.executorService = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
-
+        // Initialize OpenAI TTS
+        this.openAITTSService = new OpenAITTSService(context);
         initTextToSpeech();
+    }
+
+    /**
+     * Set the voice persona to use for TTS
+     */
+    public void setVoicePersona(String voice) {
+        this.currentVoice = voice;
+    }
+
+    /**
+     * Set the TTS model quality (standard or premium)
+     */
+    public void setTTSModel(String model) {
+        this.currentModel = model;
+    }
+
+    /**
+     * Enable or disable using OpenAI's premium voices
+     */
+    public void setUseOpenAIVoice(boolean useOpenAIVoice) {
+        this.useOpenAIVoice = useOpenAIVoice;
+    }
+
+    /**
+     * Speak a response using the appropriate TTS system
+     */
+    /**
+     * Speak a response using the appropriate TTS system
+     */
+    private void speakResponse(String response) {
+        // Get latest voice settings from preferences
+        SharedPreferences prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
+        currentVoice = prefs.getString("voice_persona", OpenAITTSService.VOICE_GRANDMASTER);
+
+        // Log which voice we're using
+        Log.d(TAG, "Speaking with voice: " + currentVoice);
+
+        if (useOpenAIVoice && apiKey != null && !apiKey.isEmpty()) {
+            // Use OpenAI's premium voice
+            openAITTSService.setApiKey(apiKey);
+
+            // Create callback for the TTS service
+            OpenAITTSService.TTSCallback ttsCallback = new OpenAITTSService.TTSCallback() {
+                @Override
+                public void onSpeechReady(File audioFile) {
+                    openAITTSService.playAudio(audioFile, () -> {
+                        // When speech completes, notify any listeners
+                        mainHandler.post(() -> {
+                            if (currentCallback != null) {
+                                currentCallback.onSpeechCompleted();
+                            }
+                        });
+                    });
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "TTS error: " + errorMessage);
+                    // Fall back to regular TTS
+                    useFallbackTTS(response);
+                }
+            };
+
+            // Call the service with our callback
+            openAITTSService.synthesizeSpeech(response, currentVoice, currentModel, ttsCallback);
+        } else {
+            // Use regular Android TTS
+            useFallbackTTS(response);
+        }
+    }
+
+    /**
+     * Use Android's built-in TTS as fallback
+     */
+    private void useFallbackTTS(String response) {
+        if (ttsReady) {
+            // Use the existing Android TTS
+            Bundle params = new Bundle();
+            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "ChessCoach");
+            textToSpeech.speak(response, TextToSpeech.QUEUE_FLUSH, params, "ChessCoach");
+        }
     }
 
     /**
@@ -60,12 +170,19 @@ public class ChessCoachManager {
      * Set the OpenAI API key
      */
     public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
         openAIService.setApiKey(apiKey);
     }
 
     /**
-     * Initialize the Text-to-Speech engine
+     * Test the current voice settings with a sample phrase
      */
+// In ChessCoachManager.java
+    public void testVoice(String testPhrase, ChessCoachCallback callback) {
+        this.currentCallback = callback;
+        speakResponse(testPhrase);
+    }
+
     private void initTextToSpeech() {
         textToSpeech = new TextToSpeech(context, status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -76,103 +193,137 @@ public class ChessCoachManager {
                 } else {
                     textToSpeech.setSpeechRate(0.95f); // Slightly slower for clarity
                     textToSpeech.setPitch(1.0f);       // Normal pitch
+
+                    // Add this line to make callbacks more reliable
+                    textToSpeech.setOnUtteranceProgressListener(createUtteranceProgressListener());
+
                     ttsReady = true;
+                    Log.d(TAG, "TTS initialization complete, callbacks registered");
                 }
             } else {
-                Log.e(TAG, "TTS Initialization failed");
+                Log.e(TAG, "TTS Initialization failed with status: " + status);
             }
         });
+    }
 
-        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+    // Create a robust utterance progress listener
+    private UtteranceProgressListener createUtteranceProgressListener() {
+        return new UtteranceProgressListener() {
             @Override
             public void onStart(String utteranceId) {
-                // Speech started
+                Log.d(TAG, "TTS started speaking utterance: " + utteranceId);
             }
 
             @Override
             public void onDone(String utteranceId) {
-                // Speech completed
-                if (currentCallback != null) {
-                    mainHandler.post(() -> currentCallback.onSpeechCompleted());
-                }
+                Log.d(TAG, "TTS finished speaking utterance: " + utteranceId);
+
+                // Important: Always check on main thread to avoid issues
+                mainHandler.post(() -> {
+                    if (currentCallback != null) {
+                        Log.d(TAG, "Notifying callback of speech completion: " +
+                                currentCallback.getClass().getSimpleName());
+                        currentCallback.onSpeechCompleted();
+                    } else {
+                        Log.d(TAG, "No callback to notify for speech completion");
+                    }
+
+                    // If we're in an active conversation, continue it
+                    checkContinueConversation();
+                });
             }
 
             @Override
             public void onError(String utteranceId) {
                 Log.e(TAG, "TTS Error with utterance: " + utteranceId);
+
+                // Even on error, notify callback to keep conversation flowing
+                mainHandler.post(() -> {
+                    if (currentCallback != null) {
+                        Log.d(TAG, "Notifying callback of speech error");
+                        currentCallback.onSpeechCompleted();
+                    }
+
+                    // Try to continue conversation despite error
+                    checkContinueConversation();
+                });
             }
-        });
+        };
     }
 
-    // Track the current callback
-    private ChessCoachCallback currentCallback;
+    /**
+     * Start an interactive voice conversation session with the coach
+     */
+    public void startVoiceConversation() {
+        inActiveConversation = true;
+        conversationTurns = 0;
+
+        // Start listening
+        if (voiceController != null) {
+            voiceController.startListening();
+        }
+    }
 
     /**
-     * Get chess advice based on the current position
+     * Check whether to continue the conversation based on current state
      */
-    public void getChessAdvice(String fen, String lastMove, String playerColor, ChessCoachCallback callback) {
+    private void checkContinueConversation() {
+        if (inActiveConversation && conversationTurns < MAX_CONVERSATION_TURNS) {
+            // Add a small delay before listening again
+            mainHandler.postDelayed(() -> {
+                if (voiceController != null) {
+                    voiceController.startListening();
+                }
+            }, 1000); // 1 second pause before listening again
+        } else if (inActiveConversation) {
+            // End the conversation if we've reached max turns
+            inActiveConversation = false;
+            conversationTurns = 0;
+        }
+    }
+
+    /**
+     * Process a follow-up voice command in conversation
+     */
+    public void processVoiceFollowUp(String command, ChessCoachCallback callback) {
         this.currentCallback = callback;
+        conversationTurns++;
 
         executorService.execute(() -> {
             try {
-                String response = openAIService.generateChessAdvice(fen, lastMove, playerColor);
+                // Create a context-aware prompt for the follow-up
+                String contextualPrompt =
+                        "This is a follow-up question in our ongoing conversation.\n" +
+                                command;
+
+                String response = openAIService.sendMessage(contextualPrompt);
+
                 mainHandler.post(() -> {
                     callback.onResponseReceived(response);
                     speakResponse(response);
                 });
             } catch (Exception e) {
-                Log.e(TAG, "Error getting chess advice", e);
-                mainHandler.post(() -> callback.onError("Failed to get advice: " + e.getMessage()));
+                Log.e(TAG, "Error processing follow-up", e);
+                mainHandler.post(() -> callback.onError("Sorry, I had trouble with that follow-up."));
             }
         });
     }
 
-    // Add to ChessCoachManager.java
-    public void analyzeAndRecordGameState(String fen, List<String> moveHistory) {
-        // A simple example of recording concepts/mistakes based on position
-        if (fen.contains("1k6") && fen.contains("7K")) {
-            // Detect king and king endgames
-            openAIService.recordConceptExplained("king and king endgames");
-        }
-
-        // Look for typical beginner mistakes in the position
-        if (isKingInDanger(fen, moveHistory)) {
-            openAIService.recordPlayerMistake("king safety");
-        }
-
-        if (hasUndevelopedPieces(fen) && moveHistory.size() > 10) {
-            openAIService.recordPlayerMistake("incomplete development");
-        }
-    }
-
-    // Example helper methods
-    private boolean isKingInDanger(String fen, List<String> moveHistory) {
-        // Simplified check - in a real implementation, you'd use Stockfish analysis
-        return fen.contains("+ ") || fen.contains("#");
-    }
-
-    private boolean hasUndevelopedPieces(String fen) {
-        // Check if knights or bishops remain on their home squares after 10+ moves
-        return fen.contains("N1") || fen.contains("B1") ||
-                fen.contains("n8") || fen.contains("b8");
-    }
-
     /**
-     * Get enhanced chess advice with full game context.
-     * This method analyzes the current position, tracks concepts explained,
-     * and maintains conversation context for better coaching.
-     *
-     * @param fen Current position in FEN notation
-     * @param moveHistory List of moves played so far
-     * @param playerColor Color the player is playing ("white" or "black")
-     * @param callback Callback to receive the response
+     * Get enhanced chess advice with game state context
      */
-    public void getEnhancedChessAdvice(String fen, List<String> moveHistory,
-                                       String playerColor, ChessCoachCallback callback) {
+    /**
+     * Get enhanced chess advice with game state context
+     */
+    public void getEnhancedChessAdvice(GameStateInfo gameState, ChessCoachCallback callback) {
         this.currentCallback = callback;
 
         executorService.execute(() -> {
             try {
+                String fen = gameState.getCurrentFen();
+                List<String> moveHistory = gameState.getMoveHistory();
+                String playerColor = gameState.getPlayerColor();
+
                 Log.d(TAG, "Generating enhanced chess advice for position: " + fen);
 
                 // 1. First, analyze the position and update our context tracking
@@ -181,10 +332,7 @@ public class ChessCoachManager {
                 // 2. Generate the advice with all the enhanced context
                 String response = openAIService.generateEnhancedChessAdvice(fen, moveHistory, playerColor);
 
-                // 3. Analyze the response to extract concepts that were explained
-                identifyExplainedConcepts(response);
-
-                // 4. Deliver the response on the main thread
+                // 3. Deliver the response on the main thread
                 mainHandler.post(() -> {
                     callback.onResponseReceived(response);
                     speakResponse(response);
@@ -195,6 +343,106 @@ public class ChessCoachManager {
             }
         });
     }
+
+    /**
+     * Process voice commands from the user, connecting them to the current chess position
+     * and providing contextual responses.
+     *
+     * @param command The recognized speech command from the user
+     */
+    /*
+    private void processVoiceCommand(String command) {
+        Log.d(TAG, "Voice command: " + command);
+
+        // Show what was recognized
+        Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
+
+        // Create a GameStateInfo object with the current state
+        GameStateInfo gameState = new GameStateInfo(
+                engine.getCurrentFEN(),
+                algebraicMoveHistory,
+                playerColorChoice
+        );
+
+        // Convert command to lowercase for easier parsing
+        String lowercaseCommand = command.toLowerCase();
+
+        // Check for move commands
+        if (lowercaseCommand.contains("move ")) {
+            // This would need natural language parsing to convert to UCI
+            // For now, we'll just pass it to the coach
+            showLoading("Coach is analyzing your move request...");
+            chessCoach.sendMessage(command, gameState, new ChessCoachCallback());
+            return;
+        }
+
+        // Check for position advice requests
+        if (lowercaseCommand.contains("what should i do") ||
+                lowercaseCommand.contains("what's my best move") ||
+                lowercaseCommand.contains("help me") ||
+                lowercaseCommand.contains("advice") ||
+                lowercaseCommand.contains("analyze") ||
+                lowercaseCommand.contains("suggestion")) {
+
+            // This is a request for position advice - use the current board state!
+            showLoading("Coach is analyzing your position...");
+            chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
+            return;
+        }
+
+        // Check for evaluation requests
+        if (lowercaseCommand.contains("who's winning") ||
+                lowercaseCommand.contains("who is winning") ||
+                lowercaseCommand.contains("evaluation") ||
+                lowercaseCommand.contains("am i winning") ||
+                lowercaseCommand.contains("score")) {
+
+            showLoading("Coach is evaluating the position...");
+            chessCoach.sendMessage("Please evaluate who's winning in this position and by approximately how much.",
+                    gameState, new ChessCoachCallback());
+            return;
+        }
+
+        // Default: treat as a general question, but INCLUDE the board context
+        showLoading("Coach is considering your question...");
+        chessCoach.sendMessage(command, gameState, new ChessCoachCallback());
+    }
+
+    */
+
+    /**
+     * Process a follow-up command in an ongoing conversation
+     */
+   /*
+    private void processFollowUpCommand(String command) {
+        Log.d(TAG, "Follow-up command: " + command);
+
+        // Show what was recognized
+        Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
+
+        // Create a GameStateInfo object with the current state
+        GameStateInfo gameState = new GameStateInfo(
+                engine.getCurrentFEN(),
+                algebraicMoveHistory,
+                playerColorChoice
+        );
+
+        // Send to the coach with our special callback that continues the conversation
+        showLoading("Coach is thinking...");
+        chessCoach.sendMessage(command, gameState, new ConversationContinuingCallback());
+    } */
+
+    // Keep the old method for compatibility
+    public void getEnhancedChessAdvice(String fen, List<String> moveHistory,
+                                       String playerColor, ChessCoachCallback callback) {
+        GameStateInfo gameState = new GameStateInfo(fen, moveHistory, playerColor);
+        getEnhancedChessAdvice(gameState, callback);
+    }
+
+
+
+
+
 
     /**
      * Analyze the game context to enhance future responses
@@ -219,27 +467,8 @@ public class ChessCoachManager {
             openAIService.updateContext("playerColor", playerColor);
             openAIService.updateContext("gamePhase", gamePhase);
 
-            // Perform simple position analysis to detect common patterns
-            // These are very basic checks - in a full implementation you'd use
-            // Stockfish analysis for more sophisticated detection
-
-            // Check for undeveloped pieces in opening/middlegame
-            if (gamePhase.equals("opening") || gamePhase.equals("middlegame")) {
-                if (fen.contains("N1") || fen.contains("B1") ||
-                        fen.contains("n8") || fen.contains("b8")) {
-                    openAIService.recordPlayerMistake("undeveloped pieces");
-                }
-            }
-
-            // Check for king safety issues
-            if (fen.contains("+") || isKingExposed(fen, playerColor)) {
-                openAIService.recordPlayerMistake("king safety");
-            }
-
-            // Check for pawn structure issues
-            if (countIsolatedPawns(fen, playerColor) > 2) {
-                openAIService.recordPlayerMistake("isolated pawns");
-            }
+            // Check for chess patterns and store them
+            checkPositionPatterns(fen, playerColor, gamePhase);
 
             Log.d(TAG, "Game context analysis complete for phase: " + gamePhase);
         } catch (Exception e) {
@@ -249,39 +478,25 @@ public class ChessCoachManager {
     }
 
     /**
-     * Identify chess concepts that were explained in the response
+     * Analyze position for common chess patterns
      */
-    private void identifyExplainedConcepts(String response) {
-        String lowerResponse = response.toLowerCase();
-
-        // Check for common chess concepts in the response
-        if (lowerResponse.contains("pin") && lowerResponse.contains("cannot move")) {
-            openAIService.recordConceptExplained("pins");
+    private void checkPositionPatterns(String fen, String playerColor, String gamePhase) {
+        // Check for undeveloped pieces in opening/middlegame
+        if (gamePhase.equals("opening") || gamePhase.equals("middlegame")) {
+            if (fen.contains("N1") || fen.contains("B1") ||
+                    fen.contains("n8") || fen.contains("b8")) {
+                openAIService.recordPlayerMistake("undeveloped pieces");
+            }
         }
 
-        if (lowerResponse.contains("fork") &&
-                (lowerResponse.contains("attack two") || lowerResponse.contains("attacking multiple"))) {
-            openAIService.recordConceptExplained("forks");
+        // Check for king safety issues
+        if (fen.contains("+") || isKingExposed(fen, playerColor)) {
+            openAIService.recordPlayerMistake("king safety");
         }
-
-        if (lowerResponse.contains("develop") && lowerResponse.contains("piece")) {
-            openAIService.recordConceptExplained("development");
-        }
-
-        if (lowerResponse.contains("control") && lowerResponse.contains("center")) {
-            openAIService.recordConceptExplained("center control");
-        }
-
-        if (lowerResponse.contains("castle") || lowerResponse.contains("castling")) {
-            openAIService.recordConceptExplained("castling");
-        }
-
-        // Add more concept detection as needed
     }
 
     /**
-     * Helper method to check if king is exposed
-     * This is a simplified implementation - a real one would use engine analysis
+     * Helper method to check if king is exposed (simplified)
      */
     private boolean isKingExposed(String fen, String playerColor) {
         // Simple check - look for lack of pawns near king
@@ -293,23 +508,30 @@ public class ChessCoachManager {
     }
 
     /**
-     * Helper method to count isolated pawns
-     * This is a simplified implementation - a real one would use engine analysis
-     */
-    private int countIsolatedPawns(String fen, String playerColor) {
-        // This would actually require detailed pawn structure analysis
-        // For now, we return a placeholder value
-        return 0;
-    }
-    /**
      * Send a user message to the chess coach
      */
-    public void sendMessage(String message, ChessCoachCallback callback) {
+    /**
+     * Send a user message to the chess coach with the current game state
+     */
+    public void sendMessage(String message, GameStateInfo gameState, ChessCoachCallback callback) {
         this.currentCallback = callback;
 
         executorService.execute(() -> {
             try {
-                String response = openAIService.sendMessage(message);
+                // Use the game state info instead of trying to access variables directly
+                String currentFen = gameState.getCurrentFen();
+                List<String> moveHistory = gameState.getMoveHistory();
+                String playerColor = gameState.getPlayerColor();
+
+                // Create enriched prompt with game context
+                String enrichedMessage =
+                        "Current board position (FEN): " + currentFen + "\n\n" +
+                                "Move history: " + formatMoveHistory(moveHistory) + "\n\n" +
+                                "I'm playing as " + playerColor + ".\n\n" +
+                                "User question: " + message;
+
+                // Send the enriched message
+                String response = openAIService.sendMessage(enrichedMessage);
                 mainHandler.post(() -> {
                     callback.onResponseReceived(response);
                     speakResponse(response);
@@ -321,23 +543,60 @@ public class ChessCoachManager {
         });
     }
 
-    /**
-     * Speak a response using Text-to-Speech
-     */
-    private void speakResponse(String response) {
-        if (ttsReady) {
-            textToSpeech.speak(response, TextToSpeech.QUEUE_FLUSH, null, "ChessCoach");
-        } else {
-            Log.w(TAG, "TTS not ready, couldn't speak: " + response);
+    // Keep the original method for compatibility with existing code
+    public void sendMessage(String message, ChessCoachCallback callback) {
+        // Use empty game state or default values
+        GameStateInfo emptyState = new GameStateInfo(
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Starting position
+                new ArrayList<>(),
+                "white"
+        );
+        sendMessage(message, emptyState, callback);
+    }
+
+    private String formatMoveHistory(List<String> moves) {
+        if (moves == null || moves.isEmpty()) return "No moves played yet.";
+
+        StringBuilder sb = new StringBuilder();
+        int moveNum = 1;
+        for (int i = 0; i < moves.size(); i += 2) {
+            sb.append(moveNum).append(". ");
+            sb.append(moves.get(i));
+            if (i + 1 < moves.size()) {
+                sb.append(" ").append(moves.get(i + 1));
+            }
+            sb.append(" ");
+            moveNum++;
         }
+        return sb.toString();
     }
 
     /**
-     * Stop any ongoing speech
+     * Immediately stop speech and start listening again
+     * @return true if speech was stopped, false if no speech was happening
      */
+    public boolean interruptAndListen() {
+        if (textToSpeech != null && textToSpeech.isSpeaking()) {
+            Log.d(TAG, "Interrupting ongoing speech");
+            textToSpeech.stop();
+
+            // If we have a voice controller, start listening again
+            if (voiceController != null && voiceController.isInConversationMode()) {
+                voiceController.startListening();
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void stopSpeaking() {
         if (ttsReady && textToSpeech.isSpeaking()) {
             textToSpeech.stop();
+
+            // Also stop background listening
+            if (speechRecognitionManager != null) {
+                speechRecognitionManager.stopBackgroundListening();
+            }
         }
     }
 
@@ -346,6 +605,15 @@ public class ChessCoachManager {
      */
     public void resetConversation() {
         openAIService.resetConversation();
+        inActiveConversation = false;
+        conversationTurns = 0;
+    }
+
+    /**
+     * Set the speech recognition manager
+     */
+    public void setSpeechRecognitionManager(SpeechRecognitionManager manager) {
+        this.speechRecognitionManager = manager;
     }
 
     /**
