@@ -1,16 +1,19 @@
 package com.example.chesspedagogue;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
-import android.speech.tts.TextToSpeech;
+//import android.speech.tts.TextToSpeech;
 import android.text.InputType;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,9 +21,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,6 +37,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
@@ -38,7 +45,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+//import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -82,6 +89,16 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPanelVisible = false;
     private Animation slideUpAnimation;
     private Animation slideDownAnimation;
+    private LinearLayout coachBottomSheet;
+    private TextView bottomSheetMessageText;
+    private Button bottomSheetRespondButton;
+    private Button bottomSheetDismissButton;
+    private BottomSheetBehavior<LinearLayout> bottomSheetBehavior;
+
+    // Add these variables to your MainActivity class
+    private boolean inConversationMode = false;
+    private int conversationTurns = 0;
+    private static final int MAX_CONVERSATION_TURNS = 5; // Prevent infinite loops
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,9 +125,93 @@ public class MainActivity extends AppCompatActivity {
         chessCoachButton = findViewById(R.id.chessCoachButton);
         voiceInputButton = findViewById(R.id.voiceInputButton);
         conversationButton = findViewById(R.id.conversationButton);
+        coachBottomSheet = findViewById(R.id.coachBottomSheet);
+        bottomSheetMessageText = findViewById(R.id.bottomSheetMessageText);
+        bottomSheetRespondButton = findViewById(R.id.bottomSheetRespondButton);
+        bottomSheetDismissButton = findViewById(R.id.bottomSheetDismissButton);
 
+        // Initialize the bottom sheet behavior
+        bottomSheetBehavior = BottomSheetBehavior.from(coachBottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
+        // Add this in your onCreate method, after initializing the bottom sheet components
+        // Make the ENTIRE bottom sheet respond to taps for interruption
+        coachBottomSheet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps anywhere on the sheet
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
+        // For even better response, also make the text area specifically respond to taps
+        bottomSheetMessageText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps the message
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        // Add this after initializing the bottom sheet
+        View bottomSheetDragHandle = findViewById(R.id.bottomSheetDragHandle);
+        bottomSheetDragHandle.setOnTouchListener(new View.OnTouchListener() {
+            private float initialY;
+            private float initialTouchY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialY = coachBottomSheet.getY();
+                        initialTouchY = event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        float currentY = event.getRawY();
+                        float deltaY = currentY - initialTouchY;
+
+                        // Convert to bottom sheet state
+                        if (deltaY < -50) { // Dragging up
+                            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                        } else if (deltaY > 50) { // Dragging down
+                            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                        }
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        // Set a lower peek height that won't block the board
+        int peekHeightDp = 72; // Just enough for buttons and a line of text
+        int peekHeightPx = (int) (peekHeightDp * getResources().getDisplayMetrics().density);
+        bottomSheetBehavior.setPeekHeight(peekHeightPx);
+
+        // Set maximum height to prevent full coverage of board
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenHeight = displayMetrics.heightPixels;
+        int maxHeight = screenHeight / 3; // Maximum 1/3 of screen height
+        bottomSheetBehavior.setMaxHeight(maxHeight);
+
+        // Add this right after initializing coach components
+        coachMessageCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps the message
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         // Initialize chat panel components
         chatPanel = findViewById(R.id.chatPanel);
@@ -124,16 +225,27 @@ public class MainActivity extends AppCompatActivity {
             // Set up drag handle touch listener
             setupDragHandleTouchListener();
 
-            // Set up conversation button
+            // Set up conversation button for continuous voice interaction
             if (conversationButton != null) {
                 conversationButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        toggleChatPanel();
+                        startVoiceConversation();
                     }
                 });
             }
         }
+
+        // Set up respond button
+        bottomSheetRespondButton.setOnClickListener(v -> {
+            startVoiceRecognition();
+        });
+
+        // Set up dismiss button
+        bottomSheetDismissButton.setOnClickListener(v -> {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+            chessCoach.stopSpeaking();
+        });
 
         // Initialize the chess coach
         initializeChessCoach();
@@ -188,6 +300,12 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 hideCoachMessage();
             }
+        });
+
+        // In your onCreate method, after initializing other buttons
+        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
+        conversationButton.setOnClickListener(v -> {
+            startVoiceConversation();
         });
 
         // Initialize sound manager
@@ -312,6 +430,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /* Public interface for communication with ChessCoachManager
+    public interface VoiceRecognitionController {
+        void startListening();
+        boolean isInConversationMode();
+    }
+    */
+
+    // Implementation that can be shared with ChessCoachManager
+
+    private ChessCoachManager.VoiceRecognitionController voiceController =
+            new ChessCoachManager.VoiceRecognitionController() {
+                @Override
+                public void startListening() {
+                    startVoiceRecognition();
+                }
+
+                @Override
+                public boolean isInConversationMode() {
+                    return inConversationMode;
+                }
+            };
+
     private void setupDragHandleTouchListener() {
         if (dragHandle == null) return;
 
@@ -367,7 +507,7 @@ public class MainActivity extends AppCompatActivity {
                 recyclerView.setLayoutManager(new LinearLayoutManager(this));
                 List<ChatMessage> messages = new ArrayList<>();
                 messages.add(new ChatMessage(ChatMessage.TYPE_COACH,
-                        "Hello! I'm Coach Magnus. How can I help with your chess game?"));
+                        "Hello! I'm Coach Tal. How can I help with your chess game?"));
                 ChatAdapter adapter = new ChatAdapter(messages);
                 recyclerView.setAdapter(adapter);
 
@@ -412,6 +552,9 @@ public class MainActivity extends AppCompatActivity {
     private void initializeChessCoach() {
         chessCoach = ChessCoachManager.getInstance(this);
 
+        // Add this line to pass the controller
+        chessCoach.setVoiceController(voiceController);
+
         // Get API key from secure storage if available
         String apiKey = ApiKeyConfig.getApiKey(this);
         if (apiKey != null && !apiKey.isEmpty()) {
@@ -440,29 +583,86 @@ public class MainActivity extends AppCompatActivity {
     private void setupSpeechRecognition() {
         speechRecognitionManager = new SpeechRecognitionManager(this);
     }
-    private void startVoiceRecognition() {
-        // Stop any ongoing TTS first
-        chessCoach.stopSpeaking();
 
-        // Show feedback to user
-        Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show();
+    /**
+     * Start a voice conversation with the chess coach
+     */
+    private void startVoiceConversation() {
+        // Show a visual indicator that we're entering conversation mode
+        Toast.makeText(this, "Starting conversation with Coach Magnus...", Toast.LENGTH_SHORT).show();
+
+        // Reset conversation state
+        inConversationMode = true;
+        conversationTurns = 0;
+
+        // Start the first recognition
+        startVoiceRecognition();
+    }
+
+    /**
+     * Start voice recognition specifically for conversation mode
+     */
+    private void startVoiceRecognitionForConversation() {
+        // Visual feedback that we're listening
+        showLoading("Listening...");
 
         // Start speech recognition
         speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
             @Override
             public void onSpeechRecognized(String text) {
-                // Process the recognized speech
-                processVoiceCommand(text);
+                if (!text.isEmpty()) {
+                    // For first turn, process normally
+                    if (conversationTurns == 0) {
+                        processVoiceCommand(text);
+                    } else {
+                        // For follow-ups, process with context
+                        processFollowUpCommand(text);
+                    }
+                    conversationTurns++;
+                } else {
+                    // End conversation if no speech detected
+                    endConversation("I didn't catch that.");
+                }
             }
 
             @Override
             public void onSpeechError(String error) {
-                Toast.makeText(MainActivity.this,
-                        "Speech recognition error: " + error,
-                        Toast.LENGTH_SHORT).show();
+                endConversation("Sorry, I had trouble hearing you.");
             }
         });
     }
+
+    // Modify your existing startVoiceRecognition method or create this new one
+    private void startVoiceRecognition() {
+        // Update UI to show we're listening
+        showLoading("Listening...");
+
+        // Start speech recognition
+        speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
+            @Override
+            public void onSpeechRecognized(String text) {
+                if (!text.isEmpty()) {
+                    // For first turn, process normally
+                    if (conversationTurns == 0) {
+                        processVoiceCommand(text);
+                    } else {
+                        // For follow-ups, process with context
+                        processFollowUpCommand(text);
+                    }
+                    conversationTurns++;
+                } else {
+                    // End conversation if no speech detected
+                    endConversation("I didn't catch that.");
+                }
+            }
+
+            @Override
+            public void onSpeechError(String error) {
+                endConversation("Sorry, I had trouble hearing you.");
+            }
+        });
+    }
+
 
     /**
      * Process voice commands from the user, connecting them to the current chess position
@@ -539,6 +739,76 @@ public class MainActivity extends AppCompatActivity {
                         "My question is: " + command;
 
         chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
+    }
+
+
+    /**
+     * Process a follow-up command in an ongoing conversation
+     */
+    private void processFollowUpCommand(String command) {
+        Log.d(TAG, "Follow-up command: " + command);
+
+        // Show what was recognized
+        Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
+
+        // Create a context-aware prompt for the follow-up
+        String contextualPrompt =
+                "This is a follow-up question in our conversation.\n\n" +
+                        "Current board position: " + engine.getCurrentFEN() + "\n" +
+                        "I'm playing as " + playerColorChoice + ".\n" +
+                        "My follow-up question is: " + command;
+
+        // Send to the coach with our special callback that continues the conversation
+        showLoading("Coach is thinking...");
+        chessCoach.sendMessage(contextualPrompt, new ConversationContinuingCallback());
+    }
+
+    /**
+     * End the conversation gracefully
+     */
+    private void endConversation(String message) {
+        inConversationMode = false;
+        if (message != null && !message.isEmpty()) {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        }
+        // Reset any conversation-specific UI elements
+    }
+
+    /**
+     * Special callback that continues the conversation after the coach responds
+     */
+    private class ConversationContinuingCallback implements ChessCoachManager.ChessCoachCallback {
+        @Override
+        public void onResponseReceived(String response) {
+            // Show the coach's response
+            showCoachMessage(response);
+        }
+
+        @Override
+        public void onError(String errorMessage) {
+            Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+            endConversation(null);
+        }
+
+        @Override
+        public void onSpeechCompleted() {
+            // This is the magic moment - when the coach finishes speaking,
+            // we start listening again to continue the conversation!
+            Log.d(TAG, "ConversationContinuingCallback.onSpeechCompleted called. inConversationMode="
+                    + inConversationMode + ", conversationTurns=" + conversationTurns);
+            if (inConversationMode && conversationTurns < MAX_CONVERSATION_TURNS) {
+                // Add a small delay so the user has time to think
+                new Handler().postDelayed(() -> {
+                    runOnUiThread(() -> {
+                        // Start listening again
+                        startVoiceRecognition();
+                    });
+                }, 1500); // 1.5 second pause
+            } else {
+                // We've reached our turn limit, end gracefully
+                endConversation("Thanks for the conversation!");
+            }
+        }
     }
 
     /**
@@ -662,28 +932,80 @@ public class MainActivity extends AppCompatActivity {
      * Show the loading indicator while waiting for the coach
      */
     private void showLoading(String message) {
-        coachMessageCard.setVisibility(View.VISIBLE);
-        coachMessageText.setText(message);
-        askFollowUpButton.setVisibility(View.GONE);
+        // Update the bottom sheet with the loading message
+        bottomSheetMessageText.setText(message);
+
+        // Show the bottom sheet in collapsed state
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        // Hide the respond button while loading
+        if (bottomSheetRespondButton != null) {
+            bottomSheetRespondButton.setVisibility(View.GONE);
+        }
+
+        // DON'T use the old message card anymore
+        // coachMessageCard.setVisibility(View.VISIBLE); - REMOVE this line
+        // coachMessageText.setText(message); - REMOVE this line
+        // askFollowUpButton.setVisibility(View.GONE); - REMOVE this line
+    }
+    private void showScrollingMessage(String message) {
+        // Set message text
+        bottomSheetMessageText.setText(message);
+
+        // Reset scroll position
+        ScrollView scrollView = (ScrollView) bottomSheetMessageText.getParent();
+        scrollView.scrollTo(0, 0);
+
+        // Start scrolling animation after a small delay
+        scrollView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Calculate scroll speed based on text length
+                int duration = Math.min(message.length() * 30, 12000); // Max 12 seconds
+
+                // Create smooth scroll animation
+                ObjectAnimator animator = ObjectAnimator.ofInt(
+                        scrollView, "scrollY",
+                        0, bottomSheetMessageText.getHeight());
+                animator.setDuration(duration);
+                animator.setInterpolator(new LinearInterpolator());
+                animator.start();
+            }
+        }, 2000); // 2 second delay before starting scroll
     }
 
     /**
      * Display the coach's message
      */
     private void showCoachMessage(String message) {
-        coachMessageCard.setVisibility(View.VISIBLE);
-        coachMessageText.setText(message);
-        askFollowUpButton.setVisibility(View.VISIBLE);
-    }
+        // ONLY update the bottom sheet, not the popup card
+        bottomSheetMessageText.setText(message);
 
+        // Show the bottom sheet
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        // DON'T do anything with the old coachMessageCard
+        // coachMessageCard.setVisibility(View.VISIBLE); - REMOVE this line
+        // coachMessageText.setText(message); - REMOVE this line
+
+        // Make sure the follow-up button in the BOTTOM SHEET is visible
+        if (bottomSheetRespondButton != null) {
+            bottomSheetRespondButton.setVisibility(View.VISIBLE);
+        }
+    }
     /**
      * Hide the coach message card
      */
     private void hideCoachMessage() {
-        coachMessageCard.setVisibility(View.GONE);
+        // Hide the bottom sheet
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+
+        // Don't worry about the old card anymore
+        // coachMessageCard.setVisibility(View.GONE); - REMOVE this line
+
+        // Stop speaking
         chessCoach.stopSpeaking();
     }
-
     /**
      * Callback for chess coach responses
      */

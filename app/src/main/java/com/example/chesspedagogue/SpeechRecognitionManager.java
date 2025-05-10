@@ -22,6 +22,7 @@ public class SpeechRecognitionManager {
     private final Context context;
     private SpeechRecognizer speechRecognizer;
     private boolean isListening = false;
+    private boolean backgroundListeningActive = false;
 
     /**
      * Callback interface for speech recognition results
@@ -135,6 +136,131 @@ public class SpeechRecognitionManager {
             Log.e(TAG, "Error starting speech recognition", e);
             callback.onSpeechError("Error: " + e.getMessage());
         }
+    }
+
+    // Add this new method to SpeechRecognitionManager.java
+    public void startBackgroundListening(final SpeechActivityDetector callback) {
+        if (speechRecognizer == null) {
+            Log.e(TAG, "Speech recognizer is not available for background listening");
+            return;
+        }
+
+        try {
+            backgroundListeningActive = true;
+
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+            intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
+            intent.putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, context.getPackageName());
+            // Key difference: We want partial results for background listening
+            intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
+
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                @Override
+                public void onReadyForSpeech(Bundle params) {
+                    Log.d(TAG, "Background listening ready");
+                }
+
+                @Override
+                public void onBeginningOfSpeech() {
+                    Log.d(TAG, "Background speech detected - may be an interruption");
+                    // This is often the first sign that the user is speaking
+                    if (backgroundListeningActive) {
+                        // If we get here, user is definitely speaking - good time to trigger
+                        backgroundListeningActive = false;
+                        callback.onSpeechDetected();
+                    }
+                }
+
+                @Override
+                public void onRmsChanged(float rmsdB) {
+                    // For a very responsive system, we could use sound level to detect speech
+                    // A sudden increase in RMS (volume) often indicates speech starting
+                    if (backgroundListeningActive && rmsdB > 4.0) { // Threshold for speech
+                        Log.d(TAG, "Volume spike detected - potential interruption");
+                    }
+                }
+
+                @Override
+                public void onBufferReceived(byte[] buffer) {
+                    // Not used for our purpose
+                }
+
+                @Override
+                public void onEndOfSpeech() {
+                    Log.d(TAG, "Background speech ended");
+                }
+
+                @Override
+                public void onError(int error) {
+                    // Most errors in background mode are expected (no speech, etc.)
+                    // Just restart listening if it was network or audio related
+                    if (backgroundListeningActive) {
+                        if (error == SpeechRecognizer.ERROR_NETWORK ||
+                                error == SpeechRecognizer.ERROR_AUDIO ||
+                                error == SpeechRecognizer.ERROR_NETWORK_TIMEOUT) {
+
+                            // These errors may mean we need to restart
+                            stopBackgroundListening();
+                            if (backgroundListeningActive) {
+                                // Try to restart if we're still supposed to be listening
+                                startBackgroundListening(callback);
+                            }
+                        }
+                    }
+                }
+
+                @Override
+                public void onResults(Bundle results) {
+                    if (backgroundListeningActive) {
+                        // If we get full results, user definitely said something substantial
+                        backgroundListeningActive = false;
+                        callback.onSpeechDetected();
+                    }
+                }
+
+                @Override
+                public void onPartialResults(Bundle partialResults) {
+                    if (!backgroundListeningActive) return;
+
+                    ArrayList<String> matches = partialResults.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+
+                    // If we have partial results with reasonable content, consider it an interruption
+                    if (matches != null && !matches.isEmpty() && !matches.get(0).trim().isEmpty()) {
+                        Log.d(TAG, "Background partial result detected: " + matches.get(0));
+                        backgroundListeningActive = false;
+                        callback.onSpeechDetected();
+                    }
+                }
+
+                @Override
+                public void onEvent(int eventType, Bundle params) {
+                    // Not used for our purpose
+                }
+            });
+
+            speechRecognizer.startListening(intent);
+            Log.d(TAG, "Background listening started");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error starting background speech recognition", e);
+            backgroundListeningActive = false;
+        }
+    }
+
+    // Add method to stop background listening
+    public void stopBackgroundListening() {
+        backgroundListeningActive = false;
+        if (speechRecognizer != null) {
+            speechRecognizer.cancel(); // Use cancel instead of stopListening for cleaner switch
+        }
+        Log.d(TAG, "Background listening stopped");
+    }
+
+    // Add interface for speech detection
+    public interface SpeechActivityDetector {
+        void onSpeechDetected();
     }
 
     /**

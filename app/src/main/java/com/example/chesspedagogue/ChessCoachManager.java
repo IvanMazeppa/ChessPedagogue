@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
@@ -29,6 +30,7 @@ public class ChessCoachManager {
     // Text-to-Speech engine
     private TextToSpeech textToSpeech;
     private boolean ttsReady = false;
+    private SpeechRecognitionManager speechRecognitionManager;
 
     // Callback interface for responses
     public interface ChessCoachCallback {
@@ -63,9 +65,8 @@ public class ChessCoachManager {
         openAIService.setApiKey(apiKey);
     }
 
-    /**
-     * Initialize the Text-to-Speech engine
-     */
+    // In ChessCoachManager.java, modify the initTextToSpeech method:
+
     private void initTextToSpeech() {
         textToSpeech = new TextToSpeech(context, status -> {
             if (status == TextToSpeech.SUCCESS) {
@@ -76,33 +77,70 @@ public class ChessCoachManager {
                 } else {
                     textToSpeech.setSpeechRate(0.95f); // Slightly slower for clarity
                     textToSpeech.setPitch(1.0f);       // Normal pitch
+
+                    // Add this line to make callbacks more reliable
+                    textToSpeech.setOnUtteranceProgressListener(createUtteranceProgressListener());
+
                     ttsReady = true;
+                    Log.d(TAG, "TTS initialization complete, callbacks registered");
                 }
             } else {
-                Log.e(TAG, "TTS Initialization failed");
+                Log.e(TAG, "TTS Initialization failed with status: " + status);
             }
         });
+    }
 
-        textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
+    // Add near the top of the class
+    public interface VoiceRecognitionController {
+        void startListening();
+        boolean isInConversationMode();
+    }
+
+    private VoiceRecognitionController voiceController;
+
+    public void setVoiceController(VoiceRecognitionController controller) {
+        this.voiceController = controller;
+    }
+
+    // Add this new method
+    private UtteranceProgressListener createUtteranceProgressListener() {
+        return new UtteranceProgressListener() {
             @Override
             public void onStart(String utteranceId) {
-                // Speech started
+                Log.d(TAG, "TTS started speaking utterance: " + utteranceId);
             }
 
             @Override
             public void onDone(String utteranceId) {
-                // Speech completed
-                if (currentCallback != null) {
-                    mainHandler.post(() -> currentCallback.onSpeechCompleted());
-                }
+                Log.d(TAG, "TTS finished speaking utterance: " + utteranceId);
+
+                // Important: Always check on main thread to avoid issues
+                mainHandler.post(() -> {
+                    if (currentCallback != null) {
+                        Log.d(TAG, "Notifying callback of speech completion: " +
+                                currentCallback.getClass().getSimpleName());
+                        currentCallback.onSpeechCompleted();
+                    } else {
+                        Log.d(TAG, "No callback to notify for speech completion");
+                    }
+                });
             }
 
             @Override
             public void onError(String utteranceId) {
                 Log.e(TAG, "TTS Error with utterance: " + utteranceId);
+
+                // Even on error, notify callback to keep conversation flowing
+                mainHandler.post(() -> {
+                    if (currentCallback != null) {
+                        Log.d(TAG, "Notifying callback of speech error");
+                        currentCallback.onSpeechCompleted();
+                    }
+                });
             }
-        });
+        };
     }
+
 
     // Track the current callback
     private ChessCoachCallback currentCallback;
@@ -280,6 +318,24 @@ public class ChessCoachManager {
     }
 
     /**
+     * Immediately stop speech and start listening again
+     * @return true if speech was stopped, false if no speech was happening
+     */
+    public boolean interruptAndListen() {
+        if (textToSpeech != null && textToSpeech.isSpeaking()) {
+            Log.d(TAG, "Interrupting ongoing speech");
+            textToSpeech.stop();
+
+            // If we have a voice controller, start listening again
+            if (voiceController != null && voiceController.isInConversationMode()) {
+                voiceController.startListening();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Helper method to check if king is exposed
      * This is a simplified implementation - a real one would use engine analysis
      */
@@ -324,22 +380,44 @@ public class ChessCoachManager {
     /**
      * Speak a response using Text-to-Speech
      */
+    // In ChessCoachManager.java, modify the speakResponse method:
     private void speakResponse(String response) {
         if (ttsReady) {
-            textToSpeech.speak(response, TextToSpeech.QUEUE_FLUSH, null, "ChessCoach");
-        } else {
-            Log.w(TAG, "TTS not ready, couldn't speak: " + response);
+            // Start background listening while speaking
+            if (speechRecognitionManager != null) {
+                speechRecognitionManager.startBackgroundListening(new SpeechRecognitionManager.SpeechActivityDetector() {
+                    @Override
+                    public void onSpeechDetected() {
+                        // User is trying to speak - stop AI speech and start active listening
+                        stopSpeaking();
+
+                        // Use the voiceController instead of directly calling startVoiceRecognition
+                        mainHandler.post(() -> {
+                            if (voiceController != null) {
+                                voiceController.startListening();
+                            }
+                        });
+                    }
+                });
+            }
+            // Speak the response as normal
+            Bundle params = new Bundle();
+            params.putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "ChessCoach");
+            textToSpeech.speak(response, TextToSpeech.QUEUE_FLUSH, params, "ChessCoach");
         }
     }
 
-    /**
-     * Stop any ongoing speech
-     */
     public void stopSpeaking() {
         if (ttsReady && textToSpeech.isSpeaking()) {
             textToSpeech.stop();
+
+            // Also stop background listening
+            if (speechRecognitionManager != null) {
+                speechRecognitionManager.stopBackgroundListening();
+            }
         }
     }
+
 
     /**
      * Reset the conversation history
