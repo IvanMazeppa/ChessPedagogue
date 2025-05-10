@@ -30,16 +30,17 @@ public class SplashActivity extends AppCompatActivity {
         // Configure engine strength slider (0 = weakest, 20 = strongest)
         strengthSeekBar.setMax(20);
         strengthSeekBar.setProgress(10);  // default mid-level
-        // Show initial strength value with approximate Elo
+
+        // Show initial strength value with more appropriate Elo calculation
         int initialSkill = strengthSeekBar.getProgress();
-        int initialElo = 800 + initialSkill * 110;
+        int initialElo = 300 + initialSkill * 145; // Ranges from 300 to 3200
         strengthValueTextView.setText("Engine Strength: ~" + initialElo + " Elo (Level " + initialSkill + ")");
 
         // Update displayed strength as the user adjusts the slider
         strengthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int approxElo = 800 + progress * 110;
+                int approxElo = 300 + progress * 145; // Lower minimum, better spread
                 strengthValueTextView.setText("Engine Strength: ~" + approxElo + " Elo (Level " + progress + ")");
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
@@ -56,12 +57,16 @@ public class SplashActivity extends AppCompatActivity {
                 if (selectedColorId == R.id.radioBlack) {
                     playerColor = "black";
                 }
-                // Get selected engine strength level
+
+                // Get selected engine strength level and calculate Elo
                 int skillLevel = strengthSeekBar.getProgress();
+                int engineElo = 300 + skillLevel * 145;
+
                 // Launch MainActivity with the chosen options
                 Intent intent = new Intent(SplashActivity.this, MainActivity.class);
                 intent.putExtra("PLAYER_COLOR", playerColor);
                 intent.putExtra("SKILL_LEVEL", skillLevel);
+                intent.putExtra("ENGINE_ELO", engineElo); // Pass Elo value as well
                 startActivity(intent);
                 finish(); // close splash screen
             }

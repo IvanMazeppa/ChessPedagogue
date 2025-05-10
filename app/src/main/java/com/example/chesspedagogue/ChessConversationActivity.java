@@ -74,7 +74,7 @@ public class ChessConversationActivity extends AppCompatActivity {
         voiceButton.setOnClickListener(v -> startVoiceRecognition());
 
         // Add welcome message
-        addCoachMessage("Hello! I'm Coach Magnus. I'm here to help with your chess game. What would you like to know?");
+        addCoachMessage("Hello! I'm Coach Mikhail Tal. I'm here to help with your chess game. What would you like to know?");
     }
 
     private void sendMessage() {

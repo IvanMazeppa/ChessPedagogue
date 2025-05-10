@@ -9,4 +9,9 @@
         android:title="Load Game"
         android:icon="@android:drawable/ic_menu_recent_history"
         app:showAsAction="never" />
+    <!-- Add this inside the menu tag in main_menu.xml -->
+    <item android:id="@+id/action_settings"
+        android:title="Settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        app:showAsAction="never" />
 </menu>

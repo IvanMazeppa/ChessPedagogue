@@ -1,16 +1,18 @@
 package com.example.chesspedagogue;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
-import android.speech.tts.TextToSpeech;
 import android.text.InputType;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,12 +20,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.lifecycle.ViewModelProvider;
+// Add these imports at the top of MainActivity
+import com.example.chesspedagogue.repository.GameRepository;
+import com.example.chesspedagogue.viewmodel.GameViewModel;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
@@ -31,6 +39,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
@@ -38,7 +47,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
+import android.content.Intent;
+import android.view.Menu;
+import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -46,8 +57,22 @@ public class MainActivity extends AppCompatActivity {
     // Core components
     private StockfishManager engine;
     private ChessGameManager gameManager;
+    // Add the voice controller right here, with your other field declarations:
+    private ChessCoachManager.VoiceRecognitionController voiceController =
+            new ChessCoachManager.VoiceRecognitionController() {
+                @Override
+                public void startListening() {
+                    startVoiceRecognition();
+                }
+
+                @Override
+                public boolean isInConversationMode() {
+                    return inConversationMode;
+                }
+            };
     private ChessBoardView boardView;
     private ChessCoachManager chessCoach;
+
     private SpeechRecognitionManager speechRecognitionManager;
 
     // Game state
@@ -82,15 +107,54 @@ public class MainActivity extends AppCompatActivity {
     private boolean isPanelVisible = false;
     private Animation slideUpAnimation;
     private Animation slideDownAnimation;
+    private LinearLayout coachBottomSheet;
+    private TextView bottomSheetMessageText;
+    private Button bottomSheetRespondButton;
+    private Button bottomSheetDismissButton;
+    private BottomSheetBehavior<LinearLayout> bottomSheetBehavior;
 
+    // Add these variables to your MainActivity class
+    private boolean inConversationMode = false;
+    private int conversationTurns = 0;
+    private GameViewModel gameViewModel;
+    private static final int MAX_CONVERSATION_TURNS = 5; // Prevent infinite loops
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get settings from SplashActivity
+        // Initialize ViewModel
+        gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
+
+        // Add this to your onCreate() in MainActivity, after initializing gameViewModel
+        gameViewModel.getCurrentFEN().observe(this, fen -> {
+            if (fen != null) {
+                Log.d(TAG, "📋 Updating board with FEN: " + fen);
+                boardView.updateBoardFromFen(fen);
+            }
+        });
+
+        // Set up observers for LiveData
+        setupObservers();
+
         playerColorChoice = getIntent().getStringExtra("PLAYER_COLOR");
         if (playerColorChoice == null) playerColorChoice = "white";
+
+        // Initialize board with player color from intent (or default)
+        //String playerColor = getIntent().getStringExtra("PLAYER_COLOR");
+        //if (playerColor == null) playerColor = "white";
+        //gameViewModel.newGame(playerColor);
+
+        // Connect chess board view click listener
+        boardView = findViewById(R.id.chessBoardView);
+        boardView.setOnSquareTapListener(new ChessBoardView.OnSquareTapListener() {
+            @Override
+            public void onSquareTapped(int row, int col) {
+                handleBoardTap(row, col);
+            }
+        });
+
+        // Get settings from SplashActivity
         int skillLevel = getIntent().getIntExtra("SKILL_LEVEL", 10);
 
         // Find UI components
@@ -108,9 +172,111 @@ public class MainActivity extends AppCompatActivity {
         chessCoachButton = findViewById(R.id.chessCoachButton);
         voiceInputButton = findViewById(R.id.voiceInputButton);
         conversationButton = findViewById(R.id.conversationButton);
+        coachBottomSheet = findViewById(R.id.coachBottomSheet);
+        bottomSheetMessageText = findViewById(R.id.bottomSheetMessageText);
+        bottomSheetRespondButton = findViewById(R.id.bottomSheetRespondButton);
+        bottomSheetDismissButton = findViewById(R.id.bottomSheetDismissButton);
+
+        // Initialize the bottom sheet behavior
+        bottomSheetBehavior = BottomSheetBehavior.from(coachBottomSheet);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+
+        // Add this in your onCreate method, after initializing the bottom sheet components
+        // Make the ENTIRE bottom sheet respond to taps for interruption
+        coachBottomSheet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps anywhere on the sheet
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        // For even better response, also make the text area specifically respond to taps
+        bottomSheetMessageText.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps the message
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        // In onCreate or wherever you set up your menu/UI
+        Button settingsButton = findViewById(R.id.settingsButton); // You might need to add this to your layout
+        if (settingsButton != null) {
+            settingsButton.setOnClickListener(v -> {
+                try {
+                    Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+                    startActivity(intent);
+                } catch (Exception e) {
+                    // Catch and display any error for debugging
+                    Toast.makeText(MainActivity.this,
+                            "Error: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                    Log.e("MainActivity", "Error launching settings", e);
+                }
+            });
+        }
 
 
+        // Add this after initializing the bottom sheet
+        View bottomSheetDragHandle = findViewById(R.id.bottomSheetDragHandle);
+        bottomSheetDragHandle.setOnTouchListener(new View.OnTouchListener() {
+            private float initialY;
+            private float initialTouchY;
 
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        initialY = coachBottomSheet.getY();
+                        initialTouchY = event.getRawY();
+                        return true;
+
+                    case MotionEvent.ACTION_MOVE:
+                        float currentY = event.getRawY();
+                        float deltaY = currentY - initialTouchY;
+
+                        // Convert to bottom sheet state
+                        if (deltaY < -50) { // Dragging up
+                            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                        } else if (deltaY > 50) { // Dragging down
+                            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                        }
+                        return true;
+
+                    case MotionEvent.ACTION_UP:
+                        return true;
+                }
+                return false;
+            }
+        });
+
+        // Set a lower peek height that won't block the board
+        int peekHeightDp = 72; // Just enough for buttons and a line of text
+        int peekHeightPx = (int) (peekHeightDp * getResources().getDisplayMetrics().density);
+        bottomSheetBehavior.setPeekHeight(peekHeightPx);
+
+        // Set maximum height to prevent full coverage of board
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        int screenHeight = displayMetrics.heightPixels;
+        int maxHeight = screenHeight / 3; // Maximum 1/3 of screen height
+        bottomSheetBehavior.setMaxHeight(maxHeight);
+
+        // Add this right after initializing coach components
+        coachMessageCard.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Interrupt speech and start listening when user taps the message
+                if (chessCoach.interruptAndListen()) {
+                    Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
 
         // Initialize chat panel components
         chatPanel = findViewById(R.id.chatPanel);
@@ -124,16 +290,27 @@ public class MainActivity extends AppCompatActivity {
             // Set up drag handle touch listener
             setupDragHandleTouchListener();
 
-            // Set up conversation button
+            // Set up conversation button for continuous voice interaction
             if (conversationButton != null) {
                 conversationButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        toggleChatPanel();
+                        startVoiceConversation();
                     }
                 });
             }
         }
+
+        // Set up respond button
+        bottomSheetRespondButton.setOnClickListener(v -> {
+            startVoiceRecognition();
+        });
+
+        // Set up dismiss button
+        bottomSheetDismissButton.setOnClickListener(v -> {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+            chessCoach.stopSpeaking();
+        });
 
         // Initialize the chess coach
         initializeChessCoach();
@@ -190,6 +367,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        // In your onCreate method, after initializing other buttons
+        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
+        conversationButton.setOnClickListener(v -> {
+            startVoiceConversation();
+        });
+
         // Initialize sound manager
         SoundManager.initialize(this);
 
@@ -211,6 +394,10 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the engine using the native library approach
         initializeStockfishEngine(skillLevel);
 
+
+
+
+
         // Setup game analysis button
         Button gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
         if (gameAnalysisButton != null) {
@@ -222,6 +409,22 @@ public class MainActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
             });
+        }
+    }
+
+    /**
+     * Initialize the Chess Coach manager
+     */
+    private void initializeChessCoach() {
+        chessCoach = ChessCoachManager.getInstance(this);
+
+        // Add this line to pass the controller
+        chessCoach.setVoiceController(voiceController);
+
+        // Get API key from secure storage if available
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        if (apiKey != null && !apiKey.isEmpty()) {
+            chessCoach.setApiKey(apiKey);
         }
     }
 
@@ -241,10 +444,8 @@ public class MainActivity extends AppCompatActivity {
                 ArrayList<String> loadedMoves = getIntent().getStringArrayListExtra("MOVE_HISTORY");
                 String finalFen = getIntent().getStringExtra("FINAL_FEN");
 
-                Log.d(TAG, "Game data received: playerColor=" + playerColorChoice +
-                        ", moves=" + (loadedMoves != null ? loadedMoves.size() : 0));
-
-                // Set up the game state from the loaded game
+                // For now, use the existing method to load the game
+                // We'll implement loadGame in the ViewModel later
                 if (loadedMoves != null && !loadedMoves.isEmpty()) {
                     // Store the moves in our history
                     algebraicMoveHistory = new ArrayList<>(loadedMoves);
@@ -261,42 +462,11 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "Applied move: " + move);
                     }
 
-                    // Update the board display
+                    // Rest of the existing implementation...
                     updateBoardDisplay();
-                    Log.d(TAG, "Board display updated");
-
-                    // Update move history display text
                     moveHistoryBuilder = new StringBuilder();
                     moveNumber = 1;
-                    for (int i = 0; i < loadedMoves.size(); i++) {
-                        boolean isWhiteMove = (i % 2 == 0);
-                        if (isWhiteMove) {
-                            moveHistoryBuilder.append(moveNumber).append(". ").append(loadedMoves.get(i));
-                        } else {
-                            moveHistoryBuilder.append(" ").append(loadedMoves.get(i)).append("\n");
-                            moveNumber++;
-                        }
-                    }
-                    moveHistoryTextView.setText(moveHistoryBuilder.toString());
-                    Log.d(TAG, "Move history text updated");
-
-                    // Determine whose turn it is
-                    isPlayerTurn = (loadedMoves.size() % 2 == 0 && playerColorChoice.equalsIgnoreCase("white")) ||
-                            (loadedMoves.size() % 2 == 1 && playerColorChoice.equalsIgnoreCase("black"));
-
-                    Log.d(TAG, "Turn determined: " + (isPlayerTurn ? "Player's turn" : "Engine's turn"));
-                    updateStatusText("Game loaded. " + (isPlayerTurn ? "Your turn." : "Engine thinking..."));
-
-                    // Flip the board based on player color if needed
-                    boardView.setFlipped(playerColorChoice.equalsIgnoreCase("black"));
-
-                    // If it's the engine's turn, make it move
-                    if (!isPlayerTurn) {
-                        makeEngineMove();
-                    }
-
-                    Toast.makeText(this, "Game loaded successfully!", Toast.LENGTH_SHORT).show();
-                    Log.d(TAG, "Game loaded successfully!");
+                    // (rest of your existing code)
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error loading game: " + e.getMessage(), e);
@@ -311,7 +481,6 @@ public class MainActivity extends AppCompatActivity {
             setupChessBoard();
         }
     }
-
     private void setupDragHandleTouchListener() {
         if (dragHandle == null) return;
 
@@ -367,7 +536,7 @@ public class MainActivity extends AppCompatActivity {
                 recyclerView.setLayoutManager(new LinearLayoutManager(this));
                 List<ChatMessage> messages = new ArrayList<>();
                 messages.add(new ChatMessage(ChatMessage.TYPE_COACH,
-                        "Hello! I'm Coach Magnus. How can I help with your chess game?"));
+                        "Hello! I'm Coach Tal. How can I help with your chess game?"));
                 ChatAdapter adapter = new ChatAdapter(messages);
                 recyclerView.setAdapter(adapter);
 
@@ -406,18 +575,7 @@ public class MainActivity extends AppCompatActivity {
      * Start voice recognition to interact with the coach
      */
 
-    /**
-     * Initialize the Chess Coach manager
-     */
-    private void initializeChessCoach() {
-        chessCoach = ChessCoachManager.getInstance(this);
 
-        // Get API key from secure storage if available
-        String apiKey = ApiKeyConfig.getApiKey(this);
-        if (apiKey != null && !apiKey.isEmpty()) {
-            chessCoach.setApiKey(apiKey);
-        }
-    }
 
     /**
      * Initialize speech recognition
@@ -440,29 +598,86 @@ public class MainActivity extends AppCompatActivity {
     private void setupSpeechRecognition() {
         speechRecognitionManager = new SpeechRecognitionManager(this);
     }
-    private void startVoiceRecognition() {
-        // Stop any ongoing TTS first
-        chessCoach.stopSpeaking();
 
-        // Show feedback to user
-        Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show();
+    /**
+     * Start a voice conversation with the chess coach
+     */
+    private void startVoiceConversation() {
+        // Show a visual indicator that we're entering conversation mode
+        Toast.makeText(this, "Starting conversation with Coach Magnus...", Toast.LENGTH_SHORT).show();
+
+        // Reset conversation state
+        inConversationMode = true;
+        conversationTurns = 0;
+
+        // Start the first recognition
+        startVoiceRecognition();
+    }
+
+    /**
+     * Start voice recognition specifically for conversation mode
+     */
+    private void startVoiceRecognitionForConversation() {
+        // Visual feedback that we're listening
+        showLoading("Listening...");
 
         // Start speech recognition
         speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
             @Override
             public void onSpeechRecognized(String text) {
-                // Process the recognized speech
-                processVoiceCommand(text);
+                if (!text.isEmpty()) {
+                    // For first turn, process normally
+                    if (conversationTurns == 0) {
+                        processVoiceCommand(text);
+                    } else {
+                        // For follow-ups, process with context
+                        processFollowUpCommand(text);
+                    }
+                    conversationTurns++;
+                } else {
+                    // End conversation if no speech detected
+                    endConversation("I didn't catch that.");
+                }
             }
 
             @Override
             public void onSpeechError(String error) {
-                Toast.makeText(MainActivity.this,
-                        "Speech recognition error: " + error,
-                        Toast.LENGTH_SHORT).show();
+                endConversation("Sorry, I had trouble hearing you.");
             }
         });
     }
+
+    // Modify your existing startVoiceRecognition method or create this new one
+    private void startVoiceRecognition() {
+        // Update UI to show we're listening
+        showLoading("Listening...");
+
+        // Start speech recognition
+        speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
+            @Override
+            public void onSpeechRecognized(String text) {
+                if (!text.isEmpty()) {
+                    // For first turn, process normally
+                    if (conversationTurns == 0) {
+                        processVoiceCommand(text);
+                    } else {
+                        // For follow-ups, process with context
+                        processFollowUpCommand(text);
+                    }
+                    conversationTurns++;
+                } else {
+                    // End conversation if no speech detected
+                    endConversation("I didn't catch that.");
+                }
+            }
+
+            @Override
+            public void onSpeechError(String error) {
+                endConversation("Sorry, I had trouble hearing you.");
+            }
+        });
+    }
+
 
     /**
      * Process voice commands from the user, connecting them to the current chess position
@@ -539,6 +754,101 @@ public class MainActivity extends AppCompatActivity {
                         "My question is: " + command;
 
         chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
+    }
+
+
+
+    // Add this method if you don't already have it:
+    private void updateMoveHistoryView(List<String> moves) {
+        // Convert the List<String> moves to your existing history format
+        moveHistoryBuilder = new StringBuilder();
+        moveNumber = 1;
+
+        for (int i = 0; i < moves.size(); i++) {
+            boolean isWhiteMove = (i % 2 == 0);
+            if (isWhiteMove) {
+                moveHistoryBuilder.append(moveNumber).append(". ").append(moves.get(i));
+            } else {
+                moveHistoryBuilder.append(" ").append(moves.get(i)).append("\n");
+                moveNumber++;
+            }
+        }
+
+        if (moveHistoryTextView != null) {
+            moveHistoryTextView.setText(moveHistoryBuilder.toString());
+        }
+    }
+
+
+    /**
+     * Process a follow-up command in an ongoing conversation
+     */
+    private void processFollowUpCommand(String command) {
+        Log.d(TAG, "Follow-up command: " + command);
+
+        // Show what was recognized
+        Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
+
+        // Create a context-aware prompt for the follow-up
+        String contextualPrompt =
+                "This is a follow-up question in our conversation.\n\n" +
+                        "Current board position: " + engine.getCurrentFEN() + "\n" +
+                        "I'm playing as " + playerColorChoice + ".\n" +
+                        "My follow-up question is: " + command;
+
+        // Send to the coach with our special callback that continues the conversation
+        showLoading("Coach is thinking...");
+        chessCoach.sendMessage(contextualPrompt, new ConversationContinuingCallback());
+    }
+
+    /**
+     * End the conversation gracefully
+     */
+    private void endConversation(String message) {
+        inConversationMode = false;
+        if (message != null && !message.isEmpty()) {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        }
+        // Reset any conversation-specific UI elements
+    }
+
+    
+
+    /**
+     * Special callback that continues the conversation after the coach responds
+     */
+    private class ConversationContinuingCallback implements ChessCoachManager.ChessCoachCallback {
+        @Override
+        public void onResponseReceived(String response) {
+            // Show the coach's response
+            showCoachMessage(response);
+        }
+
+        @Override
+        public void onError(String errorMessage) {
+            Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_LONG).show();
+            endConversation(null);
+        }
+
+        @Override
+        public void onSpeechCompleted() {
+            // This is the magic moment - when the coach finishes speaking,
+            // we start listening again to continue the conversation!
+            Log.d(TAG, "ConversationContinuingCallback.onSpeechCompleted called. inConversationMode="
+                    + inConversationMode + ", conversationTurns=" + conversationTurns);
+            if (inConversationMode && conversationTurns < MAX_CONVERSATION_TURNS) {
+                // Add a small delay so the user has time to think
+                new Handler().postDelayed(() -> {
+                    runOnUiThread(() -> {
+                        // Start listening again
+                        startVoiceRecognition();
+                    });
+                }, 1500); // 1.5 second pause
+            } else {
+                // We've reached our turn limit, end gracefully
+                endConversation("Thanks for the conversation!");
+            }
+        }
     }
 
     /**
@@ -662,28 +972,80 @@ public class MainActivity extends AppCompatActivity {
      * Show the loading indicator while waiting for the coach
      */
     private void showLoading(String message) {
-        coachMessageCard.setVisibility(View.VISIBLE);
-        coachMessageText.setText(message);
-        askFollowUpButton.setVisibility(View.GONE);
+        // Update the bottom sheet with the loading message
+        bottomSheetMessageText.setText(message);
+
+        // Show the bottom sheet in collapsed state
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        // Hide the respond button while loading
+        if (bottomSheetRespondButton != null) {
+            bottomSheetRespondButton.setVisibility(View.GONE);
+        }
+
+        // DON'T use the old message card anymore
+        // coachMessageCard.setVisibility(View.VISIBLE); - REMOVE this line
+        // coachMessageText.setText(message); - REMOVE this line
+        // askFollowUpButton.setVisibility(View.GONE); - REMOVE this line
+    }
+    private void showScrollingMessage(String message) {
+        // Set message text
+        bottomSheetMessageText.setText(message);
+
+        // Reset scroll position
+        ScrollView scrollView = (ScrollView) bottomSheetMessageText.getParent();
+        scrollView.scrollTo(0, 0);
+
+        // Start scrolling animation after a small delay
+        scrollView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // Calculate scroll speed based on text length
+                int duration = Math.min(message.length() * 30, 12000); // Max 12 seconds
+
+                // Create smooth scroll animation
+                ObjectAnimator animator = ObjectAnimator.ofInt(
+                        scrollView, "scrollY",
+                        0, bottomSheetMessageText.getHeight());
+                animator.setDuration(duration);
+                animator.setInterpolator(new LinearInterpolator());
+                animator.start();
+            }
+        }, 2000); // 2 second delay before starting scroll
     }
 
     /**
      * Display the coach's message
      */
     private void showCoachMessage(String message) {
-        coachMessageCard.setVisibility(View.VISIBLE);
-        coachMessageText.setText(message);
-        askFollowUpButton.setVisibility(View.VISIBLE);
-    }
+        // ONLY update the bottom sheet, not the popup card
+        bottomSheetMessageText.setText(message);
 
+        // Show the bottom sheet
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+        // DON'T do anything with the old coachMessageCard
+        // coachMessageCard.setVisibility(View.VISIBLE); - REMOVE this line
+        // coachMessageText.setText(message); - REMOVE this line
+
+        // Make sure the follow-up button in the BOTTOM SHEET is visible
+        if (bottomSheetRespondButton != null) {
+            bottomSheetRespondButton.setVisibility(View.VISIBLE);
+        }
+    }
     /**
      * Hide the coach message card
      */
     private void hideCoachMessage() {
-        coachMessageCard.setVisibility(View.GONE);
+        // Hide the bottom sheet
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+
+        // Don't worry about the old card anymore
+        // coachMessageCard.setVisibility(View.GONE); - REMOVE this line
+
+        // Stop speaking
         chessCoach.stopSpeaking();
     }
-
     /**
      * Callback for chess coach responses
      */
@@ -772,9 +1134,37 @@ public class MainActivity extends AppCompatActivity {
             // Initialize the engine
             engine = new StockfishManager();
             if (engine.startEngine(engineFile.getAbsolutePath())) {
-                // Configure the engine
+                // Get the Elo value passed from SplashActivity
+                int engineElo = getIntent().getIntExtra("ENGINE_ELO", 1500); // Default if missing
+
+                // Configure the engine - use both methods for better control
                 engine.setSkillLevel(skillLevel);
+
+                // Implement proper strength limiting for easier levels
+                if (skillLevel < 10) {
+                    // For lower skill levels, enforce Elo limit to make engine beatable
+                    engine.setEngineStrength(engineElo);
+                } else {
+                    // For higher skill levels, disable limiting for maximum strength
+                    engine.setOption("UCI_LimitStrength", "false");
+                }
+                // In the same method above
+                if (skillLevel < 5) {
+                    // Very easy - restrict depth severely
+                    engine.setOption("Depth", "2");
+                } else if (skillLevel < 10) {
+                    // Easy to medium - moderate depth
+                    engine.setOption("Depth", "5");
+                } else if (skillLevel < 15) {
+                    // Medium to hard - decent depth
+                    engine.setOption("Depth", "8");
+                } else {
+                    // Expert level - unrestricted depth
+                    engine.setOption("Depth", "16");
+                }
+
                 engine.newGame();
+
 
                 // Initialize game manager
                 gameManager = new ChessGameManager(engine);
@@ -818,28 +1208,27 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Set up the chess board and move handling
      */
+
+    // Simplified setupChessBoard method
+    // In your setupChessBoard() method in MainActivity
     private void setupChessBoard() {
         // Flip the board if the player is playing as black
-        if (playerColorChoice.equalsIgnoreCase("black")) {
-            boardView.setFlipped(true);
-            isPlayerTurn = false;
+        boardView.setFlipped(playerColorChoice.equalsIgnoreCase("black"));
 
-            // If player is black, let engine (white) make the first move
-            makeEngineMove();
-        } else {
-            boardView.setFlipped(false);
-            isPlayerTurn = true;
-        }
+        // Update the board with the starting position
+        String startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        Log.d(TAG, "📋 Setting up board with starting position: " + startPos);
+        boardView.updateBoardFromFen(startPos);
 
-        // Set up board click listener with proper selection handling
+        // Set up board click listener
         boardView.setOnSquareTapListener(new ChessBoardView.OnSquareTapListener() {
             @Override
             public void onSquareTapped(int row, int col) {
+                Log.d(TAG, "BOARD TAP EVENT RECEIVED at " + row + "," + col);
                 handleBoardTap(row, col);
             }
         });
     }
-
     // Create a helper method for haptic feedback
     private void performHapticFeedback(String moveType) {
         if (vibrator != null && vibrator.hasVibrator()) {
@@ -874,19 +1263,37 @@ public class MainActivity extends AppCompatActivity {
             return "capture";
         }
 
-        // We would need to check if this move puts opponent in check
-        // This requires more game state knowledge, but for now we can simplify
+        // Simple move
         return "move";
+    }
+
+    // Add this overloaded version that accepts FEN as well
+    private String determineMoveType(String moveUci, String fen) {
+        // First check if it's a capture using the original method
+        String baseType = determineMoveType(moveUci);
+
+        // Then check for check/checkmate if we have a FEN string
+        if (fen != null) {
+            if (fen.contains("#")) {
+                return "checkmate";
+            } else if (fen.contains("+")) {
+                return "check";
+            }
+        }
+
+        // Return the base type if no check detected
+        return baseType;
     }
 
     /**
      * Show legal moves for the selected piece
      */
+// Updated to use ViewModel
     private void showLegalMovesFor(int row, int col) {
         // Clear previous highlights
         boardView.clearHighlightedSquares();
 
-        // Get legal moves from the engine
+        // Keep using engine directly for now
         List<String> legalMoves = engine.getLegalMovesForPiece(row, col);
 
         // Add highlight for each legal move
@@ -903,62 +1310,172 @@ public class MainActivity extends AppCompatActivity {
         boardView.invalidate();
     }
 
+    // Helper method to convert board position to algebraic square notation (e.g., "e4")
+    private String convertToAlgebraicSquare(int row, int col) {
+        char file = (char) ('a' + col);
+        int rank = 8 - row;
+        return "" + file + rank;
+    }
+
+    // Replace the setupObservers method with this more comprehensive version
+    private void setupObservers() {
+        // Observe chess board updates - this method exists in your ViewModel
+        // In MainActivity.java - ensure board is updated when FEN changes
+        gameViewModel.getCurrentFEN().observe(this, fen -> {
+            if (fen != null) {
+                boardView.updateBoardFromFen(fen);
+                Log.d(TAG, "Board updated with FEN: " + fen);
+            }
+        });
+
+        // Observe status messages - this method exists in your ViewModel
+        gameViewModel.getStatusMessage().observe(this, message -> {
+            if (message != null) {
+                statusTextView.setText(message);
+            }
+        });
+
+        // Observe player turn changes - this method exists in your ViewModel
+        gameViewModel.isPlayerTurn().observe(this, isPlayerTurn -> {
+            // You could update UI elements based on whose turn it is
+            this.isPlayerTurn = isPlayerTurn != null && isPlayerTurn;
+        });
+
+        // Observe game over state - this method exists in your ViewModel
+        gameViewModel.isGameOver().observe(this, isGameOver -> {
+            if (isGameOver != null && isGameOver) {
+                // For now, just show a simple toast instead of using getWinner()
+                Toast.makeText(this, "Game over!", Toast.LENGTH_LONG).show();
+            }
+        });
+        // Add to your setupObservers() method
+        gameViewModel.getLastMoveEvent().observe(this, coordinates -> {
+            if (coordinates != null && coordinates.length == 4) {
+                boardView.setLastMove(
+                        coordinates[0], coordinates[1],
+                        coordinates[2], coordinates[3]
+                );
+            }
+        });
+        // Observe move history updates - this method exists in your ViewModel
+        gameViewModel.getMoveHistory().observe(this, moves -> {
+            if (moves != null) {
+                updateMoveHistoryView(moves);
+
+                // Also update our algebraic move history for the coach
+                algebraicMoveHistory = new ArrayList<>(moves);
+            }
+        });
+        // Add to your setupObservers() method
+        gameViewModel.getKingInCheckEvent().observe(this, kingPosition -> {
+            if (kingPosition != null) {
+                // King is in check!
+                boardView.setKingInCheck(true, kingPosition[0], kingPosition[1]);
+
+                // Play a check sound and haptic feedback
+                SoundManager.playSound("check");
+                performHapticFeedback("check");
+            } else {
+                // No king in check
+                boardView.setKingInCheck(false, -1, -1);
+            }
+        });
+        // In MainActivity.java, add this to your setupObservers() method
+        gameViewModel.getAnimateMoveEvent().observe(this, coordinates -> {
+            if (coordinates != null && coordinates.length == 4) {
+                // Animate the piece movement
+                boardView.animateMove(coordinates[0], coordinates[1], coordinates[2], coordinates[3]);
+
+                // Also play sound and haptic feedback
+                String moveUci = convertToUCI(coordinates[0], coordinates[1], coordinates[2], coordinates[3]);
+                String moveType = determineMoveType(moveUci, gameViewModel.getCurrentFEN().getValue());
+
+                SoundManager.playSound(moveType);
+                performHapticFeedback(moveType);
+            }
+        });
+
+    }
+
+    // Add this method to show game over dialog
+    private void showGameOverDialog(String winner) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Game Over");
+
+        if (winner != null) {
+            builder.setMessage(winner + " wins! Would you like to play again?");
+        } else {
+            builder.setMessage("Game ended in a draw. Would you like to play again?");
+        }
+
+        builder.setPositiveButton("New Game", (dialog, which) -> {
+            // Start a new game
+            gameViewModel.newGame(playerColorChoice);
+        });
+
+        builder.setNegativeButton("Analyze Game", (dialog, which) -> {
+            // Launch analysis activity
+            Intent intent = new Intent(MainActivity.this, GameAnalysisActivity.class);
+            intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(algebraicMoveHistory));
+            startActivity(intent);
+        });
+
+        builder.setCancelable(true);
+        builder.show();
+    }
+
+
+
     private void handleBoardTap(int row, int col) {
         Log.d(TAG, "Tap received at: " + row + "," + col);
+        Log.d(TAG, "Selected square: row=" + boardView.getSelectedRow() + ", col=" + boardView.getSelectedCol());
+        Log.d(TAG, "Is player turn? " + (gameViewModel.isPlayerTurn().getValue() == null ? "null" : gameViewModel.isPlayerTurn().getValue()));
+
+        // Get info about tapped piece
+        char tappedPiece = boardView.getPieceAt(row, col);
+        boolean isTappingOwnPiece = isPlayerPiece(tappedPiece);
+        Log.d(TAG, "Tapped piece: '" + tappedPiece + "', isPlayerPiece: " + isTappingOwnPiece);
+
+        // Only allow moves if it's the player's turn
+        if (!gameViewModel.isPlayerTurn().getValue()) {
+            statusTextView.setText("Please wait for the engine to move");
+            return;
+        }
 
         // Get the currently selected square, if any
         int selectedRow = boardView.getSelectedRow();
         int selectedCol = boardView.getSelectedCol();
 
-        // Get the piece at the tapped square
-        char tappedPiece = boardView.getPieceAt(row, col);
-        boolean isTappingOwnPiece = isPlayerPiece(tappedPiece);
-
-        Log.d(TAG, "Selected: " + selectedRow + "," + selectedCol +
-                " Tapped: " + row + "," + col +
-                " Own piece: " + isTappingOwnPiece);
-
-        // Case 1: Tapping the already selected piece - deselect it
-        if (selectedRow == row && selectedCol == col) {
-            Log.d(TAG, "Deselecting piece");
-            boardView.clearSelectionHighlight();
-            boardView.clearHighlightedSquares();
+        // IMPORTANT: Add this new case to handle selecting a different piece
+        // Case 1: A piece is already selected AND tapping another own piece - change selection
+        if (selectedRow != -1 && isTappingOwnPiece) {
+            Log.d(TAG, "Changing selection to piece at " + row + "," + col);
+            boardView.clearHighlightedSquares(); // Clear previous highlights
+            boardView.setSelectedSquare(row, col); // Select the new piece
+            showLegalMovesFor(row, col); // Show legal moves for the new piece
             return;
         }
 
         // Case 2: No piece selected yet, and tapping own piece
-        if (selectedRow == -1 && isTappingOwnPiece && isPlayerTurn) {
-            Log.d(TAG, "Selecting new piece");
+        if (selectedRow == -1 && isTappingOwnPiece && gameViewModel.isPlayerTurn().getValue()) {
+            Log.d(TAG, "✅ Selecting piece at " + row + "," + col);
             boardView.setSelectedSquare(row, col);
             showLegalMovesFor(row, col);
             return;
         }
 
-        // Case 3: A piece is already selected
+        // Case 3: Making a move (piece already selected and tapping destination)
         if (selectedRow != -1) {
-            // Case 3a: Tapping own piece - change selection
-            if (isTappingOwnPiece && isPlayerTurn) {
-                Log.d(TAG, "Changing selection to new piece");
-                boardView.clearSelectionHighlight();
-                boardView.clearHighlightedSquares();
-                boardView.setSelectedSquare(row, col);
-                showLegalMovesFor(row, col);
-                return;
-            }
-
-            // Case 3b: Tapping destination square - attempt move
             String moveUci = convertToUCI(selectedRow, selectedCol, row, col);
             Log.d(TAG, "Attempting move: " + moveUci);
 
-            if (engine.isLegalMove(moveUci)) {
-                Log.d(TAG, "Move is legal, executing");
-                executeMoveAndRespond(moveUci);
-            } else {
-                Log.d(TAG, "Move is illegal, ignoring");
-                // Keep the current selection
-            }
+            // Use ViewModel to make move
+            gameViewModel.makePlayerMove(moveUci);
         }
     }
+
+
+
 
     /**
      * Check if a piece belongs to the player
@@ -969,85 +1486,10 @@ public class MainActivity extends AppCompatActivity {
         boolean isPieceWhite = Character.isUpperCase(piece);
         boolean isPlayerWhite = playerColorChoice.equalsIgnoreCase("white");
 
+        Log.d(TAG, "isPlayerPiece check: piece='" + piece + "', isPieceWhite=" + isPieceWhite +
+                ", isPlayerWhite=" + isPlayerWhite);
+
         return isPieceWhite == isPlayerWhite;
-    }
-
-    /**
-     * Execute a player move and get the engine's response
-     */
-    private void executeMoveAndRespond(String moveUci) {
-        // Clear highlights
-        boardView.clearSelectionHighlight();
-        boardView.clearHighlightedSquares();
-
-        // Determine move type for appropriate feedback
-        String moveType = determineMoveType(moveUci);
-
-        // Add move to history in algebraic notation
-        String algebraicMove = convertToAlgebraic(moveUci);
-        algebraicMoveHistory.add(algebraicMove);
-
-        // Provide feedback based on move type
-        SoundManager.playSound(moveType);
-        performHapticFeedback(moveType);
-
-        // Make the player's move
-        gameManager.makeMove(moveUci);
-        // ► grab coords before board refresh
-        int fCol = moveUci.charAt(0)-'a', fRow = 8-(moveUci.charAt(1)-'0');
-        int tCol = moveUci.charAt(2)-'a', tRow = 8-(moveUci.charAt(3)-'0');
-
-        updateBoardDisplay();              // refresh pieces on their new squares
-        boardView.animateMove(fRow,fCol,tRow,tCol);   // ► slide the piece
-
-        // Update game state
-        isPlayerTurn = false;
-        lastMove = moveUci;
-
-        // Update move history with the player's move
-        boolean isWhiteMove = playerColorChoice.equalsIgnoreCase("white");
-        updateMoveHistory(convertToAlgebraic(moveUci), isWhiteMove);
-
-        updateStatusText("You moved " + convertToAlgebraic(moveUci) + ". Engine thinking...");
-
-        // Let the engine respond
-        makeEngineMove();
-    }
-
-    /**
-     * Have the engine make a move
-     */
-    private void makeEngineMove() {
-        // Have the engine make its move
-        String engineMove = engine.getBestMove(1000);
-
-        if (engineMove != null && !engineMove.isEmpty()) {
-            gameManager.makeMove(engineMove);
-            // ► coords for animation
-            int fCol = engineMove.charAt(0)-'a', fRow = 8-(engineMove.charAt(1)-'0');
-            int tCol = engineMove.charAt(2)-'a', tRow = 8-(engineMove.charAt(3)-'0');
-
-            updateBoardDisplay();
-            boardView.animateMove(fRow,fCol,tRow,tCol);   // ► animate engine move
-
-            // Update move history with the engine's move
-            boolean isWhiteMove = !playerColorChoice.equalsIgnoreCase("white");
-            updateMoveHistory(convertToAlgebraic(engineMove), isWhiteMove);
-
-            // Add engine's move to history
-            String algebraicMove = convertToAlgebraic(engineMove);
-            algebraicMoveHistory.add(algebraicMove);
-
-            // Update game state
-            isPlayerTurn = true;
-            lastMove = engineMove;
-            updateStatusText("Engine moved " + convertToAlgebraic(engineMove) + ". Your turn.");
-
-            // Check game status (checkmate, stalemate, etc.)
-            checkGameStatus();
-        } else {
-            updateStatusText("Engine couldn't find a move. Game may be over.");
-        }
     }
 
     /**
@@ -1097,17 +1539,6 @@ public class MainActivity extends AppCompatActivity {
         return pieceLetter + destSquare;
     }
 
-    /**
-     * Check if the game has ended (checkmate, stalemate, etc.)
-     */
-    private void checkGameStatus() {
-        // Get and parse the FEN to check for check/checkmate
-        String fen = engine.getCurrentFEN();
-        if (fen == null) return;
-
-        // This is where you'd add logic to detect checkmate, etc.
-        // For now, we'll leave this as a placeholder
-    }
 
     /**
      * Update the move history TextView
@@ -1142,6 +1573,20 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+    // In MainActivity, when calling the coach
+    private void getAdviceFromCoach() {
+        // Create a complete game state object
+        GameStateInfo gameState = new GameStateInfo(
+                engine.getCurrentFEN(),       // Current board position
+                algebraicMoveHistory,         // Complete move history
+                playerColorChoice             // Whether playing as white/black
+        );
+
+        showLoading("Coach is analyzing your position...");
+        chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
+    }
+
 
     // Add this method to MainActivity.java
     private void startChessConversation() {
@@ -1230,6 +1675,11 @@ public class MainActivity extends AppCompatActivity {
         }
         else if (id == R.id.action_load_game) {
             openSavedGamesScreen();
+            return true;
+        }
+        else if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
             return true;
         }
 
