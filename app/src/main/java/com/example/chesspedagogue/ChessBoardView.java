@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.*;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import androidx.core.content.ContextCompat;
@@ -15,6 +16,13 @@ public class ChessBoardView extends View {
 
     /* ───── paints / shaders ───── */
     private Paint lightPaint, darkPaint, selectedPaint, legalMovePaint;
+    private Paint lastMovePaint; // For highlighting the last move
+    // Add these class variables near your other declarations
+    private Paint checkPaint; // For highlighting the king in check
+    private boolean kingInCheck = false;
+    private int[] checkKingPosition = {-1, -1}; // Position of the king in check
+    private int[] lastMoveFrom = {-1, -1}; // From coordinates
+    private int[] lastMoveTo = {-1, -1};   // To coordinates
     private BitmapShader lightShader, darkShader;
 
     /* ───── board state ───── */
@@ -42,7 +50,8 @@ public class ChessBoardView extends View {
         final Drawable d;
         final float sx, sy, ex, ey;
         final int toRow, toCol;
-        final long startT, dur = 200;   // ms
+        final long startT;
+        final long dur = 250;   // ms
         MovingPiece(Drawable d, float sx, float sy, float ex, float ey,
                     int toRow, int toCol) {
             this.d = d; this.sx = sx; this.sy = sy;
@@ -50,10 +59,22 @@ public class ChessBoardView extends View {
             this.toRow = toRow; this.toCol = toCol;
             startT = System.currentTimeMillis();
         }
+
+        // Add smooth easing for more natural movement
+        private float easeOutQuad(float t) {
+            return 1 - (1 - t) * (1 - t);
+        }
+
         /** Draws at interpolated position; returns true when finished. */
         boolean draw(Canvas c, int sq, int pad) {
             float t = Math.min(1f, (System.currentTimeMillis()-startT)/ (float) dur);
-            float x = sx + (ex - sx) * t, y = sy + (ey - sy) * t;
+
+            // Apply easing function for smoother motion
+            float easedT = easeOutQuad(t);
+
+            float x = sx + (ex - sx) * easedT;
+            float y = sy + (ey - sy) * easedT;
+
             d.setBounds(Math.round(x)+pad, Math.round(y)+pad,
                     Math.round(x)+sq-pad, Math.round(y)+sq-pad);
             d.draw(c);
@@ -84,6 +105,10 @@ public class ChessBoardView extends View {
 
         lightPaint = new Paint(Paint.ANTI_ALIAS_FLAG); lightPaint.setShader(lightShader);
         darkPaint  = new Paint(Paint.ANTI_ALIAS_FLAG); darkPaint.setShader(darkShader);
+        // In the init() method, after initializing your other paints
+        lastMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lastMovePaint.setColor(0x334B69FF); // Lovely semi-transparent blue
+        lastMovePaint.setStyle(Paint.Style.FILL);
 
         float dp = getResources().getDisplayMetrics().density;
         selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -109,6 +134,21 @@ public class ChessBoardView extends View {
             Paint p=((br+bc)&1)==0?lightPaint:darkPaint;
             float l=c*squareSize-0.5f,t=r*squareSize-0.5f;
             canvas.drawRect(l,t,l+squareSize+1,t+squareSize+1,p);
+        }
+
+        /* 1a) last move highlights */
+        if (lastMoveFrom[0] != -1) {
+            // Draw source square highlight
+            int fr = flipped ? 7-lastMoveFrom[0] : lastMoveFrom[0];
+            int fc = flipped ? 7-lastMoveFrom[1] : lastMoveFrom[1];
+            float l = fc*squareSize, t = fr*squareSize;
+            canvas.drawRect(l, t, l+squareSize, t+squareSize, lastMovePaint);
+
+            // Draw destination square highlight
+            int tr = flipped ? 7-lastMoveTo[0] : lastMoveTo[0];
+            int tc = flipped ? 7-lastMoveTo[1] : lastMoveTo[1];
+            l = tc*squareSize; t = tr*squareSize;
+            canvas.drawRect(l, t, l+squareSize, t+squareSize, lastMovePaint);
         }
 
         /* 2) legal‑move dots */
@@ -150,6 +190,7 @@ public class ChessBoardView extends View {
             while(it.hasNext()) if(it.next().draw(canvas,squareSize,pad)) it.remove();
             if(!movingPieces.isEmpty()) postInvalidateOnAnimation();
         }
+
     }
 
     /* ───────── external API ───────── */
@@ -213,9 +254,6 @@ public class ChessBoardView extends View {
             invalidate();
         }
     }
-
-
-
     public void setFlipped(boolean f){flipped=f;invalidate();}
     public void setSelectedSquare(int br,int bc){
         selectedRow=flipped?7-br:br; selectedCol=flipped?7-bc:bc; invalidate();
@@ -231,24 +269,38 @@ public class ChessBoardView extends View {
     }
 
     /** Call after updateBoardFromFen to slide a piece. */
+    // In ChessBoardView.java
     public void animateMove(int fromR, int fromC, int toR, int toC) {
-        int vfr = flipped ? 7-fromR : fromR,   vfc = flipped ? 7-fromC : fromC;
-        int vtr = flipped ? 7-toR   : toR,     vtc = flipped ? 7-toC   : toC;
+        // Log to help diagnose issues
+        Log.d("ChessBoardView", "Animating move from " + fromR + "," + fromC + " to " + toR + "," + toC);
+
+        int vfr = flipped ? 7-fromR : fromR;
+        int vfc = flipped ? 7-fromC : fromC;
+        int vtr = flipped ? 7-toR   : toR;
+        int vtc = flipped ? 7-toC   : toC;
 
         char pc = boardState[toR][toC];
-        int  res = getDrawableForPiece(pc);
-        if (res == 0) {          // <‑‑ safe‑guard: nothing to draw, just return
+        int res = getDrawableForPiece(pc);
+        if (res == 0) {
+            Log.d("ChessBoardView", "No drawable found for piece " + pc);
             return;
         }
 
         Drawable d = ContextCompat.getDrawable(getContext(), res);
-        if (d == null) return;   // (extra guard)
+        if (d == null) {
+            Log.d("ChessBoardView", "Failed to get drawable resource");
+            return;
+        }
 
+        // Add the moving piece to the list
         movingPieces.add(new MovingPiece(
                 d,
                 vfc * squareSize, vfr * squareSize,
                 vtc * squareSize, vtr * squareSize,
                 toR, toC));
+
+        // This is crucial - tell the view to animate
+        Log.d("ChessBoardView", "Added animation, calling postInvalidateOnAnimation");
         postInvalidateOnAnimation();
     }
 
@@ -273,6 +325,30 @@ public class ChessBoardView extends View {
             legalAlpha=(int)a.getAnimatedValue();
             legalMovePaint.setAlpha(legalAlpha); invalidate();});
         legalAnimator.start();
+    }
+
+    /**
+     * Sets the squares to highlight for the last move
+     */
+    public void setLastMove(int fromRow, int fromCol, int toRow, int toCol) {
+        lastMoveFrom[0] = fromRow;
+        lastMoveFrom[1] = fromCol;
+        lastMoveTo[0] = toRow;
+        lastMoveTo[1] = toCol;
+        invalidate(); // Request redraw
+    }
+
+    /**
+     * Updates the check status of the king
+     * @param inCheck Whether a king is in check
+     * @param row Row of the king in check, or -1 if no king in check
+     * @param col Column of the king in check, or -1 if no king in check
+     */
+    public void setKingInCheck(boolean inCheck, int row, int col) {
+        kingInCheck = inCheck;
+        checkKingPosition[0] = row;
+        checkKingPosition[1] = col;
+        invalidate(); // Request redraw
     }
 
     private int getDrawableForPiece(char p){

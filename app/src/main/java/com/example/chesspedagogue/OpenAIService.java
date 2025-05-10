@@ -71,7 +71,7 @@ public class OpenAIService {
         conversationHistory.clear();
 
         Message systemMessage = new Message("system",
-                "You are an encouraging and patient chess coach named Coach Magnus. " +
+                "You are an encouraging and patient chess coach named Coach Tal. " +
                         "You provide clear, concise advice about chess positions and strategies " +
                         "in an accessible way. Tailor your advice to beginners and intermediate players. " +
                         "Use simple language and explain chess concepts briefly. " +
@@ -140,7 +140,7 @@ public class OpenAIService {
         }
 
         StringBuilder prompt = new StringBuilder();
-        prompt.append("You are Coach Magnus, a patient and encouraging chess coach. ");
+        prompt.append("You are Coach Tal, a patient and encouraging chess coach. ");
         prompt.append("Your goal is to help the player improve while maintaining a warm, supportive tone. ");
 
         // Add current position information if available
@@ -199,7 +199,7 @@ public class OpenAIService {
             }
 
             // Create the API request
-            ChatRequest chatRequest = new ChatRequest(model, conversationHistory);
+            ChatRequest chatRequest = new ChatRequest(model, conversationHistory, 150);
             String requestJson = gson.toJson(chatRequest);
 
             RequestBody body = RequestBody.create(requestJson, JSON);
@@ -388,10 +388,29 @@ public class OpenAIService {
         @SerializedName("messages")
         List<Message> messages;
 
-        public ChatRequest(String model, List<Message> messages) {
+        @SerializedName("max_tokens")
+        int maxTokens;
+
+        public ChatRequest(String model, List<Message> messages, int maxTokens) {
             this.model = model;
             this.messages = messages;
+            this.maxTokens = maxTokens;
         }
+    }
+
+
+    private ChatRequest createChatRequest(String userMessage) {
+        // Add the user message to the conversation history
+        conversationHistory.add(new Message("user", userMessage));
+
+        // Add a system instruction for brevity
+        // This temporary message doesn't get stored in conversation history
+        List<Message> requestMessages = new ArrayList<>(conversationHistory);
+        requestMessages.add(new Message("system",
+                "Keep your response brief and focused - ideally 2-3 sentences. Be concise but helpful."));
+
+        // Create the API request with max tokens limit
+        return new ChatRequest(model, requestMessages, 150); // Limit to ~150 tokens
     }
 
     private static class ChatResponse {
