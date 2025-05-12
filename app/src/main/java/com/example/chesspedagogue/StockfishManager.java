@@ -660,4 +660,6 @@ public class StockfishManager {
             return currentFEN;
         }
     }
+
+
 }

@@ -23,7 +23,7 @@ import okhttp3.ResponseBody;
 
 /**
  * Enhanced service for communicating with OpenAI API
- * Now with improved context tracking and conversation continuity
+ * Improved with consistent system prompt handling and conversation management
  */
 public class OpenAIService {
     private static final String TAG = "OpenAIService";
@@ -48,9 +48,37 @@ public class OpenAIService {
     private List<String> playerMistakes = new ArrayList<>();
     private String currentFEN = "";
     private String playerColor = "white";
+    private String systemPrompt = "";
+
+    /**
+     * Set the system prompt for the AI assistant
+     */
+    public void setSystemPrompt(String prompt) {
+        this.systemPrompt = prompt;
+
+        // Immediately update the conversation history if it exists
+        if (!conversationHistory.isEmpty()) {
+            // Replace the first message or add a new one if empty
+            if (conversationHistory.get(0).role.equals("system")) {
+                conversationHistory.set(0, new Message("system", prompt));
+            } else {
+                conversationHistory.add(0, new Message("system", prompt));
+            }
+        } else {
+            // Initialize with the system prompt
+            conversationHistory.add(new Message("system", prompt));
+        }
+    }
+
+    /**
+     * Generate enhanced chess advice using the system prompt and game context
+     */
+    public String generateEnhancedChessAdvice(String gameContext) {
+        return sendMessage(gameContext);
+    }
 
     private OpenAIService() {
-        // Configure OkHttpClient with timeouts
+        // Configure OkHttpClient with timeouts and connection pooling for better performance
         client = new OkHttpClient.Builder()
                 .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
                 .connectTimeout(30, TimeUnit.SECONDS)
@@ -67,15 +95,20 @@ public class OpenAIService {
     /**
      * Initialize or reset the system message with the base coach personality
      */
+// In OpenAIService.java, modify the initializeSystemMessage() method
     private void initializeSystemMessage() {
-        // Add this to your existing system message
         Message systemMessage = new Message("system",
-                "You are an encouraging chess coach named Coach Tal. " +
-                        "IMPORTANT: Always analyze the current chess position (FEN) and move history provided. " +
-                        "Refer to specific pieces, squares and patterns on the current board when giving advice. " +
-                        "If the player asks about a move or position, always relate your answer to the current game state. " +
-                        "Use standard chess notation (e4, Nf3, etc.) when referring to squares and moves.");
+                "You are Coach Tal, a FIDE-rated chess expert analyzing games. When analyzing positions, you MUST:\n" +
+                        "1. Reference specific moves from the move history by number (e.g., \"After 15...Qd7, White missed...\")\n" +
+                        "2. Analyze how previous moves influenced the current position\n" +
+                        "3. Provide concrete calculations and variations, not just general principles\n" +
+                        "4. Evaluate alternatives to key moves played in the game\n" +
+                        "5. NEVER provide generic advice without referencing the specific move history provided\n\n" +
+                        "Always analyze the current position in the context of how the game developed. If you fail to " +
+                        "reference specific moves from the provided history, your analysis is considered incomplete.");
 
+        // Clear the conversation and add the system message
+        conversationHistory.clear();
         conversationHistory.add(systemMessage);
     }
 
@@ -132,11 +165,6 @@ public class OpenAIService {
      * Update the system message with all current context
      */
     private void updateSystemMessage() {
-        if (conversationHistory.isEmpty()) {
-            initializeSystemMessage();
-            return;
-        }
-
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are Coach Tal, a patient and encouraging chess coach. ");
         prompt.append("Your goal is to help the player improve while maintaining a warm, supportive tone. ");
@@ -174,12 +202,23 @@ public class OpenAIService {
             }
         }
 
+        // If we have a specific system prompt set, combine it with the context
+        if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            prompt.append("\n\n").append(systemPrompt);
+        }
+
         // Update the first message which should be the system message
-        conversationHistory.set(0, new Message("system", prompt.toString()));
+        if (!conversationHistory.isEmpty() && conversationHistory.get(0).role.equals("system")) {
+            conversationHistory.set(0, new Message("system", prompt.toString()));
+        } else {
+            // Insert a system message if none exists
+            conversationHistory.add(0, new Message("system", prompt.toString()));
+        }
     }
 
     /**
      * Sends a user message to the API and returns the response
+     * Now ensures system prompt is consistently applied
      */
     public String sendMessage(String userMessage) {
         if (apiKey == null || apiKey.isEmpty()) {
@@ -196,9 +235,25 @@ public class OpenAIService {
                 conversationHistory.subList(1, 2).clear(); // Remove oldest user/assistant pair
             }
 
-            // Create the API request
+            // Before creating the chat request, ensure the system prompt is applied
+            if (!conversationHistory.isEmpty() && systemPrompt != null && !systemPrompt.isEmpty()) {
+                // Replace the first message (system message) with our chess-specific prompt
+                if (conversationHistory.get(0).role.equals("system")) {
+                    conversationHistory.set(0, new Message("system", systemPrompt));
+                } else {
+                    // Insert a system message if the first one isn't a system message
+                    conversationHistory.add(0, new Message("system", systemPrompt));
+                }
+            }
+
+            // Create the API request with appropriate token limit
             ChatRequest chatRequest = new ChatRequest(model, conversationHistory, 150);
             String requestJson = gson.toJson(chatRequest);
+            Log.d(TAG, "FULL OPENAI REQUEST: " + requestJson);
+
+            // Log a sample of the request for debugging (no sensitive data)
+            Log.d(TAG, "Sending request with " + conversationHistory.size() +
+                    " messages, user message length: " + userMessage.length());
 
             RequestBody body = RequestBody.create(requestJson, JSON);
             Request request = new Request.Builder()
@@ -211,8 +266,9 @@ public class OpenAIService {
             // Execute the request
             Response response = client.newCall(request).execute();
             if (!response.isSuccessful()) {
+                Log.e(TAG, "API Error: " + response.code());
                 if (response.body() != null) {
-                    Log.e(TAG, "API Error: " + response.body().string());
+                    Log.e(TAG, "Error details: " + response.body().string());
                 }
                 return "Sorry, I had trouble connecting to my chess brain. Please try again.";
             }
@@ -224,6 +280,7 @@ public class OpenAIService {
 
             // Parse the response
             String responseJson = responseBody.string();
+            Log.d(TAG, "OPENAI RESPONSE: " + responseJson);
             ChatResponse chatResponse = gson.fromJson(responseJson, ChatResponse.class);
 
             if (chatResponse != null && chatResponse.choices != null && !chatResponse.choices.isEmpty()) {
@@ -307,10 +364,6 @@ public class OpenAIService {
     /**
      * Generate enhanced chess advice with full game context
      */
-    /**
-     * Generate enhanced chess advice with full game context
-     */
-    // In OpenAIService.java - update the generateEnhancedChessAdvice method
     public String generateEnhancedChessAdvice(String fen, List<String> moveHistory, String playerColor) {
         // First, store this information in our state
         this.currentFEN = fen;
@@ -336,11 +389,13 @@ public class OpenAIService {
         }
 
         prompt.append("\nI'm playing as ").append(playerColor);
-        prompt.append(".\n\nAnalyze my position and suggest what I should focus on next.");
+        prompt.append(".\n\nAnalyze my position and suggest what I should focus on next. ");
+        prompt.append("IMPORTANT: Your analysis MUST reference specific moves from the provided game history.");
+        // Add this to the end of the prompt in generateEnhancedChessAdvice
+        prompt.append("\n\nYOUR RESPONSE MUST BEGIN BY REFERRING TO A SPECIFIC MOVE NUMBER FROM THE GAME HISTORY.");
 
         return sendMessage(prompt.toString());
     }
-
 
     /**
      * Evaluate a specific move
@@ -360,11 +415,19 @@ public class OpenAIService {
      * Reset the conversation history, keeping only the system message
      */
     public void resetConversation() {
-        Message systemMessage = conversationHistory.isEmpty() ?
-                new Message("system", "") : conversationHistory.get(0);
+        String systemMsg = conversationHistory.isEmpty() ? "" :
+                (conversationHistory.get(0).role.equals("system") ?
+                        conversationHistory.get(0).content : "");
 
         conversationHistory.clear();
-        conversationHistory.add(systemMessage);
+
+        // Re-add the system message if we had one
+        if (!systemMsg.isEmpty()) {
+            conversationHistory.add(new Message("system", systemMsg));
+        } else if (systemPrompt != null && !systemPrompt.isEmpty()) {
+            // Use the stored system prompt if no system message was in conversation
+            conversationHistory.add(new Message("system", systemPrompt));
+        }
 
         // Don't reset context tracking - we want to remember concepts explained
         // across conversation resets
@@ -399,21 +462,6 @@ public class OpenAIService {
             this.messages = messages;
             this.maxTokens = maxTokens;
         }
-    }
-
-
-    private ChatRequest createChatRequest(String userMessage) {
-        // Add the user message to the conversation history
-        conversationHistory.add(new Message("user", userMessage));
-
-        // Add a system instruction for brevity
-        // This temporary message doesn't get stored in conversation history
-        List<Message> requestMessages = new ArrayList<>(conversationHistory);
-        requestMessages.add(new Message("system",
-                "Keep your response brief and focused - ideally 2-3 sentences. Be concise but helpful."));
-
-        // Create the API request with max tokens limit
-        return new ChatRequest(model, requestMessages, 150); // Limit to ~150 tokens
     }
 
     private static class ChatResponse {

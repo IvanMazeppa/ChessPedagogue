@@ -20,6 +20,18 @@ public class ChessGameManager {
         engine.setPositionFromMoves(moveHistory.toArray(new String[0]));
     }
 
+    // ChessGameManager.java
+    /*
+    public boolean applyMove(String uci) {
+        if (engine.playMove(uci)) {        // already returns false on illegal
+            moveHistory.add(uci);          // ← 1️⃣ restore this
+            engine.setPositionFromMoves(moveHistory);   // ← 2️⃣ restore this
+            return true;
+        }
+        return false;
+    }*/
+
+
     /**
      * Get a copy of the current move history.
      * This is useful for analysis and reviewing the game.

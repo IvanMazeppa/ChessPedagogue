@@ -50,6 +50,7 @@ import java.util.List;
 import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuItem;
+import com.example.chesspedagogue.GameStateRepository;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -134,6 +135,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+
         // Set up observers for LiveData
         setupObservers();
 
@@ -181,6 +184,77 @@ public class MainActivity extends AppCompatActivity {
         bottomSheetBehavior = BottomSheetBehavior.from(coachBottomSheet);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
+        // In your MainActivity's onCreate method, after initializing chessCoach
+        chessCoach = ChessCoachManager.getInstance(this);
+        // Add this line to connect to the ViewModel:
+        chessCoach.connectToGameViewModel(gameViewModel);
+
+        // In MainActivity.java - in onCreate() after initializing chessCoach
+        chessCoach.setConversationStateListener(new RealtimeConversationManager.ConversationStateListener() {
+            @Override
+            public void onPassiveListening() {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText("I'm listening in the background... just start talking");
+                });
+            }
+
+            @Override
+            public void onListening() {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText("I'm listening actively now...");
+                });
+            }
+
+            @Override
+            public void onProcessing() {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText("Thinking...");
+                });
+            }
+
+            @Override
+            public void onSpeaking(String text) {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText(text);
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onConversationEnded() {
+                runOnUiThread(() -> {
+                    inConversationMode = false;
+                    conversationButton.setImageResource(android.R.drawable.ic_media_play);
+                    bottomSheetMessageText.setText("Conversation ended. Tap play to start again.");
+                });
+            }
+        });
+
+        // In MainActivity.java - add this to your onCreate() method
+        View bottomSheet = findViewById(R.id.coachBottomSheet);
+        if (bottomSheet != null) {
+            bottomSheet.setOnClickListener(v -> {
+                if (inConversationMode && chessCoach.isAlwaysListening()) {
+                    // If the AI is speaking, interrupt it
+                    if (chessCoach.isCoachSpeaking()) {
+                        chessCoach.interruptCurrentSpeech();
+                        Toast.makeText(this, "Interrupting...", Toast.LENGTH_SHORT).show();
+                    }
+                    // If it's in passive listening mode, transition to active listening
+                    else {
+                        chessCoach.transitionToActiveListening();
+                        Toast.makeText(this, "I'm listening!", Toast.LENGTH_SHORT).show();
+                    }
+                }
+            });
+        }
+
         // Add this in your onCreate method, after initializing the bottom sheet components
         // Make the ENTIRE bottom sheet respond to taps for interruption
         coachBottomSheet.setOnClickListener(new View.OnClickListener() {
@@ -190,6 +264,15 @@ public class MainActivity extends AppCompatActivity {
                 if (chessCoach.interruptAndListen()) {
                     Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
                 }
+            }
+        });
+
+        // Add this to handle tapping on the coach's message to interrupt
+        coachBottomSheet.setOnClickListener(v -> {
+            if (inConversationMode) {
+                // Interrupt current speech and start listening
+                chessCoach.interruptCurrentSpeech();
+                Toast.makeText(MainActivity.this, "Listening...", Toast.LENGTH_SHORT).show();
             }
         });
 
@@ -345,8 +428,8 @@ public class MainActivity extends AppCompatActivity {
                 // Get current game analysis
                 String fen = engine.getCurrentFEN();
                 showLoading("Coach is analyzing your position...");
-                chessCoach.getEnhancedChessAdvice(fen, algebraicMoveHistory,
-                        playerColorChoice, new ChessCoachCallback());
+                GameStateInfo gameState = new GameStateInfo(fen, algebraicMoveHistory, playerColorChoice);
+                chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
             }
         });
 
@@ -368,9 +451,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // In your onCreate method, after initializing other buttons
+
         FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
+        // Top-right  conversation button click handler
         conversationButton.setOnClickListener(v -> {
-            startVoiceConversation();
+            Log.d(TAG, "Top button clicked, starting conversation");
+            if (inConversationMode) {
+                stopVoiceConversation();
+            } else {
+                startVoiceConversation();
+            }
         });
 
         // Initialize sound manager
@@ -417,6 +507,7 @@ public class MainActivity extends AppCompatActivity {
      */
     private void initializeChessCoach() {
         chessCoach = ChessCoachManager.getInstance(this);
+        chessCoach.connectToGameViewModel(gameViewModel);
 
         // Add this line to pass the controller
         chessCoach.setVoiceController(voiceController);
@@ -427,6 +518,27 @@ public class MainActivity extends AppCompatActivity {
             chessCoach.setApiKey(apiKey);
         }
     }
+
+    // Add these as complete methods inside your MainActivity class, NOT inside other methods
+
+    /**
+     * Ensure the API key is properly loaded before starting conversations
+     */
+    private void ensureApiKeyIsSet() {
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        if (apiKey != null && !apiKey.isEmpty()) {
+            chessCoach.setApiKey(apiKey);
+            Log.d(TAG, "API key loaded successfully");
+        } else {
+            Log.w(TAG, "No API key found - need to prompt user");
+            promptForApiKeyIfNeeded();
+        }
+    }
+
+    /**
+     * Start a voice conversation with the chess coach
+     */
+
 
     /**
      * Loads a saved game if one was requested when launching the activity.
@@ -461,6 +573,13 @@ public class MainActivity extends AppCompatActivity {
                         gameManager.makeMove(move);
                         Log.d(TAG, "Applied move: " + move);
                     }
+                    // ADD THIS CODE HERE - Update repository with loaded state
+                    GameStateRepository.updateState(
+                            finalFen != null ? finalFen : engine.getCurrentFEN(),
+                            algebraicMoveHistory,
+                            playerColorChoice
+                    );
+                    Log.d(TAG, "Game state repository updated with loaded game data");
 
                     // Rest of the existing implementation...
                     updateBoardDisplay();
@@ -599,20 +718,84 @@ public class MainActivity extends AppCompatActivity {
         speechRecognitionManager = new SpeechRecognitionManager(this);
     }
 
-    /**
-     * Start a voice conversation with the chess coach
-     */
+    /*
     private void startVoiceConversation() {
-        // Show a visual indicator that we're entering conversation mode
-        Toast.makeText(this, "Starting conversation with Coach Magnus...", Toast.LENGTH_SHORT).show();
 
-        // Reset conversation state
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        Log.d(TAG, "Starting voice conversation, API key available: " + (apiKey != null && !apiKey.isEmpty()));
+
+        Log.d(TAG, "Starting voice conversation, API key available: " + (apiKey != null && !apiKey.isEmpty()));
+
+        // Log current FEN from engine
+        Log.d(TAG, "Current board FEN: " + engine.getCurrentFEN());
+
+        // Log move history size for context
+        Log.d(TAG, "Move history size: " + algebraicMoveHistory.size());
+
+        bottomSheetMessageText.setText("Starting conversation with Coach Tal...");
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+
+
+        // Create the game state directly here
+        GameStateInfo gameState = new GameStateInfo(
+                engine.getCurrentFEN(),
+                algebraicMoveHistory,
+                playerColorChoice
+        );
+
+        // Start conversation with explicit game state
+        chessCoach.startRealtimeConversation(gameState);
+
+        // Update UI state - using standard Android icons for now
         inConversationMode = true;
-        conversationTurns = 0;
+        conversationButton.setImageResource(android.R.drawable.ic_media_pause);
+    }*/
 
-        // Start the first recognition
-        startVoiceRecognition();
+    // In MainActivity.java - update the toggleChessConversation method
+    private void toggleChessConversation() {
+        if (inConversationMode) {
+            // Stop conversation
+            stopVoiceConversation();
+            conversationButton.setImageResource(android.R.drawable.ic_media_play);
+            bottomSheetMessageText.setText("Conversation paused. Tap the button to start again.");
+        } else {
+            // Start conversation with always-listening mode
+            startVoiceConversation();
+            conversationButton.setImageResource(android.R.drawable.ic_media_pause);
+            bottomSheetMessageText.setText("I'm listening! Ask me about your chess game...");
+        }
     }
+
+    // Update the startVoiceConversation method
+    private void startVoiceConversation() {
+        // Enable always listening mode when starting a conversation
+        chessCoach.toggleAlwaysListeningMode();
+        inConversationMode = true;
+
+        // Update the bottom sheet to show listening status
+        View conversationStatus = findViewById(R.id.conversationStatusIndicator);
+        if (conversationStatus != null) {
+            conversationStatus.setVisibility(View.VISIBLE);
+        }
+
+        // Update status text to show we're listening
+        TextView statusText = findViewById(R.id.conversationStatusText);
+        if (statusText != null) {
+            statusText.setText("I'm listening...");
+        }
+
+        // Start the conversation with the current game state
+        chessCoach.startRealtimeConversation(GameStateRepository.getCurrentState());
+    }
+
+    private void stopVoiceConversation() {
+        chessCoach.stopRealtimeConversation();
+        inConversationMode = false;
+        conversationButton.setImageResource(android.R.drawable.ic_media_play);
+
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+    }
+
 
     /**
      * Start voice recognition specifically for conversation mode
@@ -687,73 +870,27 @@ public class MainActivity extends AppCompatActivity {
      */
     private void processVoiceCommand(String command) {
         Log.d(TAG, "Voice command: " + command);
-
-        // Show what was recognized
         Toast.makeText(this, "You said: " + command, Toast.LENGTH_SHORT).show();
 
-        // Get current position and game state for context
+        // Get current position and move history for context
         String currentFen = engine.getCurrentFEN();
 
-        // Convert command to lowercase for easier parsing
-        String lowercaseCommand = command.toLowerCase();
-
-        // Check for move commands
-        if (lowercaseCommand.contains("move ")) {
-            // This would need natural language parsing to convert to UCI
-            // For now, we'll just pass it to the coach
-            showLoading("Coach is analyzing your move request...");
-
-            String contextualPrompt =
-                    "Current board position: " + currentFen + "\n" +
-                            "I'm playing as " + playerColorChoice + ".\n" +
-                            "I want to: " + command;
-
-            chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
-            return;
+        // This is critical - use actual move history from the ViewModel
+        List<String> moveHistory = gameViewModel.getMoveHistory().getValue();
+        if (moveHistory == null) {
+            moveHistory = new ArrayList<>();
         }
 
-        // Check for position advice requests
-        if (lowercaseCommand.contains("what should i do") ||
-                lowercaseCommand.contains("what's my best move") ||
-                lowercaseCommand.contains("help me") ||
-                lowercaseCommand.contains("advice") ||
-                lowercaseCommand.contains("analyze") ||
-                lowercaseCommand.contains("suggestion")) {
+        // Create a GameStateInfo with all context
+        GameStateInfo gameState = new GameStateInfo(
+                currentFen,
+                moveHistory,
+                playerColorChoice
+        );
 
-            // This is a request for position advice - use the current board state!
-            showLoading("Coach is analyzing your position...");
-            chessCoach.getEnhancedChessAdvice(currentFen, algebraicMoveHistory,
-                    playerColorChoice, new ChessCoachCallback());
-            return;
-        }
-
-        // Check for evaluation requests
-        if (lowercaseCommand.contains("who's winning") ||
-                lowercaseCommand.contains("who is winning") ||
-                lowercaseCommand.contains("evaluation") ||
-                lowercaseCommand.contains("am i winning") ||
-                lowercaseCommand.contains("score")) {
-
-            showLoading("Coach is evaluating the position...");
-            String contextualPrompt =
-                    "Current board position: " + currentFen + "\n" +
-                            "I'm playing as " + playerColorChoice + ".\n" +
-                            "Please evaluate who's winning in this position and by approximately how much.";
-
-            chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
-            return;
-        }
-
-        // Default: treat as a general question, but INCLUDE the board context
-        showLoading("Coach is considering your question...");
-
-        // Create a context-aware prompt that includes the current board state
-        String contextualPrompt =
-                "Current board position: " + currentFen + "\n" +
-                        "I'm playing as " + playerColorChoice + ".\n" +
-                        "My question is: " + command;
-
-        chessCoach.sendMessage(contextualPrompt, new ChessCoachCallback());
+        // Pass the complete game state to the coach
+        showLoading("Coach is analyzing your request...");
+        chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
     }
 
 
@@ -873,8 +1010,8 @@ public class MainActivity extends AppCompatActivity {
                     String fen = engine.getCurrentFEN();
                     showLoading("Coach is analyzing your game...");
                     // Use the enhanced method with move history
-                    chessCoach.getEnhancedChessAdvice(fen, algebraicMoveHistory,
-                            playerColorChoice, new ChessCoachCallback());
+                    GameStateInfo gameState = new GameStateInfo(fen, algebraicMoveHistory, playerColorChoice);
+                    chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
                     break;
 
                 case 1: // Ask about last move
@@ -1211,6 +1348,8 @@ public class MainActivity extends AppCompatActivity {
 
     // Simplified setupChessBoard method
     // In your setupChessBoard() method in MainActivity
+    // In MainActivity.java - find the setupChessBoard method (around line 2018)
+    // In MainActivity.java - find the setupChessBoard method
     private void setupChessBoard() {
         // Flip the board if the player is playing as black
         boardView.setFlipped(playerColorChoice.equalsIgnoreCase("black"));
@@ -1219,6 +1358,10 @@ public class MainActivity extends AppCompatActivity {
         String startPos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         Log.d(TAG, "📋 Setting up board with starting position: " + startPos);
         boardView.updateBoardFromFen(startPos);
+
+        // Reset the algebraic move history
+        algebraicMoveHistory = new ArrayList<>();
+        Log.d(TAG, "Move history reset for new game");
 
         // Set up board click listener
         boardView.setOnSquareTapListener(new ChessBoardView.OnSquareTapListener() {
@@ -1229,6 +1372,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
     // Create a helper method for haptic feedback
     private void performHapticFeedback(String moveType) {
         if (vibrator != null && vibrator.hasVibrator()) {
@@ -1575,12 +1719,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // In MainActivity, when calling the coach
+    // In MainActivity.java - Update the getAdviceFromCoach method
+
     private void getAdviceFromCoach() {
-        // Create a complete game state object
+        // First, make sure we have the CURRENT FEN from the engine
+        String currentFen = engine.getCurrentFEN();
+
+        // Log for debugging
+        Log.d(TAG, "Getting advice for position: " + currentFen);
+        Log.d(TAG, "Move history: " + algebraicMoveHistory.toString());
+
+        // Create a complete game state object with the CURRENT information
         GameStateInfo gameState = new GameStateInfo(
-                engine.getCurrentFEN(),       // Current board position
-                algebraicMoveHistory,         // Complete move history
-                playerColorChoice             // Whether playing as white/black
+                currentFen,                  // Current position
+                new ArrayList<>(algebraicMoveHistory),  // Copy of move history
+                playerColorChoice            // Player's color
+        );
+
+        showLoading("Coach is analyzing your position...");
+        chessCoach.getEnhancedChessAdvice(gameState, new ChessCoachCallback());
+    }
+
+    // In your callback/handler where you want AI analysis after a move
+    private void getAdviceAfterMove(String fen, List<String> moveHistory) {
+        // Create a complete game state object with all necessary context
+        GameStateInfo gameState = new GameStateInfo(
+                fen,               // Current board position
+                moveHistory,       // Complete move history (crucial!)
+                playerColorChoice  // Whether playing as white/black
         );
 
         showLoading("Coach is analyzing your position...");
@@ -1588,13 +1754,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    // Add this method to MainActivity.java
     private void startChessConversation() {
-        Intent intent = new Intent(this, ChessConversationActivity.class);
-        intent.putExtra("FEN", engine.getCurrentFEN());
-        intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(algebraicMoveHistory));
-        intent.putExtra("PLAYER_COLOR", playerColorChoice);
-        startActivity(intent);
+        // Ensure API key is set
+        ensureApiKeyIsSet();
+
+        // Get current game state
+        GameStateInfo gameState = new GameStateInfo(
+                engine.getCurrentFEN(),
+                algebraicMoveHistory,
+                playerColorChoice
+        );
+
+        // Log what we're doing
+        Log.d(TAG, "Starting conversation with FEN: " + gameState.getCurrentFen());
+        Log.d(TAG, "Move history size: " + gameState.getMoveHistory().size());
+
+        // Start conversation with this game state
+        chessCoach.startRealtimeConversation(gameState);
+
+        // Update UI state
+        inConversationMode = true;
+        // Update button appearance as needed
     }
 
     private void updateMainMenuOptions() {
@@ -1685,6 +1865,30 @@ public class MainActivity extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
+    // Add this to MainActivity
+    private void testConversationFlow() {
+        // Get current game state
+        String currentFen = engine.getCurrentFEN();
+        GameStateInfo gameState = new GameStateInfo(
+                currentFen,
+                algebraicMoveHistory,
+                playerColorChoice
+        );
+
+        // Log status
+        Log.d(TAG, "Starting conversation test with game state:");
+        Log.d(TAG, "FEN: " + currentFen);
+        Log.d(TAG, "Move count: " + algebraicMoveHistory.size());
+
+        // Show toast for user
+        Toast.makeText(this, "Starting conversation test...", Toast.LENGTH_SHORT).show();
+
+        // Start conversation
+        chessCoach.startRealtimeConversation(gameState);
+    }
+
+// Add a test button to the menu or create a debug menu option
 
     @Override
     protected void onDestroy() {
