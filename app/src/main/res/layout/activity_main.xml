@@ -202,6 +202,7 @@
         android:padding="16dp"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
+
         <!-- Drag handle for resizing -->
         <View
             android:id="@+id/bottomSheetDragHandle"
@@ -210,6 +211,30 @@
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="8dp"
             android:background="#CCCCCC" />
+        <!-- Add this right after the drag handle in your bottom sheet -->
+        <LinearLayout
+            android:id="@+id/conversationStatusIndicator"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp">
+
+            <ImageView
+                android:id="@+id/conversationStatusIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_microphone" />
+
+            <TextView
+                android:id="@+id/conversationStatusText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="Tap to speak"
+                android:textStyle="italic" />
+        </LinearLayout>
 
         <!-- Coach name -->
         <TextView

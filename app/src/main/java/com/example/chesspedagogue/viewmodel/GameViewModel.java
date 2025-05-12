@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.chesspedagogue.MoveHistoryObserver;
 import com.example.chesspedagogue.model.GameState;
 import com.example.chesspedagogue.repository.GameRepository;
 
@@ -19,6 +20,13 @@ import java.util.List;
 public class GameViewModel extends AndroidViewModel {
 
     private static final String TAG = "GameViewModel";
+    // Add these fields to your GameViewModel class
+    private final MoveHistoryObserver moveHistoryObserver = new MoveHistoryObserver();
+
+    // Add this method to your GameViewModel class
+    public void addMoveHistoryListener(MoveHistoryObserver.MoveHistoryListener listener) {
+        moveHistoryObserver.addListener(listener);
+    }
 
     // Add this interface inside the class
     public interface Callback<T> {
@@ -185,7 +193,11 @@ public class GameViewModel extends AndroidViewModel {
                 currentFEN.setValue(newFen);
 
                 // Create a new list to trigger observers
-                moveHistory.setValue(new ArrayList<>(history));
+                List<String> updatedHistory = new ArrayList<>(history);
+                moveHistory.setValue(updatedHistory);
+
+                // Notify move history observers
+                moveHistoryObserver.notifyMoveMade(move, newFen, updatedHistory);
 
                 // Trigger the animation
                 triggerMoveAnimation(move);
