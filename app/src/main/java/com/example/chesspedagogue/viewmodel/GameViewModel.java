@@ -1,7 +1,7 @@
 // GameViewModel.java
 
 package com.example.chesspedagogue.viewmodel;
-
+import com.example.chesspedagogue.GameStateRepository;
 import android.app.Application;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,6 +10,8 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.chesspedagogue.GameStateRepository;
+import com.example.chesspedagogue.MoveHistoryObserver;
 import com.example.chesspedagogue.model.GameState;
 import com.example.chesspedagogue.repository.GameRepository;
 
@@ -19,6 +21,13 @@ import java.util.List;
 public class GameViewModel extends AndroidViewModel {
 
     private static final String TAG = "GameViewModel";
+    // Add these fields to your GameViewModel class
+    private final MoveHistoryObserver moveHistoryObserver = new MoveHistoryObserver();
+
+    // Add this method to your GameViewModel class
+    public void addMoveHistoryListener(MoveHistoryObserver.MoveHistoryListener listener) {
+        moveHistoryObserver.addListener(listener);
+    }
 
     // Add this interface inside the class
     public interface Callback<T> {
@@ -159,6 +168,7 @@ public class GameViewModel extends AndroidViewModel {
     // Methods to handle game actions
     // In GameViewModel.java - make sure state is properly updated
     // Fix the makePlayerMove method
+    // In GameViewModel.java - find the makePlayerMove method
     public void makePlayerMove(String move) {
         if (!isEngineReady()) {
             statusMessage.setValue("Engine not ready. Please restart the game.");
@@ -185,7 +195,14 @@ public class GameViewModel extends AndroidViewModel {
                 currentFEN.setValue(newFen);
 
                 // Create a new list to trigger observers
-                moveHistory.setValue(new ArrayList<>(history));
+                List<String> updatedHistory = new ArrayList<>(history);
+                moveHistory.setValue(updatedHistory);
+
+                // Notify move history observers
+                moveHistoryObserver.notifyMoveMade(move, newFen, updatedHistory);
+
+                // IMPORTANT NEW CODE - Update the central game state repository
+                GameStateRepository.updateState(newFen, updatedHistory, playerColor);
 
                 // Trigger the animation
                 triggerMoveAnimation(move);
@@ -275,6 +292,7 @@ public class GameViewModel extends AndroidViewModel {
         callback.onResult(legalMoves);
     }
 
+    // In GameViewModel.java - find the requestEngineMove method
     private void requestEngineMove() {
         gameRepository.calculateBestMove(new GameRepository.MoveCallback() {
             @Override
@@ -293,8 +311,15 @@ public class GameViewModel extends AndroidViewModel {
 
                 if (success) {
                     // Update LiveData with new state
-                    currentFEN.setValue(gameRepository.getCurrentFEN());
-                    moveHistory.setValue(new ArrayList<>(history));
+                    String newFen = gameRepository.getCurrentFEN();
+                    currentFEN.setValue(newFen);
+
+                    // Create a defensive copy to trigger LiveData
+                    List<String> updatedHistory = new ArrayList<>(history);
+                    moveHistory.setValue(updatedHistory);
+
+                    // IMPORTANT NEW CODE - Update the central game state repository
+                    GameStateRepository.updateState(newFen, updatedHistory, playerColor);
 
                     isPlayerTurn.setValue(true);
 
