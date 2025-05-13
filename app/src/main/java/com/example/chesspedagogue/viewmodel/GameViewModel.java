@@ -52,6 +52,19 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<int[]> _lastMoveEvent = new MutableLiveData<>();
     private final MutableLiveData<int[]> _kingInCheckEvent = new MutableLiveData<>();
 
+    // Add this field to GameViewModel.java class
+    private final MutableLiveData<Boolean> _clearSelectionEvent = new MutableLiveData<>();
+
+    // Add this getter method
+    public LiveData<Boolean> getClearSelectionEvent() {
+        return _clearSelectionEvent;
+    }
+
+    // Add this method to reset the event
+    public void resetClearSelectionEvent() {
+        _clearSelectionEvent.setValue(false);
+    }
+
     // Getter method for king in check event
     public LiveData<int[]> getKingInCheckEvent() {
         return _kingInCheckEvent;
@@ -165,10 +178,7 @@ public class GameViewModel extends AndroidViewModel {
     public LiveData<Boolean> isGameOver() { return isGameOver; }
     public LiveData<String> getWinner() { return winner; }
 
-    // Methods to handle game actions
-    // In GameViewModel.java - make sure state is properly updated
-    // Fix the makePlayerMove method
-    // In GameViewModel.java - find the makePlayerMove method
+
     public void makePlayerMove(String move) {
         if (!isEngineReady()) {
             statusMessage.setValue("Engine not ready. Please restart the game.");
@@ -186,12 +196,21 @@ public class GameViewModel extends AndroidViewModel {
             // Add the new move to history
             history.add(move);
 
-            // Apply ALL moves to the repository
-            boolean success = gameRepository.applyMoves(history);
+            // Apply the single move directly - this is much safer
+            boolean success = gameRepository.makeMove(move);  // Create this method if it doesn't exist
 
             if (success) {
-                // Important: Update LiveData with new state
+                // Update the FEN string from the repository
                 String newFen = gameRepository.getCurrentFEN();
+                Log.d(TAG, "New position after move: " + newFen);
+
+                if (newFen.equals(currentFEN.getValue())) {
+                    Log.e(TAG, "WARNING: Position did not change after move!");
+                    statusMessage.setValue("Error: Move didn't change board position. Please try again.");
+                    return;
+                }
+
+                // Update the FEN LiveData
                 currentFEN.setValue(newFen);
 
                 // Create a new list to trigger observers
@@ -216,7 +235,11 @@ public class GameViewModel extends AndroidViewModel {
                 statusMessage.setValue("Move failed to execute. Please try again.");
             }
         } else {
+            Log.d(TAG, "Illegal move attempted: " + move);
             statusMessage.setValue("Invalid move. Please try again.");
+
+            // Signal that the selection should be cleared
+            _clearSelectionEvent.setValue(true);
         }
     }
 

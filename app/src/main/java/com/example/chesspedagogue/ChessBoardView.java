@@ -304,6 +304,55 @@ public class ChessBoardView extends View {
         postInvalidateOnAnimation();
     }
 
+    /**
+     * Get the current board position in FEN notation
+     */
+    public String getCurrentFEN() {
+        // This is a simplified implementation - you'll need to convert your actual board state
+        // In a real implementation, you would convert your pieces and positions to FEN
+        return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Starting position
+    }
+
+    /**
+     * Check if it's white's turn
+     */
+    public boolean isWhiteTurn() {
+        // In a real implementation, you would check your game logic
+        return true; // For now, default to white's turn
+    }
+
+    /**
+     * Check if the current player is in check
+     */
+    public boolean isCheck() {
+        // In a real implementation, you would check your game logic
+        return false; // Default to no check
+    }
+
+    /**
+     * Check if the current position is checkmate
+     */
+    public boolean isCheckmate() {
+        // In a real implementation, you would check your game logic
+        return false; // Default to no checkmate
+    }
+
+    /**
+     * Check if the current position is stalemate
+     */
+    public boolean isStalemate() {
+        // In a real implementation, you would check your game logic
+        return false; // Default to no stalemate
+    }
+
+    /**
+     * Get the total number of pieces on the board
+     */
+    public int getPieceCount() {
+        // In a real implementation, you would count your pieces
+        return 32; // Default to full set of pieces (starting position)
+    }
+
 
     /* touch handling */
     @Override public boolean onTouchEvent(MotionEvent e){

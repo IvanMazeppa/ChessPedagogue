@@ -1,115 +1,82 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Base64;
 import android.util.Log;
-import android.util.LruCache;
 
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.SimpleExoPlayer;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 /**
- * Service for generating natural-sounding speech using OpenAI's TTS API
- * with optimizations for low latency and efficient resource usage.
+ * Implementation of TextToSpeechService using OpenAI's TTS API.
  */
-public class OpenAITTSService {
+public class OpenAITTSService implements TextToSpeechService {
     private static final String TAG = "OpenAITTSService";
-    private static final String API_URL = "https://api.openai.com/v1/audio/speech";
+    // Change this line in OpenAITTSService.java
+    private static final String TTS_URL = "https://api.openai.com/v1/audio/speech";
+    public static final String MODEL_TTS = "gpt-4o-mini-tts";
 
-    // Voice options to match different personas
-    public static final String VOICE_GRANDMASTER = "onyx";  // Deeper, authoritative voice
-    public static final String VOICE_COACH = "echo";        // Optional additional voices
-    public static final String VOICE_BEGINNER = "alloy";    // Optional additional voices
-    public static final String VOICE_TUTOR = "nova";        // Warmer, encouraging voice
-    public static final String VOICE_SHIMMER = "shimmer";   // Cheerful voice for younger players
-    public static final String VOICE_ECHO = "echo";         // Another option
-    public static final String VOICE_ALLOY = "alloy";       // Required for compatibility
-    public static final String MASTER = "onyx";             // Deeper voice (compatibility)
-
-    // Voice quality models
-    public static final String MODEL_STANDARD = "tts-1";    // Lower cost, good quality
-    public static final String MODEL_PREMIUM = "tts-1-hd";  // Higher quality, higher cost
-
-    // Cache configuration
-    private static final int MEMORY_CACHE_SIZE = 10;        // Number of audio files to keep in memory
-    private static final int DISK_CACHE_MAX_SIZE = 100;     // Max number of files in disk cache
-    private static final long DISK_CACHE_MAX_BYTES = 100 * 1024 * 1024; // 100 MB max cache size
-    private static final int MAX_PARALLEL_REQUESTS = 3;     // Max parallel API requests
-
-    // Sentence splitting pattern (end of sentence followed by space or end of text)
-    private static final Pattern SENTENCE_PATTERN = Pattern.compile("([.!?])\\s+|([.!?])$");
-
-    // Frequently used chess phrases for preloading
-    private static final String[] COMMON_CHESS_PHRASES = {
-            "Check", "Checkmate", "Stalemate", "Your move", "Good move",
-            "Let's analyze this position", "That's a mistake", "Consider this alternative",
-            "Well played", "The best move here is", "Remember the principles",
-            "Control the center", "Develop your pieces", "Castle for safety",
-            "Watch for tactics", "Think about the endgame"
-    };
-
-    private final OkHttpClient client;
-    private final ExecutorService executorService;
-    private final Handler mainHandler;
+    private final OkHttpClient httpClient;
+    private String apiKey; // Not final so it can be set later
     private final Context context;
-    private String apiKey;
+    private final Handler mainHandler;
+    private final ExecutorService executorService;
+
+    // Singleton instance
     private static OpenAITTSService instance;
 
-    // Audio playback components
-    private final ExoPlayer player;
-    private final ConcurrentLinkedQueue<File> audioQueue = new ConcurrentLinkedQueue<>();
-    private final AtomicBoolean isPlaying = new AtomicBoolean(false);
+    // Currently playing audio
+    private MediaPlayer currentPlayer;
+    private AudioTrack currentAudioTrack;
 
-    // Caching components
-    private final LruCache<String, File> memoryCache;
-    private final Map<String, Long> diskCacheIndex = new ConcurrentHashMap<>();
-    private long diskCacheSize = 0;
-    private final File cacheDir;
+    // Request both text and voice in parallel
+    //CompletableFuture<String> textFuture = CompletableFuture.supplyAsync(() -> getTextResponse());
+    //CompletableFuture<File> audioFuture = CompletableFuture.supplyAsync(() -> getAudioResponse());
 
-    // Speech requests tracking
-    private final AtomicInteger activeRequests = new AtomicInteger(0);
-    private final Map<String, List<TTSCallback>> pendingCallbacks = new ConcurrentHashMap<>();
+    // Voice options
+    public static final String VOICE_GRANDMASTER = "onyx";  // Deeper, authoritative voice
+    public static final String VOICE_TUTOR = "nova";        // Warmer, encouraging voice
+    public static final String VOICE_SHIMMER = "shimmer";   // Cheerful voice
+    public static final String VOICE_ECHO = "echo";         // Another option
+    public static final String VOICE_ALLOY = "alloy";       // Another option
+    public static final String MASTER = "onyx";             // Alias for backwards compatibility
+
+    // Model options
+    public static final String MODEL_STANDARD = "tts-1";    // Standard quality
+    public static final String MODEL_PREMIUM = "tts-1-hd";  // Higher quality
+
+    // Voice settings - default to grandmaster voice
+    private String voice = VOICE_GRANDMASTER;
+    private String model = MODEL_STANDARD;
+    private final String responseFormat = "pcm";  // raw PCM for direct playback
+    private final int sampleRate = 16000;   // match with AudioTrack configuration
+
+
 
     /**
      * Callback interface for TTS operations
@@ -121,45 +88,142 @@ public class OpenAITTSService {
         void onError(String errorMessage);
     }
 
-    /**
-     * Create a new OpenAI TTS Service instance
-     */
-    public OpenAITTSService(Context context) {
-        this.context = context.getApplicationContext();
-        this.client = new OkHttpClient.Builder().build();
-        this.executorService = Executors.newFixedThreadPool(MAX_PARALLEL_REQUESTS + 1); // +1 for management tasks
-        this.mainHandler = new Handler(Looper.getMainLooper());
-        this.player = new SimpleExoPlayer.Builder(context).build();
 
-        // Initialize cache
-        this.memoryCache = new LruCache<>(MEMORY_CACHE_SIZE);
-        this.cacheDir = new File(context.getCacheDir(), "tts_cache");
+
+    /**
+     * Get the singleton instance of OpenAITTSService
+     */
+    public static synchronized OpenAITTSService getInstance(Context context) {
+        if (instance == null) {
+            instance = new OpenAITTSService(context);
+        }
+        return instance;
+    }
+
+    /**
+     * Helper method to notify callback of errors on the main thread
+     */
+    private void notifyError(String message, TTSCallback callback) {
+        if (callback != null) {
+            mainHandler.post(() -> callback.onError(message));
+        }
+    }
+
+    /**
+     * Save audio bytes to a temporary file
+     */
+    private File saveAudioToFile(byte[] audioData) throws IOException {
+        // Create a temporary file to store the audio
+        File cacheDir = new File(context.getCacheDir(), "tts_cache");
         if (!cacheDir.exists()) {
             cacheDir.mkdirs();
         }
 
-        // Load disk cache index
-        loadCacheIndex();
+        String fileName = "tts_" + UUID.randomUUID().toString() + ".mp3";
+        File audioFile = new File(cacheDir, fileName);
 
-        // Set up player completion listener
-        player.addListener(new Player.Listener() {
-            @Override
-            public void onPlaybackStateChanged(int state) {
-                if (state == Player.STATE_ENDED) {
-                    playNextInQueue();
-                }
-            }
-        });
+        // Write the audio data to the file
+        try (FileOutputStream fos = new FileOutputStream(audioFile)) {
+            fos.write(audioData);
+        }
+
+        return audioFile;
     }
 
     /**
-     * Get singleton instance
+     * Constructor for the service
      */
-    public static synchronized OpenAITTSService getInstance(Context context) {
-        if (instance == null) {
-            instance = new OpenAITTSService(context.getApplicationContext());
+    public OpenAITTSService(Context context) {
+        this.context = context.getApplicationContext();
+        this.apiKey = null; // Will be set later
+        this.httpClient = new OkHttpClient();
+        this.mainHandler = new Handler(Looper.getMainLooper());
+        this.executorService = Executors.newSingleThreadExecutor();
+    }
+
+    public void speakWithGPT4oMini(String text, TTSCallback callback) {
+        // Show we're processing
+        if (callback != null) {
+            mainHandler.post(callback::onSpeechStarted);
         }
-        return instance;
+
+        // Process in background
+        new Thread(() -> {
+            try {
+                // The correct endpoint for TTS
+                String TTS_API_URL = "https://api.openai.com/v1/audio/speech";
+
+                // Create the JSON payload for the TTS API - this is the key fix!
+                JSONObject payload = new JSONObject();
+                payload.put("model", "gpt-4o-mini-tts");
+                payload.put("input", text);  // Use 'input' instead of messages array
+                payload.put("voice", "echo");  // Specify a voice
+                payload.put("response_format", "mp3");  // Request MP3 format for better compatibility
+                // In your OpenAITTSService.java, modify the TTS API payload:
+                payload.put("instructions",
+                        "Speak with a deep, authoritative voice of an older chess grandmaster. Use a warm, natural tone with smooth inflections. Maintain consistent volume and clarity throughout. keep answers short and concise."
+                );
+
+                Log.d(TAG, "TTS request payload: " + payload.toString());
+
+                // Build the HTTP request
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),
+                        payload.toString()
+                );
+
+                Request request = new Request.Builder()
+                        .url(TTS_API_URL)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .post(body)
+                        .build();
+
+                // Execute the request
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (!response.isSuccessful()) {
+                        Log.e(TAG, "TTS API error: " + response.code());
+                        if (response.body() != null) {
+                            Log.e(TAG, "Error response: " + response.body().string());
+                        }
+                        notifyError("TTS error: " + response.code(), callback);
+                        return;
+                    }
+
+                    // Save the audio to a temporary file
+                    File audioFile = saveAudioToFile(response.body().bytes());
+
+                    // Notify that we have the speech ready
+                    if (callback != null) {
+                        mainHandler.post(() -> callback.onSpeechReady(audioFile));
+                    }
+
+                    // Play the audio
+                    playAudio(audioFile, () -> {
+                        if (callback != null) {
+                            mainHandler.post(callback::onSpeechCompleted);
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in TTS", e);
+                notifyError("TTS error: " + e.getMessage(), callback);
+            }
+        }).start();
+    }
+
+    /**
+     * Constructor with API key
+     */
+    public OpenAITTSService(Context context, String apiKey) {
+        this.context = context.getApplicationContext();
+        this.apiKey = apiKey;
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)  // Give more time to connect
+                .writeTimeout(30, TimeUnit.SECONDS)    // Give more time to send data
+                .readTimeout(90, TimeUnit.SECONDS)     // Give more time to receive the audio
+                .build();
+        this.mainHandler = new Handler(Looper.getMainLooper());
+        this.executorService = Executors.newSingleThreadExecutor();
     }
 
     /**
@@ -167,623 +231,595 @@ public class OpenAITTSService {
      */
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
-
-        // Preload common phrases when API key is set
-        preloadCommonPhrases();
     }
 
     /**
-     * Compatibility method - maps to speak() method
-     * This maintains backward compatibility with existing code
+     * Set the voice to use
      */
-    public void synthesizeSpeech(String text, String voice, String model, TTSCallback callback) {
-        speak(text, voice, model, callback);
+    public void setVoice(String voice) {
+        this.voice = voice;
     }
 
     /**
-     * Main method to speak text with optimized latency
-     *
-     * @param text The text to synthesize
-     * @param voice The voice to use
-     * @param model The model quality to use
-     * @param callback Callback for events
+     * Set the model quality
      */
-    public void speak(String text, String voice, String model, TTSCallback callback) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            mainHandler.post(() -> callback.onError("API key not set"));
-            return;
-        }
-
-        // Notify that speech is starting
-        mainHandler.post(callback::onSpeechStarted);
-
-        // Trim and validate text
-        text = text.trim();
-        if (text.isEmpty()) {
-            mainHandler.post(() -> callback.onError("Empty text provided"));
-            return;
-        }
-
-        // Calculate cache key
-        String cacheKey = generateCacheKey(text, voice, model);
-
-        // Try to get from memory cache first (fastest)
-        File cachedFile = memoryCache.get(cacheKey);
-        if (cachedFile != null && cachedFile.exists()) {
-            Log.d(TAG, "Memory cache hit for: " + text.substring(0, Math.min(20, text.length())));
-            playAudioFile(cachedFile, callback);
-            return;
-        }
-
-        // Try disk cache next
-        File diskCacheFile = getCacheFile(cacheKey);
-        if (diskCacheFile.exists()) {
-            Log.d(TAG, "Disk cache hit for: " + text.substring(0, Math.min(20, text.length())));
-            // Add to memory cache for future use
-            memoryCache.put(cacheKey, diskCacheFile);
-            playAudioFile(diskCacheFile, callback);
-            return;
-        }
-
-        // Check if we already have a pending request for this exact text/voice/model
-        if (pendingCallbacks.containsKey(cacheKey)) {
-            // Add this callback to the list of waiting callbacks
-            pendingCallbacks.get(cacheKey).add(callback);
-            Log.d(TAG, "Added to pending callbacks for: " + text.substring(0, Math.min(20, text.length())));
-            return;
-        }
-
-        // Create a new list of callbacks for this request
-        List<TTSCallback> callbacks = new ArrayList<>();
-        callbacks.add(callback);
-        pendingCallbacks.put(cacheKey, callbacks);
-
-        // For longer text, split and process in parallel for lower perceived latency
-        if (text.length() > 100) {
-            speakLongText(text, voice, model, cacheKey);
-        } else {
-            // For shorter text, make a single request
-            requestTTS(text, voice, model, cacheKey);
-        }
+    public void setModel(String model) {
+        this.model = model;
     }
 
     /**
-     * Handle longer text by splitting into sentences and processing in parallel
+     * Stop any ongoing audio playback
      */
-    private void speakLongText(String text, String voice, String model, String originalCacheKey) {
-        // Split into sentences
-        String[] parts = SENTENCE_PATTERN.split(text);
-        List<String> sentences = new ArrayList<>();
-
-        // Rebuild sentences with their ending punctuation
-        StringBuilder currentSentence = new StringBuilder();
-        for (String part : parts) {
-            if (part == null || part.isEmpty()) continue;
-
-            if (currentSentence.length() > 0) {
-                // Add a period if this looks like the end of a sentence
-                if (part.length() > 0 && Character.isUpperCase(part.charAt(0))) {
-                    currentSentence.append(". ");
-                    sentences.add(currentSentence.toString());
-                    currentSentence = new StringBuilder(part);
-                } else {
-                    currentSentence.append(" ").append(part);
-                }
-            } else {
-                currentSentence.append(part);
+    public void stopPlayback() {
+        if (currentPlayer != null) {
+            if (currentPlayer.isPlaying()) {
+                currentPlayer.stop();
             }
+            currentPlayer.release();
+            currentPlayer = null;
         }
 
-        // Add the last sentence if anything remains
-        if (currentSentence.length() > 0) {
-            sentences.add(currentSentence.toString());
-        }
-
-        // If we couldn't split properly, just use the original text
-        if (sentences.isEmpty()) {
-            sentences.add(text);
-        }
-
-        // Create temporary files for each sentence
-        final File[] sentenceFiles = new File[sentences.size()];
-        final AtomicInteger completedCount = new AtomicInteger(0);
-
-        // Process each sentence
-        for (int i = 0; i < sentences.size(); i++) {
-            final int index = i;
-            final String sentence = sentences.get(i).trim();
-            if (sentence.isEmpty()) {
-                completedCount.incrementAndGet();
-                continue;
-            }
-
-            // Create a cache key for this sentence
-            String sentenceCacheKey = generateCacheKey(sentence, voice, model);
-
-            // Try cache first
-            File cachedFile = memoryCache.get(sentenceCacheKey);
-            if (cachedFile == null) {
-                cachedFile = getCacheFile(sentenceCacheKey);
-            }
-
-            if (cachedFile != null && cachedFile.exists()) {
-                // Cache hit for this sentence
-                sentenceFiles[index] = cachedFile;
-
-                // Check if all sentences are complete
-                if (completedCount.incrementAndGet() == sentences.size()) {
-                    // All sentences ready, combine and play
-                    combineSentenceFiles(sentenceFiles, originalCacheKey);
-                }
-            } else {
-                // Need to request this sentence
-                final String finalSentenceCacheKey = sentenceCacheKey;
-                requestTTS(sentence, voice, model, sentenceCacheKey, new TTSCallback() {
-                    @Override
-                    public void onSpeechStarted() {
-                        // Not used here
-                    }
-
-                    @Override
-                    public void onSpeechReady(File audioFile) {
-                        // Store this sentence file
-                        sentenceFiles[index] = audioFile;
-
-                        // Cache this sentence
-                        memoryCache.put(finalSentenceCacheKey, audioFile);
-
-                        // Check if all sentences are complete
-                        if (completedCount.incrementAndGet() == sentences.size()) {
-                            // All sentences ready, combine and play
-                            combineSentenceFiles(sentenceFiles, originalCacheKey);
-                        }
-                    }
-
-                    @Override
-                    public void onSpeechCompleted() {
-                        // Not used here
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        // Propagate error to all waiting callbacks
-                        notifyCallbacksOfError(originalCacheKey, "Error with sentence " + index + ": " + errorMessage);
-                    }
-                });
-            }
+        if (currentAudioTrack != null) {
+            currentAudioTrack.stop();
+            currentAudioTrack.release();
+            currentAudioTrack = null;
         }
     }
 
-    /**
-     * Combine multiple audio files into one
-     */
-    private void combineSentenceFiles(File[] files, String cacheKey) {
-        executorService.execute(() -> {
-            try {
-                // Create a single output file
-                File outputFile = getCacheFile(cacheKey);
-                FileOutputStream fos = new FileOutputStream(outputFile);
-
-                // Combine all files
-                byte[] buffer = new byte[4096];
-                for (File file : files) {
-                    if (file == null || !file.exists()) continue;
-
-                    try (InputStream is = context.getContentResolver().openInputStream(Uri.fromFile(file))) {
-                        int bytesRead;
-                        while ((bytesRead = is.read(buffer)) != -1) {
-                            fos.write(buffer, 0, bytesRead);
-                        }
-                    }
-                }
-                fos.close();
-
-                // Add to memory cache
-                memoryCache.put(cacheKey, outputFile);
-
-                // Add to disk cache index
-                updateCacheIndex(cacheKey, outputFile.length());
-
-                // Notify all callbacks
-                notifyCallbacksOfSuccess(cacheKey, outputFile);
-
-            } catch (IOException e) {
-                Log.e(TAG, "Error combining audio files", e);
-                notifyCallbacksOfError(cacheKey, "Error combining audio: " + e.getMessage());
-            }
-        });
-    }
-
-    /**
-     * Make the actual API request for a TTS conversion
-     */
-    private void requestTTS(String text, String voice, String model, String cacheKey) {
-        requestTTS(text, voice, model, cacheKey, null);
-    }
-
-    private void requestTTS(String text, String voice, String model, String cacheKey, TTSCallback singleCallback) {
-        if (activeRequests.incrementAndGet() > MAX_PARALLEL_REQUESTS) {
-            // If we have too many active requests, wait and retry
-            Log.d(TAG, "Too many active requests, delaying: " + text.substring(0, Math.min(20, text.length())));
-            activeRequests.decrementAndGet();
-            mainHandler.postDelayed(() -> requestTTS(text, voice, model, cacheKey, singleCallback), 500);
-            return;
-        }
-
-        // Execute the request on a background thread
-        executorService.execute(() -> {
-            try {
-                // Create request body
-                JSONObject requestData = new JSONObject();
-                requestData.put("model", model);
-                requestData.put("input", text);
-                requestData.put("voice", voice);
-
-                // Build the request
-                RequestBody body = RequestBody.create(
-                        requestData.toString(),
-                        MediaType.parse("application/json")
-                );
-
-                Request request = new Request.Builder()
-                        .url(API_URL)
-                        .addHeader("Authorization", "Bearer " + apiKey)
-                        .addHeader("Content-Type", "application/json")
-                        .post(body)
-                        .build();
-
-                // Execute the request asynchronously
-                client.newCall(request).enqueue(new Callback() {
-                    @Override
-                    public void onFailure(Call call, IOException e) {
-                        activeRequests.decrementAndGet();
-                        Log.e(TAG, "API request failed", e);
-
-                        if (singleCallback != null) {
-                            mainHandler.post(() -> singleCallback.onError("Network error: " + e.getMessage()));
-                        } else {
-                            notifyCallbacksOfError(cacheKey, "Network error: " + e.getMessage());
-                        }
-                    }
-
-                    @Override
-                    public void onResponse(Call call, Response response) throws IOException {
-                        activeRequests.decrementAndGet();
-
-                        if (!response.isSuccessful()) {
-                            String errorBody = response.body() != null ? response.body().string() : "Unknown error";
-                            Log.e(TAG, "API Error: " + errorBody);
-
-                            if (singleCallback != null) {
-                                mainHandler.post(() -> singleCallback.onError("API error: " + response.code()));
-                            } else {
-                                notifyCallbacksOfError(cacheKey, "API error: " + response.code());
-                            }
-                            return;
-                        }
-
-                        // Save the audio to a file
-                        ResponseBody responseBody = response.body();
-                        if (responseBody == null) {
-                            if (singleCallback != null) {
-                                mainHandler.post(() -> singleCallback.onError("Empty response from TTS API"));
-                            } else {
-                                notifyCallbacksOfError(cacheKey, "Empty response from TTS API");
-                            }
-                            return;
-                        }
-
-                        try {
-                            // Create the cache file
-                            File outputFile = getCacheFile(cacheKey);
-
-                            // Save the audio data
-                            FileOutputStream fos = new FileOutputStream(outputFile);
-                            fos.write(responseBody.bytes());
-                            fos.close();
-
-                            // Add to memory cache
-                            memoryCache.put(cacheKey, outputFile);
-
-                            // Update disk cache index
-                            updateCacheIndex(cacheKey, outputFile.length());
-
-                            // Report success
-                            if (singleCallback != null) {
-                                mainHandler.post(() -> singleCallback.onSpeechReady(outputFile));
-                            } else {
-                                notifyCallbacksOfSuccess(cacheKey, outputFile);
-                            }
-                        } catch (IOException e) {
-                            Log.e(TAG, "Error saving audio file", e);
-                            if (singleCallback != null) {
-                                mainHandler.post(() -> singleCallback.onError("Error saving audio: " + e.getMessage()));
-                            } else {
-                                notifyCallbacksOfError(cacheKey, "Error saving audio: " + e.getMessage());
-                            }
-                        }
-                    }
-                });
-
-            } catch (JSONException e) {
-                activeRequests.decrementAndGet();
-                Log.e(TAG, "Error creating request", e);
-
-                if (singleCallback != null) {
-                    mainHandler.post(() -> singleCallback.onError("Error: " + e.getMessage()));
-                } else {
-                    notifyCallbacksOfError(cacheKey, "Error: " + e.getMessage());
-                }
-            }
-        });
-    }
-
-    /**
-     * Compatibility method for playAudio
-     * Uses the same signature as the original for compatibility
-     */
-    public void playAudio(File audioFile, Runnable onCompletion) {
+    // In OpenAITTSService.java, let's try a different approach to playing audio
+    private void playMp3Audio(File audioFile, Runnable onCompletion) {
         try {
-            MediaPlayer mediaPlayer = new MediaPlayer();
-            mediaPlayer.setDataSource(audioFile.getPath());
-            mediaPlayer.prepare();
+            // Stop any currently playing audio
+            stopPlayback();
+
+            // Create a more robust MediaPlayer setup
+            MediaPlayer player = new MediaPlayer();
+            player.setAudioAttributes(
+                    new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+            );
+
+            // Set data source with better error handling
+            try {
+                player.setDataSource(context, Uri.fromFile(audioFile));
+                player.prepare();
+            } catch (IOException e) {
+                Log.e(TAG, "MediaPlayer preparation failed", e);
+                return;
+            }
+
+            currentPlayer = player;
 
             // Set completion listener
-            mediaPlayer.setOnCompletionListener(mp -> {
+            player.setOnCompletionListener(mp -> {
+                // Important: release resources properly
                 mp.release();
+                currentPlayer = null;
                 if (onCompletion != null) {
-                    onCompletion.run();
+                    mainHandler.post(onCompletion);
                 }
             });
 
             // Start playback
-            mediaPlayer.start();
-        } catch (IOException e) {
+            player.start();
+        } catch (Exception e) {
             Log.e(TAG, "Error playing audio", e);
+            if (onCompletion != null) {
+                mainHandler.post(onCompletion);
+            }
         }
     }
 
+
+
     /**
-     * Play an audio file and notify the callback
+     * Speak text using the selected voice and model
      */
-    private void playAudioFile(File audioFile, TTSCallback callback) {
-        // Notify that file is ready
-        mainHandler.post(() -> callback.onSpeechReady(audioFile));
-
-        // Add to the playback queue
-        audioQueue.add(audioFile);
-
-        // Start playing if not already playing
-        if (!isPlaying.get()) {
-            playNextInQueue();
+    public void speak(String text, String voice, String model, TTSCallback callback) {
+        if (callback != null) {
+            mainHandler.post(callback::onSpeechStarted);
         }
+
+        executorService.execute(() -> {
+            try {
+                // Generate a temporary file to store the audio
+                File cacheDir = new File(context.getCacheDir(), "tts_cache");
+                if (!cacheDir.exists()) {
+                    cacheDir.mkdirs();
+                }
+
+                String fileName = "tts_" + UUID.randomUUID().toString() + ".mp3";
+                File audioFile = new File(cacheDir, fileName);
+
+                // Get audio data
+                byte[] audioData = synthesizeSpeech(text);
+
+                if (audioData == null || audioData.length == 0) {
+                    if (callback != null) {
+                        mainHandler.post(() -> callback.onError("Failed to generate speech audio"));
+                    }
+                    return;
+                }
+
+                // Save audio data to file
+                try (FileOutputStream fos = new FileOutputStream(audioFile)) {
+                    fos.write(audioData);
+                }
+
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onSpeechReady(audioFile));
+                }
+
+                // Play the audio
+                playAudio(audioFile, () -> {
+                    if (callback != null) {
+                        mainHandler.post(callback::onSpeechCompleted);
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error in speak method", e);
+                if (callback != null) {
+                    final String errorMsg = e.getMessage();
+                    mainHandler.post(() -> callback.onError("TTS Error: " + errorMsg));
+                }
+            }
+        });
     }
 
-    /**
-     * Play the next audio file in the queue
-     */
-    private void playNextInQueue() {
-        File nextFile = audioQueue.poll();
-        if (nextFile == null) {
-            isPlaying.set(false);
-            return;
+    // Add this method to your OpenAITTSService class
+    public void speakWithChunkingForGPT4oMini(String text, TTSCallback masterCallback) {
+        // Create the chunker specifically for GPT-4o-mini-tts
+        GPT4oMiniSpeechChunker chunker = new GPT4oMiniSpeechChunker(text, masterCallback);
+        chunker.startSpeaking();
+    }
+
+    // Add this new inner class for GPT-4o-mini-tts chunking
+    private class GPT4oMiniSpeechChunker {
+        private final String[] chunks;
+        private final TTSCallback masterCallback;
+        private int currentChunkIndex = 0;
+        private boolean retryAttempted = false;
+
+        public GPT4oMiniSpeechChunker(String text, TTSCallback callback) {
+            this.masterCallback = callback;
+
+            // Split text into natural sentence boundaries
+            String[] sentences = text.split("(?<=[.!?])\\s+");
+
+            // Group sentences into chunks (1-2 sentences per chunk)
+            List<String> chunkList = new ArrayList<>();
+            StringBuilder currentChunk = new StringBuilder();
+
+            for (String sentence : sentences) {
+                // If adding this sentence would make chunk too large, finish current chunk
+                if (currentChunk.length() + sentence.length() > 80) {
+                    chunkList.add(currentChunk.toString().trim());
+                    currentChunk = new StringBuilder();
+                }
+                currentChunk.append(sentence).append(" ");
+            }
+
+            // Add the final chunk if not empty
+            if (currentChunk.length() > 0) {
+                chunkList.add(currentChunk.toString());
+            }
+
+            this.chunks = chunkList.toArray(new String[0]);
+
+            // For debugging
+            Log.d(TAG, "Split speech into " + chunks.length + " chunks for GPT-4o-mini-tts");
         }
 
-        isPlaying.set(true);
+        public void startSpeaking() {
+            // Notify that speech is starting
+            if (masterCallback != null) {
+                mainHandler.post(masterCallback::onSpeechStarted);
+            }
 
-        try {
-            // Set up the media source
-            DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(context, "ChessPedagogue");
-            MediaSource mediaSource = new ProgressiveMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(Uri.fromFile(nextFile)));
+            // Start with the first chunk
+            speakNextChunk();
+        }
 
-            // Prepare and play
-            player.setMediaSource(mediaSource);
-            player.prepare();
-            player.play();
+        private void speakNextChunk() {
+            if (currentChunkIndex >= chunks.length) {
+                // We've finished all chunks
+                if (masterCallback != null) {
+                    mainHandler.post(masterCallback::onSpeechCompleted);
+                }
+                return;
+            }
 
-            // Set a listener to notify when completed
-            // In OpenAITTSService.java - find playNextInQueue()
-            player.addListener(new Player.Listener() {
-                boolean hasNotified = false;
+            // This is the chunk we'll speak now
+            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", ""); // Remove ellipses
+
+            // Create a chunk callback
+            TTSCallback chunkCallback = new TTSCallback() {
+                @Override
+                public void onSpeechStarted() {
+                    // Only report start for the first chunk
+                    if (currentChunkIndex == 0 && masterCallback != null) {
+                        mainHandler.post(masterCallback::onSpeechStarted);
+                    }
+                }
 
                 @Override
-                public void onPlaybackStateChanged(int state) {
-                    if (state == Player.STATE_ENDED && !hasNotified) {
-                        hasNotified = true;
-                        Log.d(TAG, "🎵 Playback COMPLETED");
-                        mainHandler.post(() -> {
-                            // Try to get any pending callbacks
-
-                            playNextInQueue(); // Continue with any queued audio
-                        });
+                public void onSpeechReady(File audioFile) {
+                    // Pass through to master callback
+                    if (masterCallback != null) {
+                        mainHandler.post(() -> masterCallback.onSpeechReady(audioFile));
                     }
+                }
+
+                @Override
+                public void onSpeechCompleted() {
+                    // Move to next chunk after a short delay
+                    mainHandler.post(() -> {
+                        Log.d(TAG, "Completed GPT-4o-mini-tts chunk " + currentChunkIndex + ", preparing next chunk");
+                        currentChunkIndex++;
+                        mainHandler.postDelayed(() -> speakNextChunk(), 250);
+                    });
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "Error speaking GPT-4o-mini-tts chunk " + currentChunkIndex + ": " + errorMessage);
+
+                    // Add retry mechanism
+                    if (!retryAttempted) {
+                        retryAttempted = true;
+                        Log.d(TAG, "Attempting to retry GPT-4o-mini-tts chunk " + currentChunkIndex);
+                        mainHandler.postDelayed(() -> speakNextChunk(), 500);
+                    } else {
+                        // Move to next chunk if retry failed
+                        currentChunkIndex++;
+                        retryAttempted = false;
+                        speakNextChunk();
+                    }
+                }
+            };
+
+            // Use the GPT-4o-mini-tts specific method for this chunk
+            speakWithGPT4oMini(currentText, chunkCallback);
+        }
+    }
+
+    /**
+     * Speak text using chunking for improved responsiveness
+     */
+    public void speakWithChunking(String text, TTSCallback masterCallback) {
+        // Create the chunker that will manage speaking segments
+        SpeechChunker chunker = new SpeechChunker(text, masterCallback);
+        chunker.startSpeaking();
+    }
+
+    /**
+     * Helper class to manage chunked speech
+     */
+    // Then add the SpeechChunker inner class:
+    private class SpeechChunker {
+        private final String[] chunks;
+        private final TTSCallback masterCallback;
+        private int currentChunkIndex = 0;
+        private boolean retryAttempted = false;
+        private final String currentVoice;  // Add this!
+        private final String currentModel;  // Add this!
+
+        public SpeechChunker(String text, TTSCallback callback) {
+            this.masterCallback = callback;
+            this.currentVoice = voice;
+            this.currentModel = model;
+
+            List<String> chunkList = new ArrayList<>();
+
+            // First, convert the text to be more conversational
+            String conversationalText = text
+                    // Convert headings to conversational phrases
+                    .replaceAll("\\*\\*(.+):\\*\\*", "Let me tell you about $1.")
+                    .replaceAll("\\*\\*(.+)\\*\\*", "$1")
+
+                    // Convert bullet points to natural speech
+                    .replaceAll("\\n\\s*-\\s*\\*(.+)\\*\\s*", ". First, $1. ")
+                    .replaceAll("\\n\\s*-\\s*", ". Also, ")
+
+                    // Remove markdown formatting
+                    .replaceAll("\\*", "")
+
+                    // Convert newlines to spaces
+                    .replaceAll("\\n\\s*", " ")
+
+                    // Fix any double periods
+                    .replaceAll("\\.\\.", ".")
+                    .replaceAll("\\. \\.", ".")
+
+                    // Add natural pauses after sentences
+                    .replaceAll("\\. ", ". [pause] ")
+
+                    .trim();
+
+            // Split into natural speaking segments (aim for ~15 second chunks)
+            if (conversationalText.length() < 150) {
+                // Short response - just use as one chunk
+                chunkList.add(conversationalText);
+            } else {
+                // Split at sentence boundaries for longer responses
+                String[] sentences = conversationalText.split("\\[pause\\]\\s+");
+
+                StringBuilder currentChunk = new StringBuilder();
+                for (String sentence : sentences) {
+                    // Start a new chunk if this would make it too long
+                    // Aim for chunks that would take about 10-15 seconds to speak
+                    if (currentChunk.length() > 0 &&
+                            currentChunk.length() + sentence.length() > 200) {
+
+                        chunkList.add(currentChunk.toString().trim());
+                        currentChunk = new StringBuilder();
+                    }
+
+                    currentChunk.append(sentence).append(" ");
+                }
+
+                // Add the final chunk
+                if (currentChunk.length() > 0) {
+                    chunkList.add(currentChunk.toString().trim());
+                }
+            }
+
+            // Final safety check - never allow empty chunks
+            for (int i = chunkList.size() - 1; i >= 0; i--) {
+                if (chunkList.get(i).isEmpty()) {
+                    chunkList.remove(i);
+                }
+            }
+
+            this.chunks = chunkList.toArray(new String[0]);
+            Log.d(TAG, "Split speech into " + chunkList.size() + " conversational chunks");
+        }
+
+        public void startSpeaking() {
+            // Notify that speech is starting
+            if (masterCallback != null) {
+                mainHandler.post(masterCallback::onSpeechStarted);
+            }
+
+            // Start with the first chunk
+            speakNextChunk();
+        }
+
+        private void speakNextChunk() {
+            if (currentChunkIndex >= chunks.length) {
+                // We've finished all chunks
+                if (masterCallback != null) {
+                    mainHandler.post(masterCallback::onSpeechCompleted);
+                }
+                return;
+            }
+
+            // This is the chunk we'll speak now - REMOVE ELLIPSES
+            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", ""); // Remove ellipses
+
+            // Create a new MediaPlayer for each chunk to avoid resource issues
+            OpenAITTSService ttsService = new OpenAITTSService(context, apiKey);
+
+            // Set up a callback for just this chunk
+            TTSCallback chunkCallback = new TTSCallback() {
+                @Override
+                public void onSpeechStarted() {
+                    // Only report start for the first chunk
+                    if (currentChunkIndex == 0 && masterCallback != null) {
+                        mainHandler.post(masterCallback::onSpeechStarted);
+                    }
+                }
+
+                @Override
+                public void onSpeechReady(File audioFile) {
+                    // Pass through to master callback
+                    if (masterCallback != null) {
+                        mainHandler.post(() -> masterCallback.onSpeechReady(audioFile));
+                    }
+                }
+
+                @Override
+                public void onSpeechCompleted() {
+                    // Use a handler to ensure we're on the main thread
+                    mainHandler.post(() -> {
+                        Log.d(TAG, "Completed chunk " + currentChunkIndex + ", preparing next chunk");
+                        currentChunkIndex++;
+                        // Important: add a longer delay to ensure resources are properly released
+                        mainHandler.postDelayed(() -> speakNextChunk(), 100); // Increased from 100ms to 250ms
+                    });
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "Error speaking chunk " + currentChunkIndex + ": " + errorMessage);
+
+                    // Add RETRY mechanism - try this chunk again once before giving up
+                    if (!retryAttempted) {
+                        retryAttempted = true;
+                        Log.d(TAG, "Attempting to retry chunk " + currentChunkIndex);
+                        mainHandler.postDelayed(() -> speakNextChunk(), 500);
+                    } else {
+                        // Move to next chunk if retry failed
+                        currentChunkIndex++;
+                        retryAttempted = false;
+                        speakNextChunk();
+                    }
+                }
+            };
+
+            // Speak this chunk
+            ttsService.speak(currentText, currentVoice, currentModel, chunkCallback);
+        }
+    }
+
+    /**
+     * Play audio file and call completion handler when done
+     */
+    public void playAudio(File audioFile, Runnable onCompletion) {
+        try {
+            // Stop any currently playing audio
+            stopPlayback();
+
+            // Log file details for debugging
+            Log.d(TAG, "Playing audio file: " + audioFile.getAbsolutePath() +
+                    ", size: " + audioFile.length() + " bytes, exists: " + audioFile.exists());
+
+            // Create and configure MediaPlayer with better error handling
+            MediaPlayer player = new MediaPlayer();
+            player.setAudioAttributes(
+                    new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+            );
+
+            // Set on error listener BEFORE preparing
+            player.setOnErrorListener((mp, what, extra) -> {
+                Log.e(TAG, "MediaPlayer error: what=" + what + ", extra=" + extra);
+                mp.release();
+                currentPlayer = null;
+                if (onCompletion != null) {
+                    mainHandler.post(onCompletion);
+                }
+                return true; // Error handled
+            });
+
+            // Set data source with better error handling
+            player.setDataSource(context, Uri.fromFile(audioFile));
+            player.prepare();
+
+            currentPlayer = player;
+
+            // Set completion listener
+            player.setOnCompletionListener(mp -> {
+                // Important: release resources properly
+                mp.release();
+                currentPlayer = null;
+                if (onCompletion != null) {
+                    mainHandler.post(onCompletion);
                 }
             });
 
-        } catch (Exception e) {
+            // Start playback
+            player.start();
+        } catch (IOException e) {
             Log.e(TAG, "Error playing audio", e);
-            isPlaying.set(false);
-            playNextInQueue(); // Try the next file
+            if (onCompletion != null) {
+                mainHandler.post(onCompletion);
+            }
         }
     }
 
     /**
-     * Notify all waiting callbacks of success
+     * Play PCM audio data directly using AudioTrack
      */
-    private void notifyCallbacksOfSuccess(String cacheKey, File audioFile) {
-        mainHandler.post(() -> {
-            List<TTSCallback> callbacks = pendingCallbacks.remove(cacheKey);
-            if (callbacks != null) {
-                for (TTSCallback callback : callbacks) {
-                    callback.onSpeechReady(audioFile);
-
-                    // Queue the audio file for playback
-                    audioQueue.add(audioFile);
-                }
-
-                // Start playing if not already
-                if (!isPlaying.get()) {
-                    playNextInQueue();
-                }
-            }
-        });
-    }
-
-    /**
-     * Notify all waiting callbacks of an error
-     */
-    private void notifyCallbacksOfError(String cacheKey, String errorMessage) {
-        mainHandler.post(() -> {
-            List<TTSCallback> callbacks = pendingCallbacks.remove(cacheKey);
-            if (callbacks != null) {
-                for (TTSCallback callback : callbacks) {
-                    callback.onError(errorMessage);
-                }
-            }
-        });
-    }
-
-    /**
-     * Preload common chess phrases for instant playback
-     */
-    public void preloadCommonPhrases() {
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.w(TAG, "Cannot preload phrases: API key not set");
-            return;
-        }
-
-        executorService.execute(() -> {
-            Log.d(TAG, "Preloading common chess phrases...");
-
-            // Use different voices for variety
-            String[] voices = {VOICE_GRANDMASTER, VOICE_COACH, VOICE_TUTOR};
-            String model = MODEL_STANDARD; // Use standard model for preloading to save costs
-
-            for (String phrase : COMMON_CHESS_PHRASES) {
-                for (String voice : voices) {
-                    String cacheKey = generateCacheKey(phrase, voice, model);
-
-                    // Skip if already in cache
-                    if (memoryCache.get(cacheKey) != null) continue;
-                    File cacheFile = getCacheFile(cacheKey);
-                    if (cacheFile.exists()) {
-                        memoryCache.put(cacheKey, cacheFile);
-                        continue;
-                    }
-
-                    // Make a low-priority request for this phrase
-                    final String finalVoice = voice;
-                    mainHandler.postDelayed(() -> {
-                        requestTTS(phrase, finalVoice, model, cacheKey);
-                    }, 2000); // Delay to spread out requests
-                }
-            }
-        });
-    }
-
-    /**
-     * Generate a cache key for a specific text/voice/model combination
-     */
-    private String generateCacheKey(String text, String voice, String model) {
+    public void playPCMAudio(byte[] audioData, int sampleRate, Runnable onCompletion) {
         try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            String input = text + voice + model;
-            byte[] hash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-            return Base64.encodeToString(hash, Base64.NO_WRAP).replace('/', '_').replace('+', '-');
-        } catch (Exception e) {
-            Log.e(TAG, "Error generating cache key", e);
-            return text.hashCode() + "_" + voice + "_" + model; // Fallback
-        }
-    }
+            // Stop any currently playing audio
+            stopPlayback();
 
-    /**
-     * Get a cache file for a specific key
-     */
-    private File getCacheFile(String cacheKey) {
-        return new File(cacheDir, cacheKey + ".mp3");
-    }
+            // Create and configure AudioTrack
+            int minBufferSize = AudioTrack.getMinBufferSize(sampleRate,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT);
 
-    /**
-     * Load the disk cache index
-     */
-    private void loadCacheIndex() {
-        executorService.execute(() -> {
-            File[] files = cacheDir.listFiles((dir, name) -> name.endsWith(".mp3"));
-            if (files != null) {
-                for (File file : files) {
-                    String key = file.getName().replace(".mp3", "");
-                    long size = file.length();
-                    diskCacheIndex.put(key, size);
-                    diskCacheSize += size;
+            currentAudioTrack = new AudioTrack.Builder()
+                    .setAudioAttributes(new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build())
+                    .setAudioFormat(new AudioFormat.Builder()
+                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                            .setSampleRate(sampleRate)
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .build())
+                    .setBufferSizeInBytes(Math.max(minBufferSize, audioData.length))
+                    .build();
+
+            currentAudioTrack.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
+                @Override
+                public void onMarkerReached(AudioTrack track) {
+                    track.release();
+                    currentAudioTrack = null;
+                    if (onCompletion != null) {
+                        mainHandler.post(onCompletion);
+                    }
                 }
-            }
 
-            // Clean up if cache is too large
-            if (diskCacheIndex.size() > DISK_CACHE_MAX_SIZE || diskCacheSize > DISK_CACHE_MAX_BYTES) {
-                cleanupCache();
-            }
-        });
-    }
+                @Override
+                public void onPeriodicNotification(AudioTrack track) {
+                    // Not used
+                }
+            });
 
-    /**
-     * Update the disk cache index with a new file
-     */
-    private void updateCacheIndex(String key, long size) {
-        diskCacheIndex.put(key, size);
-        diskCacheSize += size;
+            // Start playback
+            currentAudioTrack.play();
+            currentAudioTrack.write(audioData, 0, audioData.length);
+            currentAudioTrack.setNotificationMarkerPosition(audioData.length / 4); // Position is in frames
 
-        // Check if we need to clean up
-        if (diskCacheIndex.size() > DISK_CACHE_MAX_SIZE || diskCacheSize > DISK_CACHE_MAX_BYTES) {
-            executorService.execute(this::cleanupCache);
-        }
-    }
-
-    /**
-     * Clean up old cache files
-     */
-    private void cleanupCache() {
-        // Simple LRU strategy - just remove oldest files
-        File[] files = cacheDir.listFiles((dir, name) -> name.endsWith(".mp3"));
-        if (files == null) return;
-
-        // Sort by last modified time
-        Arrays.sort(files, (f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified()));
-
-        // Remove oldest files until we're under limits
-        for (File file : files) {
-            if (diskCacheIndex.size() <= DISK_CACHE_MAX_SIZE &&
-                    diskCacheSize <= DISK_CACHE_MAX_BYTES) {
-                break;
-            }
-
-            String key = file.getName().replace(".mp3", "");
-            Long size = diskCacheIndex.remove(key);
-            if (size != null) {
-                diskCacheSize -= size;
-            }
-
-            if (file.delete()) {
-                Log.d(TAG, "Removed cache file: " + file.getName());
+        } catch (Exception e) {
+            Log.e(TAG, "Error playing PCM audio", e);
+            if (onCompletion != null) {
+                mainHandler.post(onCompletion);
             }
         }
     }
 
-    /**
-     * Stop all audio playback
-     */
-    public void stopPlayback() {
-        player.stop();
-        audioQueue.clear();
-        isPlaying.set(false);
+    @Override
+    public byte[] synthesizeSpeech(String text) throws IOException {
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "API key not set");
+            return new byte[0];
+        }
+
+        // Create JSON payload for TTS request with your custom settings
+        JSONObject payload = new JSONObject();
+        try {
+            // Use the exact model name for gpt-4o-mini-tts
+            payload.put("model", "gpt-4o-mini-tts");
+            payload.put("input", text);
+            payload.put("voice", voice);
+            payload.put("response_format", "mp3");  // Changed to mp3 for better compatibility
+
+            // Add your custom instructions for the chess grandmaster character
+            payload.put("instructions", "Speak with a deep, authoritative voice of an older chess grandmaster");
+
+            // Log the exact payload for debugging
+            Log.d(TAG, "TTS API payload: " + payload.toString());
+        } catch (JSONException e) {
+            Log.e(TAG, "TTS JSON construction error", e);
+            return new byte[0];
+        }
+
+        RequestBody body = RequestBody.create(MediaType.parse("application/json"), payload.toString());
+        Request request = new Request.Builder()
+                .url(TTS_URL)
+                .header("Authorization", "Bearer " + apiKey)
+                .post(body)
+                .build();
+
+        Response response = httpClient.newCall(request).execute();
+        if (!response.isSuccessful()) {
+            String errorBody = response.body() != null ? response.body().string() : "No error body";
+            Log.e(TAG, "TTS API error: " + response.code() + " - " + errorBody);
+            return new byte[0];
+        }
+
+        // The TTS API responds with audio data
+        byte[] audioData = response.body().bytes();
+        response.close();
+
+        return audioData;
     }
 
     /**
-     * Clean up resources
+     * Release resources when the service is no longer needed
      */
     public void shutdown() {
         stopPlayback();
-        player.release();
         executorService.shutdown();
     }
 }

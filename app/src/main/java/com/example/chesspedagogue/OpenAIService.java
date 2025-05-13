@@ -2,28 +2,24 @@ package com.example.chesspedagogue;
 
 import android.util.Log;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.annotations.SerializedName;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.ConnectionPool;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.MediaType;
 import okhttp3.Response;
-import okhttp3.ResponseBody;
 
 /**
- * Enhanced service for communicating with OpenAI API
- * Improved with consistent system prompt handling and conversation management
+ * Service for communicating with OpenAI API
  */
 public class OpenAIService {
     private static final String TAG = "OpenAIService";
@@ -32,91 +28,31 @@ public class OpenAIService {
 
     private static OpenAIService instance;
     private final OkHttpClient client;
-    private final Gson gson;
     private String apiKey;
 
-    // Model to use - can be changed based on your preference
-    private String model = "gpt-4-turbo-preview";
-
-    // Chess context for continuity in conversations
-    private final List<Message> conversationHistory = new ArrayList<>();
-    private static final int MAX_CONVERSATION_LENGTH = 10;
-
-    // Enhanced context tracking
-    private Map<String, Object> playerContext = new HashMap<>();
-    private List<String> conceptsExplained = new ArrayList<>();
-    private List<String> playerMistakes = new ArrayList<>();
-    private String currentFEN = "";
-    private String playerColor = "white";
-    private String systemPrompt = "";
+    // Default model - can be changed as needed
+    private String model = "gpt-4.1";
 
     /**
-     * Set the system prompt for the AI assistant
+     * Get singleton instance
      */
-    public void setSystemPrompt(String prompt) {
-        this.systemPrompt = prompt;
-
-        // Immediately update the conversation history if it exists
-        if (!conversationHistory.isEmpty()) {
-            // Replace the first message or add a new one if empty
-            if (conversationHistory.get(0).role.equals("system")) {
-                conversationHistory.set(0, new Message("system", prompt));
-            } else {
-                conversationHistory.add(0, new Message("system", prompt));
-            }
-        } else {
-            // Initialize with the system prompt
-            conversationHistory.add(new Message("system", prompt));
+    public static synchronized OpenAIService getInstance() {
+        if (instance == null) {
+            instance = new OpenAIService();
         }
+        return instance;
     }
 
     /**
-     * Generate enhanced chess advice using the system prompt and game context
+     * Private constructor
      */
-    public String generateEnhancedChessAdvice(String gameContext) {
-        return sendMessage(gameContext);
-    }
-
     private OpenAIService() {
-        // Configure OkHttpClient with timeouts and connection pooling for better performance
         client = new OkHttpClient.Builder()
                 .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .build();
-
-        gson = new GsonBuilder().create();
-
-        // Initialize conversation with system message defining the coach's role
-        initializeSystemMessage();
-    }
-
-    /**
-     * Initialize or reset the system message with the base coach personality
-     */
-// In OpenAIService.java, modify the initializeSystemMessage() method
-    private void initializeSystemMessage() {
-        Message systemMessage = new Message("system",
-                "You are Coach Tal, a FIDE-rated chess expert analyzing games. When analyzing positions, you MUST:\n" +
-                        "1. Reference specific moves from the move history by number (e.g., \"After 15...Qd7, White missed...\")\n" +
-                        "2. Analyze how previous moves influenced the current position\n" +
-                        "3. Provide concrete calculations and variations, not just general principles\n" +
-                        "4. Evaluate alternatives to key moves played in the game\n" +
-                        "5. NEVER provide generic advice without referencing the specific move history provided\n\n" +
-                        "Always analyze the current position in the context of how the game developed. If you fail to " +
-                        "reference specific moves from the provided history, your analysis is considered incomplete.");
-
-        // Clear the conversation and add the system message
-        conversationHistory.clear();
-        conversationHistory.add(systemMessage);
-    }
-
-    public static synchronized OpenAIService getInstance() {
-        if (instance == null) {
-            instance = new OpenAIService();
-        }
-        return instance;
     }
 
     public void setApiKey(String apiKey) {
@@ -128,349 +64,105 @@ public class OpenAIService {
     }
 
     /**
-     * Update the context with new information about the player or game
+     * Get a completion from the conversation history
      */
-    public void updateContext(String key, Object value) {
-        playerContext.put(key, value);
-        updateSystemMessage();
-    }
-
-    /**
-     * Record a chess concept that has been explained to avoid repetition
-     */
-    public void recordConceptExplained(String concept) {
-        if (!conceptsExplained.contains(concept)) {
-            conceptsExplained.add(concept);
-            // Keep the list manageable
-            if (conceptsExplained.size() > 15) {
-                conceptsExplained.remove(0);
-            }
-            updateSystemMessage();
-        }
-    }
-
-    /**
-     * Record a mistake pattern the player is making
-     */
-    public void recordPlayerMistake(String mistakeType) {
-        playerMistakes.add(mistakeType);
-        // Keep only the 5 most recent mistakes
-        if (playerMistakes.size() > 5) {
-            playerMistakes.remove(0);
-        }
-        updateSystemMessage();
-    }
-
-    /**
-     * Update the system message with all current context
-     */
-    private void updateSystemMessage() {
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("You are Coach Tal, a patient and encouraging chess coach. ");
-        prompt.append("Your goal is to help the player improve while maintaining a warm, supportive tone. ");
-
-        // Add current position information if available
-        if (!currentFEN.isEmpty()) {
-            prompt.append("The current board position in FEN notation is: ").append(currentFEN).append(". ");
-            prompt.append("The player is playing as ").append(playerColor).append(". ");
-        }
-
-        // Add information about player's skill level if known
-        if (playerContext.containsKey("skillLevel")) {
-            prompt.append("The player is at a ").append(playerContext.get("skillLevel"))
-                    .append(" skill level. ");
-        }
-
-        // Add information about player's recent struggles
-        if (!playerMistakes.isEmpty()) {
-            prompt.append("The player has recently struggled with: ");
-            prompt.append(String.join(", ", playerMistakes));
-            prompt.append(". Be attentive to these areas without being repetitive. ");
-        }
-
-        // Add information about what's been covered
-        if (!conceptsExplained.isEmpty()) {
-            prompt.append("You've already explained these concepts: ");
-            prompt.append(String.join(", ", conceptsExplained));
-            prompt.append(". You can reference them but avoid re-explaining unless asked. ");
-        }
-
-        // Add any other context keys
-        for (Map.Entry<String, Object> entry : playerContext.entrySet()) {
-            if (!entry.getKey().equals("skillLevel")) { // Already handled above
-                prompt.append(entry.getKey()).append(": ").append(entry.getValue()).append(". ");
-            }
-        }
-
-        // If we have a specific system prompt set, combine it with the context
-        if (systemPrompt != null && !systemPrompt.isEmpty()) {
-            prompt.append("\n\n").append(systemPrompt);
-        }
-
-        // Update the first message which should be the system message
-        if (!conversationHistory.isEmpty() && conversationHistory.get(0).role.equals("system")) {
-            conversationHistory.set(0, new Message("system", prompt.toString()));
-        } else {
-            // Insert a system message if none exists
-            conversationHistory.add(0, new Message("system", prompt.toString()));
-        }
-    }
-
-    /**
-     * Sends a user message to the API and returns the response
-     * Now ensures system prompt is consistently applied
-     */
-    public String sendMessage(String userMessage) {
+    public String getChatCompletionWithHistory(ConversationManager conversationManager) {
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API key not set");
             return "Error: API key not configured.";
         }
 
         try {
-            // Add the user message to the conversation history
-            conversationHistory.add(new Message("user", userMessage));
+            // Create request JSON
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", model);
+            requestBody.put("max_tokens", 250);
 
-            // Trim conversation if it gets too long
-            if (conversationHistory.size() > MAX_CONVERSATION_LENGTH + 1) { // +1 for system message
-                conversationHistory.subList(1, 2).clear(); // Remove oldest user/assistant pair
+            // Add messages
+            JSONArray messagesArray = new JSONArray();
+            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
+
+            for (ConversationManager.Message message : messages) {
+                JSONObject messageObj = new JSONObject();
+                messageObj.put("role", message.getRole());
+                messageObj.put("content", message.getContent());
+                messagesArray.put(messageObj);
             }
 
-            // Before creating the chat request, ensure the system prompt is applied
-            if (!conversationHistory.isEmpty() && systemPrompt != null && !systemPrompt.isEmpty()) {
-                // Replace the first message (system message) with our chess-specific prompt
-                if (conversationHistory.get(0).role.equals("system")) {
-                    conversationHistory.set(0, new Message("system", systemPrompt));
-                } else {
-                    // Insert a system message if the first one isn't a system message
-                    conversationHistory.add(0, new Message("system", systemPrompt));
-                }
-            }
+            requestBody.put("messages", messagesArray);
 
-            // Create the API request with appropriate token limit
-            ChatRequest chatRequest = new ChatRequest(model, conversationHistory, 150);
-            String requestJson = gson.toJson(chatRequest);
-            Log.d(TAG, "FULL OPENAI REQUEST: " + requestJson);
+            // Log request for debugging
+            Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody.toString());
 
-            // Log a sample of the request for debugging (no sensitive data)
-            Log.d(TAG, "Sending request with " + conversationHistory.size() +
-                    " messages, user message length: " + userMessage.length());
-
-            RequestBody body = RequestBody.create(requestJson, JSON);
+            // Create HTTP request
+            RequestBody body = RequestBody.create(requestBody.toString(), JSON);
             Request request = new Request.Builder()
                     .url(API_URL)
-                    .addHeader("Authorization", "Bearer " + apiKey)
-                    .addHeader("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
                     .post(body)
                     .build();
 
-            // Execute the request
-            Response response = client.newCall(request).execute();
-            if (!response.isSuccessful()) {
-                Log.e(TAG, "API Error: " + response.code());
-                if (response.body() != null) {
-                    Log.e(TAG, "Error details: " + response.body().string());
+            // Make API call
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "API Error: " + response.code());
+                    if (response.body() != null) {
+                        Log.e(TAG, "Error details: " + response.body().string());
+                    }
+                    return "Sorry, I had trouble connecting to my chess brain. Please try again.";
                 }
-                return "Sorry, I had trouble connecting to my chess brain. Please try again.";
-            }
 
-            ResponseBody responseBody = response.body();
-            if (responseBody == null) {
-                return "Sorry, I received an empty response. Please try again.";
-            }
+                String responseBody = response.body() != null ? response.body().string() : "";
+                Log.d(TAG, "OPENAI RESPONSE: " + responseBody);
 
-            // Parse the response
-            String responseJson = responseBody.string();
-            Log.d(TAG, "OPENAI RESPONSE: " + responseJson);
-            ChatResponse chatResponse = gson.fromJson(responseJson, ChatResponse.class);
+                // Parse response
+                JSONObject jsonResponse = new JSONObject(responseBody);
+                JSONArray choices = jsonResponse.getJSONArray("choices");
 
-            if (chatResponse != null && chatResponse.choices != null && !chatResponse.choices.isEmpty()) {
-                String assistantResponse = chatResponse.choices.get(0).message.content;
-
-                // Add the assistant's response to the conversation history
-                conversationHistory.add(new Message("assistant", assistantResponse));
-
-                // Check for concepts explained
-                checkForConceptsExplained(assistantResponse);
-
-                return assistantResponse;
-            } else {
-                return "Sorry, I couldn't generate a response. Please try again.";
-            }
-
-        } catch (IOException e) {
-            Log.e(TAG, "Error sending message to OpenAI", e);
-            return "Sorry, there was a problem communicating with the chess coach. Please check your internet connection.";
-        }
-    }
-
-    /**
-     * Check a response for chess concepts that should be recorded as explained
-     */
-    private void checkForConceptsExplained(String response) {
-        String responseLower = response.toLowerCase();
-
-        // Check for common chess concepts
-        if (responseLower.contains("pin") || responseLower.contains("pinned")) {
-            recordConceptExplained("pins");
-        }
-        if (responseLower.contains("fork") || responseLower.contains("forking")) {
-            recordConceptExplained("forks");
-        }
-        if (responseLower.contains("skewer")) {
-            recordConceptExplained("skewers");
-        }
-        if (responseLower.contains("discovered") && (responseLower.contains("check") ||
-                responseLower.contains("attack"))) {
-            recordConceptExplained("discovered attacks");
-        }
-        if (responseLower.contains("doubled") && responseLower.contains("pawn")) {
-            recordConceptExplained("doubled pawns");
-        }
-        if (responseLower.contains("isolated") && responseLower.contains("pawn")) {
-            recordConceptExplained("isolated pawns");
-        }
-        if (responseLower.contains("castl")) {
-            recordConceptExplained("castling");
-        }
-        if (responseLower.contains("develop") &&
-                (responseLower.contains("piece") || responseLower.contains("knight") ||
-                        responseLower.contains("bishop"))) {
-            recordConceptExplained("development");
-        }
-        if (responseLower.contains("center") || responseLower.contains("central")) {
-            recordConceptExplained("center control");
-        }
-    }
-
-    /**
-     * Generate chess advice based on the current position
-     */
-    public String generateChessAdvice(String fen, String lastMove, String playerColor) {
-        this.currentFEN = fen;
-        this.playerColor = playerColor;
-
-        String prompt = "The current chess position in FEN notation is: " + fen + ". ";
-
-        if (lastMove != null && !lastMove.isEmpty()) {
-            prompt += "The last move was " + lastMove + ". ";
-        }
-
-        prompt += "I'm playing as " + playerColor + ". ";
-        prompt += "Please give me brief advice about my position and what I should be focusing on.";
-
-        return sendMessage(prompt);
-    }
-
-    /**
-     * Generate enhanced chess advice with full game context
-     */
-    public String generateEnhancedChessAdvice(String fen, List<String> moveHistory, String playerColor) {
-        // First, store this information in our state
-        this.currentFEN = fen;
-        this.playerColor = playerColor;
-
-        StringBuilder prompt = new StringBuilder();
-        prompt.append("I'm analyzing a chess game in progress.\n\n");
-        prompt.append("Current position (FEN): ").append(fen).append("\n\n");
-
-        // Add move history with proper formatting - THIS IS KEY!
-        if (moveHistory != null && !moveHistory.isEmpty()) {
-            prompt.append("Complete game moves in sequence:\n");
-            int moveNum = 1;
-            for (int i = 0; i < moveHistory.size(); i += 2) {
-                prompt.append(moveNum).append(". ");
-                prompt.append(moveHistory.get(i));
-                if (i + 1 < moveHistory.size()) {
-                    prompt.append(" ").append(moveHistory.get(i + 1));
+                if (choices.length() > 0) {
+                    JSONObject choice = choices.getJSONObject(0);
+                    JSONObject message = choice.getJSONObject("message");
+                    return message.getString("content");
+                } else {
+                    return "Sorry, I couldn't generate a response. Please try again.";
                 }
-                prompt.append("\n");
-                moveNum++;
             }
+
+        } catch (JSONException | IOException e) {
+            Log.e(TAG, "Error in chat completion: " + e.getMessage());
+            return "I encountered an error processing your request: " + e.getMessage();
         }
-
-        prompt.append("\nI'm playing as ").append(playerColor);
-        prompt.append(".\n\nAnalyze my position and suggest what I should focus on next. ");
-        prompt.append("IMPORTANT: Your analysis MUST reference specific moves from the provided game history.");
-        // Add this to the end of the prompt in generateEnhancedChessAdvice
-        prompt.append("\n\nYOUR RESPONSE MUST BEGIN BY REFERRING TO A SPECIFIC MOVE NUMBER FROM THE GAME HISTORY.");
-
-        return sendMessage(prompt.toString());
     }
 
     /**
-     * Evaluate a specific move
+     * Get a direct completion with system prompt and user message
      */
-    public String evaluateMove(String fen, String move, String playerColor) {
-        this.currentFEN = fen;
-        this.playerColor = playerColor;
+    public String getChatCompletion(String systemPrompt, String userMessage) {
+        ConversationManager tempManager = new ConversationManager();
+        tempManager.clear();
+        tempManager.addSystemMessage(systemPrompt);
+        tempManager.addUserMessage(userMessage);
 
-        String prompt = "In this chess position: " + fen + ", ";
-        prompt += "I'm playing as " + playerColor + " and considering the move " + move + ". ";
-        prompt += "Is this a good move? Why or why not? Please be concise.";
-
-        return sendMessage(prompt);
+        return getChatCompletionWithHistory(tempManager);
     }
 
     /**
-     * Reset the conversation history, keeping only the system message
+     * Method to match existing API - this helps fix the compilation error
      */
-    public void resetConversation() {
-        String systemMsg = conversationHistory.isEmpty() ? "" :
-                (conversationHistory.get(0).role.equals("system") ?
-                        conversationHistory.get(0).content : "");
+    public String sendMessage(String userMessage) {
+        // Create a temporary conversation
+        ConversationManager tempManager = new ConversationManager();
 
-        conversationHistory.clear();
+        // Add system message
+        tempManager.addSystemMessage("You are Coach Tal, a FIDE-rated chess expert analyzing games. " +
+                "Be encouraging, supportive, and share insights about chess strategy in your responses. " +
+                "Keep your answers concise and focused.");
 
-        // Re-add the system message if we had one
-        if (!systemMsg.isEmpty()) {
-            conversationHistory.add(new Message("system", systemMsg));
-        } else if (systemPrompt != null && !systemPrompt.isEmpty()) {
-            // Use the stored system prompt if no system message was in conversation
-            conversationHistory.add(new Message("system", systemPrompt));
-        }
+        // Add user message
+        tempManager.addUserMessage(userMessage);
 
-        // Don't reset context tracking - we want to remember concepts explained
-        // across conversation resets
-    }
-
-    // Request and response classes for OpenAI API
-    private static class Message {
-        @SerializedName("role")
-        String role;
-
-        @SerializedName("content")
-        String content;
-
-        public Message(String role, String content) {
-            this.role = role;
-            this.content = content;
-        }
-    }
-
-    private static class ChatRequest {
-        @SerializedName("model")
-        String model;
-
-        @SerializedName("messages")
-        List<Message> messages;
-
-        @SerializedName("max_tokens")
-        int maxTokens;
-
-        public ChatRequest(String model, List<Message> messages, int maxTokens) {
-            this.model = model;
-            this.messages = messages;
-            this.maxTokens = maxTokens;
-        }
-    }
-
-    private static class ChatResponse {
-        @SerializedName("choices")
-        List<Choice> choices;
-
-        private static class Choice {
-            @SerializedName("message")
-            Message message;
-        }
+        // Get response
+        return getChatCompletionWithHistory(tempManager);
     }
 }

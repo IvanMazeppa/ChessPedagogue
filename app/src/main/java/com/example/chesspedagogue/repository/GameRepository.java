@@ -25,6 +25,8 @@ public class GameRepository {
     private final Handler mainHandler;
     private final Context context;
 
+    private int lastMoveCount = 0;
+
     public GameRepository(Context context) {
 
         this.context = context;
@@ -103,36 +105,7 @@ public class GameRepository {
         }
     }
 
-    // Make this method return boolean so GameViewModel can check success
-    public boolean makeMove(String move) {
-        try {
-            // Create a complete command with the move
-            StringBuilder command = new StringBuilder("position startpos");
 
-            // Get existing moves from history if needed
-            // (We might need to add this logic depending on how you're tracking move history)
-
-            // Add the new move
-            command.append(" moves ").append(move);
-
-            // Send the command to Stockfish
-            stockfishManager.sendCommand(command.toString());
-
-            // Wait for the engine to process
-            boolean success = stockfishManager.waitForReady(1000);
-
-            // Update our cached FEN after the move
-            if (success) {
-                cachedFEN = stockfishManager.getCurrentFEN();
-            }
-
-            return success;
-        } catch (IOException e) {
-            // Log the error
-            Log.e(TAG, "Error making move: " + move, e);
-            return false;
-        }
-    }
 
     // Add other necessary methods
     public List<String> getLegalMovesForPiece(int row, int col) {
@@ -192,32 +165,83 @@ public class GameRepository {
         });
     }
 
-    // Add this to GameRepository.java
+
+    /**
+     * Applies a sequence of moves from the starting position.
+     * Uses a sequential approach to ensure proper state management.
+     */
+    // Corrected version of the applyMoves method:
     public boolean applyMoves(List<String> moves) {
         try {
-            // Create a command with ALL moves
-            StringBuilder command = new StringBuilder("position startpos");
-            if (moves != null && !moves.isEmpty()) {
-                command.append(" moves");
-                for (String m : moves) {
-                    command.append(" ").append(m);
+            // Always reset if we have no moves
+            if (moves == null || moves.isEmpty()) {
+                stockfishManager.setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                cachedFEN = stockfishManager.getCurrentFEN();
+                lastMoveCount = 0;
+                return true;
+            }
+
+            // For debugging - let's print the current position and number of moves
+            Log.d(TAG, "Applying " + moves.size() + " moves. Current position: " + cachedFEN);
+
+            // Start from a clean position for consistency
+            stockfishManager.setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+            // Apply all moves sequentially
+            for (int i = 0; i < moves.size(); i++) {
+                String move = moves.get(i);
+                Log.d(TAG, "Applying move " + (i+1) + " of " + moves.size() + ": " + move);
+
+                // Build the command with all moves up to this point
+                String command = "position startpos moves " +
+                        String.join(" ", moves.subList(0, i+1));
+
+                // Send the command (void return type)
+                stockfishManager.sendCommand(command);
+
+                // Wait for the engine to process and check success
+                boolean success = stockfishManager.waitForReady(50);
+
+                if (!success) {
+                    Log.e(TAG, "Failed to apply moves up to: " + move);
+                    return false;
                 }
             }
 
-            // Send the command
-            stockfishManager.sendCommand(command.toString());
+            // Update the cached FEN
+            cachedFEN = stockfishManager.getCurrentFEN();
+            lastMoveCount = moves.size();
 
-            // Wait for the engine to process
-            boolean success = stockfishManager.waitForReady(1000);
+            Log.d(TAG, "Successfully applied " + moves.size() + " moves. New position: " + cachedFEN);
+            return true;
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying moves: " + e.getMessage(), e);
+            return false;
+        }
+    }
 
-            // Update our cached FEN after applying moves
+
+    /**
+     * Makes a single move from the current position.
+     * This method handles the IOException internally.
+     */
+    // In GameRepository.java - optimize the makeMove method
+    public boolean makeMove(String move) {
+        try {
+            // Apply the move directly to current position
+            stockfishManager.sendCommand("position fen " + cachedFEN + " moves " + move);
+
+            // Wait for engine to process (we can reduce this time from 100ms)
+            boolean success = stockfishManager.waitForReady(50); // Cut waiting time in half
+
+            // Update cached FEN if successful
             if (success) {
                 cachedFEN = stockfishManager.getCurrentFEN();
             }
 
             return success;
         } catch (IOException e) {
-            Log.e(TAG, "Error applying moves: " + e.getMessage(), e);
+            Log.e(TAG, "Error making move: " + e.getMessage());
             return false;
         }
     }
