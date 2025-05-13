@@ -12,143 +12,112 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Preserve the original LinearLayout structure -->
+        <!-- Main structure -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical">
-
-            <!-- Status Bar -->
+            <!-- Status Bar - Redesigned with Clear Button Purposes -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#F8F8F8"
                 android:orientation="horizontal"
-                android:padding="8dp">
-                <Button
-                    android:id="@+id/settingsButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Settings"
-                    android:layout_gravity="end"
-                    android:layout_margin="16dp"/>
+                android:padding="12dp"
+                android:gravity="center_vertical">
 
+                <!-- Status Text - More Room to Breathe -->
                 <TextView
                     android:id="@+id/statusTextView"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Welcome to Chess AI Tutor!"
+                    android:text="Welcome to Chess Pedagogue!"
                     android:textColor="#333333"
-                    android:textSize="16sp" />
+                    android:textSize="16sp"
+                    android:layout_marginStart="8dp" />
 
-                <!-- Unified AI Coach & Voice Button -->
+                <!-- Game Analysis Button - Logic & Understanding -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/voiceInputButton"
+                    android:id="@+id/gameAnalysisButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_marginEnd="8dp"
-                    android:contentDescription="Voice Input"
-                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Analyze Position"
+                    android:src="@android:drawable/ic_menu_search"
+                    app:backgroundTint="#4CAF50"
+                    app:tint="@android:color/white"
                     app:fabSize="mini" />
 
-                <!-- Strategic advice button -->
+                <!-- Coach Button - Wisdom & Guidance -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/chessCoachButton"
+                    android:id="@+id/coachButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:contentDescription="Ask Chess Coach"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="Ask Coach Tal"
                     android:src="@android:drawable/ic_dialog_info"
+                    app:backgroundTint="#2196F3"
+                    app:tint="@android:color/white"
                     app:fabSize="mini" />
 
-                <!-- Chat panel toggle button -->
+                <!-- Tap-to-Speak Button - Voice Interaction -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/conversationButton"
+                    android:id="@+id/speakButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:contentDescription="Chat with Coach"
-                    android:src="@android:drawable/sym_action_chat"
+                    android:contentDescription="Speak to Coach Tal"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    app:backgroundTint="#FF5722"
+                    app:tint="@android:color/white"
                     app:fabSize="mini" />
             </LinearLayout>
 
-            <!-- Chess Board -->
+            <!-- Chess Board with increased weight -->
             <com.example.chesspedagogue.ChessBoardView
                 android:id="@+id/chessBoardView"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1" />
+                android:layout_weight="3" />
 
-            <!-- Bottom Section -->
+            <!-- Bottom controls - horizontal layout -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="#F0F0F0"
-                android:orientation="vertical"
+                android:orientation="horizontal"
                 android:padding="8dp">
 
-                <!-- Coach dialog section -->
-                <androidx.cardview.widget.CardView
-                    android:id="@+id/coachMessageCard"
-                    android:layout_width="match_parent"
+                <!-- First column: Buttons -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:visibility="gone"
-                    app:cardCornerRadius="8dp"
-                    app:cardElevation="4dp">
+                    android:orientation="vertical">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <Button
+                        android:id="@+id/recordButton"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="12dp">
+                        android:text="Record 5s" />
 
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Coach Tal"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                    <!-- New Reset Button - Added Here! -->
+                    <Button
+                        android:id="@+id/resetButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Reset Coach"
+                        android:layout_marginTop="8dp"
+                        android:backgroundTint="#F44336"
+                        android:textColor="#FFFFFF" />
 
-                        <TextView
-                            android:id="@+id/coachMessageText"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:textSize="14sp" />
+                </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
-                            android:orientation="horizontal">
-
-                            <Button
-                                android:id="@+id/askFollowUpButton"
-                                style="@style/Widget.MaterialComponents.Button.TextButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
-                                android:text="Ask Follow-up"
-                                android:textSize="12sp" />
-
-                            <Button
-                                android:id="@+id/dismissCoachButton"
-                                style="@style/Widget.MaterialComponents.Button.TextButton"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Dismiss"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
-                <!-- Move History -->
+                <!-- Second column: Compact Move History -->
                 <ScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="120dp">
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp">
 
                     <LinearLayout
                         android:id="@+id/moveHistoryContainer"
@@ -160,29 +129,108 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="Move History"
-                            android:textSize="16sp"
+                            android:textSize="14sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/moveHistoryTextView"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:textSize="14sp" />
+                            android:textSize="12sp" />
                     </LinearLayout>
                 </ScrollView>
-
-                <!-- Game Analysis Button -->
-                <Button
-                    android:id="@+id/gameAnalysisButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Game Analysis" />
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Chat panel overlay (fixed the gravity attribute) -->
+        <!-- Coach message card with all the required elements -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/coachMessageCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top"
+            android:layout_marginTop="60dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+            <!-- Complete card content with all necessary elements -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <!-- Title for coach card -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Coach Tal"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <!-- Microphone indicator (hidden by default) -->
+                <FrameLayout
+                    android:id="@+id/micIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:tint="#FF5722" />
+
+                    <TextView
+                        android:id="@+id/listeningText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal|bottom"
+                        android:layout_marginTop="8dp"
+                        android:text="Listening..."
+                        android:textStyle="italic" />
+                </FrameLayout>
+
+                <!-- Coach message text - this displays the coach's response -->
+                <TextView
+                    android:id="@+id/coachMessageText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textSize="14sp" />
+
+                <!-- Action buttons for the coach card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/askFollowUpButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Ask Follow-up"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/dismissCoachButton"
+                        style="@style/Widget.MaterialComponents.Button.TextButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Dismiss"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Chat panel -->
         <include
             android:id="@+id/chatPanel"
             layout="@layout/chat_panel_layout"
@@ -191,95 +239,4 @@
             android:layout_gravity="bottom"
             android:visibility="gone" />
     </FrameLayout>
-
-    <!-- Bottom sheet for coach messages -->
-    <LinearLayout
-        android:id="@+id/coachBottomSheet"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/rounded_panel_background"
-        android:orientation="vertical"
-        android:padding="16dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
-
-
-        <!-- Drag handle for resizing -->
-        <View
-            android:id="@+id/bottomSheetDragHandle"
-            android:layout_width="40dp"
-            android:layout_height="4dp"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="8dp"
-            android:background="#CCCCCC" />
-        <!-- Add this right after the drag handle in your bottom sheet -->
-        <LinearLayout
-            android:id="@+id/conversationStatusIndicator"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="8dp">
-
-            <ImageView
-                android:id="@+id/conversationStatusIcon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_microphone" />
-
-            <TextView
-                android:id="@+id/conversationStatusText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:layout_marginStart="8dp"
-                android:text="Tap to speak"
-                android:textStyle="italic" />
-        </LinearLayout>
-
-        <!-- Coach name -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Coach Tal"
-            android:textStyle="bold"
-            android:textSize="16sp" />
-
-        <!-- Scrollable text area -->
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:maxHeight="120dp">
-
-            <TextView
-                android:id="@+id/bottomSheetMessageText"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="14sp" />
-        </ScrollView>
-
-        <!-- Quick action buttons -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp">
-
-            <Button
-                android:id="@+id/bottomSheetRespondButton"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:text="Respond"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/bottomSheetDismissButton"
-                style="@style/Widget.MaterialComponents.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Dismiss"
-                android:textSize="12sp" />
-        </LinearLayout>
-    </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

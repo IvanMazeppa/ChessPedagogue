@@ -258,6 +258,34 @@ public class StockfishManager {
         }
     }
 
+    // In StockfishManager.java
+    public boolean makeSingleMove(String move) {
+        try {
+            // First get the current FEN
+            String currentPosition = getCurrentFEN();
+
+            // Apply just this one move from the current position
+            String command = "position fen " + currentPosition + " moves " + move;
+            sendCommand(command);
+
+            // Wait for engine to process
+            boolean success = waitForReady(100);
+
+            // If successful, update the cached FEN
+            if (success) {
+                currentFEN = getCurrentFEN();
+                Log.d(TAG, "Move applied successfully. New position: " + currentFEN);
+            } else {
+                Log.d(TAG, "Failed to apply move: " + move);
+            }
+
+            return success;
+        } catch (IOException e) {
+            Log.e(TAG, "Error making move", e);
+            return false;
+        }
+    }
+
     /**
      * Sets the skill level of the engine (0-20).
      *
@@ -564,12 +592,15 @@ public class StockfishManager {
      */
     public boolean isLegalMove(String move) {
         try {
-            // Set up the position and try the move
+            Log.d(TAG, "Checking if move is legal: " + move);
             String posCommand = "position fen " + currentFEN + " moves " + move;
             sendCommand(posCommand);
 
-            // If the position is valid, we should get "readyok" when we check if ready
-            return waitForReady(100);
+
+            // Log the result
+            boolean isValid = waitForReady(100);
+            Log.d(TAG, "Move " + move + " is " + (isValid ? "legal" : "illegal"));
+            return isValid;
         } catch (IOException e) {
             Log.e(TAG, "Error checking legal move", e);
             return false;

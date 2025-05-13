@@ -1,22 +1,47 @@
-// Create this new file: ChatMessage.java
 package com.example.chesspedagogue;
 
+/**
+ * Represents a message in the chat conversation between user and AI.
+ */
 public class ChatMessage {
-    public static final int TYPE_USER = 0;
-    public static final int TYPE_COACH = 1;
+    // Message types for UI display
+    public static final int TYPE_USER = 1;
+    public static final int TYPE_COACH = 2;
 
-    private int type;
-    private String message;
-    private long timestamp;
+    private final int type;
+    private final String message;
 
+    /**
+     * Create a new chat message
+     * @param type The type of message (TYPE_USER or TYPE_COACH)
+     * @param message The message content
+     */
     public ChatMessage(int type, String message) {
         this.type = type;
         this.message = message;
-        this.timestamp = System.currentTimeMillis();
     }
 
-    // Getters
-    public int getType() { return type; }
-    public String getMessage() { return message; }
-    public long getTimestamp() { return timestamp; }
+    /**
+     * Create a message for API conversation (not UI display)
+     * @param role The role ("user", "assistant", or "system")
+     * @param content The message content
+     */
+    public ChatMessage(String role, String content) {
+        this.type = role.equals("user") ? TYPE_USER : TYPE_COACH;
+        this.message = content;
+        this.role = role;
+        this.content = content;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    // For API compatibility
+    public String role;
+    public String content;
 }
