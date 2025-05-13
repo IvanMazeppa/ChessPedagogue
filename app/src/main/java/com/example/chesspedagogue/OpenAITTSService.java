@@ -75,7 +75,7 @@ public class OpenAITTSService {
     private static final int MEMORY_CACHE_SIZE = 10;        // Number of audio files to keep in memory
     private static final int DISK_CACHE_MAX_SIZE = 100;     // Max number of files in disk cache
     private static final long DISK_CACHE_MAX_BYTES = 100 * 1024 * 1024; // 100 MB max cache size
-    private static final int MAX_PARALLEL_REQUESTS = 3;     // Max parallel API requests
+    private static final int MAX_PARALLEL_REQUESTS = 1;     // Max parallel API requests
 
     // Sentence splitting pattern (end of sentence followed by space or end of text)
     private static final Pattern SENTENCE_PATTERN = Pattern.compile("([.!?])\\s+|([.!?])$");
@@ -98,8 +98,53 @@ public class OpenAITTSService {
 
     // Audio playback components
     private final ExoPlayer player;
+    private final ConcurrentLinkedQueue<TTSRequest> requestQueue = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean isProcessingQueue = new AtomicBoolean(false);
     private final ConcurrentLinkedQueue<File> audioQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isPlaying = new AtomicBoolean(false);
+
+    // Add this class definition:
+    private static class TTSRequest {
+        final String text;
+        final String voice;
+        final String model;
+        final String cacheKey;
+        final TTSCallback callback;
+
+        TTSRequest(String text, String voice, String model, String cacheKey, TTSCallback callback) {
+            this.text = text;
+            this.voice = voice;
+            this.model = model;
+            this.cacheKey = cacheKey;
+            this.callback = callback;
+        }
+    }
+
+    private void queueTTSRequest(String text, String voice, String model, String cacheKey, TTSCallback callback) {
+        // Add to queue
+        requestQueue.add(new TTSRequest(text, voice, model, cacheKey, callback));
+
+        // Start processing if not already running
+        if (isProcessingQueue.compareAndSet(false, true)) {
+            processNextInQueue();
+        }
+    }
+
+    private void processNextInQueue() {
+        TTSRequest request = requestQueue.poll();
+        if (request == null) {
+            isProcessingQueue.set(false);
+            return;
+        }
+
+        // Process the request
+        requestTTS(request.text, request.voice, request.model, request.cacheKey, request.callback);
+
+        // We'll continue processing the queue after this request completes
+        // That logic should be in the callback from requestTTS
+    }
+
+
 
     // Caching components
     private final LruCache<String, File> memoryCache;
@@ -188,6 +233,7 @@ public class OpenAITTSService {
      * @param model The model quality to use
      * @param callback Callback for events
      */
+
     public void speak(String text, String voice, String model, TTSCallback callback) {
         if (apiKey == null || apiKey.isEmpty()) {
             mainHandler.post(() -> callback.onError("API key not set"));
@@ -203,6 +249,7 @@ public class OpenAITTSService {
             mainHandler.post(() -> callback.onError("Empty text provided"));
             return;
         }
+
 
         // Calculate cache key
         String cacheKey = generateCacheKey(text, voice, model);
@@ -245,6 +292,9 @@ public class OpenAITTSService {
             // For shorter text, make a single request
             requestTTS(text, voice, model, cacheKey);
         }
+
+        // If not in cache, queue the request
+        queueTTSRequest(text, voice, model, cacheKey, callback);
     }
 
     /**
@@ -402,13 +452,14 @@ public class OpenAITTSService {
     }
 
     private void requestTTS(String text, String voice, String model, String cacheKey, TTSCallback singleCallback) {
+        // Find this in requestTTS or a similar method
         if (activeRequests.incrementAndGet() > MAX_PARALLEL_REQUESTS) {
             // If we have too many active requests, wait and retry
-            Log.d(TAG, "Too many active requests, delaying: " + text.substring(0, Math.min(20, text.length())));
             activeRequests.decrementAndGet();
-            mainHandler.postDelayed(() -> requestTTS(text, voice, model, cacheKey, singleCallback), 500);
+            mainHandler.postDelayed(() -> requestTTS(text, voice, model, cacheKey, singleCallback), 500); // Simple delay and retry
             return;
         }
+
 
         // Execute the request on a background thread
         executorService.execute(() -> {

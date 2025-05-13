@@ -81,8 +81,14 @@ dependencies {
     // chesslib for chess rules and move generation
     implementation "com.github.bhlangonijr:chesslib:1.3.4"
     // Add ExoPlayer for streaming audio
+    // ExoPlayer dependencies
     implementation 'com.google.android.exoplayer:exoplayer-core:2.18.7'
+    implementation 'com.google.android.exoplayer:exoplayer:2.18.7'
+
+    // If you need UI controls
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.18.7'
+
+
 
     // Testing dependencies
     androidTestImplementation libs.junit

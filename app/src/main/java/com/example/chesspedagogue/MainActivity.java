@@ -51,6 +51,10 @@ import android.content.Intent;
 import android.view.Menu;
 import android.view.MenuItem;
 import com.example.chesspedagogue.GameStateRepository;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -58,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
     // Core components
     private StockfishManager engine;
     private ChessGameManager gameManager;
+    private AudioConversationManager audioConversationManager;
+    private static final int PERMISSION_REQUEST_MICROPHONE = 101;
     // Add the voice controller right here, with your other field declarations:
     private ChessCoachManager.VoiceRecognitionController voiceController =
             new ChessCoachManager.VoiceRecognitionController() {
@@ -92,7 +98,6 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton conversationButton;
 
     private Vibrator vibrator;
-    private static final int PERMISSION_REQUEST_MICROPHONE = 101;
 
     // Move history tracking
     private TextView moveHistoryTextView;
@@ -127,26 +132,12 @@ public class MainActivity extends AppCompatActivity {
         // Initialize ViewModel
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
-        // Add this to your onCreate() in MainActivity, after initializing gameViewModel
-        gameViewModel.getCurrentFEN().observe(this, fen -> {
-            if (fen != null) {
-                Log.d(TAG, "📋 Updating board with FEN: " + fen);
-                boardView.updateBoardFromFen(fen);
-            }
-        });
-
-
-
         // Set up observers for LiveData
         setupObservers();
 
         playerColorChoice = getIntent().getStringExtra("PLAYER_COLOR");
         if (playerColorChoice == null) playerColorChoice = "white";
 
-        // Initialize board with player color from intent (or default)
-        //String playerColor = getIntent().getStringExtra("PLAYER_COLOR");
-        //if (playerColor == null) playerColor = "white";
-        //gameViewModel.newGame(playerColor);
 
         // Connect chess board view click listener
         boardView = findViewById(R.id.chessBoardView);
@@ -184,9 +175,8 @@ public class MainActivity extends AppCompatActivity {
         bottomSheetBehavior = BottomSheetBehavior.from(coachBottomSheet);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
 
-        // In your MainActivity's onCreate method, after initializing chessCoach
+        // Get or create chessCoach
         chessCoach = ChessCoachManager.getInstance(this);
-        // Add this line to connect to the ViewModel:
         chessCoach.connectToGameViewModel(gameViewModel);
 
         // In MainActivity.java - in onCreate() after initializing chessCoach
@@ -234,6 +224,13 @@ public class MainActivity extends AppCompatActivity {
                     bottomSheetMessageText.setText("Conversation ended. Tap play to start again.");
                 });
             }
+
+            @Override
+            public void onPartialResponse(String partialText) {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText(partialText);
+                });
+            }
         });
 
         // In MainActivity.java - add this to your onCreate() method
@@ -255,8 +252,10 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        // Add this in your onCreate method, after initializing the bottom sheet components
-        // Make the ENTIRE bottom sheet respond to taps for interruption
+        // In onCreate, call the initialization:
+        initializeAudioConversation();
+
+        // Set up bottom sheet click listener
         coachBottomSheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -304,8 +303,7 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-
-        // Add this after initializing the bottom sheet
+        // Set up bottom sheet drag handle
         View bottomSheetDragHandle = findViewById(R.id.bottomSheetDragHandle);
         bottomSheetDragHandle.setOnTouchListener(new View.OnTouchListener() {
             private float initialY;
@@ -395,7 +393,7 @@ public class MainActivity extends AppCompatActivity {
             chessCoach.stopSpeaking();
         });
 
-        // Initialize the chess coach
+        // Initialize chess coach
         initializeChessCoach();
 
         voiceInputButton.setOnClickListener(new View.OnClickListener() {
@@ -433,9 +431,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-
-
-        // Setup other coach UI elements
         askFollowUpButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -450,10 +445,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // In your onCreate method, after initializing other buttons
-
-        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
-        // Top-right  conversation button click handler
         conversationButton.setOnClickListener(v -> {
             Log.d(TAG, "Top button clicked, starting conversation");
             if (inConversationMode) {
@@ -484,10 +475,6 @@ public class MainActivity extends AppCompatActivity {
         // Initialize the engine using the native library approach
         initializeStockfishEngine(skillLevel);
 
-
-
-
-
         // Setup game analysis button
         Button gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
         if (gameAnalysisButton != null) {
@@ -500,6 +487,133 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+    private void initializeAudioConversation() {
+        // Create the manager
+        audioConversationManager = new AudioConversationManager(this);
+
+        // Get API key from secure storage if available
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        if (apiKey != null && !apiKey.isEmpty()) {
+            audioConversationManager.setApiKey(apiKey);
+        }
+
+        // Add this to your onCreate() in MainActivity, after initializing gameViewModel
+        gameViewModel.getCurrentFEN().observe(this, fen -> {
+            if (fen != null) {
+                Log.d(TAG, "📋 Updating board with FEN: " + fen);
+                boardView.updateBoardFromFen(fen);
+            }
+        });
+
+        // In onCreate, add this initialization:
+
+        // Set the system prompt
+        String systemPrompt = "You are Coach Tal, a brilliant attacking chess master and the 8th World Chess Champion. " +
+                "Your tactical vision and creativity are legendary. When analyzing positions, you MUST:\n\n" +
+                "- Begin your VERY FIRST SENTENCE by directly referencing a specific move from the history\n" +
+                "- If at starting position: \"I see we're at the starting position with no moves played yet.\"\n" +
+                "- NEVER give generic advice without tying it to specific moves in THIS game\n" +
+                "- Look for tactical opportunities and creative possibilities, just as Tal would";
+
+        audioConversationManager.setSystemPrompt(systemPrompt);
+
+        // Set up listener for conversation events
+        audioConversationManager.setConversationListener(new AudioConversationManager.ConversationListener() {
+            @Override
+            public void onStateChanged(AudioConversationManager.State newState) {
+                runOnUiThread(() -> {
+                    switch (newState) {
+                        case IDLE:
+                            bottomSheetMessageText.setText("Tap to start conversation");
+                            break;
+                        case CONNECTING:
+                            bottomSheetMessageText.setText("Connecting to Chess Coach...");
+                            break;
+                        case LISTENING:
+                            bottomSheetMessageText.setText("I'm listening... Go ahead!");
+                            break;
+                        case PROCESSING:
+                            bottomSheetMessageText.setText("Processing your question...");
+                            break;
+                        case SPEAKING:
+                            // Text will be updated by onTextResponse
+                            break;
+                    }
+                });
+            }
+            @Override
+            public void onConnected() {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Connected to Chess Coach!", Toast.LENGTH_SHORT).show();
+                    // Show the bottom sheet
+                    bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+                    bottomSheetMessageText.setText("Error: " + message);
+                });
+            }
+
+            @Override
+            public void onTextResponse(String text) {
+                runOnUiThread(() -> {
+                    bottomSheetMessageText.setText(text);
+                });
+            }
+
+            // Add this method inside each of your ConversationListener anonymous classes
+            @Override
+            public void onPartialResponse(String partialText) {
+                // Update UI with partial text as it comes in
+                runOnUiThread(() -> {
+                    // Update the bottomSheetMessageText or other UI elements
+                    if (bottomSheetMessageText != null) {
+                        bottomSheetMessageText.setText(partialText);
+                    }
+                });
+            }
+
+        });
+
+
+        // Set up respond button
+        bottomSheetRespondButton.setOnClickListener(v -> {
+            startVoiceRecognition();
+        });
+
+        // Set up dismiss button
+        bottomSheetDismissButton.setOnClickListener(v -> {
+            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+            chessCoach.stopSpeaking();
+        });
+
+        // Initialize the chess coach
+        initializeChessCoach();
+
+
+
+
+
+        // Setup other coach UI elements
+
+        // In your onCreate method, after initializing other buttons
+
+        FloatingActionButton conversationButton = findViewById(R.id.conversationButton);
+        // Top-right  conversation button click handler
+
+
+
+
+
+
+
+
+
     }
 
     /**
@@ -718,39 +832,6 @@ public class MainActivity extends AppCompatActivity {
         speechRecognitionManager = new SpeechRecognitionManager(this);
     }
 
-    /*
-    private void startVoiceConversation() {
-
-        String apiKey = ApiKeyConfig.getApiKey(this);
-        Log.d(TAG, "Starting voice conversation, API key available: " + (apiKey != null && !apiKey.isEmpty()));
-
-        Log.d(TAG, "Starting voice conversation, API key available: " + (apiKey != null && !apiKey.isEmpty()));
-
-        // Log current FEN from engine
-        Log.d(TAG, "Current board FEN: " + engine.getCurrentFEN());
-
-        // Log move history size for context
-        Log.d(TAG, "Move history size: " + algebraicMoveHistory.size());
-
-        bottomSheetMessageText.setText("Starting conversation with Coach Tal...");
-        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_COLLAPSED);
-
-
-        // Create the game state directly here
-        GameStateInfo gameState = new GameStateInfo(
-                engine.getCurrentFEN(),
-                algebraicMoveHistory,
-                playerColorChoice
-        );
-
-        // Start conversation with explicit game state
-        chessCoach.startRealtimeConversation(gameState);
-
-        // Update UI state - using standard Android icons for now
-        inConversationMode = true;
-        conversationButton.setImageResource(android.R.drawable.ic_media_pause);
-    }*/
-
     // In MainActivity.java - update the toggleChessConversation method
     private void toggleChessConversation() {
         if (inConversationMode) {
@@ -766,33 +847,151 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Update the startVoiceConversation method
+    /**
+     * Starts a voice conversation with the AI chess coach
+     * This method handles the complete flow from connection to listening
+     */
     private void startVoiceConversation() {
-        // Enable always listening mode when starting a conversation
-        chessCoach.toggleAlwaysListeningMode();
-        inConversationMode = true;
+        Log.d(TAG, "Starting voice conversation");
 
-        // Update the bottom sheet to show listening status
-        View conversationStatus = findViewById(R.id.conversationStatusIndicator);
-        if (conversationStatus != null) {
-            conversationStatus.setVisibility(View.VISIBLE);
+        // Make sure we have the API key
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        if (apiKey == null || apiKey.isEmpty()) {
+            Toast.makeText(this, "Please set your OpenAI API key in settings first", Toast.LENGTH_LONG).show();
+            return;
         }
 
-        // Update status text to show we're listening
-        TextView statusText = findViewById(R.id.conversationStatusText);
-        if (statusText != null) {
-            statusText.setText("I'm listening...");
+        // Initialize audio conversation manager if needed
+        if (audioConversationManager == null) {
+            audioConversationManager = new AudioConversationManager(this);
+            audioConversationManager.setApiKey(apiKey);
         }
 
-        // Start the conversation with the current game state
-        chessCoach.startRealtimeConversation(GameStateRepository.getCurrentState());
+        // Set up system prompt for chess coaching
+        String systemPrompt = "You are Coach Tal, a brilliant attacking chess master and the 8th World Chess Champion. " +
+                "Your tactical vision and creativity are legendary. When analyzing positions, you MUST:\n\n" +
+                "- Begin your VERY FIRST SENTENCE by directly referencing a specific move from the history\n" +
+                "- If at starting position: \"I see we're at the starting position with no moves played yet.\"\n" +
+                "- NEVER give generic advice without tying it to specific moves in THIS game\n" +
+                "- Look for tactical opportunities and creative possibilities, just as Tal would";
+
+        audioConversationManager.setSystemPrompt(systemPrompt);
+
+        // Set up conversation listener to handle various states and events
+        audioConversationManager.setConversationListener(new AudioConversationManager.ConversationListener() {
+            @Override
+            public void onStateChanged(AudioConversationManager.State newState) {
+                Log.d(TAG, "Conversation state changed to: " + newState);
+
+                // When we enter LISTENING state, start speech recognition
+                if (newState == AudioConversationManager.State.LISTENING) {
+                    startSpeechRecognition();
+                }
+            }
+
+            @Override
+            public void onConnected() {
+                Log.d(TAG, "WebSocket connected successfully!");
+                Toast.makeText(MainActivity.this, "Connected to Chess Coach", Toast.LENGTH_SHORT).show();
+
+                // Connection established, but don't start listening yet.
+                // The system will automatically transition to LISTENING when ready
+            }
+
+            @Override
+            public void onTextResponse(String text) {
+                // Update UI with text responses as they arrive
+                Log.d(TAG, "Received text: " + text);
+                // You can update a TextView here if you want to show the responses
+                // responseTextView.setText(text);
+            }
+
+            // Add this method inside each of your ConversationListener anonymous classes
+            @Override
+            public void onPartialResponse(String partialText) {
+                // Update UI with partial text as it comes in
+                runOnUiThread(() -> {
+                    // Update the bottomSheetMessageText or other UI elements
+                    if (bottomSheetMessageText != null) {
+                        bottomSheetMessageText.setText(partialText);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                Log.e(TAG, "Conversation error: " + message);
+                Toast.makeText(MainActivity.this, "Error: " + message, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Initialize speech recognition if needed
+        if (speechRecognitionManager == null) {
+            speechRecognitionManager = new SpeechRecognitionManager(this);
+        }
+
+        // Start the conversation!
+        audioConversationManager.startConversation();
     }
 
+    /**
+     * Starts speech recognition to listen for user input
+     */
+    private void startSpeechRecognition() {
+        if (speechRecognitionManager == null) {
+            speechRecognitionManager = new SpeechRecognitionManager(this);
+        }
+
+        Log.d(TAG, "Starting speech recognition");
+        Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show();
+
+        speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
+            @Override
+            public void onSpeechRecognized(String text) {
+                Log.d("MainActivity", "🎤 Speech recognized, sending to conversation: " + text);
+
+                // Forward recognized speech to the conversation manager
+                if (audioConversationManager != null) {
+                    // Here's where the magic happens - sending user speech to the API
+                    audioConversationManager.sendUserMessage(text);
+                }
+            }
+
+            @Override
+            public void onSpeechError(String error) {
+                Log.e(TAG, "Speech recognition error: " + error);
+                Toast.makeText(MainActivity.this, "Speech error: " + error, Toast.LENGTH_SHORT).show();
+
+                // Try to restart listening after a delay
+                new Handler().postDelayed(() -> {
+                    if (audioConversationManager != null &&
+                            audioConversationManager.getCurrentState() == AudioConversationManager.State.LISTENING) {
+                        startSpeechRecognition();
+                    }
+                }, 2000);
+            }
+        });
+    }
+
+    // Add this method to handle permission results:
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_MICROPHONE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startVoiceConversation();
+            } else {
+                Toast.makeText(this, "Microphone permission required for voice conversation",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    // Update your stopVoiceConversation method:
     private void stopVoiceConversation() {
-        chessCoach.stopRealtimeConversation();
+        audioConversationManager.endConversation();
         inConversationMode = false;
         conversationButton.setImageResource(android.R.drawable.ic_media_play);
-
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
     }
 
@@ -839,6 +1038,7 @@ public class MainActivity extends AppCompatActivity {
         speechRecognitionManager.startListening(new SpeechRecognitionManager.SpeechRecognitionCallback() {
             @Override
             public void onSpeechRecognized(String text) {
+
                 if (!text.isEmpty()) {
                     // For first turn, process normally
                     if (conversationTurns == 0) {
@@ -1324,21 +1524,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: " + e.getMessage(),
                     Toast.LENGTH_LONG).show();
             e.printStackTrace();
-        }
-    }
-
-    // Handle permission request results
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_MICROPHONE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                setupSpeechRecognition();
-            } else {
-                Toast.makeText(this,
-                        "Microphone permission is required for voice commands",
-                        Toast.LENGTH_LONG).show();
-            }
         }
     }
 
@@ -1893,6 +2078,9 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if (audioConversationManager != null) {
+            audioConversationManager.release();
+        }
         if (engine != null) {
             engine.stopEngine();
         }

@@ -138,6 +138,12 @@ public class ChessCoachManager {
             public void onConversationEnded() {
                 // Update UI when conversation ends
             }
+
+            @Override
+            public void onPartialResponse(String partialText) {
+                // Handle partial text responses here
+                Log.d(TAG, "Partial response received: " + partialText);
+            }
         });
 
 
