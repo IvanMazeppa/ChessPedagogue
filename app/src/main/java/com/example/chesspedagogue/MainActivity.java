@@ -11,15 +11,19 @@ import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -37,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
     private AnimatorSet pulseAnimatorSet;
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
+    private OpenAIService openAIService;
+    private String selectedSquare = null;
 
     private boolean isSpeaking = false;
 
@@ -46,6 +52,10 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton conversationButton;
     private Button recordButton;
     private Button settingsButton;
+
+
+    private ChallengeData currentChallenge;
+    private boolean inChallengeMode = false;
 
     private FloatingActionButton gameAnalysisButton;
     private FloatingActionButton coachButton;
@@ -237,6 +247,8 @@ public class MainActivity extends AppCompatActivity {
 
         textToSpeechManager = new TextToSpeechManager(this);
 
+        openAIService = OpenAIService.getInstance();
+
         // Set up click listeners
         setupClickListeners();
 
@@ -364,61 +376,66 @@ public class MainActivity extends AppCompatActivity {
 
         chessBoardView.setOnSquareTapListener((row, col) -> {
             // If we already have a piece selected...
-            if (chessBoardView.getSelectedRow() != -1) {
-                int fromRow = chessBoardView.getSelectedRow();
-                int fromCol = chessBoardView.getSelectedCol();
-
-                // If tapping the same square, deselect it
-                if (fromRow == row && fromCol == col) {
-                    chessBoardView.clearSelectionHighlight();
-                    chessBoardView.clearHighlightedSquares();
-                    return;
-                }
-
-                // Check if the tapped square has one of our pieces
-                char tappedPiece = chessBoardView.getPieceAt(row, col);
-                boolean isOurPiece = Character.isUpperCase(tappedPiece) == chessBoardView.isWhiteTurn();
-
-                if (isOurPiece) {
-                    // Tapped another of our pieces, so select this one instead
-                    chessBoardView.clearSelectionHighlight();
-                    chessBoardView.clearHighlightedSquares();
-                    chessBoardView.setSelectedSquare(row, col);
-
-                    // Show legal moves for newly selected piece
-                    gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
-                            moves -> {
-                                for (String move : moves) {
-                                    int destRow = 8 - Character.getNumericValue(move.charAt(3));
-                                    int destCol = move.charAt(2) - 'a';
-                                    chessBoardView.addHighlightedSquare(destRow, destCol);
-                                }
-                            });
-                    return;
-                }
-
-                // Otherwise, try to make a move from the selected piece to this square
-                String move = algebraicNotation(fromRow, fromCol) + algebraicNotation(row, col);
-                gameViewModel.makePlayerMove(move);
-                chessBoardView.clearSelectionHighlight();
-                chessBoardView.clearHighlightedSquares();
+            if (inChallengeMode) {
+                handleChallengeMove(row, col);
             } else {
-                // No piece is selected yet, select if it's a piece and our turn
-                char piece = chessBoardView.getPieceAt(row, col);
-                boolean isOurPiece = Character.isUpperCase(piece) == chessBoardView.isWhiteTurn();
+                if (chessBoardView.getSelectedRow() != -1) {
+                    int fromRow = chessBoardView.getSelectedRow();
+                    int fromCol = chessBoardView.getSelectedCol();
 
-                if (piece != ' ' && isOurPiece) {
-                    chessBoardView.setSelectedSquare(row, col);
-                    gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
-                            moves -> {
-                                chessBoardView.clearHighlightedSquares();
-                                for (String move : moves) {
-                                    int destRow = 8 - Character.getNumericValue(move.charAt(3));
-                                    int destCol = move.charAt(2) - 'a';
-                                    chessBoardView.addHighlightedSquare(destRow, destCol);
-                                }
-                            });
+                    // If tapping the same square, deselect it
+                    if (fromRow == row && fromCol == col) {
+                        chessBoardView.clearSelectionHighlight();
+                        chessBoardView.clearHighlightedSquares();
+                        return;
+                    }
+
+                    // Check if the tapped square has one of our pieces
+                    char tappedPiece = chessBoardView.getPieceAt(row, col);
+                    boolean isOurPiece = Character.isUpperCase(tappedPiece) == chessBoardView.isWhiteTurn();
+
+                    if (isOurPiece) {
+                        // Tapped another of our pieces, so select this one instead
+                        chessBoardView.clearSelectionHighlight();
+                        chessBoardView.clearHighlightedSquares();
+                        chessBoardView.setSelectedSquare(row, col);
+
+                        // Show legal moves for newly selected piece
+                        gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
+                                moves -> {
+                                    for (String move : moves) {
+                                        int destRow = 8 - Character.getNumericValue(move.charAt(3));
+                                        int destCol = move.charAt(2) - 'a';
+                                        chessBoardView.addHighlightedSquare(destRow, destCol);
+                                    }
+                                });
+                        return;
+                    }
+
+                    // Otherwise, try to make a move from the selected piece to this square
+                    String move = algebraicNotation(fromRow, fromCol) + algebraicNotation(row, col);
+                    gameViewModel.makePlayerMove(move);
+                    chessBoardView.clearSelectionHighlight();
+                    chessBoardView.clearHighlightedSquares();
+                } else {
+                    // No piece is selected yet, select if it's a piece and our turn
+                    char piece = chessBoardView.getPieceAt(row, col);
+                    boolean isOurPiece = Character.isUpperCase(piece) == chessBoardView.isWhiteTurn();
+
+                    if (piece != ' ' && isOurPiece) {
+                        chessBoardView.setSelectedSquare(row, col);
+                        gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
+                                moves -> {
+                                    chessBoardView.clearHighlightedSquares();
+                                    for (String move : moves) {
+                                        int destRow = 8 - Character.getNumericValue(move.charAt(3));
+                                        int destCol = move.charAt(2) - 'a';
+                                        chessBoardView.addHighlightedSquare(destRow, destCol);
+                                    }
+                                });
+                    }
                 }
+
             }
         });
     }
@@ -466,6 +483,137 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Voice service not ready", Toast.LENGTH_SHORT).show();
             bindRecordService();
         }
+    }
+
+    // In MainActivity.java
+    private void offerChallenge() {
+        // Show a beautiful dialog offering a challenge
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Coach Tal's Challenge")
+                .setMessage("Would you like to practice a tactic from this position?")
+                .setPositiveButton("Yes, let's practice!", (dialog, id) -> {
+                    generateChallenge();
+                })
+                .setNegativeButton("Not now", (dialog, id) -> {
+                    dialog.dismiss();
+                });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    private void generateChallenge() {
+        // Get current board position
+        String currentFEN = chessBoardView.getCurrentFEN();
+
+        // Create a special prompt with VERY specific formatting instructions
+        String prompt = "Create a chess puzzle starting from this position: " + currentFEN +
+                ". Design a 2-move tactical challenge with clear instructional value.\n\n" +
+                "FORMAT YOUR RESPONSE EXACTLY LIKE THIS TEMPLATE:\n" +
+                "Description: [Brief description of the puzzle situation]\n" +
+                "Correct Move: [The first move in algebraic notation like e2e4 or g1f3]\n" +
+                "Expected Response: [How the opponent will respond]\n" +
+                "Winning Second Move: [Your winning second move]\n" +
+                "Explanation: [Brief explanation of why this works]\n" +
+                "Tactical Motif: [Name of the tactical pattern - fork, pin, etc.]";
+
+
+
+        // Show loading indicator
+        showChallengeLoading(true);
+
+        // Use a background thread to avoid blocking the UI
+        new Thread(() -> {
+            try {
+                // Get challenge from OpenAI (synchronous call)
+                String response = openAIService.getChatCompletion(
+                        "You are Coach Tal, a chess grandmaster creating engaging, instructive tactical puzzles.",
+                        prompt);
+
+                // Process the response on the UI thread
+                runOnUiThread(() -> {
+                    showChallengeLoading(false);
+                    parseChallengeResponse(response);
+                });
+            } catch (Exception e) {
+                // Handle errors on the UI thread
+                runOnUiThread(() -> {
+                    showChallengeLoading(false);
+                    Toast.makeText(MainActivity.this,
+                            "Couldn't create a challenge right now. Let's try again later!",
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    private void showChallenge(ChallengeData challenge) {
+        try {
+            // Validate the challenge before proceeding
+            if (challenge == null || challenge.getDescription().isEmpty() ||
+                    challenge.getCorrectMove().isEmpty()) {
+                throw new Exception("Invalid challenge data");
+            }
+                // Inflate challenge view
+                View challengeView = getLayoutInflater().inflate(R.layout.challenge_panel, null);
+
+                // Set up UI elements
+                TextView descriptionText = challengeView.findViewById(R.id.challengeDescription);
+                descriptionText.setText(challenge.getDescription());
+
+                Button hintButton = challengeView.findViewById(R.id.hintButton);
+                hintButton.setOnClickListener(v -> showHint(challenge));
+
+                Button solveButton = challengeView.findViewById(R.id.solveButton);
+                solveButton.setOnClickListener(v -> showSolution(challenge));
+
+                // Show the challenge panel
+                FrameLayout container = findViewById(R.id.challengeContainer);
+                container.removeAllViews();
+                container.addView(challengeView);
+                container.setVisibility(View.VISIBLE);
+
+                // Add beautiful animation
+                challengeView.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up));
+
+                // Highlight relevant squares for this challenge
+                highlightChallengeSquares(challenge);
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing challenge: " + e.getMessage());
+            Toast.makeText(this, "Something went wrong with the challenge. Let's try again!", Toast.LENGTH_SHORT).show();
+            inChallengeMode = false;
+        }
+    }
+
+    // Override the chess board's move handling for challenges
+    private void handleSquareTapped(int row, int col) {
+        if (currentChallenge != null) {
+            // Convert to algebraic notation
+            String square = algebraicNotation(row, col);
+
+            // If a piece is already selected, try to make a move
+            if (selectedSquare != null) {
+                String move = selectedSquare + square;
+
+                if (move.equals(currentChallenge.getCorrectMove())) {
+                    // Correct move!
+                    playCorrectMoveAnimation();
+                    speakEncouragement("Excellent move! That's exactly right!");
+                    advanceChallenge();
+                } else {
+                    // Incorrect move
+                    playIncorrectMoveAnimation();
+                    speakEncouragement("That's not quite it. Want to try again or see a hint?");
+                }
+
+                selectedSquare = null;
+            } else {
+                // Select this square
+                selectedSquare = square;
+                highlightSelectedSquare(row, col);
+            }
+        }
+        // No else/super call needed since we're not overriding anything
     }
 
     // Implement the onSpeechInterrupted method
@@ -658,6 +806,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
         Button resetButton = findViewById(R.id.resetButton); // Add this button to your layout
         if (resetButton != null) {
             resetButton.setOnClickListener(v -> {
@@ -699,8 +848,13 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        coachButton.setOnClickListener(v -> {
+                    offerChallenge();
+                });
+
         // Replace the resetButton section with this:
         coachButton.setOnLongClickListener(v -> {
+            offerChallenge();
             if (isServiceBound && recordService != null) {
                 // Stop any ongoing speech
                 recordService.interruptSpeech();
@@ -733,6 +887,219 @@ public class MainActivity extends AppCompatActivity {
                     coachCard.setVisibility(View.GONE);
                 }
             });
+        }
+    }
+
+    // For parsing AI response into a challenge
+    private void parseChallengeResponse(String response) {
+        try {
+            // Debug the full response first
+            Log.d(TAG, "Full challenge response: " + response);
+
+            // Simple parsing strategy - extract key parts
+            String description = extractBetween(response, "Description:", "Correct Move:");
+            Log.d(TAG, "Extracted description: '" + description + "'");
+
+            String correctMove = extractBetween(response, "Correct Move:", "Expected Response:");
+            Log.d(TAG, "Extracted correctMove: '" + correctMove + "'");
+
+            String opponentResponse = extractBetween(response, "Expected Response:", "Winning Second Move:");
+            Log.d(TAG, "Extracted opponentResponse: '" + opponentResponse + "'");
+
+            String winningSecondMove = extractBetween(response, "Winning Second Move:", "Explanation:");
+            Log.d(TAG, "Extracted winningSecondMove: '" + winningSecondMove + "'");
+
+            String explanation = extractBetween(response, "Explanation:", "Tactical Motif:");
+            Log.d(TAG, "Extracted explanation: '" + explanation + "'");
+
+            String tacticalMotif = extractAfter(response, "Tactical Motif:");
+            Log.d(TAG, "Extracted tacticalMotif: '" + tacticalMotif + "'");
+
+            // Add validation - don't proceed if critical fields are empty
+            if (correctMove.trim().isEmpty() || winningSecondMove.trim().isEmpty()) {
+                throw new Exception("Critical challenge data missing - correct move or winning move is empty");
+            }
+
+            // Create a challenge object
+            currentChallenge = new ChallengeData(
+                    description.trim(),
+                    correctMove.trim(),
+                    opponentResponse.trim(),
+                    winningSecondMove.trim(),
+                    explanation.trim(),
+                    tacticalMotif.trim());
+
+            // Set challenge mode and display
+            inChallengeMode = true;
+            showChallenge(currentChallenge);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing challenge: " + e.getMessage());
+            Toast.makeText(this, "Couldn't create a good challenge. Let's try again!", Toast.LENGTH_SHORT).show();
+            inChallengeMode = false;
+        }
+    }
+
+    // Helper for parsing
+    private String extractBetween(String text, String start, String end) {
+        int startIndex = text.indexOf(start);
+        if (startIndex == -1) return "";
+        startIndex += start.length();
+
+        int endIndex = text.indexOf(end, startIndex);
+        if (endIndex == -1) return text.substring(startIndex).trim();
+
+        return text.substring(startIndex, endIndex).trim();
+    }
+
+    // Helper for parsing the last section
+    private String extractAfter(String text, String start) {
+        int startIndex = text.indexOf(start);
+        if (startIndex == -1) return "";
+        startIndex += start.length();
+
+        return text.substring(startIndex).trim();
+    }
+
+    // Show loading indicator
+    private void showChallengeLoading(boolean isLoading) {
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        if (statusTextView != null) {
+            statusTextView.setText(isLoading ? "Creating a challenge..." : "Ready");
+        }
+    }
+
+    // Methods for handling challenge moves
+    private void handleChallengeMove(int row, int col) {
+        // Convert to algebraic notation
+        String square = algebraicNotation(row, col);
+
+        // If a piece is already selected, try to make a move
+        if (selectedSquare != null) {
+            String move = selectedSquare + square;
+
+            if (currentChallenge != null && move.equals(currentChallenge.getCorrectMove())) {
+                // Correct move!
+                playCorrectMoveAnimation();
+                speakEncouragement("Excellent move! That's exactly right!");
+                advanceChallenge();
+            } else {
+                // Incorrect move
+                playIncorrectMoveAnimation();
+                speakEncouragement("That's not quite it. Want to try again or see a hint?");
+            }
+
+            selectedSquare = null;
+        } else {
+            // Select this square
+            selectedSquare = square;
+            highlightSelectedSquare(row, col);
+        }
+    }
+
+    // Animation and feedback methods
+    private void playCorrectMoveAnimation() {
+        // Play a success sound
+        // Show a green flash or animation
+        Toast.makeText(this, "Correct move!", Toast.LENGTH_SHORT).show();
+    }
+
+    private void playIncorrectMoveAnimation() {
+        // Play an error sound
+        // Show a red flash or animation
+        Toast.makeText(this, "Try again", Toast.LENGTH_SHORT).show();
+    }
+
+    private void speakEncouragement(String message) {
+        if (textToSpeechManager != null) {
+            textToSpeechManager.speak(message);
+        }
+    }
+
+    private void highlightSelectedSquare(int row, int col) {
+        // Highlight the selected square differently
+        chessBoardView.setSelectedSquare(row, col);
+    }
+
+    private void highlightChallengeSquares(ChallengeData challenge) {
+        // Highlight squares relevant to the challenge
+        chessBoardView.clearHighlights();
+
+        // Extract squares from the challenge description
+        List<String> squares = extractChessSquares(challenge.getDescription());
+
+        // Add the correct move squares
+        String correctMove = challenge.getCorrectMove();
+        if (correctMove.length() >= 4) {
+            String fromSquare = correctMove.substring(0, 2);
+            String toSquare = correctMove.substring(2, 4);
+
+            if (!squares.contains(fromSquare)) squares.add(fromSquare);
+            if (!squares.contains(toSquare)) squares.add(toSquare);
+        }
+
+        // Highlight each square with a special color
+        int challengeColor = Color.parseColor("#9C27B0"); // Purple
+        for (String square : squares) {
+            chessBoardView.highlightSquare(square, challengeColor, 30000); // 30 seconds
+        }
+    }
+
+    private void advanceChallenge() {
+        // In a more complex implementation, this would move to the next step
+        // For now, we'll just exit challenge mode after a correct move
+        new Handler().postDelayed(() -> {
+            inChallengeMode = false;
+            currentChallenge = null;
+
+            // Hide the challenge panel
+            FrameLayout container = findViewById(R.id.challengeContainer);
+            if (container != null) {
+                container.setVisibility(View.GONE);
+            }
+
+            // Show success message
+            Toast.makeText(this, "Challenge completed! Well done!", Toast.LENGTH_LONG).show();
+        }, 2000); // Show success for 2 seconds before hiding
+    }
+
+    private void showHint(ChallengeData challenge) {
+        // Show a hint for the challenge
+        Toast.makeText(this, "Hint: " + challenge.getExplanation(), Toast.LENGTH_LONG).show();
+
+        // Highlight the from square of the correct move
+        String correctMove = challenge.getCorrectMove();
+        if (correctMove.length() >= 2) {
+            String fromSquare = correctMove.substring(0, 2);
+            chessBoardView.highlightSquare(fromSquare, Color.YELLOW, 5000); // Yellow hint for 5 seconds
+        }
+    }
+
+    private void showSolution(ChallengeData challenge) {
+        try {
+            // Validate the challenge before proceeding
+            if (challenge == null || challenge.getCorrectMove().isEmpty()) {
+                throw new Exception("Invalid challenge data for solution");
+        }
+            // Show the solution
+            String solution = "The correct move is " + challenge.getCorrectMove() +
+                    ". " + challenge.getExplanation();
+
+            // Speak the solution
+            speakEncouragement(solution);
+
+            // Show visual indication
+            String correctMove = challenge.getCorrectMove();
+            if (correctMove.length() >= 4) {
+                String fromSquare = correctMove.substring(0, 2);
+                String toSquare = correctMove.substring(2, 4);
+
+                chessBoardView.highlightSquare(fromSquare, Color.GREEN, 5000);
+                chessBoardView.highlightSquare(toSquare, Color.GREEN, 5000);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error showing solution: " + e.getMessage());
+            speakEncouragement("I'm having trouble with this puzzle right now.");
         }
     }
 

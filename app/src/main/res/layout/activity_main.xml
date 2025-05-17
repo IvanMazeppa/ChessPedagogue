@@ -72,6 +72,12 @@
                     app:tint="@android:color/white"
                     app:fabSize="mini" />
             </LinearLayout>
+            <!-- Add this after the status bar layout and before the chess board -->
+            <FrameLayout
+                android:id="@+id/challengeContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
 
             <!-- Chess Board with increased weight -->
             <com.example.chesspedagogue.ChessBoardView
@@ -183,7 +189,7 @@
                         android:layout_height="48dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_btn_speak_now"
-                        android:tint="#FF5722" />
+                        app:tint="#FF5722" />
 
                     <TextView
                         android:id="@+id/listeningText"
