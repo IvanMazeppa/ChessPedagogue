@@ -2,7 +2,15 @@ package com.example.chesspedagogue;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.graphics.*;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.BitmapShader;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Shader;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -44,6 +52,10 @@ public class ChessBoardView extends View {
     private final List<int[]> highlightSquares = new ArrayList<>();
     private ValueAnimator legalAnimator;
     private int legalAlpha = 0;
+
+    private List<SquareHighlight> activeHighlights = new ArrayList<>();
+    private Paint highlightPaint = new Paint();
+
 
     /* ───── moving‑piece sprite ───── */
     private static class MovingPiece {
@@ -120,6 +132,10 @@ public class ChessBoardView extends View {
 
         legalMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         legalMovePaint.setColor(0x660000FF);
+
+        highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        highlightPaint.setStyle(Paint.Style.FILL);
+        highlightPaint.setAlpha(80); // Semi-transparent
     }
 
     /* ─────────   DRAW   ───────── */
@@ -190,6 +206,10 @@ public class ChessBoardView extends View {
             while(it.hasNext()) if(it.next().draw(canvas,squareSize,pad)) it.remove();
             if(!movingPieces.isEmpty()) postInvalidateOnAnimation();
         }
+
+
+        /* 6) advice highlights */
+        drawHighlights(canvas);
 
     }
 
@@ -304,6 +324,85 @@ public class ChessBoardView extends View {
         postInvalidateOnAnimation();
     }
 
+    // Method to draw all highlights - ADD THIS ENTIRE METHOD
+    private void drawHighlights(Canvas canvas) {
+        // Remove expired highlights first
+        Iterator<SquareHighlight> iterator = activeHighlights.iterator();
+        while (iterator.hasNext()) {
+            if (iterator.next().isExpired()) {
+                iterator.remove();
+                invalidate(); // Ensure we redraw after removing
+            }
+        }
+
+        // Save canvas state before drawing highlights
+        int savedCount = canvas.save();
+
+        // Draw each active highlight
+        for (SquareHighlight highlight : activeHighlights) {
+            // Convert algebraic notation to board coordinates
+            int[] coords = algebraicToCoordinates(highlight.getSquare());
+            int row = coords[0];
+            int col = coords[1];
+
+            // Calculate square size and position
+            float squareSize = getWidth() / 8.0f;
+            float left = col * squareSize;
+            float top = row * squareSize;
+
+            // Create a more transparent color (only 40% opacity)
+            int originalColor = highlight.getColor();
+            int alpha = 102; // 40% of 255
+            int transparentColor = Color.argb(
+                    alpha,
+                    Color.red(originalColor),
+                    Color.green(originalColor),
+                    Color.blue(originalColor)
+            );
+
+            // Set the color for this highlight with proper transparency
+            highlightPaint.setColor(transparentColor);
+
+            // Draw the highlight using SRC_OVER blend mode (preserves what's underneath)
+            highlightPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
+
+            // Draw the highlight
+            canvas.drawRect(left, top, left + squareSize, top + squareSize, highlightPaint);
+        }
+
+        // Restore canvas state
+        canvas.restoreToCount(savedCount);
+    }
+
+    // Helper method to convert algebraic notation to board coordinates - ADD THIS
+    private int[] algebraicToCoordinates(String algebraic) {
+        char file = algebraic.charAt(0);
+        int rank = Character.getNumericValue(algebraic.charAt(1));
+
+        int col = file - 'a'; // 'a' to 0, 'b' to 1, etc.
+        int row = 8 - rank;   // Invert because 1 is the bottom rank
+
+        // Apply flipping if the board is flipped
+        if (flipped) {
+            row = 7 - row;
+            col = 7 - col;
+        }
+
+        return new int[]{row, col};
+    }
+
+    // Public method to add a highlight - ADD THIS
+    public void highlightSquare(String square, int color, int durationMs) {
+        activeHighlights.add(new SquareHighlight(square, color, durationMs));
+        invalidate(); // Trigger redraw
+    }
+
+    // Public method to clear all highlights - ADD THIS
+    public void clearHighlights() {
+        activeHighlights.clear();
+        invalidate();
+    }
+
     /**
      * Get the current board position in FEN notation
      */
@@ -352,6 +451,7 @@ public class ChessBoardView extends View {
         // In a real implementation, you would count your pieces
         return 32; // Default to full set of pieces (starting position)
     }
+
 
 
     /* touch handling */

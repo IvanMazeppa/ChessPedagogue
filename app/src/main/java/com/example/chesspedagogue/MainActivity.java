@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -26,6 +27,11 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
     private AnimatorSet pulseAnimatorSet;
@@ -87,6 +93,11 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onResponseReceived(String response) {
+                    updateCoachMessageText(response);
+                    updateResponseUI(response);
+
+                    processAdviceForHighlights(response);
+
                     // Display the coach's response
                     runOnUiThread(() -> showCoachResponse(response));
                 }
@@ -106,6 +117,105 @@ public class MainActivity extends AppCompatActivity {
             recordService = null;
         }
     };
+
+    // Add this method to update coach message text
+    private void updateCoachMessageText(String message) {
+        TextView messageText = findViewById(R.id.coachMessageText);
+        if (messageText != null) {
+            messageText.setText(message);
+        }
+    }
+
+    // Add this method for updating response UI (if needed)
+    private void updateResponseUI(String response) {
+        // This might be redundant with updateCoachMessageText,
+        // but we'll add it to fix the compilation error
+        // You can customize this if you want to update other UI elements
+        View coachCard = findViewById(R.id.coachMessageCard);
+        if (coachCard != null && coachCard.getVisibility() != View.VISIBLE) {
+            coachCard.setVisibility(View.VISIBLE);
+        }
+    }
+    // In your SimpleRecordService or MainActivity
+    public void processAdviceForHighlights(String coachAdvice) {
+        // Define highlight colors
+        int goodMoveColor = Color.GREEN;
+        int badMoveColor = Color.RED;
+        int interestingSquareColor = Color.YELLOW;
+
+        // Extract squares from the advice using regex
+        List<String> foundSquares = extractChessSquares(coachAdvice);
+
+        // Clear existing highlights
+        chessBoardView.clearHighlights();
+
+        // Determine the type of highlight for each square
+        for (String square : foundSquares) {
+            // Basic sentiment analysis
+            if (coachAdvice.contains("best move") && coachAdvice.contains(square)) {
+                chessBoardView.highlightSquare(square, goodMoveColor, 5000); // 5 seconds
+            } else if (coachAdvice.contains("weak") || coachAdvice.contains("mistake")) {
+                chessBoardView.highlightSquare(square, badMoveColor, 5000);
+            } else {
+                chessBoardView.highlightSquare(square, interestingSquareColor, 5000);
+            }
+        }
+    }
+
+    private List<String> extractChessSquares(String text) {
+        List<String> squares = new ArrayList<>();
+
+        // Pattern for individual squares (like a3, b4)
+        Pattern squarePattern = Pattern.compile("\\b[a-h][1-8]\\b");
+        Matcher squareMatcher = squarePattern.matcher(text);
+
+        while (squareMatcher.find()) {
+            squares.add(squareMatcher.group());
+        }
+
+        // Pattern for move notation with capture (like cxd5)
+        Pattern capturePattern = Pattern.compile("\\b[a-h]x[a-h][1-8]\\b");
+        Matcher captureMatcher = capturePattern.matcher(text);
+
+        while (captureMatcher.find()) {
+            String captureMove = captureMatcher.group();
+            // Extract the destination square (like "d5" from "cxd5")
+            String destSquare = captureMove.substring(2);
+
+            // Add destination square if not already included
+            if (!squares.contains(destSquare)) {
+                squares.add(destSquare);
+            }
+
+            // Try to infer the source square (this is a guess for pawns)
+            char sourceFile = captureMove.charAt(0);
+            char destFile = destSquare.charAt(0);
+            char destRank = destSquare.charAt(1);
+
+            // For pawn captures, we can guess the source square
+            // This is a simplification, but works for common cases
+            String sourceSquare = sourceFile + String.valueOf(Character.getNumericValue(destRank) - 1);
+            if (!squares.contains(sourceSquare)) {
+                squares.add(sourceSquare);
+            }
+        }
+
+        // Pattern for regular move notation (like Qc2, Nf3)
+        Pattern movePattern = Pattern.compile("\\b[KQRBN]?[a-h][1-8]\\b");
+        Matcher moveMatcher = movePattern.matcher(text);
+
+        while (moveMatcher.find()) {
+            String move = moveMatcher.group();
+            // Extract just the square part (like "c2" from "Qc2")
+            String square = move.replaceAll("[KQRBN]", "");
+
+            if (!squares.contains(square)) {
+                squares.add(square);
+            }
+        }
+
+        return squares;
+    }
 
     // Game logic
     private GameViewModel gameViewModel;
