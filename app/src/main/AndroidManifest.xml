@@ -79,6 +79,10 @@
         <activity android:name=".TestVoiceActivity"
             android:label="Test Voice Integration"
             android:exported="false" />
+        <activity
+            android:name=".ChessMasterSelectionActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
     </application>
 

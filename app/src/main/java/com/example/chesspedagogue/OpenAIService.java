@@ -1,14 +1,18 @@
 package com.example.chesspedagogue;
 
+import android.content.Context;
 import android.util.Log;
+
+import com.google.gson.Gson;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.ConnectionPool;
@@ -26,9 +30,16 @@ public class OpenAIService {
     private static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
+    private static final String DEFAULT_MODEL = "gpt-4.1";
+    private final Gson gson;
+    private Map<String, String> fineTunedModels = new HashMap<>();
+
     private static OpenAIService instance;
     private final OkHttpClient client;
     private String apiKey;
+
+    // Added context variable
+    private Context context;
 
     // Default model - can be changed as needed
     private String model = "gpt-4.1";
@@ -47,24 +58,47 @@ public class OpenAIService {
      * Private constructor
      */
     private OpenAIService() {
+        // Initialize with your fine-tuned model IDs
+        fineTunedModels.put("tal", "ft:gpt-4:chess-coach:tal:2025-05-01");
+        fineTunedModels.put("kramnik", "ft:gpt-4:chess-coach:kramnik:2025-05-01");
+        fineTunedModels.put("karpov", "ft:gpt-4:chess-coach:karpov:2025-05-01");
+        fineTunedModels.put("fischer", "ft:gpt-4:chess-coach:fischer:2025-05-01");
+        fineTunedModels.put("lasker", "ft:gpt-4:chess-coach:lasker:2025-05-01");
+        fineTunedModels.put("kasparov", "ft:gpt-4:chess-coach:kasparov:2025-05-01");
+        fineTunedModels.put("capablanca", "ft:gpt-4:chess-coach:capablanca:2025-05-01");
+        fineTunedModels.put("carlsen", "ft:gpt-4:chess-coach:carlsen:2025-05-01");
+        fineTunedModels.put("morphy", "ft:gpt-4:chess-coach:morphy:2025-05-01");
+        fineTunedModels.put("anand", "ft:gpt-4:chess-coach:anand:2025-05-01");
+
         client = new OkHttpClient.Builder()
                 .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(20, TimeUnit.SECONDS)
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .build();
-    }
-
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
+        this.gson = new Gson();
     }
 
     /**
-     * Get a completion from the conversation history
+     * Initialize with context
+     */
+    public void init(Context context) {
+        this.context = context.getApplicationContext();
+    }
+
+    private String getModelForRequest() {
+        // Check if we have context
+        if (context == null) {
+            Log.w(TAG, "Context not initialized, using default model");
+            return model;
+        }
+
+        return "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+
+    }
+
+    /**
+     * Update the getChatCompletionWithHistory method
      */
     public String getChatCompletionWithHistory(ConversationManager conversationManager) {
         if (apiKey == null || apiKey.isEmpty()) {
@@ -75,23 +109,43 @@ public class OpenAIService {
         try {
             // Create request JSON
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", model);
-            requestBody.put("max_tokens", 150);
+
+            // Get the appropriate model - NEW CODE
+            String modelToUse = getModelForRequest();
+            requestBody.put("model", modelToUse);
+            requestBody.put("max_tokens", 350); // Increased for more detailed responses
+
+            // Get the appropriate system prompt based on selected master - NEW CODE
+            String systemPrompt = "You are a helpful chess coach.";
+            if (context != null) {
+                systemPrompt = FineTunedModelManager.getInstance(context)
+                        .getSystemPromptForSelectedMaster();
+            }
 
             // Add messages
             JSONArray messagesArray = new JSONArray();
-            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
 
+            // First add our system prompt - NEW CODE
+            JSONObject systemMsg = new JSONObject();
+            systemMsg.put("role", "system");
+            systemMsg.put("content", systemPrompt);
+            messagesArray.put(systemMsg);
+
+            // Then add conversation history
+            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
             for (ConversationManager.Message message : messages) {
-                JSONObject messageObj = new JSONObject();
-                messageObj.put("role", message.getRole());
-                messageObj.put("content", message.getContent());
-                messagesArray.put(messageObj);
+                if (!"system".equals(message.getRole())) { // Skip system messages in history
+                    JSONObject messageObj = new JSONObject();
+                    messageObj.put("role", message.getRole());
+                    messageObj.put("content", message.getContent());
+                    messagesArray.put(messageObj);
+                }
             }
 
             requestBody.put("messages", messagesArray);
 
             // Log request for debugging
+            Log.d(TAG, "Using model: " + modelToUse);
             Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody.toString());
 
             // Create HTTP request
@@ -134,6 +188,24 @@ public class OpenAIService {
             return "I encountered an error processing your request: " + e.getMessage();
         }
     }
+
+    // New method to select fine-tuned model
+    public void selectChessMaster(String master) {
+        if (fineTunedModels.containsKey(master.toLowerCase())) {
+            this.model = fineTunedModels.get(master.toLowerCase());
+        } else {
+            this.model = DEFAULT_MODEL;
+        }
+    }
+
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
 
     /**
      * Get a direct completion with system prompt and user message

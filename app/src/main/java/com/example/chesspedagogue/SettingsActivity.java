@@ -1,5 +1,6 @@
 package com.example.chesspedagogue;
 
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
@@ -7,6 +8,7 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.RadioGroup;
 import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -56,6 +58,38 @@ public class SettingsActivity extends AppCompatActivity {
             voiceGroup.check(R.id.radio_voice_neutral);
         } else {
             voiceGroup.check(R.id.radio_voice_grandmaster);
+        }
+
+        // Chess Coach selection
+        RadioGroup coachGroup = findViewById(R.id.radio_group_coach);
+        if (coachGroup != null) {
+            // Load the current selection
+            SharedPreferences chessPrefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+            String currentCoach = chessPrefs.getString("selected_master", "tal");
+
+            // Set the appropriate radio button
+            if ("kramnik".equals(currentCoach)) {
+                coachGroup.check(R.id.radio_coach_kramnik);
+            } else {
+                coachGroup.check(R.id.radio_coach_tal);
+            }
+
+            // Set up change listener
+            coachGroup.setOnCheckedChangeListener((group, checkedId) -> {
+                String selectedCoach = checkedId == R.id.radio_coach_kramnik ? "kramnik" : "tal";
+
+                // Save the selection
+                SharedPreferences.Editor editor = chessPrefs.edit();
+                editor.putString("selected_master", selectedCoach);
+                editor.apply();
+
+                // Show feedback to the user
+                String coachName = selectedCoach.equals("tal") ? "Mikhail Tal" : "Vladimir Kramnik";
+                Toast.makeText(this, "Chess coach changed to " + coachName, Toast.LENGTH_SHORT).show();
+
+                // Update the coach in your app - if you have a coach manager
+                // ChessCoachManager.getInstance(this).setCoachProfile(selectedCoach);
+            });
         }
 
         // Set up listeners
@@ -136,6 +170,64 @@ public class SettingsActivity extends AppCompatActivity {
 
                 ChessCoachManager.getInstance(this).setTTSModel(selectedModel);
             });
+        }
+
+        // Chess Master Selection button - MOVED INSIDE ONCREATE METHOD
+        Button chessMasterSelectionButton = findViewById(R.id.button_chess_master_selection);
+        chessMasterSelectionButton.setOnClickListener(v -> {
+            Intent intent = new Intent(SettingsActivity.this, ChessMasterSelectionActivity.class);
+            startActivity(intent);
+        });
+
+        // Update the UI to show the current selected master
+        updateChessMasterDisplay();
+    }
+
+    /**
+     * Updates the UI to display the currently selected chess master
+     */
+    private void updateChessMasterDisplay() {
+        // Get the current selected master
+        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Get the display text view
+        TextView chessMasterTextView = findViewById(R.id.text_selected_chess_master);
+
+        // Set the display text based on the selection
+        switch(selectedMaster.toLowerCase()) {
+            case "tal":
+                chessMasterTextView.setText("Current Coach: Mikhail Tal (The Magician from Riga)");
+                break;
+            case "kramnik":
+                chessMasterTextView.setText("Current Coach: Vladimir Kramnik (The Berlin Wall)");
+                break;
+            case "karpov":
+                chessMasterTextView.setText("Current Coach: Anatoly Karpov (The Positional Genius)");
+                break;
+            case "fischer":
+                chessMasterTextView.setText("Current Coach: Bobby Fischer (The American Prodigy)");
+                break;
+            case "lasker":
+                chessMasterTextView.setText("Current Coach: Emanuel Lasker (The Psychological Master)");
+                break;
+            case "kasparov":
+                chessMasterTextView.setText("Current Coach: Garry Kasparov (The Dynamic Dominator)");
+                break;
+            case "capablanca":
+                chessMasterTextView.setText("Current Coach: Jose Raul Capablanca (The Chess Machine)");
+                break;
+            case "carlsen":
+                chessMasterTextView.setText("Current Coach: Magnus Carlsen (The Modern King)");
+                break;
+            case "morphy":
+                chessMasterTextView.setText("Current Coach: Paul Morphy (The Pride and Sorrow of Chess)");
+                break;
+            case "anand":
+                chessMasterTextView.setText("Current Coach: Viswanathan Anand (The Lightning Kid)");
+                break;
+            default:
+                chessMasterTextView.setText("Current Coach: " + selectedMaster);
+                break;
         }
     }
 

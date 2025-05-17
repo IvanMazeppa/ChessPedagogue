@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AnimationUtils;
@@ -248,6 +250,7 @@ public class MainActivity extends AppCompatActivity {
         textToSpeechManager = new TextToSpeechManager(this);
 
         openAIService = OpenAIService.getInstance();
+        OpenAIService.getInstance().init(this);
 
         // Set up click listeners
         setupClickListeners();
@@ -309,6 +312,27 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    // Add these methods to your MainActivity class
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        if (item.getItemId() == R.id.action_settings) {
+            // Launch settings activity
+            Intent intent = new Intent(this, SettingsActivity.class);
+            startActivity(intent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     /**

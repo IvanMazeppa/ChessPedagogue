@@ -1,119 +1,210 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:fillViewport="true">
 
-    <androidx.appcompat.widget.Toolbar
-        android:id="@+id/settings_toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:elevation="4dp"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
-
-    <!-- Premium Voice Toggle -->
-    <Switch
-        android:id="@+id/switch_premium_voice"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:padding="16dp"
-        android:text="Use OpenAI Premium Voice"
-        android:textSize="16sp" />
+        android:orientation="vertical">
 
-    <!-- Voice Persona Selection -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:text="Voice Persona"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/settings_toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            android:elevation="4dp"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar" />
 
-    <RadioGroup
-        android:id="@+id/radio_group_voice"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp">
+        <!-- Add this section to activity_settings.xml just before the Voice Persona section -->
 
-        <RadioButton
-            android:id="@+id/radio_voice_grandmaster"
+        <!-- Add this section to your activity_settings.xml just before the Voice Person section -->
+
+        <!-- Chess Coach Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Legacy Chess Coach Selection"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radio_group_coach"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp">
+
+            <RadioButton
+                android:id="@+id/radio_coach_tal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mikhail Tal (The Magician from Riga)"
+                android:minHeight="48dp" />
+
+            <RadioButton
+                android:id="@+id/radio_coach_kramnik"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vladimir Kramnik (The Berlin Wall)"
+                android:minHeight="48dp" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            android:text="Note: The selection above will be deprecated. Please use the enhanced selection below."
+            android:textStyle="italic"
+            android:textColor="#757575"/>
+
+        <!-- Chess Master Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Chess Coach Selection"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/text_selected_chess_master"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            android:text="Current Coach: Mikhail Tal (The Magician from Riga)"
+            android:textStyle="italic" />
+
+        <Button
+            android:id="@+id/button_chess_master_selection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:text="Choose Your Chess Coach"
+            android:drawableEnd="@android:drawable/ic_menu_more"
+            android:backgroundTint="#4CAF50" />
+        <!-- Premium Voice Toggle -->
+        <Switch
+            android:id="@+id/switch_premium_voice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:text="Use OpenAI Premium Voice"
+            android:textSize="16sp" />
+
+        <!-- Voice Persona Selection -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Voice Persona"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radio_group_voice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp">
+
+            <RadioButton
+                android:id="@+id/radio_voice_grandmaster"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Grandmaster (Wise, Authoritative)"
+                android:minHeight="48dp" />
+
+            <RadioButton
+                android:id="@+id/radio_voice_tutor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tutor (Patient, Encouraging)"
+                android:minHeight="48dp" />
+
+            <RadioButton
+                android:id="@+id/radio_voice_friendly"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Friendly (Cheerful, Energetic)"
+                android:minHeight="48dp" />
+
+            <RadioButton
+                android:id="@+id/radio_voice_neutral"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Neutral (Balanced, Clear)"
+                android:minHeight="48dp" />
+        </RadioGroup>
+
+        <!-- Voice Quality section -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Voice Quality"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radio_group_model"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp">
+
+            <RadioButton
+                android:id="@+id/radio_model_standard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Standard Quality (Lower cost)"
+                android:minHeight="48dp" />
+
+            <RadioButton
+                android:id="@+id/radio_model_premium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Premium Quality (Higher fidelity)"
+                android:minHeight="48dp" />
+        </RadioGroup>
+
+        <!-- Token Usage Estimate -->
+        <TextView
+            android:id="@+id/text_token_estimate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="16dp"
+            android:textStyle="italic"
+            android:text="Estimated cost: ~$0.015 per 1000 characters" />
+
+        <!-- Test Voice Button -->
+        <Button
+            android:id="@+id/button_test_voice"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Grandmaster (Wise, Authoritative)" />
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="24dp"
+            android:text="Test Selected Voice" />
 
-        <RadioButton
-            android:id="@+id/radio_voice_tutor"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tutor (Patient, Encouraging)" />
-
-        <RadioButton
-            android:id="@+id/radio_voice_friendly"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Friendly (Cheerful, Energetic)" />
-
-        <RadioButton
-            android:id="@+id/radio_voice_neutral"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Neutral (Balanced, Clear)" />
-    </RadioGroup>
-
-    <!-- Model Quality -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp"
-        android:text="Voice Quality"
-        android:textSize="16sp"
-        android:textStyle="bold" />
-
-    <RadioGroup
-        android:id="@+id/radio_group_model"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingLeft="16dp"
-        android:paddingRight="16dp">
-
-        <RadioButton
-            android:id="@+id/radio_model_standard"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Standard Quality (Lower cost)" />
-
-        <RadioButton
-            android:id="@+id/radio_model_premium"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Premium Quality (Higher fidelity)" />
-    </RadioGroup>
-
-    <!-- Token Usage Estimate -->
-    <TextView
-        android:id="@+id/text_token_estimate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:padding="16dp"
-        android:textStyle="italic"
-        android:text="Estimated cost: ~$0.015 per 1000 characters" />
-
-    <!-- Test Voice Button -->
-    <Button
-        android:id="@+id/button_test_voice"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginTop="24dp"
-        android:text="Test Selected Voice" />
-
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

@@ -383,7 +383,14 @@ public class SimpleRecordService extends Service {
 
                 // In the processRecording method of SimpleRecordService.java
 
-                String systemPrompt = "You are Coach Tal, a chess grandmaster giving quick, practical advice. " +
+                // Get the selected chess master
+                String selectedMaster = getSelectedChessMaster();
+                String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
+                String coachStyle = selectedMaster.equals("kramnik")
+                        ? "emphasizing positional understanding, prophylaxis, and long-term planning"
+                        : "emphasizing tactical vision, creative sacrifices, and dynamic attacking play";
+
+                String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster " + coachStyle + ". " +
                         "Be extremely concise and focused - limit to 2-3 sentences maximum. " +
                         "Don't repeat information like FEN or move lists that I already know. " +
                         "Get straight to the point with the best move or plan, using clear chess notation. " +
@@ -475,9 +482,16 @@ public class SimpleRecordService extends Service {
 
 
         // Add an initial system message to set the coach's personality
+        // Get the selected chess master
+        String selectedMaster = getSelectedChessMaster();
+        String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
+        String coachSpecialty = selectedMaster.equals("kramnik")
+                ? "Vladimir Kramnik's strategic approach, the Berlin Defense, and positional masterpieces"
+                : "Mikhail Tal's brilliant tactical games, sacrificial attacks, and creative combinations";
+
         conversationManager.addMessage("system",
-                "You are Coach Tal, a chess grandmaster with deep knowledge of chess history, " +
-                        "especially about Mikhail Tal's brilliant tactical games and chess stories. " +
+                "You are Coach " + coachName + ", a chess grandmaster with deep knowledge of chess history, " +
+                        "especially about " + coachSpecialty + ". " +
                         "You can discuss chess positions, history, players, and strategies.");
     }
 
@@ -584,7 +598,7 @@ public class SimpleRecordService extends Service {
         }
 
         // Expanded chess history/people questions - much more inclusive
-        if (question.contains("tal") || question.contains("botvinnik") ||
+        if (question.contains("tal") || question.contains("kramnik") || question.contains("botvinnik") ||
                 question.contains("kasparov") || question.contains("fischer") ||
                 question.contains("capablanca") || question.contains("karpov") ||
                 question.contains("anand") || question.contains("carlsen") ||
@@ -620,8 +634,10 @@ public class SimpleRecordService extends Service {
         // Log the incoming transcription for debugging
         Log.d(TAG, "Processing transcription: " + transcribedText);
 
-        // Define the systemPrompt variable
-        String systemPrompt = "You are Coach Tal, a chess grandmaster providing guidance.";
+        // Get the selected chess master
+        String selectedMaster = getSelectedChessMaster();
+        String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
+        String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster providing guidance.";
 
         // Determine question type and set appropriate prompt
         String questionType = determineQuestionType(transcribedText);
@@ -918,6 +934,15 @@ public class SimpleRecordService extends Service {
         // This should be implemented to get access to your chess board
         // For example, through a singleton or by passing it to the service
         return ChessBoardManager.getInstance().getCurrentBoardView();
+    }
+
+    /**
+     * Gets the selected chess coach profile (Tal or Kramnik)
+     */
+    private String getSelectedChessMaster() {
+        // Use ChessAppPrefs to match the key used in the settings
+        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        return prefs.getString("selected_master", "tal"); // Default to Tal if not set
     }
 
     /**
