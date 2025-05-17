@@ -496,20 +496,22 @@ public class SimpleRecordService extends Service {
      * For debugging/development, you can return a fixed string
      */
     private String getTranscriptionFromFile(File audioFile, String apiKey) {
-        // For debugging/development
-        boolean useFixedText = false;  // Set to true for testing without actual transcription
+        try {
+            Log.d(TAG, "About to transcribe with Whisper API: " + audioFile.getAbsolutePath());
 
-        if (useFixedText) {
-            Log.d(TAG, "Using fixed test transcription");
-            return "What's the best continuation in this position?";
+            // Read the WAV file into a byte array
+            byte[] audioData = readFileToBytes(audioFile);
+
+            // Use OpenAI's Whisper API through your service
+            OpenAIWhisperService whisperService = new OpenAIWhisperService(apiKey);
+            String transcribedText = whisperService.transcribeAudio(audioData);
+
+            Log.d(TAG, "Whisper API returned: " + transcribedText);
+            return transcribedText;
+        } catch (Exception e) {
+            Log.e(TAG, "Error using Whisper API", e);
+            return "Error transcribing speech: " + e.getMessage();
         }
-
-        // TODO: Implement actual transcription using OpenAI Whisper API or your preferred method
-        // This is a placeholder that should be replaced with your actual implementation
-        Log.d(TAG, "Transcribing audio file: " + audioFile.getAbsolutePath());
-
-        // Return placeholder text until you implement actual transcription
-        return "What's the best move in this position?";
     }
 
 
