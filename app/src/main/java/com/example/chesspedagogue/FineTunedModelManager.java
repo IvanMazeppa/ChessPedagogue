@@ -17,17 +17,17 @@ public class FineTunedModelManager {
     private static final String PREFS_NAME = "ChessFineTunedModels";
     private static final String KEY_SELECTED_MASTER = "selected_master";
 
-    // Fine-tuned model IDs - update these with your actual model IDs
-    private static final String MODEL_TAL = "ft:gpt-4:chess-coach:tal:2025-05-01";
-    private static final String MODEL_KRAMNIK = "ft:gpt-4:chess-coach:kramnik:2025-05-01";
-    private static final String MODEL_KARPOV = "ft:gpt-4:chess-coach:karpov:2025-05-01";
-    private static final String MODEL_FISCHER = "ft:gpt-4:chess-coach:fischer:2025-05-01";
-    private static final String MODEL_LASKER = "ft:gpt-4:chess-coach:lasker:2025-05-01";
-    private static final String MODEL_KASPAROV = "ft:gpt-4:chess-coach:kasparov:2025-05-01";
-    private static final String MODEL_CAPABLANCA = "ft:gpt-4:chess-coach:capablanca:2025-05-01";
-    private static final String MODEL_CARLSEN = "ft:gpt-4:chess-coach:carlsen:2025-05-01";
-    private static final String MODEL_MORPHY = "ft:gpt-4:chess-coach:morphy:2025-05-01";
-    private static final String MODEL_ANAND = "ft:gpt-4:chess-coach:anand:2025-05-01";
+    // In FineTunedModelManager.java, replace the model constants:
+    private static final String MODEL_TAL = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_FISCHER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_CARLSEN = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
 
     // Default model if fine-tuned model is not available
     private static final String DEFAULT_MODEL = "gpt-4.1";

@@ -42,6 +42,12 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
@@ -270,6 +276,12 @@ public class MainActivity extends AppCompatActivity {
         openAIService = OpenAIService.getInstance();
         OpenAIService.getInstance().init(this);
 
+
+        Button debugButton = new Button(this);
+        debugButton.setText("Test Assistants API");
+        debugButton.setBackgroundColor(Color.RED);
+        debugButton.setTextColor(Color.WHITE);
+        debugButton.setOnClickListener(v -> testAssistantsAPI());
         // Set up click listeners
         setupClickListeners();
 
@@ -305,6 +317,75 @@ public class MainActivity extends AppCompatActivity {
 
         // Update TTS settings to auto (which will use master-appropriate voice)
         ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
+    }
+
+    private void testAssistantsAPI() {
+        // Run in background
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "🔍 Starting Assistants API test");
+
+                // Step 1: Create a chess master agent
+                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                        OpenAIService.getInstance(), MainActivity.this);
+
+                // Step 2: Create a Tal assistant
+                String assistantId = agentManager.createTalAssistant();
+                Log.d(TAG, "✅ Created assistant: " + assistantId);
+
+                if (assistantId == null) {
+                    throw new Exception("Failed to create assistant");
+                }
+
+                // Step 3: Create a conversation thread
+                String threadId = agentManager.createConversationThread();
+                Log.d(TAG, "✅ Created thread: " + threadId);
+
+                if (threadId == null) {
+                    throw new Exception("Failed to create thread");
+                }
+
+                // Step 4: Send a message with current board position
+                String userMessage = "What is your favorite opening?";
+                String fenPosition = chessBoardView.getCurrentFEN();
+
+                String runId = agentManager.sendMessageWithPosition(
+                        threadId, assistantId, userMessage, fenPosition);
+                Log.d(TAG, "✅ Created run: " + runId);
+
+                if (runId == null) {
+                    throw new Exception("Failed to create run");
+                }
+
+                // Step 5: Get the response
+                String response = agentManager.getChessMasterResponse(threadId, runId);
+                Log.d(TAG, "✅ Got response: " + response);
+
+                // Step 6: Update UI with response
+                runOnUiThread(() -> {
+                    // Show the response in UI
+                    updateCoachMessageText(response != null ?
+                            response : "No response received");
+
+                    View coachCard = findViewById(R.id.coachMessageCard);
+                    if (coachCard != null) {
+                        coachCard.setVisibility(View.VISIBLE);
+                    }
+
+                    Toast.makeText(MainActivity.this,
+                            "Assistants API test complete!", Toast.LENGTH_LONG).show();
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Assistants API test failed: " + e.getMessage(), e);
+
+                // Show error on UI thread
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this,
+                            "Test failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 
     /**
@@ -1007,21 +1088,24 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-        Button resetButton = findViewById(R.id.resetButton); // Add this button to your layout
+        // In your setupClickListeners() method, find where you set up the resetButton
+        Button resetButton = findViewById(R.id.resetButton);
         if (resetButton != null) {
+            // Keep your existing click listener
             resetButton.setOnClickListener(v -> {
                 if (isServiceBound && recordService != null) {
-                    // Stop any ongoing speech
-                    if (textToSpeechManager != null) {
-                        textToSpeechManager.interrupt();
-                    }
-
-                    // Reset the conversation
+                    // Your existing reset code...
+                    textToSpeechManager.interrupt();
                     Toast.makeText(MainActivity.this, "Conversation reset", Toast.LENGTH_SHORT).show();
-
-                    // Start a new conversation (add this method to SimpleRecordService)
                     recordService.resetConversation();
                 }
+            });
+
+            // Add a long-press listener for testing
+            resetButton.setOnLongClickListener(v -> {
+                Toast.makeText(MainActivity.this, "Testing Assistants API...", Toast.LENGTH_SHORT).show();
+                testAssistantsAPI(); // This calls your test method
+                return true; // This indicates the long press was handled
             });
         }
 
@@ -1354,6 +1438,114 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    // Add this to your MainActivity.java
+    private void testAssistantCreation() {
+        new Thread(() -> {
+            try {
+                Log.d("AssistantTest", "🚀🚀🚀 STARTING ASSISTANT TEST 🚀🚀🚀");
+
+                // Make direct OpenAI API calls
+                OkHttpClient client = new OkHttpClient();
+
+                // Get API key
+                String apiKey = ApiKeyConfig.getApiKey(this);
+
+                // Simple request body
+                String requestBody = "{" +
+                        "\"name\": \"Test Assistant\"," +
+                        "\"instructions\": \"You are a helpful chess coach.\"," +
+                        "\"model\": \"gpt-4-turbo\"" +
+                        "}";
+
+                // Create request
+                Request request = new Request.Builder()
+                        .url("https://api.openai.com/v1/assistants")
+                        .post(RequestBody.create(MediaType.parse("application/json"), requestBody))
+                        .addHeader("Authorization", "Bearer " + apiKey)
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("OpenAI-Beta", "assistants=v2")
+                        .build();
+
+                // Log attempt
+                Log.d("AssistantTest", "📞📞📞 SENDING API REQUEST 📞📞📞");
+
+                // Execute request
+                Response response = client.newCall(request).execute();
+                String responseBody = response.body().string();
+
+                // Log result
+                Log.d("AssistantTest", "🎯🎯🎯 API RESPONSE: " + responseBody + " 🎯🎯🎯");
+
+                // Update UI with result
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this,
+                            "Assistant creation test complete. Check logs!",
+                            Toast.LENGTH_LONG).show();
+                });
+
+            } catch (Exception e) {
+                Log.e("AssistantTest", "❌❌❌ ERROR: " + e.getMessage(), e);
+
+                // Show error on UI
+                runOnUiThread(() -> {
+                    Toast.makeText(MainActivity.this,
+                            "Assistant test failed: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
+    }
+
+    private void testChessMasterAssistant() {
+        // Run this on a background thread
+        new Thread(() -> {
+            try {
+                // Initialize the Manager
+                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                        OpenAIService.getInstance(), this);
+
+                // Create Tal Assistant
+                String assistantId = agentManager.createTalAssistant();
+                if (assistantId == null) {
+                    Log.e("ChessTest", "Failed to create assistant");
+                    return;
+                }
+
+                // Create conversation thread
+                String threadId = agentManager.createConversationThread();
+                if (threadId == null) {
+                    Log.e("ChessTest", "Failed to create thread");
+                    return;
+                }
+
+                // Current FEN position (starting position)
+                String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+                // Send a message
+                String userMessage = "What's your most famous game?";
+                agentManager.sendMessageWithPosition(threadId, assistantId, userMessage, fenPosition);
+
+                // This is where you'd need to implement a way to get the runId from the response
+                // For now, we'll mock it to show the structure
+                String runId = "run_123456"; // You'd get this from the createRun response
+
+                // Get response
+                String response = agentManager.getChessMasterResponse(threadId, runId);
+                Log.d("ChessTest", "Tal's response: " + response);
+
+                // Update UI on main thread
+                runOnUiThread(() -> {
+                    // Show response in UI
+                    updateCoachMessageText(response);
+                    updateResponseUI(response);
+                });
+
+            } catch (Exception e) {
+                Log.e("ChessTest", "Error testing Assistant", e);
+            }
+        }).start();
     }
 
     @Override

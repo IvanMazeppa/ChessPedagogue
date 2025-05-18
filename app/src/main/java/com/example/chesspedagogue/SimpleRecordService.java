@@ -20,6 +20,8 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
 
+import org.json.JSONObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -62,6 +64,10 @@ public class SimpleRecordService extends Service {
     private long lastSoundTimestamp = 0;
     private boolean isFollowUpQuestion = false;
 
+    private ChessMasterAgentManager agentManager;
+    private String currentThreadId;
+    private String currentAssistantId;
+
     public boolean isCurrentlySpeaking() {
         return textToSpeechManager != null && textToSpeechManager.isSpeaking();
     }
@@ -74,6 +80,20 @@ public class SimpleRecordService extends Service {
         // Initialize OpenAI service
         openAIService = OpenAIService.getInstance();
         apiKey = getApiKeyFromPreferences();
+        // In SimpleRecordService.java's onCreate method, right after this line:
+        agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), this);
+
+// Add these lines:
+        Log.d(TAG, "🚀🚀🚀 ATTEMPTING TO CREATE CHESS MASTER AGENT 🚀🚀🚀");
+        Log.d(TAG, "💫💫💫 ChessMasterAgentManager initialized 💫💫💫");
+        Log.d(TAG, "🧙‍♂️🧙‍♂️🧙‍♂️ ABOUT TO CREATE TAL ASSISTANT 🧙‍♂️🧙‍♂️🧙‍♂️");
+        currentAssistantId = agentManager.createTalAssistant();
+        Log.d(TAG, "📝📝📝 Assistant ID result: " + currentAssistantId);
+
+        Log.d(TAG, "🧵🧵🧵 ABOUT TO CREATE CONVERSATION THREAD 🧵🧵🧵");
+        currentThreadId = agentManager.createConversationThread();
+        Log.d(TAG, "📝📝📝 Thread ID result: " + currentThreadId);
+
         // Add this log to check if the API key is retrieved correctly
         Log.d(TAG, "API Key retrieved, length: " + (apiKey != null ? apiKey.length() : 0));
 
@@ -644,32 +664,71 @@ public class SimpleRecordService extends Service {
             // 4. Get response from OpenAI with full conversation history
             CompletableFuture.supplyAsync(() -> {
                 try {
-                    // Split the conversation into system message and user content
-                    String systemMessage = "You are Coach Tal, a chess grandmaster providing guidance. " +
-                            "IMPORTANT: Use the provided chess position (FEN), move history, and game phase " +
-                            "details to analyze the specific position. Never ask for the position if it's " +
-                            "already provided in the context. Always reference specific moves or positions " +
-                            "in your responses.";
-
-                    // Build the user content from conversation history
-                    StringBuilder userContent = new StringBuilder();
-
-                    // Add conversation history
-                    List<ConversationManager.Message> history = conversationManager.getConversationHistory();
-                    for (ConversationManager.Message message : history) {
-                        userContent.append(message.getRole())
-                                .append(": ")
-                                .append(message.getContent())
-                                .append("\n\n");
+                    // Get API key
+                    String apiKey = ApiKeyConfig.getApiKey(this);
+                    if (apiKey == null || apiKey.isEmpty()) {
+                        return "Error: API key not configured.";
                     }
 
-                    // Use your existing OpenAIService method with both required parameters
-                    return openAIService.getChatCompletion(systemMessage, userContent.toString());
+                    // PCM to WAV conversion
+                    byte[] pcmData = readFileToBytes(outputFile);
+                    byte[] wavData = convertPcmToWav(pcmData, SAMPLE_RATE, 1, 16);
+
+                    File wavFile = File.createTempFile("recording_", ".wav", getCacheDir());
+                    try (FileOutputStream fos = new FileOutputStream(wavFile)) {
+                        fos.write(wavData);
+                    }
+
+                    // Get transcription
+                    String transcribedSpeech = getTranscriptionFromFile(wavFile, apiKey);
+                    Log.d(TAG, "Transcribed text: " + transcribedSpeech);
+
+                    // Get current FEN position
+                    String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Default
+                    ChessBoardView boardView = getChessBoardView();
+                    if (boardView != null) {
+                        fenPosition = boardView.getCurrentFEN();
+                    }
+
+                    // ✨ HERE'S THE MAGIC - USE THE ASSISTANT INSTEAD OF DIRECT CHAT ✨
+                    // Send message to the Assistant with chess position context
+                    JSONObject messageRequest = new JSONObject();
+                    messageRequest.put("role", "user");
+                    messageRequest.put("content", "CHESS POSITION: " + fenPosition + "\n\nQUESTION: " + transcribedSpeech);
+
+                    // Create message in the thread
+                    String messageResponse = agentManager.createMessage(currentThreadId, messageRequest.toString());
+                    JSONObject messageJson = new JSONObject(messageResponse);
+                    String messageId = messageJson.getString("id");
+
+                    // Create run request
+                    JSONObject runRequest = new JSONObject();
+                    runRequest.put("assistant_id", currentAssistantId);
+
+                    // Start the run
+
+                    // ✨ Use the sendMessageWithPosition method which handles both creating the message and running
+                    agentManager.sendMessageWithPosition(currentThreadId, currentAssistantId,
+                            transcribedSpeech, fenPosition);
+
+                    String response = agentManager.getChessMasterResponse(currentThreadId, "latest");
+
+                    // Add response to conversation history
+                    conversationManager.addMessage("assistant", response);
+
+                    // Save the conversation
+                    conversationManager.saveCurrentConversation();
+
+                    // Clean up temp file
+                    wavFile.delete();
+
+                    return response;
                 } catch (Exception e) {
-                    Log.e(TAG, "Error getting chat completion", e);
-                    return "I'm sorry, I couldn't process that request. Can you try again?";
+                    Log.e(TAG, "Error in speech-to-speech process", e);
+                    return "I'm sorry, I had trouble analyzing your question. Could you try again?";
                 }
             }).thenAccept(coachResponse -> {
+                // Rest of your code remains the same...
                 // 5. Handle the coach's response on the main thread
                 new Handler(Looper.getMainLooper()).post(() -> {
                     // Add assistant response to history
@@ -711,6 +770,8 @@ public class SimpleRecordService extends Service {
             updateUIForProcessing(false);
         }
     }
+
+
 
     /**
      * Creates an enhanced prompt that includes the chess context
