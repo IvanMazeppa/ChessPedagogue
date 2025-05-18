@@ -13,6 +13,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,13 +37,15 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity {
-    private AnimatorSet pulseAnimatorSet;
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
+    private AnimatorSet pulseAnimatorSet;
     private OpenAIService openAIService;
     private String selectedSquare = null;
 
@@ -54,6 +57,16 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton conversationButton;
     private Button recordButton;
     private Button settingsButton;
+
+    // Add this near your other class members
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    // Handler for UI updates
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    // Add this enum for tracking processing states
+    private enum ProcessingState {
+        IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
+    }
 
 
     private ChallengeData currentChallenge;
@@ -68,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     // SimpleRecordService connection
     private SimpleRecordService recordService;
     private boolean isServiceBound = false;
-    private ServiceConnection serviceConnection = new ServiceConnection() {
+    private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             SimpleRecordService.LocalBinder binder = (SimpleRecordService.LocalBinder) service;
@@ -76,48 +89,50 @@ public class MainActivity extends AppCompatActivity {
             isServiceBound = true;
             Log.d(TAG, "🎉 Service connected successfully!");
 
+            updateVoiceForCurrentMaster();
+
+            if (recordService != null) {
+                recordService.refreshVoiceSettings();
+            }
+
+
             // Set up the callback to handle responses
             recordService.setCallback(new SimpleRecordService.ServiceCallback() {
                 @Override
                 public void onRecordingStarted() {
                     Log.d(TAG, "Recording started callback received!");
-                    // Show listening animation
-                    runOnUiThread(() -> showListeningFeedback());
+                    // Update UI on main thread
+                    mainHandler.post(() -> updateUIState(ProcessingState.LISTENING));
                 }
 
                 @Override
                 public void onRecordingStopped() {
                     Log.d(TAG, "Recording stopped callback received!");
-                    // Stop listening animation
-                    runOnUiThread(() -> stopListeningFeedback());
+                    // Update UI to show we're transcribing
+                    mainHandler.post(() -> updateUIState(ProcessingState.TRANSCRIBING));
                 }
 
                 @Override
                 public void onProcessingStateChanged(boolean isProcessing) {
-                    runOnUiThread(() -> {
-                        // Update status text
-                        TextView statusTextView = findViewById(R.id.statusTextView);
-                        if (statusTextView != null) {
-                            statusTextView.setText(isProcessing ? "Coach Tal is thinking..." : "Ready");
-                        }
+                    mainHandler.post(() -> {
+                        // Update status based on processing state
+                        updateUIState(isProcessing ? ProcessingState.THINKING : ProcessingState.IDLE);
                     });
                 }
 
                 @Override
                 public void onResponseReceived(String response) {
-                    updateCoachMessageText(response);
-                    updateResponseUI(response);
-
-                    processAdviceForHighlights(response);
-
-                    // Display the coach's response
-                    runOnUiThread(() -> showCoachResponse(response));
+                    // Update UI to show we're speaking the response
+                    mainHandler.post(() -> {
+                        updateUIState(ProcessingState.SPEAKING, response);
+                        processAdviceForHighlights(response);
+                    });
                 }
 
                 @Override
                 public void onResponseCompleted(String response) {
-                    // Coach has finished speaking
-                    Log.d(TAG, "Speech completed: " + response);
+                    // Coach has finished speaking, return to IDLE state
+                    mainHandler.post(() -> updateUIState(ProcessingState.IDLE));
                 }
             });
         }
@@ -129,6 +144,10 @@ public class MainActivity extends AppCompatActivity {
             recordService = null;
         }
     };
+    // Game logic
+    private GameViewModel gameViewModel;
+    // State tracking
+    private final boolean conversationActive = false; // tracks if service is running
 
     // Add this method to update coach message text
     private void updateCoachMessageText(String message) {
@@ -148,6 +167,9 @@ public class MainActivity extends AppCompatActivity {
             coachCard.setVisibility(View.VISIBLE);
         }
     }
+
+
+
     // In your SimpleRecordService or MainActivity
     public void processAdviceForHighlights(String coachAdvice) {
         // Define highlight colors
@@ -173,6 +195,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+
 
     private List<String> extractChessSquares(String text) {
         List<String> squares = new ArrayList<>();
@@ -229,12 +253,6 @@ public class MainActivity extends AppCompatActivity {
         return squares;
     }
 
-    // Game logic
-    private GameViewModel gameViewModel;
-
-    // State tracking
-    private boolean conversationActive = false; // tracks if service is running
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -269,6 +287,24 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind to the SimpleRecordService
         bindRecordService();
+    }
+
+    // In MainActivity.java
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateVoiceForCurrentMaster();
+    }
+
+    // In your MainActivity.java or wherever you handle the main game loop
+// Make sure to call this when returning from settings or at the start of a conversation:
+
+    private void updateVoiceForCurrentMaster() {
+        // Get the current selected master
+        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Update TTS settings to auto (which will use master-appropriate voice)
+        ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
     }
 
     /**
@@ -502,6 +538,16 @@ public class MainActivity extends AppCompatActivity {
     // Start recording method
     private void startRecording() {
         if (isServiceBound && recordService != null) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                // TODO: Consider calling
+                //    ActivityCompat#requestPermissions
+                // here to request the missing permissions, and then overriding
+                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                //                                          int[] grantResults)
+                // to handle the case where the user grants the permission. See the documentation
+                // for ActivityCompat#requestPermissions for more details.
+                return;
+            }
             recordService.startRecording();
         } else {
             Toast.makeText(this, "Voice service not ready", Toast.LENGTH_SHORT).show();
@@ -541,13 +587,11 @@ public class MainActivity extends AppCompatActivity {
                 "Explanation: [Brief explanation of why this works]\n" +
                 "Tactical Motif: [Name of the tactical pattern - fork, pin, etc.]";
 
-
-
         // Show loading indicator
         showChallengeLoading(true);
 
-        // Use a background thread to avoid blocking the UI
-        new Thread(() -> {
+        // Use our ExecutorService instead of creating a new Thread
+        executorService.execute(() -> {
             try {
                 // Get challenge from OpenAI (synchronous call)
                 String response = openAIService.getChatCompletion(
@@ -555,22 +599,21 @@ public class MainActivity extends AppCompatActivity {
                         prompt);
 
                 // Process the response on the UI thread
-                runOnUiThread(() -> {
+                mainHandler.post(() -> {
                     showChallengeLoading(false);
                     parseChallengeResponse(response);
                 });
             } catch (Exception e) {
                 // Handle errors on the UI thread
-                runOnUiThread(() -> {
+                mainHandler.post(() -> {
                     showChallengeLoading(false);
                     Toast.makeText(MainActivity.this,
                             "Couldn't create a challenge right now. Let's try again later!",
                             Toast.LENGTH_LONG).show();
                 });
             }
-        }).start();
+        });
     }
-
     private void showChallenge(ChallengeData challenge) {
         try {
             // Validate the challenge before proceeding
@@ -578,30 +621,30 @@ public class MainActivity extends AppCompatActivity {
                     challenge.getCorrectMove().isEmpty()) {
                 throw new Exception("Invalid challenge data");
             }
-                // Inflate challenge view
-                View challengeView = getLayoutInflater().inflate(R.layout.challenge_panel, null);
+            // Inflate challenge view
+            View challengeView = getLayoutInflater().inflate(R.layout.challenge_panel, null);
 
-                // Set up UI elements
-                TextView descriptionText = challengeView.findViewById(R.id.challengeDescription);
-                descriptionText.setText(challenge.getDescription());
+            // Set up UI elements
+            TextView descriptionText = challengeView.findViewById(R.id.challengeDescription);
+            descriptionText.setText(challenge.getDescription());
 
-                Button hintButton = challengeView.findViewById(R.id.hintButton);
-                hintButton.setOnClickListener(v -> showHint(challenge));
+            Button hintButton = challengeView.findViewById(R.id.hintButton);
+            hintButton.setOnClickListener(v -> showHint(challenge));
 
-                Button solveButton = challengeView.findViewById(R.id.solveButton);
-                solveButton.setOnClickListener(v -> showSolution(challenge));
+            Button solveButton = challengeView.findViewById(R.id.solveButton);
+            solveButton.setOnClickListener(v -> showSolution(challenge));
 
-                // Show the challenge panel
-                FrameLayout container = findViewById(R.id.challengeContainer);
-                container.removeAllViews();
-                container.addView(challengeView);
-                container.setVisibility(View.VISIBLE);
+            // Show the challenge panel
+            FrameLayout container = findViewById(R.id.challengeContainer);
+            container.removeAllViews();
+            container.addView(challengeView);
+            container.setVisibility(View.VISIBLE);
 
-                // Add beautiful animation
-                challengeView.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up));
+            // Add beautiful animation
+            challengeView.startAnimation(AnimationUtils.loadAnimation(this, R.anim.slide_up));
 
-                // Highlight relevant squares for this challenge
-                highlightChallengeSquares(challenge);
+            // Highlight relevant squares for this challenge
+            highlightChallengeSquares(challenge);
         } catch (Exception e) {
             Log.e(TAG, "Error showing challenge: " + e.getMessage());
             Toast.makeText(this, "Something went wrong with the challenge. Let's try again!", Toast.LENGTH_SHORT).show();
@@ -750,10 +793,34 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // Update UI to show we're listening
+        updateUIState(ProcessingState.LISTENING);
+
         // Use the bound service to start recording
         if (isServiceBound && recordService != null) {
-            Log.d(TAG, "🎤 Starting recording via bound service...");
-            recordService.startRecording();
+            executorService.execute(() -> {
+                try {
+                    Log.d(TAG, "🎤 Starting recording via bound service...");
+
+                    // This will trigger onRecordingStarted callback when it begins
+                    if (ActivityCompat.checkSelfPermission(MainActivity.this,
+                            Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                        recordService.startRecording();
+                    }
+
+                    // Note: The rest of the pipeline is handled by the service callbacks
+                    // We'll update those next
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in voice recording: " + e.getMessage());
+                    mainHandler.post(() -> {
+                        updateUIState(ProcessingState.IDLE);
+                        Toast.makeText(MainActivity.this,
+                                "Voice recording error. Please try again.",
+                                Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
         } else {
             Log.e(TAG, "❌ Service not bound yet, trying to bind now...");
             Toast.makeText(this, "Connecting to voice service...", Toast.LENGTH_SHORT).show();
@@ -764,13 +831,112 @@ public class MainActivity extends AppCompatActivity {
             // Schedule a retry after a short delay
             new android.os.Handler().postDelayed(() -> {
                 if (isServiceBound && recordService != null) {
-                    recordService.startRecording();
+                    startVoiceRecording();
                 } else {
-                    Toast.makeText(MainActivity.this, "Could not connect to voice service. Please try again.",
+                    Toast.makeText(MainActivity.this,
+                            "Could not connect to voice service. Please try again.",
                             Toast.LENGTH_SHORT).show();
                 }
             }, 1000); // 1 second delay
         }
+    }
+
+    private void updateUIState(ProcessingState state, String text) {
+        // Update UI elements based on state
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        View micIndicator = findViewById(R.id.micIndicator);
+        View coachMessageCard = findViewById(R.id.coachMessageCard);
+
+        switch (state) {
+            case IDLE:
+                if (statusTextView != null) {
+                    statusTextView.setText("Ready to assist you with your chess journey");
+                }
+                if (micIndicator != null) {
+                    micIndicator.setVisibility(View.GONE);
+                    if (pulseAnimatorSet != null) {
+                        pulseAnimatorSet.cancel();
+                    }
+                }
+                if (speakButton != null) {
+                    speakButton.setEnabled(true);
+                }
+                break;
+
+            case LISTENING:
+                if (statusTextView != null) {
+                    statusTextView.setText("Listening to you...");
+                }
+                if (micIndicator != null) {
+                    micIndicator.setVisibility(View.VISIBLE);
+
+                    // Create pulse animation if needed
+                    if (pulseAnimatorSet == null || pulseAnimatorSet.isStarted()) {
+                        ObjectAnimator scaleX = ObjectAnimator.ofFloat(micIndicator, "scaleX", 1.0f, 1.2f);
+                        ObjectAnimator scaleY = ObjectAnimator.ofFloat(micIndicator, "scaleY", 1.0f, 1.2f);
+
+                        scaleX.setRepeatCount(ValueAnimator.INFINITE);
+                        scaleX.setRepeatMode(ValueAnimator.REVERSE);
+                        scaleX.setDuration(500);
+
+                        scaleY.setRepeatCount(ValueAnimator.INFINITE);
+                        scaleY.setRepeatMode(ValueAnimator.REVERSE);
+                        scaleY.setDuration(500);
+
+                        pulseAnimatorSet = new AnimatorSet();
+                        pulseAnimatorSet.playTogether(scaleX, scaleY);
+                        pulseAnimatorSet.start();
+                    }
+                }
+                if (speakButton != null) {
+                    speakButton.setEnabled(false);
+                }
+                break;
+
+            case TRANSCRIBING:
+                if (statusTextView != null) {
+                    statusTextView.setText("Processing what you said...");
+                }
+                break;
+
+            case THINKING:
+                if (statusTextView != null) {
+                    statusTextView.setText("Coach Tal is thinking...");
+                }
+                if (micIndicator != null) {
+                    micIndicator.setVisibility(View.GONE);
+                    if (pulseAnimatorSet != null) {
+                        pulseAnimatorSet.cancel();
+                    }
+                }
+                break;
+
+            case SPEAKING:
+                if (statusTextView != null) {
+                    statusTextView.setText("Coach is responding...");
+                }
+                if (coachMessageCard != null) {
+                    coachMessageCard.setVisibility(View.VISIBLE);
+                }
+                break;
+        }
+
+        // Update text if provided
+        if (text != null) {
+            TextView coachMessageText = findViewById(R.id.coachMessageText);
+            if (coachMessageText != null) {
+                if (state == ProcessingState.THINKING) {
+                    coachMessageText.setText("I heard: " + text + "\nThinking...");
+                } else if (state == ProcessingState.SPEAKING) {
+                    coachMessageText.setText(text);
+                }
+            }
+        }
+    }
+
+    // Overload for when no text is provided
+    private void updateUIState(ProcessingState state) {
+        updateUIState(state, null);
     }
 
     // Show coach's response
@@ -819,6 +985,16 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "Record button clicked");
             if (isServiceBound && recordService != null) {
                 Log.d(TAG, "Starting recording via bound service");
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
                 recordService.startRecording();
                 // Show feedback that we're listening
                 showListeningFeedback();
@@ -873,8 +1049,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         coachButton.setOnClickListener(v -> {
-                    offerChallenge();
-                });
+            offerChallenge();
+        });
 
         // Replace the resetButton section with this:
         coachButton.setOnLongClickListener(v -> {
@@ -1104,7 +1280,7 @@ public class MainActivity extends AppCompatActivity {
             // Validate the challenge before proceeding
             if (challenge == null || challenge.getCorrectMove().isEmpty()) {
                 throw new Exception("Invalid challenge data for solution");
-        }
+            }
             // Show the solution
             String solution = "The correct move is " + challenge.getCorrectMove() +
                     ". " + challenge.getExplanation();
@@ -1131,13 +1307,14 @@ public class MainActivity extends AppCompatActivity {
      * Convert board coordinates to algebraic notation
      */
     private String algebraicNotation(int row, int col) {
-        char file = (char)('a' + col);
+        char file = (char) ('a' + col);
         int rank = 8 - row;
         return "" + file + rank;
     }
 
     /**
      * Check if microphone permission is granted, request if not
+     *
      * @return true if permission is already granted
      */
     private boolean checkMicrophonePermission() {
@@ -1181,6 +1358,9 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        // Shutdown our executor service
+        executorService.shutdown();
+
         // Unbind from the service
         if (isServiceBound) {
             unbindService(serviceConnection);

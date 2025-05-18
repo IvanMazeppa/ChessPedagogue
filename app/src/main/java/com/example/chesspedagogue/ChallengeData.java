@@ -1,12 +1,12 @@
 package com.example.chesspedagogue;
 
 public class ChallengeData {
-    private String description;
-    private String correctMove;
-    private String opponentResponse;
-    private String winningSecondMove;
-    private String explanation;
-    private String tacticalMotif;
+    private final String description;
+    private final String correctMove;
+    private final String opponentResponse;
+    private final String winningSecondMove;
+    private final String explanation;
+    private final String tacticalMotif;
 
     public ChallengeData(String description, String correctMove,
                          String opponentResponse, String winningSecondMove,

@@ -2,7 +2,12 @@ package com.example.chesspedagogue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Manages access to fine-tuned models for chess masters
@@ -26,12 +31,27 @@ public class FineTunedModelManager {
 
     // Default model if fine-tuned model is not available
     private static final String DEFAULT_MODEL = "gpt-4.1";
-
-    private final Context context;
-    private final SharedPreferences prefs;
-
     // Singleton instance
     private static FineTunedModelManager instance;
+    private final Context context;
+    private final SharedPreferences prefs;
+    // Add this near your other class members
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    // Handler for UI updates
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    // Add this enum for tracking processing states
+    private enum ProcessingState {
+        IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
+    }
+
+    /**
+     * Private constructor
+     */
+    private FineTunedModelManager(Context context) {
+        this.context = context.getApplicationContext();
+        this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
 
     /**
      * Get singleton instance
@@ -41,14 +61,6 @@ public class FineTunedModelManager {
             instance = new FineTunedModelManager(context);
         }
         return instance;
-    }
-
-    /**
-     * Private constructor
-     */
-    private FineTunedModelManager(Context context) {
-        this.context = context.getApplicationContext();
-        this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
     /**
@@ -173,57 +185,6 @@ public class FineTunedModelManager {
                         "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
             default:
                 return "You are a helpful chess coach providing analysis and advice.";
-        }
-    }
-
-    /**
-     * Get the voice style for the selected master (for TTS)
-     */
-    public String getVoiceStyleForSelectedMaster() {
-        String master = getSelectedChessMaster();
-
-        switch (master.toLowerCase()) {
-            case "tal":
-                return "Speak with energy and a touch of Latvian accent. Use colorful, expressive language " +
-                        "with occasional exclamations about tactical possibilities. Be passionate about attacking chess.";
-            case "kramnik":
-                return "Speak with a measured, thoughtful tone and a hint of Russian accent. Use precise, " +
-                        "analytical language with careful consideration of positional factors. Be methodical " +
-                        "and patient in your explanations.";
-            case "karpov":
-                return "Speak with a calm, contemplative tone and a subtle Russian accent. Use precise, " +
-                        "measured language with a focus on positional nuances. Be patient and methodical " +
-                        "in explaining strategic concepts.";
-            case "fischer":
-                return "Speak with intensity and directness. Use clear, forceful language " +
-                        "with conviction about the best moves. Be assertive and principled " +
-                        "in your chess analyses.";
-            case "lasker":
-                return "Speak with philosophical depth and a European scholarly tone. Use thoughtful, " +
-                        "nuanced language with psychological insights. Be contemplative and wise " +
-                        "in your chess teachings.";
-            case "kasparov":
-                return "Speak with passion and dynamic energy with a Russian accent. Use assertive, " +
-                        "confident language with emphasis on initiative and active play. Be bold and " +
-                        "charismatic in your chess instruction.";
-            case "capablanca":
-                return "Speak with elegant simplicity and a hint of Cuban accent. Use clear, " +
-                        "graceful language with an emphasis on harmony and natural flow. Be effortlessly " +
-                        "insightful in your explanations.";
-            case "carlsen":
-                return "Speak with modern confidence and a slight Norwegian accent. Use practical, " +
-                        "direct language with a focus on concrete evaluation. Be versatile and adaptable " +
-                        "in your approach to different positions.";
-            case "morphy":
-                return "Speak with refined 19th century eloquence. Use classical, principled language " +
-                        "with emphasis on rapid development and piece activity. Be gentleman-like and " +
-                        "clear in your instruction.";
-            case "anand":
-                return "Speak with quick precision and a light Indian accent. Use clear, " +
-                        "instructive language with intuitive insights. Be friendly and accommodating " +
-                        "in your chess teaching style.";
-            default:
-                return "Speak naturally as a chess coach.";
         }
     }
 }

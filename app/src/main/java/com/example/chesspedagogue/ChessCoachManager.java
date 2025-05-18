@@ -1,7 +1,6 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -19,7 +18,7 @@ public class ChessCoachManager {
     private final Context context;
     private final Handler mainHandler;
     private String apiKey;
-    private OpenAITTSService ttsService;
+    private final OpenAITTSService ttsService;
 
     // Voice settings
     private String currentVoice = OpenAITTSService.VOICE_GRANDMASTER;
@@ -28,23 +27,6 @@ public class ChessCoachManager {
 
     // Speech state tracking
     private boolean isCoachSpeaking = false;
-
-    // Callback interface for responses
-    public interface ChessCoachCallback {
-        void onResponseReceived(String response);
-        void onError(String errorMessage);
-        void onSpeechCompleted();
-    }
-
-    /**
-     * Get singleton instance of ChessCoachManager
-     */
-    public static synchronized ChessCoachManager getInstance(Context context) {
-        if (instance == null) {
-            instance = new ChessCoachManager(context);
-        }
-        return instance;
-    }
 
     /**
      * Private constructor - use getInstance()
@@ -61,6 +43,38 @@ public class ChessCoachManager {
         if (apiKey != null && !apiKey.isEmpty()) {
             ttsService.setApiKey(apiKey);
         }
+    }
+
+    /**
+     * Get singleton instance of ChessCoachManager
+     */
+    public static synchronized ChessCoachManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new ChessCoachManager(context);
+        }
+        return instance;
+    }
+
+    /**
+     * Update TTS settings in the ChessCoachManager
+     */
+    public void updateTTSSettings(String voiceStyle, boolean usePersonality) {
+        // Get OpenAI TTS service
+        OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
+
+        // Update TTS mode settings
+        ttsService.setVoicePersonalization(usePersonality);
+
+        // If using automatic voice selection, don't override
+        if (!"auto".equals(voiceStyle)) {
+            ttsService.setVoiceOverride(voiceStyle);
+        } else {
+            ttsService.clearVoiceOverride();
+        }
+
+        // Log the changes
+        Log.d(TAG, "Updated TTS settings: voiceStyle=" + voiceStyle +
+                ", usePersonality=" + usePersonality);
     }
 
     /**
@@ -103,26 +117,12 @@ public class ChessCoachManager {
     /**
      * Test the current voice settings with a sample phrase
      */
+    // In ChessCoachManager.java
     public void testVoice(String testPhrase, ChessCoachCallback callback) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            if (callback != null) {
-                mainHandler.post(() -> callback.onError("API key not set"));
-            }
-            return;
-        }
+        OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
 
-        // Load the latest voice settings
-        SharedPreferences prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
-        currentVoice = prefs.getString("voice_persona", OpenAITTSService.VOICE_GRANDMASTER);
-
-        // Set the voice and model
-        ttsService.setVoice(currentVoice);
-        ttsService.setModel(currentModel);
-
-        isCoachSpeaking = true;
-
-        // Use our updated TTSCallback interface
-        ttsService.speak(testPhrase, currentVoice, currentModel, new OpenAITTSService.TTSCallback() {
+        // Use the chunking version that respects voice settings
+        ttsService.speakWithChunkingForGPT4oMini(testPhrase, new OpenAITTSService.TTSCallback() {
             @Override
             public void onSpeechStarted() {
                 Log.d(TAG, "Test speech started");
@@ -130,28 +130,22 @@ public class ChessCoachManager {
 
             @Override
             public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "Test speech ready in file: " + audioFile.getPath());
+                Log.d(TAG, "Test speech ready in file: " + audioFile.getAbsolutePath());
             }
 
             @Override
             public void onSpeechCompleted() {
                 Log.d(TAG, "Test speech completed");
-                isCoachSpeaking = false;
-
-                // Notify callback
                 if (callback != null) {
-                    mainHandler.post(callback::onSpeechCompleted);
+                    callback.onSpeechCompleted();
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
                 Log.e(TAG, "Test speech error: " + errorMessage);
-                isCoachSpeaking = false;
-
-                // Notify callback
                 if (callback != null) {
-                    mainHandler.post(() -> callback.onError(errorMessage));
+                    callback.onError(errorMessage);
                 }
             }
         });
@@ -208,10 +202,12 @@ public class ChessCoachManager {
         // Use TTS to speak the response
         ttsService.speak(text, currentVoice, currentModel, new OpenAITTSService.TTSCallback() {
             @Override
-            public void onSpeechStarted() {}
+            public void onSpeechStarted() {
+            }
 
             @Override
-            public void onSpeechReady(File audioFile) {}
+            public void onSpeechReady(File audioFile) {
+            }
 
             @Override
             public void onSpeechCompleted() {
@@ -262,5 +258,14 @@ public class ChessCoachManager {
      */
     public String getPlayerColor() {
         return "white"; // Default value for compatibility
+    }
+
+    // Callback interface for responses
+    public interface ChessCoachCallback {
+        void onResponseReceived(String response);
+
+        void onError(String errorMessage);
+
+        void onSpeechCompleted();
     }
 }

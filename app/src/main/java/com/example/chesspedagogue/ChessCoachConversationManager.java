@@ -8,7 +8,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 
-import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 /**
@@ -20,11 +19,11 @@ public class ChessCoachConversationManager {
 
     private final Context context;
     private final Handler mainHandler;
-    private RealtimeConversationManager realtimeManager;
-    private SpeechRecognitionManager speechRecognitionManager;
+    private final RealtimeConversationManager realtimeManager;
+    private final SpeechRecognitionManager speechRecognitionManager;
     private GameStateInfo currentGameState;
     private boolean isConversationActive = false;
-
+    private ConversationListener conversationListener;
     // Conversation state listener implementation
     private final RealtimeConversationManager.ConversationStateListener stateListener =
             new RealtimeConversationManager.ConversationStateListener() {
@@ -80,16 +79,6 @@ public class ChessCoachConversationManager {
                     }
                 }
             };
-
-    // Interface for UI updates
-    public interface ConversationListener {
-        void onConversationStarted();
-        void onPartialResponse(String partialText);
-        void onError(String message);
-        void onConversationEnded();
-    }
-
-    private ConversationListener conversationListener;
 
     /**
      * Create a new chess coach conversation manager
@@ -237,5 +226,16 @@ public class ChessCoachConversationManager {
         mainHandler.post(() -> {
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
         });
+    }
+
+    // Interface for UI updates
+    public interface ConversationListener {
+        void onConversationStarted();
+
+        void onPartialResponse(String partialText);
+
+        void onError(String message);
+
+        void onConversationEnded();
     }
 }

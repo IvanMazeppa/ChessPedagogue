@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -38,6 +39,12 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             saveMasterSelection();
             finish();
         });
+    }
+
+    // In ChessMasterSelectionActivity.java
+    private void saveMasterSelection() {
+        // Simply call the method with the selected master
+        saveMasterSelection(selectedMaster);
     }
 
     private void initializeRadioButtons() {
@@ -175,13 +182,31 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         });
     }
 
-    private void saveMasterSelection() {
-        // Save the selected master
-        FineTunedModelManager.getInstance(this).setSelectedChessMaster(selectedMaster);
 
-        // Show confirmation to user
-        String displayName = getDisplayName(selectedMaster);
-        Toast.makeText(this, "Coach " + displayName + " selected!", Toast.LENGTH_SHORT).show();
+    // In ChessMasterSelectionActivity.java, in your saveMasterSelection method
+
+    private void saveMasterSelection(String master) {
+        // Save the selection to SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("selected_master", master);
+        editor.apply();
+
+        // Update the FineTunedModelManager
+        FineTunedModelManager.getInstance(this).setSelectedChessMaster(master);
+
+        // Show feedback
+        Toast.makeText(this, "Coach changed to " + getDisplayName(master),
+                Toast.LENGTH_SHORT).show();
+
+        // NEW CODE: Reset voice settings to auto for this chess master
+        SharedPreferences voicePrefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        SharedPreferences.Editor voiceEditor = voicePrefs.edit();
+        voiceEditor.putString("voice_style", "auto");  // This means "use master-appropriate voice"
+        voiceEditor.apply();
+
+        // Update TTS settings
+        ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
     }
 
     private String getDisplayName(String master) {

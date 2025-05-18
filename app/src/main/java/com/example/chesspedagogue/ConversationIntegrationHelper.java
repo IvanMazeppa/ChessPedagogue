@@ -3,7 +3,6 @@ package com.example.chesspedagogue;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.Toast;
 
 /**

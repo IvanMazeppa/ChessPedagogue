@@ -3,7 +3,6 @@ package com.example.chesspedagogue;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.MenuItem;
-//import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
@@ -22,7 +21,7 @@ public class ChessConversationActivity extends AppCompatActivity {
     private ImageButton sendButton;
     private ImageButton voiceButton;
     private ChatAdapter adapter;
-    private List<ChatMessage> messages = new ArrayList<>();
+    private final List<ChatMessage> messages = new ArrayList<>();
 
     private ChessCoachManager chessCoach;
     private SpeechRecognitionManager speechRecognitionManager;

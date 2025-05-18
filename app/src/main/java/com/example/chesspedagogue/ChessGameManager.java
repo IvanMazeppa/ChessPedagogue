@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChessGameManager {
-    private StockfishManager engine;
-    private List<String> moveHistory = new ArrayList<>();
+    private final StockfishManager engine;
+    private final List<String> moveHistory = new ArrayList<>();
 
     public ChessGameManager(StockfishManager engine) {
         this.engine = engine;

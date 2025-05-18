@@ -1,9 +1,5 @@
 package com.example.chesspedagogue;
 
-import static androidx.fragment.app.FragmentManager.TAG;
-
-import android.util.Log;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,8 +7,8 @@ import java.util.List;
  * Manages the conversation history between the user and Coach Tal
  */
 public class ConversationManager {
-    private List<Message> conversationHistory = new ArrayList<>();
     private static final int MAX_HISTORY_SIZE = 10;
+    private List<Message> conversationHistory = new ArrayList<>();
 
     // Default constructor that works with your SimpleRecordService
     public ConversationManager() {
@@ -114,8 +110,8 @@ public class ConversationManager {
 
     // This should exist in your ConversationManager class
     public static class Message {
-        private String role;
-        private String content;
+        private final String role;
+        private final String content;
 
         public Message(String role, String content) {
             this.role = role;

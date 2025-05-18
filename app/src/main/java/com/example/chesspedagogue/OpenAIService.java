@@ -26,16 +26,14 @@ import okhttp3.Response;
  * Service for communicating with OpenAI API
  */
 public class OpenAIService {
+    static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static final String TAG = "OpenAIService";
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-
     private static final String DEFAULT_MODEL = "gpt-4.1";
-    private final Gson gson;
-    private Map<String, String> fineTunedModels = new HashMap<>();
-
     private static OpenAIService instance;
+    private final Gson gson;
     private final OkHttpClient client;
+    private final Map<String, String> fineTunedModels = new HashMap<>();
     private String apiKey;
 
     // Added context variable
@@ -43,16 +41,6 @@ public class OpenAIService {
 
     // Default model - can be changed as needed
     private String model = "gpt-4.1";
-
-    /**
-     * Get singleton instance
-     */
-    public static synchronized OpenAIService getInstance() {
-        if (instance == null) {
-            instance = new OpenAIService();
-        }
-        return instance;
-    }
 
     /**
      * Private constructor
@@ -77,6 +65,16 @@ public class OpenAIService {
                 .writeTimeout(10, TimeUnit.SECONDS)
                 .build();
         this.gson = new Gson();
+    }
+
+    /**
+     * Get singleton instance
+     */
+    public static synchronized OpenAIService getInstance() {
+        if (instance == null) {
+            instance = new OpenAIService();
+        }
+        return instance;
     }
 
     /**
@@ -146,7 +144,7 @@ public class OpenAIService {
 
             // Log request for debugging
             Log.d(TAG, "Using model: " + modelToUse);
-            Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody.toString());
+            Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody);
 
             // Create HTTP request
             RequestBody body = RequestBody.create(requestBody.toString(), JSON);

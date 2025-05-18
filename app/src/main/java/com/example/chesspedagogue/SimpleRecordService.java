@@ -12,26 +12,21 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
-
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -43,61 +38,32 @@ public class SimpleRecordService extends Service {
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
-
+    private static final boolean DEBUG_MODE = true;
+    private static final long SILENCE_THRESHOLD_MS = 2000; // 2 seconds of silence stops recording
+    // Service binding
+    private final IBinder binder = new LocalBinder();
     // Recording state
     private AudioRecord recorder;
     private boolean isRecording = false;
     private int bufferSize;
     private File outputFile;
-
     // Managing conversation
     private EnhancedConversationManager conversationManager;
     private TextToSpeechManager textToSpeechManager;
     private OpenAIService openAIService;
     private String apiKey;
-
     // UI references
     private TextView responseTextView;
     private View loadingIndicator;
     private TextView coachThinkingText;
-
-
-    private static final boolean DEBUG_MODE = true;
-
-    // Service binding
-    private final IBinder binder = new LocalBinder();
     private ServiceCallback callback;
-
     // Auto-stop recording after a period of silence
     private ScheduledExecutorService silenceDetector;
     private long lastSoundTimestamp = 0;
     private boolean isFollowUpQuestion = false;
 
-    private static final long SILENCE_THRESHOLD_MS = 2000; // 2 seconds of silence stops recording
-
-    /**
-     * Binder for client communication
-     */
-    public class LocalBinder extends Binder {
-        public SimpleRecordService getService() {
-            return SimpleRecordService.this;
-        }
-    }
-
-
     public boolean isCurrentlySpeaking() {
         return textToSpeechManager != null && textToSpeechManager.isSpeaking();
-    }
-
-    /**
-     * Callback interface for service events
-     */
-    public interface ServiceCallback {
-        void onRecordingStarted();
-        void onRecordingStopped();
-        void onProcessingStateChanged(boolean isProcessing);
-        void onResponseReceived(String response);
-        void onResponseCompleted(String response);
     }
 
     @Override
@@ -156,7 +122,6 @@ public class SimpleRecordService extends Service {
         this.isFollowUpQuestion = isFollowUp;
     }
 
-
     @Override
     public void onDestroy() {
         stopRecording();
@@ -170,6 +135,7 @@ public class SimpleRecordService extends Service {
     /**
      * Start recording audio
      */
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     public void startRecording() {
         if (isRecording) {
             Log.d(TAG, "Already recording, ignoring start request");
@@ -398,7 +364,7 @@ public class SimpleRecordService extends Service {
 
                 // Log the complete prompt for debugging
                 Log.d(TAG, "SYSTEM PROMPT: " + systemPrompt);
-                Log.d(TAG, "ENHANCED PROMPT: " + enhancedPrompt.toString());
+                Log.d(TAG, "ENHANCED PROMPT: " + enhancedPrompt);
 
                 // 4. Make the API call with BOTH the system prompt and enhanced prompt
                 String response = openAIService.getChatCompletion(systemPrompt, enhancedPrompt.toString());
@@ -528,10 +494,6 @@ public class SimpleRecordService extends Service {
         }
     }
 
-
-
-
-
     // Add this helper method to convert PCM to WAV
     private byte[] convertPcmToWav(byte[] pcmData, int sampleRate, int channels, int bitsPerSample) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -550,12 +512,12 @@ public class SimpleRecordService extends Service {
         // fmt subchunk
         writeBytes(out, "fmt ".getBytes());
         writeInt(out, 16); // PCM format chunk size
-        writeShort(out, (short)1); // audio format 1 = PCM
-        writeShort(out, (short)channels);
+        writeShort(out, (short) 1); // audio format 1 = PCM
+        writeShort(out, (short) channels);
         writeInt(out, sampleRate);
         writeInt(out, byteRate);
         writeShort(out, blockAlign);
-        writeShort(out, (short)bitsPerSample);
+        writeShort(out, (short) bitsPerSample);
 
         // data subchunk
         writeBytes(out, "data".getBytes());
@@ -614,6 +576,22 @@ public class SimpleRecordService extends Service {
         return "GENERAL";
     }
 
+    // In SimpleRecordService.java
+    public void refreshVoiceSettings() {
+        // Get current master
+        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Update the TTS service
+        if (textToSpeechManager != null) {
+            // Get the voice style and use from shared preferences
+            SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+            String voiceStyle = prefs.getString("voice_style", "auto");
+            boolean usePersonality = prefs.getBoolean("use_master_personality", true);
+
+            // Update TTS settings
+            ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+        }
+    }
 
     // Helper to read file to byte array
     private byte[] readFileToBytes(File file) throws IOException {
@@ -665,33 +643,33 @@ public class SimpleRecordService extends Service {
             // 4. Get response from OpenAI with full conversation history
             // 4. Get response from OpenAI with full conversation history
             CompletableFuture.supplyAsync(() -> {
-                        try {
-                            // Split the conversation into system message and user content
-                            String systemMessage = "You are Coach Tal, a chess grandmaster providing guidance. " +
-                                    "IMPORTANT: Use the provided chess position (FEN), move history, and game phase " +
-                                    "details to analyze the specific position. Never ask for the position if it's " +
-                                    "already provided in the context. Always reference specific moves or positions " +
-                                    "in your responses.";
+                try {
+                    // Split the conversation into system message and user content
+                    String systemMessage = "You are Coach Tal, a chess grandmaster providing guidance. " +
+                            "IMPORTANT: Use the provided chess position (FEN), move history, and game phase " +
+                            "details to analyze the specific position. Never ask for the position if it's " +
+                            "already provided in the context. Always reference specific moves or positions " +
+                            "in your responses.";
 
-                            // Build the user content from conversation history
-                            StringBuilder userContent = new StringBuilder();
+                    // Build the user content from conversation history
+                    StringBuilder userContent = new StringBuilder();
 
-                            // Add conversation history
-                            List<ConversationManager.Message> history = conversationManager.getConversationHistory();
-                            for (ConversationManager.Message message : history) {
-                                userContent.append(message.getRole())
-                                        .append(": ")
-                                        .append(message.getContent())
-                                        .append("\n\n");
-                            }
+                    // Add conversation history
+                    List<ConversationManager.Message> history = conversationManager.getConversationHistory();
+                    for (ConversationManager.Message message : history) {
+                        userContent.append(message.getRole())
+                                .append(": ")
+                                .append(message.getContent())
+                                .append("\n\n");
+                    }
 
-                            // Use your existing OpenAIService method with both required parameters
-                            return openAIService.getChatCompletion(systemMessage, userContent.toString());
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error getting chat completion", e);
-                            return "I'm sorry, I couldn't process that request. Can you try again?";
-                        }
-                    }).thenAccept(coachResponse -> {
+                    // Use your existing OpenAIService method with both required parameters
+                    return openAIService.getChatCompletion(systemMessage, userContent.toString());
+                } catch (Exception e) {
+                    Log.e(TAG, "Error getting chat completion", e);
+                    return "I'm sorry, I couldn't process that request. Can you try again?";
+                }
+            }).thenAccept(coachResponse -> {
                 // 5. Handle the coach's response on the main thread
                 new Handler(Looper.getMainLooper()).post(() -> {
                     // Add assistant response to history
@@ -731,7 +709,6 @@ public class SimpleRecordService extends Service {
         if (transcribedText.startsWith("Error")) {
             Log.e(TAG, "Transcription error: " + transcribedText);
             updateUIForProcessing(false);
-            return;
         }
     }
 
@@ -962,8 +939,6 @@ public class SimpleRecordService extends Service {
         return GameHistoryManager.getInstance().getCurrentGameMoves();
     }
 
-
-
     private String getApiKeyFromPreferences() {
         // You mentioned you have this working elsewhere in your app,
         // so let's make sure we're using the same method:
@@ -1013,5 +988,29 @@ public class SimpleRecordService extends Service {
         this.responseTextView = responseTextView;
         this.loadingIndicator = loadingIndicator;
         this.coachThinkingText = thinkingText;
+    }
+
+    /**
+     * Callback interface for service events
+     */
+    public interface ServiceCallback {
+        void onRecordingStarted();
+
+        void onRecordingStopped();
+
+        void onProcessingStateChanged(boolean isProcessing);
+
+        void onResponseReceived(String response);
+
+        void onResponseCompleted(String response);
+    }
+
+    /**
+     * Binder for client communication
+     */
+    public class LocalBinder extends Binder {
+        public SimpleRecordService getService() {
+            return SimpleRecordService.this;
+        }
     }
 }

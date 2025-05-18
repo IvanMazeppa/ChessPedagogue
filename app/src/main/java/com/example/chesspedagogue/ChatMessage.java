@@ -13,7 +13,8 @@ public class ChatMessage {
 
     /**
      * Create a new chat message
-     * @param type The type of message (TYPE_USER or TYPE_COACH)
+     *
+     * @param type    The type of message (TYPE_USER or TYPE_COACH)
      * @param message The message content
      */
     public ChatMessage(int type, String message) {
@@ -23,7 +24,8 @@ public class ChatMessage {
 
     /**
      * Create a message for API conversation (not UI display)
-     * @param role The role ("user", "assistant", or "system")
+     *
+     * @param role    The role ("user", "assistant", or "system")
      * @param content The message content
      */
     public ChatMessage(String role, String content) {

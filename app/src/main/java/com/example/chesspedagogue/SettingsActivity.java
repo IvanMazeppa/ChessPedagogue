@@ -3,13 +3,15 @@ package com.example.chesspedagogue;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 /**
@@ -76,6 +78,8 @@ public class SettingsActivity extends AppCompatActivity {
 
             // Set up change listener
             coachGroup.setOnCheckedChangeListener((group, checkedId) -> {
+
+
                 String selectedCoach = checkedId == R.id.radio_coach_kramnik ? "kramnik" : "tal";
 
                 // Save the selection
@@ -181,6 +185,7 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Update the UI to show the current selected master
         updateChessMasterDisplay();
+        setupEnhancedVoiceSettings();
     }
 
     /**
@@ -194,7 +199,7 @@ public class SettingsActivity extends AppCompatActivity {
         TextView chessMasterTextView = findViewById(R.id.text_selected_chess_master);
 
         // Set the display text based on the selection
-        switch(selectedMaster.toLowerCase()) {
+        switch (selectedMaster.toLowerCase()) {
             case "tal":
                 chessMasterTextView.setText("Current Coach: Mikhail Tal (The Magician from Riga)");
                 break;
@@ -231,6 +236,145 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
 
+    // Add this to your SettingsActivity.java class
+
+
+    /**
+     * Set up the new voice style settings
+     */
+    private void setupEnhancedVoiceSettings() {
+        // Get UI references
+        TextView showAdvancedSettings = findViewById(R.id.show_advanced_settings);
+        LinearLayout legacyCoachContainer = findViewById(R.id.legacy_coach_container);
+        LinearLayout legacyVoiceContainer = findViewById(R.id.legacy_voice_container);
+
+        // Advanced settings toggle
+        showAdvancedSettings.setOnClickListener(v -> {
+            boolean isVisible = legacyCoachContainer.getVisibility() == View.VISIBLE;
+            int newVisibility = isVisible ? View.GONE : View.VISIBLE;
+
+            legacyCoachContainer.setVisibility(newVisibility);
+            legacyVoiceContainer.setVisibility(newVisibility);
+
+            // Update text
+            showAdvancedSettings.setText(isVisible ?
+                    "Show Advanced Settings" : "Hide Advanced Settings");
+        });
+
+        // Now call the voice style settings setup
+        setupVoiceStyleSettings();
+    }
+
+    /**
+     * Sets up the voice style radio buttons and related settings
+     */
+    private void setupVoiceStyleSettings() {
+        // Get reference to voice style radio group
+        RadioGroup voiceStyleGroup = findViewById(R.id.radio_group_voice_style);
+
+        // Get reference to personality switch
+        Switch masterPersonalitySwitch = findViewById(R.id.switch_master_personality);
+
+        // Load current preferences
+        SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        String currentVoiceStyle = prefs.getString("voice_style", "auto");
+        boolean usePersonality = prefs.getBoolean("use_master_personality", true);
+
+        // Set initial UI state
+        masterPersonalitySwitch.setChecked(usePersonality);
+
+        // Set the appropriate radio button
+        switch (currentVoiceStyle) {
+            case "onyx":
+                voiceStyleGroup.check(R.id.radio_voice_onyx);
+                break;
+            case "echo":
+                voiceStyleGroup.check(R.id.radio_voice_echo);
+                break;
+            case "fable":
+                voiceStyleGroup.check(R.id.radio_voice_fable);
+                break;
+            case "alloy":
+                voiceStyleGroup.check(R.id.radio_voice_alloy);
+                break;
+            case "nova":
+                voiceStyleGroup.check(R.id.radio_voice_nova);
+                break;
+            case "shimmer":
+                voiceStyleGroup.check(R.id.radio_voice_shimmer);
+                break;
+            default:
+                voiceStyleGroup.check(R.id.radio_voice_auto);
+                break;
+        }
+
+        // Set up change listener for voice style
+        voiceStyleGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            String selectedVoiceStyle;
+
+            if (checkedId == R.id.radio_voice_onyx) {
+                selectedVoiceStyle = "onyx";
+            } else if (checkedId == R.id.radio_voice_echo) {
+                selectedVoiceStyle = "echo";
+            } else if (checkedId == R.id.radio_voice_fable) {
+                selectedVoiceStyle = "fable";
+            } else if (checkedId == R.id.radio_voice_alloy) {
+                selectedVoiceStyle = "alloy";
+            } else if (checkedId == R.id.radio_voice_nova) {
+                selectedVoiceStyle = "nova";
+            } else if (checkedId == R.id.radio_voice_shimmer) {
+                selectedVoiceStyle = "shimmer";
+            } else {
+                selectedVoiceStyle = "auto";
+            }
+
+            // Save the selection
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString("voice_style", selectedVoiceStyle);
+            editor.apply();
+
+            // Provide feedback
+            String displayName = selectedVoiceStyle.equals("auto") ?
+                    "Automatic (based on Chess Master)" :
+                    selectedVoiceStyle.substring(0, 1).toUpperCase() + selectedVoiceStyle.substring(1);
+
+            Toast.makeText(this, "Voice set to: " + displayName, Toast.LENGTH_SHORT).show();
+
+            // Update the TTS service
+            updateTTSSettings();
+        });
+
+        // Set up change listener for personality switch
+        masterPersonalitySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // Save the setting
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean("use_master_personality", isChecked);
+            editor.apply();
+
+            // Provide feedback
+            String message = isChecked ?
+                    "Chess master personality applied to voice" :
+                    "Using natural voice without personality";
+
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+            // Update the TTS service
+            updateTTSSettings();
+        });
+    }
+
+    /**
+     * Updates TTS-related settings in the app
+     */
+    private void updateTTSSettings() {
+        SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        String voiceStyle = prefs.getString("voice_style", "auto");
+        boolean usePersonality = prefs.getBoolean("use_master_personality", true);
+
+        // Update your TTS service
+        ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
@@ -240,4 +384,6 @@ public class SettingsActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+
 }
