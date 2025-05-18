@@ -43,14 +43,15 @@ public class TextToSpeechManager {
             isSpeaking = false; // Make sure we reset the speaking state
         }
     }
-    // Basic speak method without callback
+
     public void speak(String text) {
         Log.d(TAG, "Speech started");
         isSpeaking = true;
-
         interrupted = false;
 
-        // Use chunking for better responsiveness
+        // Create a flag to track if this is the first speech completed callback
+        final boolean[] isFirstCompletion = {true};
+
         openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
             @Override
             public void onSpeechStarted() {
@@ -64,8 +65,16 @@ public class TextToSpeechManager {
 
             @Override
             public void onSpeechCompleted() {
-                isSpeaking = false;
-                Log.d(TAG, "Speech completed");
+                // VERY IMPORTANT: Only set isSpeaking to false if this isn't the first completion
+                // The first completion is just the first chunk finishing
+                if (!isFirstCompletion[0]) {
+                    isSpeaking = false;
+                    Log.d(TAG, "All speech chunks completed");
+                } else {
+                    // This is just the first chunk completing - don't stop speaking!
+                    isFirstCompletion[0] = false;
+                    Log.d(TAG, "First chunk completed, continuing with next chunks");
+                }
             }
 
             @Override
@@ -131,41 +140,36 @@ public class TextToSpeechManager {
         });
     }
 
-    // Speak method with Runnable callback (for backward compatibility)
-    public void speak(String text, Runnable onComplete) {
-        Log.d(TAG, "Speech started");
-        isSpeaking = true;
-
-        openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
-            @Override
-            public void onSpeechStarted() {
-                // Already set isSpeaking = true above
-            }
-
-            @Override
-            public void onSpeechReady(File audioFile) {
-                // Nothing to do here
-            }
-
-            @Override
-            public void onSpeechCompleted() {
-                isSpeaking = false;
-                Log.d(TAG, "Speech completed");
-                if (onComplete != null) {
-                    onComplete.run();
-                }
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Log.e(TAG, "TTS error: " + errorMessage);
-                isSpeaking = false;
-                if (onComplete != null) {
-                    onComplete.run(); // Still run callback on error
-                }
-            }
-        });
-    }
+    // Speak method with Runnable callback (for backward compatibility)public void speak(String text) {
+    //    Log.d(TAG, "Speech started with consistent chunking");
+    //    isSpeaking = true;
+    //    interrupted = false;
+    //
+    //    // Use our new consistent chunking method
+    //    openAITTS.speakWithConsistentChunking(text, new OpenAITTSService.TTSCallback() {
+    //        @Override
+    //        public void onSpeechStarted() {
+    //            // Already set isSpeaking = true above
+    //        }
+    //
+    //        @Override
+    //        public void onSpeechReady(File audioFile) {
+    //            // Nothing to do here
+    //        }
+    //
+    //        @Override
+    //        public void onSpeechCompleted() {
+    //            isSpeaking = false;
+    //            Log.d(TAG, "Speech completed");
+    //        }
+    //
+    //        @Override
+    //        public void onError(String errorMessage) {
+    //            Log.e(TAG, "TTS error: " + errorMessage);
+    //            isSpeaking = false;
+    //        }
+    //    });
+    //}
 
     public boolean isSpeaking() {
         return isSpeaking;

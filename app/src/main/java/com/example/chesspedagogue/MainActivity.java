@@ -76,6 +76,13 @@ public class MainActivity extends AppCompatActivity {
             isServiceBound = true;
             Log.d(TAG, "🎉 Service connected successfully!");
 
+            updateVoiceForCurrentMaster();
+
+            if (recordService != null) {
+                recordService.refreshVoiceSettings();
+            }
+
+
             // Set up the callback to handle responses
             recordService.setCallback(new SimpleRecordService.ServiceCallback() {
                 @Override
@@ -269,6 +276,24 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind to the SimpleRecordService
         bindRecordService();
+    }
+
+    // In MainActivity.java
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateVoiceForCurrentMaster();
+    }
+
+    // In your MainActivity.java or wherever you handle the main game loop
+// Make sure to call this when returning from settings or at the start of a conversation:
+
+    private void updateVoiceForCurrentMaster() {
+        // Get the current selected master
+        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Update TTS settings to auto (which will use master-appropriate voice)
+        ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
     }
 
     /**

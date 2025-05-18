@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
 
 import com.google.gson.Gson;
@@ -170,6 +171,7 @@ public class SimpleRecordService extends Service {
     /**
      * Start recording audio
      */
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     public void startRecording() {
         if (isRecording) {
             Log.d(TAG, "Already recording, ignoring start request");
@@ -614,6 +616,22 @@ public class SimpleRecordService extends Service {
         return "GENERAL";
     }
 
+    // In SimpleRecordService.java
+    public void refreshVoiceSettings() {
+        // Get current master
+        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Update the TTS service
+        if (textToSpeechManager != null) {
+            // Get the voice style and use from shared preferences
+            SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+            String voiceStyle = prefs.getString("voice_style", "auto");
+            boolean usePersonality = prefs.getBoolean("use_master_personality", true);
+
+            // Update TTS settings
+            ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+        }
+    }
 
     // Helper to read file to byte array
     private byte[] readFileToBytes(File file) throws IOException {

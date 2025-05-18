@@ -27,8 +27,8 @@ import okhttp3.Response;
  */
 public class OpenAIService {
     private static final String TAG = "OpenAIService";
-    private static final String API_URL = "https://api.openai.com/v1/chat/completions";
-    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
 
     private static final String DEFAULT_MODEL = "gpt-4.1";
     private final Gson gson;

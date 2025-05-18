@@ -1,5 +1,8 @@
 package com.example.chesspedagogue;
 
+import static com.example.chesspedagogue.OpenAIService.API_URL;
+import static com.example.chesspedagogue.OpenAIService.JSON;
+
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -64,6 +67,10 @@ public class OpenAITTSService implements TextToSpeechService {
     public static final String VOICE_SHIMMER = "shimmer";   // Cheerful voice
     public static final String VOICE_ECHO = "echo";         // Another option
     public static final String VOICE_ALLOY = "alloy";       // Another option
+    // Add these to OpenAITTSService.java
+    public static final String VOICE_FABLE = "fable";     // British male
+    public static final String VOICE_ONYX = "onyx";       // Deep, authoritative
+    public static final String VOICE_NOVA = "nova";       // Female voice
     public static final String MASTER = "onyx";             // Alias for backwards compatibility
     // In the splitTextIntoChunks method or at the class level
     private static final int MAX_CHARS_PER_CHUNK = 250; // Increase from current value
@@ -148,75 +155,81 @@ public class OpenAITTSService implements TextToSpeechService {
         this.executorService = Executors.newSingleThreadExecutor();
     }
 
-    public void speakWithGPT4oMini(String text, TTSCallback callback) {
-        // Show we're processing
-        if (callback != null) {
-            mainHandler.post(callback::onSpeechStarted);
-        }
-
-        // Process in background
-        new Thread(() -> {
-            try {
-                // The correct endpoint for TTS
-                String TTS_API_URL = "https://api.openai.com/v1/audio/speech";
-
-                // Create the JSON payload for the TTS API - this is the key fix!
-                JSONObject payload = new JSONObject();
-                payload.put("model", "gpt-4o-mini-tts");
-                payload.put("input", text);  // Use 'input' instead of messages array
-                payload.put("voice", "echo");  // Specify a voice
-                payload.put("response_format", "mp3");  // Request MP3 format for better compatibility
-                // In your OpenAITTSService.java, modify the TTS API payload:
-                payload.put("instructions",
-                        "Speak with a deep, authoritative voice of an older chess grandmaster. Use a warm, natural tone with smooth inflections. Maintain consistent volume and clarity throughout. keep answers short and concise."
-                );
-
-                Log.d(TAG, "TTS request payload: " + payload.toString());
-
-                // Build the HTTP request
-                RequestBody body = RequestBody.create(
-                        MediaType.parse("application/json"),
-                        payload.toString()
-                );
-
-                Request request = new Request.Builder()
-                        .url(TTS_API_URL)
-                        .header("Authorization", "Bearer " + apiKey)
-                        .post(body)
-                        .build();
-
-                // Execute the request
-                try (Response response = httpClient.newCall(request).execute()) {
-                    if (!response.isSuccessful()) {
-                        Log.e(TAG, "TTS API error: " + response.code());
-                        if (response.body() != null) {
-                            Log.e(TAG, "Error response: " + response.body().string());
-                        }
-                        notifyError("TTS error: " + response.code(), callback);
-                        return;
-                    }
-
-                    // Save the audio to a temporary file
-                    File audioFile = saveAudioToFile(response.body().bytes());
-
-                    // Notify that we have the speech ready
-                    if (callback != null) {
-                        mainHandler.post(() -> callback.onSpeechReady(audioFile));
-                    }
-
-                    // Play the audio
-                    playAudio(audioFile, () -> {
-                        if (callback != null) {
-                            mainHandler.post(callback::onSpeechCompleted);
-                        }
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error in TTS", e);
-                notifyError("TTS error: " + e.getMessage(), callback);
-            }
-        }).start();
-    }
+//    public void speakWithGPT4oMini(String text, TTSCallback callback) {
+//        // Show we're processing
+//        if (callback != null) {
+//            mainHandler.post(callback::onSpeechStarted);
+//        }
+//
+//
+//        if (callback != null) {
+//            mainHandler.post(callback::onSpeechStarted);
+//        }
+//
+//        // Process in background
+//        executorService.execute(() -> {
+//            try {
+//                String selectMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+//                // The correct endpoint for TTS
+//                String TTS_API_URL = "https://api.openai.com/v1/audio/speech";
+//
+//                String voiceId = getVoiceId(selectMaster);
+//                JSONObject payload = new JSONObject();
+//                payload.put("model", "gpt-4o-mini-tts");
+//                payload.put("input", text);  // Use 'input' instead of messages array
+//                payload.put("voice", voiceId);  // Specify a voice
+//                payload.put("response_format", "mp3");  // Request MP3 format for better compatibility
+//                // In your OpenAITTSService.java, modify the TTS API payload:
+//
+//                String instructions = getVoiceInstructions(selectMaster);
+//                payload.put("instructions", instructions);
+//
+//                Log.d(TAG, "TTS request payload: " + payload.toString());
+//
+//                // Build the HTTP request
+//                RequestBody body = RequestBody.create(
+//                        MediaType.parse("application/json"),
+//                        payload.toString()
+//                );
+//
+//                Request request = new Request.Builder()
+//                        .url(TTS_API_URL)
+//                        .header("Authorization", "Bearer " + apiKey)
+//                        .post(body)
+//                        .build();
+//
+//                // Execute the request
+//                try (Response response = httpClient.newCall(request).execute()) {
+//                    if (!response.isSuccessful()) {
+//                        Log.e(TAG, "TTS API error: " + response.code());
+//                        if (response.body() != null) {
+//                            Log.e(TAG, "Error response: " + response.body().string());
+//                        }
+//                        notifyError("TTS error: " + response.code(), callback);
+//                        return;
+//                    }
+//
+//                    // Save the audio to a temporary file
+//                    File audioFile = saveAudioToFile(response.body().bytes());
+//
+//                    // Notify that we have the speech ready
+//                    if (callback != null) {
+//                        mainHandler.post(() -> callback.onSpeechReady(audioFile));
+//                    }
+//
+//                    // Play the audio
+//                    playAudio(audioFile, () -> {
+//                        if (callback != null) {
+//                            mainHandler.post(callback::onSpeechCompleted);
+//                        }
+//                    });
+//                }
+//            } catch (Exception e) {
+//                Log.e(TAG, "Error in TTS", e);
+//                notifyError("TTS error: " + e.getMessage(), callback);
+//            }
+//        });
+//    }
 
     /**
      * Constructor with API key
@@ -259,6 +272,11 @@ public class OpenAITTSService implements TextToSpeechService {
      */
     // Add this method
     public void stopPlayback() {
+
+        Log.d(TAG, "🚫 stopPlayback() called from: " +
+                new Exception().getStackTrace()[1].getClassName() + " line " +
+                new Exception().getStackTrace()[1].getLineNumber());
+
         // Set the interrupt flag
         interruptRequested = true;
 
@@ -324,6 +342,95 @@ public class OpenAITTSService implements TextToSpeechService {
         }
     }
 
+    // Add these methods to your OpenAITTSService class
+
+    private boolean usePersonalityInstructions = true;
+    private String voiceIdOverride = null;
+
+    /**
+     * Set whether to use personality-based instructions
+     */
+    public void setVoicePersonalization(boolean usePersonality) {
+        this.usePersonalityInstructions = usePersonality;
+        Log.d(TAG, "Voice personalization set to: " + usePersonality);
+    }
+
+    /**
+     * Override the automatic voice selection
+     */
+    public void setVoiceOverride(String voiceId) {
+        this.voiceIdOverride = voiceId;
+        Log.d(TAG, "Voice override set to: " + voiceId);
+    }
+
+    /**
+     * Clear any voice override
+     */
+    public void clearVoiceOverride() {
+        this.voiceIdOverride = null;
+        Log.d(TAG, "Voice override cleared");
+    }
+
+    /**
+     * Get the appropriate voice ID based on settings
+     */
+    private String getVoiceId(String selectedMaster) {
+        // If there's an override, use it
+        if (voiceIdOverride != null && !voiceIdOverride.isEmpty()) {
+            return voiceIdOverride;
+        }
+
+        // Otherwise use automatic selection based on master
+        return ChessMasterVoiceManager.getVoiceForMaster(selectedMaster);
+    }
+
+    /**
+     * Get the appropriate voice instructions based on settings
+     */
+    private String getVoiceInstructions(String selectedMaster) {
+        // If personality is disabled, use minimal instructions
+        if (!usePersonalityInstructions) {
+            return "Speak naturally and clearly.";
+        }
+
+        // Otherwise use master-specific instructions
+        return ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
+    }
+
+    // In your OpenAITTSService.java generateSpeech method
+
+    // Replace this problematic method with a proper implementation
+    public void generateSpeech(String text, TTSCallback callback) {
+        if (apiKey == null || apiKey.isEmpty()) {
+            callback.onError("API key not set");
+            return;
+        }
+
+        // Use executorService instead of executor
+        executorService.execute(() -> {
+            try {
+                // Get the selected chess master
+                String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+
+                // Get the appropriate voice based on settings
+                String voiceId = getVoiceId(selectedMaster);
+
+                // Get appropriate instructions based on settings
+                String voiceInstructions = getVoiceInstructions(selectedMaster);
+
+                // Log for debugging
+                Log.d(TAG, "Using voice: " + voiceId + " with instructions: " + voiceInstructions);
+
+                // Use the chunking approach we've already implemented
+                speakWithChunking(text, callback);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating speech: " + e.getMessage());
+                // Use mainHandler instead of handler
+                mainHandler.post(() -> callback.onError("Error generating speech: " + e.getMessage()));
+            }
+        });
+    }
 
 
     /**
@@ -382,8 +489,14 @@ public class OpenAITTSService implements TextToSpeechService {
     }
 
     // Add this method to your OpenAITTSService class
+    // In OpenAITTSService.java
+
     public void speakWithChunkingForGPT4oMini(String text, TTSCallback masterCallback) {
-        // Create the chunker specifically for GPT-4o-mini-tts
+        // Add this clear marker
+
+        Log.d(TAG, "🔴 PATH CHECK: speakWithChunkingForGPT4oMini called - uses GPT4oMiniSpeechChunker");
+
+        // Create the chunker for GPT-4o-mini-tts
         GPT4oMiniSpeechChunker chunker = new GPT4oMiniSpeechChunker(text, masterCallback);
         chunker.startSpeaking();
     }
@@ -393,20 +506,22 @@ public class OpenAITTSService implements TextToSpeechService {
         private final String[] chunks;
         private final TTSCallback masterCallback;
         private int currentChunkIndex = 0;
+        private boolean interruptRequested = false;
         private boolean retryAttempted = false;
 
         public GPT4oMiniSpeechChunker(String text, TTSCallback callback) {
             this.masterCallback = callback;
 
-            // Split text into natural sentence boundaries
-            String[] sentences = text.split("(?<=[.!?])\\s+");
 
-            // Group sentences into chunks (1-2 sentences per chunk)
+            Log.d(TAG, "🌈🌈🌈 CREATED: GPT4oMiniSpeechChunker");
+
+
+            // Same chunking code as before
+            String[] sentences = text.split("(?<=[.!?])\\s+");
             List<String> chunkList = new ArrayList<>();
             StringBuilder currentChunk = new StringBuilder();
 
             for (String sentence : sentences) {
-                // If adding this sentence would make chunk too large, finish current chunk
                 if (currentChunk.length() + sentence.length() > 80) {
                     chunkList.add(currentChunk.toString().trim());
                     currentChunk = new StringBuilder();
@@ -414,101 +529,174 @@ public class OpenAITTSService implements TextToSpeechService {
                 currentChunk.append(sentence).append(" ");
             }
 
-            // Add the final chunk if not empty
             if (currentChunk.length() > 0) {
                 chunkList.add(currentChunk.toString());
             }
 
             this.chunks = chunkList.toArray(new String[0]);
-
-            // For debugging
             Log.d(TAG, "Split speech into " + chunks.length + " chunks for GPT-4o-mini-tts");
         }
 
         public void startSpeaking() {
-            // Notify that speech is starting
+
+            Log.d(TAG, "🌈🌈🌈 STARTED: GPT4oMiniSpeechChunker.startSpeaking()");
             if (masterCallback != null) {
                 mainHandler.post(masterCallback::onSpeechStarted);
             }
-
-            // Start with the first chunk
+            currentChunkIndex = 0;
             speakNextChunk();
         }
 
+        public void stopSpeaking() {
+            interruptRequested = true;
+        }
+
         private void speakNextChunk() {
-            // Check for interruption first
+            // At the very beginning of your speakNextChunk method:
+            Log.d(TAG, "🔎 BEFORE CHECK: interruptRequested=" + interruptRequested +
+                    ", currentChunkIndex=" + currentChunkIndex + "/" + chunks.length);
+            // Check for interruption or completion
             if (interruptRequested || currentChunkIndex >= chunks.length) {
-                // We've been interrupted or finished all chunks
                 if (interruptRequested) {
                     Log.d(TAG, "GPT-4o-mini-tts speech interrupted");
-                    interruptRequested = false; // Reset for next speech
+                    interruptRequested = false;
                 }
-
                 if (masterCallback != null) {
                     mainHandler.post(masterCallback::onSpeechCompleted);
                 }
                 return;
             }
 
-            if (currentChunkIndex >= chunks.length) {
-                // We've finished all chunks
-                if (masterCallback != null) {
-                    mainHandler.post(masterCallback::onSpeechCompleted);
+            // Get the current chunk text
+            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", "");
+
+            try {
+                // Create the JSON payload
+                JSONObject payload = new JSONObject();
+                payload.put("model", "gpt-4o-mini-tts");
+                payload.put("input", currentText);
+
+                // Get the current selected master and voice
+                String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+                String voiceId = getVoiceId(selectedMaster);
+                payload.put("voice", voiceId);
+                payload.put("response_format", "mp3");
+
+                // HERE'S THE KEY DIFFERENCE: Direct control of instructions
+                String baseInstruction = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
+                String instructions;
+
+                if (currentChunkIndex == 0) {
+                    // First chunk: establish the voice
+                    instructions = baseInstruction;
+                    Log.d(TAG, "Using initial voice instruction for chunk 0: " + instructions);
+                } else {
+                    // Subsequent chunks: maintain EXACT continuity
+                    instructions = baseInstruction +
+                            " IMPORTANT: Continue with the same voice, accent, and speaking style as before.";
+                    Log.d(TAG, "Using continuity instruction for chunk " + currentChunkIndex);
                 }
-                return;
+
+                payload.put("instructions", instructions);
+
+                // Extra logging to verify our instructions are being included
+                Log.d(TAG, "Chunk " + currentChunkIndex + " instructions: " + instructions);
+                Log.d(TAG, "TTS API payload: " + payload.toString());
+
+                // Create a callback for this chunk
+                TTSCallback chunkCallback = new TTSCallback() {
+                    @Override
+                    public void onSpeechStarted() {
+                        // Report start only for first chunk
+                        if (currentChunkIndex == 0 && masterCallback != null) {
+                            mainHandler.post(masterCallback::onSpeechStarted);
+                        }
+                    }
+
+                    @Override
+                    public void onSpeechReady(File audioFile) {
+                        // Pass through to master callback
+                        if (masterCallback != null) {
+                            mainHandler.post(() -> masterCallback.onSpeechReady(audioFile));
+                        }
+                    }
+
+                    @Override
+                    public void onSpeechCompleted() {
+                        mainHandler.post(() -> {
+                            Log.d(TAG, "Completed chunk " + currentChunkIndex);
+                            currentChunkIndex++;
+                            // MINIMUM DELAY: Just enough to prevent audio glitches
+                            mainHandler.postDelayed(() -> speakNextChunk(), 40);
+                        });
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "Error with chunk " + currentChunkIndex + ": " + errorMessage);
+                        if (!retryAttempted) {
+                            retryAttempted = true;
+                            mainHandler.postDelayed(() -> speakNextChunk(), 500);
+                        } else {
+                            currentChunkIndex++;
+                            retryAttempted = false;
+                            speakNextChunk();
+                        }
+                    }
+                };
+
+                // Use existing method to send the request
+                executorService.execute(() -> {
+                    try {
+                        // Build the HTTP request
+                        RequestBody body = RequestBody.create(
+                                MediaType.parse("application/json"),
+                                payload.toString()
+                        );
+
+                        Request request = new Request.Builder()
+                                .url(TTS_URL)
+                                .header("Authorization", "Bearer " + apiKey)
+                                .post(body)
+                                .build();
+
+                        // Execute the request
+                        try (Response response = httpClient.newCall(request).execute()) {
+                            if (!response.isSuccessful()) {
+                                Log.e(TAG, "TTS API error: " + response.code());
+                                if (response.body() != null) {
+                                    Log.e(TAG, "Error response: " + response.body().string());
+                                }
+                                notifyError("TTS error: " + response.code(), chunkCallback);
+                                return;
+                            }
+
+                            // Save the audio to a temporary file
+                            File audioFile = saveAudioToFile(response.body().bytes());
+
+                            // Notify that we have the speech ready
+                            if (chunkCallback != null) {
+                                mainHandler.post(() -> chunkCallback.onSpeechReady(audioFile));
+                            }
+
+                            // Play the audio
+                            playAudio(audioFile, () -> {
+                                if (chunkCallback != null) {
+                                    mainHandler.post(chunkCallback::onSpeechCompleted);
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error in TTS", e);
+                        notifyError("TTS error: " + e.getMessage(), chunkCallback);
+                    }
+                });
+
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating payload for chunk " + currentChunkIndex, e);
+                currentChunkIndex++;
+                speakNextChunk();
             }
-
-            // This is the chunk we'll speak now
-            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", ""); // Remove ellipses
-
-            // Create a chunk callback
-            TTSCallback chunkCallback = new TTSCallback() {
-                @Override
-                public void onSpeechStarted() {
-                    // Only report start for the first chunk
-                    if (currentChunkIndex == 0 && masterCallback != null) {
-                        mainHandler.post(masterCallback::onSpeechStarted);
-                    }
-                }
-
-                @Override
-                public void onSpeechReady(File audioFile) {
-                    // Pass through to master callback
-                    if (masterCallback != null) {
-                        mainHandler.post(() -> masterCallback.onSpeechReady(audioFile));
-                    }
-                }
-
-                @Override
-                public void onSpeechCompleted() {
-                    // Move to next chunk after a short delay
-                    mainHandler.post(() -> {
-                        Log.d(TAG, "Completed GPT-4o-mini-tts chunk " + currentChunkIndex + ", preparing next chunk");
-                        currentChunkIndex++;
-                        mainHandler.postDelayed(() -> speakNextChunk(), 250);
-                    });
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    Log.e(TAG, "Error speaking GPT-4o-mini-tts chunk " + currentChunkIndex + ": " + errorMessage);
-
-                    // Add retry mechanism
-                    if (!retryAttempted) {
-                        retryAttempted = true;
-                        Log.d(TAG, "Attempting to retry GPT-4o-mini-tts chunk " + currentChunkIndex);
-                        mainHandler.postDelayed(() -> speakNextChunk(), 500);
-                    } else {
-                        // Move to next chunk if retry failed
-                        currentChunkIndex++;
-                        retryAttempted = false;
-                        speakNextChunk();
-                    }
-                }
-            };
-
-            // Use the GPT-4o-mini-tts specific method for this chunk
-            speakWithGPT4oMini(currentText, chunkCallback);
         }
     }
 
@@ -516,6 +704,7 @@ public class OpenAITTSService implements TextToSpeechService {
      * Speak text using chunking for improved responsiveness
      */
     public void speakWithChunking(String text, TTSCallback masterCallback) {
+        Log.d(TAG, "🔴 PATH CHECK: speakWithChunking called - uses SpeechChunker");
         // Create the chunker that will manage speaking segments
         SpeechChunker chunker = new SpeechChunker(text, masterCallback);
         chunker.startSpeaking();
@@ -615,6 +804,7 @@ public class OpenAITTSService implements TextToSpeechService {
         }
 
         private void speakNextChunk() {
+            // Check if we're done or interrupted
             if (interruptRequested || currentChunkIndex >= chunks.length) {
                 // We've been interrupted or finished all chunks
                 if (interruptRequested) {
@@ -628,13 +818,11 @@ public class OpenAITTSService implements TextToSpeechService {
                 return;
             }
 
-            // This is the chunk we'll speak now - REMOVE ELLIPSES
-            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", ""); // Remove ellipses
+            // Get current chunk text (with ellipses removed)
+            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", "");
+            final boolean isFirstChunk = (currentChunkIndex == 0);
 
-            // Create a new MediaPlayer for each chunk to avoid resource issues
-            OpenAITTSService ttsService = new OpenAITTSService(context, apiKey);
-
-            // Set up a callback for just this chunk
+            // Create a callback for this chunk
             TTSCallback chunkCallback = new TTSCallback() {
                 @Override
                 public void onSpeechStarted() {
@@ -654,12 +842,11 @@ public class OpenAITTSService implements TextToSpeechService {
 
                 @Override
                 public void onSpeechCompleted() {
-                    // Use a handler to ensure we're on the main thread
+                    // Move to next chunk with a small delay
                     mainHandler.post(() -> {
                         Log.d(TAG, "Completed chunk " + currentChunkIndex + ", preparing next chunk");
                         currentChunkIndex++;
-                        // Important: add a longer delay to ensure resources are properly released
-                        mainHandler.postDelayed(() -> speakNextChunk(), 100); // Increased from 100ms to 250ms
+                        mainHandler.postDelayed(() -> speakNextChunk(), 100);
                     });
                 }
 
@@ -667,7 +854,7 @@ public class OpenAITTSService implements TextToSpeechService {
                 public void onError(String errorMessage) {
                     Log.e(TAG, "Error speaking chunk " + currentChunkIndex + ": " + errorMessage);
 
-                    // Add RETRY mechanism - try this chunk again once before giving up
+                    // Add retry mechanism
                     if (!retryAttempted) {
                         retryAttempted = true;
                         Log.d(TAG, "Attempting to retry chunk " + currentChunkIndex);
@@ -681,10 +868,78 @@ public class OpenAITTSService implements TextToSpeechService {
                 }
             };
 
-            // Speak this chunk
-            ttsService.speak(currentText, currentVoice, currentModel, chunkCallback);
+            // Execute the TTS request on a background thread
+            executorService.execute(() -> {
+                try {
+                    // Create payload for TTS
+                    JSONObject payload = new JSONObject();
+                    payload.put("model", "gpt-4o-mini-tts");
+                    payload.put("input", currentText);
+
+                    // Get the master and appropriate voice
+                    String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+                    String voiceId = getVoiceId(selectedMaster);
+                    payload.put("voice", voiceId);
+                    payload.put("response_format", "mp3");
+
+                    // Set appropriate instructions based on chunk position
+                    String baseInstruction = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
+                    String instructions;
+
+                    if (isFirstChunk) {
+                        // First chunk - basic instruction
+                        instructions = baseInstruction;
+                        Log.d(TAG, "Using basic instruction for first chunk: " + instructions);
+                    } else {
+                        // Subsequent chunks - add continuity instruction
+                        instructions = baseInstruction + " Continue exactly as before.";
+                        Log.d(TAG, "Continuity instruction for chunk " + currentChunkIndex + ": " + instructions);
+                    }
+
+                    payload.put("instructions", instructions);
+
+                    // Build the HTTP request
+                    RequestBody body = RequestBody.create(
+                            MediaType.parse("application/json"),
+                            payload.toString()
+                    );
+
+                    Request request = new Request.Builder()
+                            .url(TTS_URL)
+                            .header("Authorization", "Bearer " + apiKey)
+                            .post(body)
+                            .build();
+
+                    // Execute the request
+                    try (Response response = httpClient.newCall(request).execute()) {
+                        if (!response.isSuccessful()) {
+                            Log.e(TAG, "TTS API error: " + response.code());
+                            if (response.body() != null) {
+                                Log.e(TAG, "Error response: " + response.body().string());
+                            }
+                            notifyError("TTS error: " + response.code(), chunkCallback);
+                            return;
+                        }
+
+                        // Save the audio to a temporary file
+                        File audioFile = saveAudioToFile(response.body().bytes());
+
+                        // Notify that audio is ready
+                        mainHandler.post(() -> chunkCallback.onSpeechReady(audioFile));
+
+                        // Play the audio
+                        playAudio(audioFile, () -> mainHandler.post(chunkCallback::onSpeechCompleted));
+                    }
+
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in TTS processing: " + e.getMessage(), e);
+                    mainHandler.post(() -> chunkCallback.onError("TTS error: " + e.getMessage()));
+                }
+            });
         }
     }
+
+
 
     /**
      * Play audio file and call completion handler when done
@@ -693,6 +948,8 @@ public class OpenAITTSService implements TextToSpeechService {
         try {
             // Stop any currently playing audio
             stopPlayback();
+
+            interruptRequested = false;
 
             // Log file details for debugging
             Log.d(TAG, "Playing audio file: " + audioFile.getAbsolutePath() +
@@ -729,9 +986,11 @@ public class OpenAITTSService implements TextToSpeechService {
                 // Important: release resources properly
                 mp.release();
                 currentPlayer = null;
-                if (onCompletion != null) {
-                    mainHandler.post(onCompletion);
-                }
+                mainHandler.postDelayed(() -> {
+                    if (onCompletion != null) {
+                        mainHandler.post(onCompletion);
+                    }
+                }, 50); // Small delay to prevent glitches
             });
 
             // Start playback
@@ -806,6 +1065,8 @@ public class OpenAITTSService implements TextToSpeechService {
             return new byte[0];
         }
 
+        String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+
         // Create JSON payload for TTS request with your custom settings
         JSONObject payload = new JSONObject();
         try {
@@ -816,10 +1077,11 @@ public class OpenAITTSService implements TextToSpeechService {
             payload.put("response_format", "mp3");  // Changed to mp3 for better compatibility
 
             // Add your custom instructions for the chess grandmaster character
-            payload.put("instructions", "Speak with a deep, authoritative voice of an older chess grandmaster");
+            String masterInstructions = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
+            payload.put("instructions", masterInstructions);
 
             // Log the exact payload for debugging
-            Log.d(TAG, "TTS API payload: " + payload.toString());
+            Log.d(TAG, "TTS API payload: " + selectedMaster + ": " + payload.toString());
         } catch (JSONException e) {
             Log.e(TAG, "TTS JSON construction error", e);
             return new byte[0];
