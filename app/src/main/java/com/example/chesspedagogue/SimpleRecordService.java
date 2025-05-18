@@ -50,6 +50,7 @@ public class SimpleRecordService extends Service {
     private int bufferSize;
     private File outputFile;
     // Managing conversation
+    private String currentThreadId = null;
     private EnhancedConversationManager conversationManager;
     private TextToSpeechManager textToSpeechManager;
     private OpenAIService openAIService;
@@ -65,7 +66,6 @@ public class SimpleRecordService extends Service {
     private boolean isFollowUpQuestion = false;
 
     private ChessMasterAgentManager agentManager;
-    private String currentThreadId;
     private String currentAssistantId;
 
     public boolean isCurrentlySpeaking() {
@@ -298,6 +298,7 @@ public class SimpleRecordService extends Service {
             }
             return;
         }
+
         // Transcribe audio on background thread
         CompletableFuture.supplyAsync(() -> {
             try {
@@ -316,12 +317,12 @@ public class SimpleRecordService extends Service {
                     fos.write(wavData);
                 }
 
-                // Get transcription (replace with your actual transcription code)
+                // Get transcription
                 String transcribedText = getTranscriptionFromFile(wavFile, apiKey);
                 Log.d(TAG, "Transcribed text: " + transcribedText);
 
                 // -------------------------------
-                // CHESS CONTEXT INTEGRATION - FIXED
+                // CHESS CONTEXT INTEGRATION
                 // -------------------------------
 
                 // Get current game state with null check
@@ -333,9 +334,14 @@ public class SimpleRecordService extends Service {
                 // 1. Add detailed chess position context first
                 // Add position info in a more compact format
                 enhancedPrompt.append("CHESS POSITION: ");
+
+                // Store FEN position for Assistants API
+                String currentFenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Default
+
                 if (gameState != null) {
                     // Include only essential information
-                    enhancedPrompt.append("FEN=").append(gameState.getCurrentFen());
+                    currentFenPosition = gameState.getCurrentFen();
+                    enhancedPrompt.append("FEN=").append(currentFenPosition);
                     enhancedPrompt.append(", Color=").append(gameState.getPlayerColor());
 
                     // Only include the last few moves
@@ -367,38 +373,92 @@ public class SimpleRecordService extends Service {
 
                 enhancedPrompt.append("\n\nQUESTION: ").append(transcribedText);
 
-                // In the processRecording method of SimpleRecordService.java
-
                 // Get the selected chess master
                 String selectedMaster = getSelectedChessMaster();
-                String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
-                String coachStyle = selectedMaster.equals("kramnik")
-                        ? "emphasizing positional understanding, prophylaxis, and long-term planning"
-                        : "emphasizing tactical vision, creative sacrifices, and dynamic attacking play";
 
-                String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster " + coachStyle + ". " +
-                        "Be extremely concise and focused - limit to 2-3 sentences maximum. " +
-                        "Don't repeat information like FEN or move lists that I already know. " +
-                        "Get straight to the point with the best move or plan, using clear chess notation. " +
-                        "Speak naturally as if we're in the middle of a game with time pressure.";
+                // Check if we should use Assistants API (for Botvinnik)
+                if ("botvinnik".equals(selectedMaster)) {
+                    // *** NEW ASSISTANTS API PATH FOR BOTVINNIK ***
+                    Log.d(TAG, "Using Assistants API for Botvinnik");
 
-                // Log the complete prompt for debugging
-                Log.d(TAG, "SYSTEM PROMPT: " + systemPrompt);
-                Log.d(TAG, "ENHANCED PROMPT: " + enhancedPrompt);
+                    // Get the ChessMasterAgentManager
+                    ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                            OpenAIService.getInstance(), SimpleRecordService.this);
 
-                // 4. Make the API call with BOTH the system prompt and enhanced prompt
-                String response = openAIService.getChatCompletion(systemPrompt, enhancedPrompt.toString());
+                    // Get Botvinnik's assistant ID
+                    String assistantId = agentManager.getBotvinnikAssistantId();
 
-                // Add response to conversation history
-                conversationManager.addMessage("assistant", response);
+                    if (assistantId == null) {
+                        Log.e(TAG, "Failed to get Botvinnik Assistant ID");
+                        return "I'm having trouble connecting to my chess memory. Please try again.";
+                    }
 
-                // Save the conversation
-                conversationManager.saveCurrentConversation();
+                    // Create thread if needed
+                    if (currentThreadId == null) {
+                        currentThreadId = agentManager.createConversationThread();
+                        Log.d(TAG, "Created new thread: " + currentThreadId);
+                    }
 
-                // Clean up temp file
-                wavFile.delete();
+                    if (currentThreadId == null) {
+                        Log.e(TAG, "Failed to create conversation thread");
+                        return "I'm having trouble starting our conversation. Please try again.";
+                    }
 
-                return response;
+                    // Send message with position context
+                    String runId = agentManager.sendMessageWithPosition(
+                            currentThreadId, assistantId, transcribedText, currentFenPosition);
+
+                    if (runId == null) {
+                        Log.e(TAG, "Failed to create run");
+                        return "I'm having trouble analyzing your question. Please try again.";
+                    }
+
+                    Log.d(TAG, "Created run: " + runId);
+
+                    // Get response from Assistant
+                    String response = agentManager.getChessMasterResponse(currentThreadId, runId);
+
+                    // Add response to conversation history
+                    conversationManager.addMessage("assistant", response);
+
+                    // Save the conversation
+                    conversationManager.saveCurrentConversation();
+
+                    // Clean up temp file
+                    wavFile.delete();
+
+                    return response;
+                } else {
+                    // *** ORIGINAL FINE-TUNED MODEL PATH FOR OTHER MASTERS ***
+                    String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
+                    String coachStyle = selectedMaster.equals("kramnik")
+                            ? "emphasizing positional understanding, prophylaxis, and long-term planning"
+                            : "emphasizing tactical vision, creative sacrifices, and dynamic attacking play";
+
+                    String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster " + coachStyle + ". " +
+                            "Be extremely concise and focused - limit to 2-3 sentences maximum. " +
+                            "Don't repeat information like FEN or move lists that I already know. " +
+                            "Get straight to the point with the best move or plan, using clear chess notation. " +
+                            "Speak naturally as if we're in the middle of a game with time pressure.";
+
+                    // Log the complete prompt for debugging
+                    Log.d(TAG, "SYSTEM PROMPT: " + systemPrompt);
+                    Log.d(TAG, "ENHANCED PROMPT: " + enhancedPrompt);
+
+                    // Make the API call with BOTH the system prompt and enhanced prompt
+                    String response = openAIService.getChatCompletion(systemPrompt, enhancedPrompt.toString());
+
+                    // Add response to conversation history
+                    conversationManager.addMessage("assistant", response);
+
+                    // Save the conversation
+                    conversationManager.saveCurrentConversation();
+
+                    // Clean up temp file
+                    wavFile.delete();
+
+                    return response;
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Error in speech-to-speech process", e);
                 return "I'm sorry, I had trouble analyzing your question. Could you try again?";
@@ -594,6 +654,12 @@ public class SimpleRecordService extends Service {
 
         // Default
         return "GENERAL";
+    }
+
+    // Add to SimpleRecordService class
+    private boolean shouldUseAssistantsApi() {
+        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+        return "botvinnik".equals(currentMaster);
     }
 
     // In SimpleRecordService.java

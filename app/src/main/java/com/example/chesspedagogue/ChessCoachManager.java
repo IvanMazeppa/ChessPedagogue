@@ -25,6 +25,15 @@ public class ChessCoachManager {
     private String currentModel = OpenAITTSService.MODEL_STANDARD;
     private boolean useOpenAIVoice = true;
 
+
+    private ChessMasterAgentManager agentManager;
+    private String currentMaster = "tal"; // Default master
+    private boolean useAssistantsApi = false;
+    private String currentAssistantId = null;
+    private String currentThreadId = null;
+
+
+
     // Speech state tracking
     private boolean isCoachSpeaking = false;
 
@@ -38,11 +47,37 @@ public class ChessCoachManager {
         // Initialize TTS service
         this.ttsService = new OpenAITTSService(context);
 
+        this.agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), context);
+
         // Try to load API key
         apiKey = ApiKeyConfig.getApiKey(context);
         if (apiKey != null && !apiKey.isEmpty()) {
             ttsService.setApiKey(apiKey);
         }
+    }
+
+    public void selectChessMaster(String master) {
+        Log.d(TAG, "Switching to chess master: " + master);
+        this.currentMaster = master;
+
+        // Determine if we should use Assistants API based on the selected master
+        if ("botvinnik".equals(master)) {
+            Log.d(TAG, "Switching to Botvinnik (Assistants API)");
+            useAssistantsApi = true;
+            currentAssistantId = agentManager.getBotvinnikAssistantId();
+            // Create a new thread for the conversation
+            currentThreadId = agentManager.createConversationThread();
+
+        } else {
+            // Other masters still use the fine-tuned model approach
+            Log.d(TAG, "Switching to " + master + " (Fine-tuned model)");
+            useAssistantsApi = false;
+            currentAssistantId = null;
+
+        }
+
+        // Update the selected master in the model manager for voice compatibility
+        FineTunedModelManager.getInstance(context).setSelectedChessMaster(master);
     }
 
     /**
@@ -154,6 +189,7 @@ public class ChessCoachManager {
     /**
      * Send a text message to the chess coach and get a response
      */
+
     public void sendMessage(String text, ChessCoachCallback callback) {
         if (text == null || text.isEmpty()) {
             if (callback != null) {
@@ -162,15 +198,43 @@ public class ChessCoachManager {
             return;
         }
 
-        // For now, we'll use the OpenAI service to generate a response
-        // This is a simplified implementation that you can expand later
+        // Set API key
         OpenAIService.getInstance().setApiKey(apiKey);
 
         // Use a background thread for API calls
         new Thread(() -> {
             try {
-                // Generate response using OpenAI
-                String response = OpenAIService.getInstance().sendMessage(text);
+                String response;
+
+                // Check if we should use Assistants API
+                if (useAssistantsApi && currentAssistantId != null) {
+                    Log.d(TAG, "Using Assistants API with master: " + currentMaster);
+
+                    // Create a thread if needed
+                    if (currentThreadId == null) {
+                        currentThreadId = agentManager.createConversationThread();
+                        Log.d(TAG, "Created new thread: " + currentThreadId);
+                    }
+
+                    // Get current board position (modify to get actual position if available)
+                    String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+                    // Send message with position context
+                    String runId = agentManager.sendMessageWithPosition(
+                            currentThreadId, currentAssistantId, text, fenPosition);
+
+                    if (runId != null) {
+                        Log.d(TAG, "Created run: " + runId);
+                        // Get response from the assistant
+                        response = agentManager.getChessMasterResponse(currentThreadId, runId);
+                    } else {
+                        response = "I'm having trouble connecting to my chess memory. Let's try again.";
+                    }
+                } else {
+                    // Use traditional fine-tuned model approach
+                    Log.d(TAG, "Using fine-tuned model with master: " + currentMaster);
+                    response = OpenAIService.getInstance().sendMessage(text);
+                }
 
                 // Speak the response if needed
                 if (useOpenAIVoice) {
@@ -182,6 +246,7 @@ public class ChessCoachManager {
                     }
                 }
             } catch (Exception e) {
+                Log.e(TAG, "Error in sendMessage: " + e.getMessage(), e);
                 if (callback != null) {
                     mainHandler.post(() -> callback.onError("Error: " + e.getMessage()));
                 }

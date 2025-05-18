@@ -59,6 +59,8 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         RadioButton radioCarlsen = findViewById(R.id.radioCarlsen);
         RadioButton radioMorphy = findViewById(R.id.radioMorphy);
         RadioButton radioAnand = findViewById(R.id.radioAnand);
+        RadioButton radioBotvinnik = findViewById(R.id.radioBotvinnik);
+
 
         // Check the appropriate radio button based on current selection
         switch(selectedMaster.toLowerCase()) {
@@ -92,6 +94,9 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             case "anand":
                 radioAnand.setChecked(true);
                 break;
+            case "botvinnik":
+                radioBotvinnik.setChecked(true);
+                break;
         }
 
         // Set up radio button listeners
@@ -105,6 +110,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         radioCarlsen.setOnClickListener(v -> selectedMaster = "carlsen");
         radioMorphy.setOnClickListener(v -> selectedMaster = "morphy");
         radioAnand.setOnClickListener(v -> selectedMaster = "anand");
+        radioBotvinnik.setOnClickListener(v -> selectedMaster = "botvinnik");
     }
 
     private void setupCardClickListeners() {
@@ -119,6 +125,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         CardView carlsenCard = findViewById(R.id.carlsenCard);
         CardView morphyCard = findViewById(R.id.morphyCard);
         CardView anandCard = findViewById(R.id.anandCard);
+        CardView botvinnikCard = findViewById(R.id.botvinnikCard);
 
         // Set click listeners for each card
         talCard.setOnClickListener(v -> {
@@ -178,6 +185,11 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         anandCard.setOnClickListener(v -> {
             selectedMaster = "anand";
             RadioButton radio = findViewById(R.id.radioAnand);
+            radio.setChecked(true);
+        });
+        botvinnikCard.setOnClickListener(v -> {
+            selectedMaster = "botvinnik";
+            RadioButton radio = findViewById(R.id.radioBotvinnik);
             radio.setChecked(true);
         });
     }

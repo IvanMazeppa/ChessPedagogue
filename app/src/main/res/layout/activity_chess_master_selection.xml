@@ -186,7 +186,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_agenda"
                             android:contentDescription="Karpov icon"
-                            android:tint="#009688" />
+                            app:tint="#009688" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -249,7 +249,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_compass"
                             android:contentDescription="Fischer icon"
-                            android:tint="#F44336" />
+                            app:tint="#F44336" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -312,7 +312,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_view"
                             android:contentDescription="Lasker icon"
-                            android:tint="#9C27B0" />
+                            app:tint="#9C27B0" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -375,7 +375,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_directions"
                             android:contentDescription="Kasparov icon"
-                            android:tint="#E91E63" />
+                            app:tint="#E91E63" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -438,7 +438,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_gallery"
                             android:contentDescription="Capablanca icon"
-                            android:tint="#607D8B" />
+                            app:tint="#607D8B" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -501,7 +501,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_today"
                             android:contentDescription="Carlsen icon"
-                            android:tint="#00BCD4" />
+                            app:tint="#00BCD4" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -564,7 +564,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_manage"
                             android:contentDescription="Morphy icon"
-                            android:tint="#795548" />
+                            app:tint="#795548" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -627,7 +627,7 @@
                             android:layout_height="60dp"
                             android:src="@android:drawable/ic_menu_slideshow"
                             android:contentDescription="Anand icon"
-                            android:tint="#FF9800" />
+                            app:tint="#FF9800" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -661,6 +661,68 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Select Coach Anand"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+            <!-- Botvinnik Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/botvinnikCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@android:drawable/ic_menu_edit"
+                            android:contentDescription="Botvinnik icon"
+                            app:tint="#4285F4" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mikhail Botvinnik"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="The Patriarch of Soviet Chess"
+                                android:textStyle="italic" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Master of methodical analysis and scientific approach to chess. Botvinnik's games demonstrate systematic preparation, strategic clarity, and exceptional endgame technique."
+                        android:layout_marginTop="12dp" />
+
+                    <RadioButton
+                        android:id="@+id/radioBotvinnik"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Coach Botvinnik"
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

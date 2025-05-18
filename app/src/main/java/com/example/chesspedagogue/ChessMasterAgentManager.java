@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -18,6 +19,9 @@ public class ChessMasterAgentManager {
 
     private static final String PREFS_NAME = "ChessMasterPrefs";
     private static final String KEY_TAL_ASSISTANT_ID = "tal_assistant_id";
+    private static final String KEY_BOTVINNIK_ASSISTANT_ID = "botvinnik_assistant_id";
+
+
 
 
     // Store assistant IDs for each master
@@ -119,6 +123,95 @@ public class ChessMasterAgentManager {
                 }
             }
 
+            return null;
+        }
+    }
+
+    public String getBotvinnikAssistantId() {
+        // Check memory cache first
+        if (assistantIds.containsKey("botvinnik")) {
+            Log.d(TAG, "Using cached Botvinnik assistant ID");
+            return assistantIds.get("botvinnik");
+        }
+
+        // Check persistent storage next
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        String assistantId = prefs.getString(KEY_BOTVINNIK_ASSISTANT_ID, null);
+
+        if (assistantId != null && !assistantId.isEmpty()) {
+            Log.d(TAG, "Using stored Botvinnik assistant ID: " + assistantId);
+            assistantIds.put("botvinnik", assistantId);
+            return assistantId;
+        }
+
+        // Create new if none exists
+        assistantId = createBotvinnikAssistant();
+
+        // Store it if creation was successful
+        if (assistantId != null) {
+            prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, assistantId).apply();
+        }
+
+        return assistantId;
+    }
+
+    public String createBotvinnikAssistant() {
+        if (assistantIds.containsKey("botvinnik")) {
+            Log.d(TAG, "Using existing Botvinnik Assistant: " + assistantIds.get("botvinnik"));
+            return assistantIds.get("botvinnik");
+        }
+
+        String response = null;
+
+        try {
+            Log.d(TAG, "🌟 STARTING to create Botvinnik Assistant...");
+
+            // Use the system prompt we created
+            String botvinnikSystemPrompt = "You are Coach Botvinnik, a chess grandmaster known for your methodical, scientific approach to chess..."; // Full prompt here
+
+            // Create JSON request body
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("name", "Chess Coach Botvinnik");
+            requestBody.put("instructions", botvinnikSystemPrompt);
+            requestBody.put("model", "gpt-4.1-2025-04-14");
+
+            // Add tools
+            JSONArray tools = new JSONArray();
+            JSONObject codeInterpreter = new JSONObject();
+            codeInterpreter.put("type", "code_interpreter");
+            tools.put(codeInterpreter);
+
+            JSONObject fileSearch = new JSONObject();
+            fileSearch.put("type", "file_search");
+            tools.put(fileSearch);
+            requestBody.put("tools", tools);
+
+            // Add tool resources with Botvinnik's vector store
+            JSONObject toolResources = new JSONObject();
+            JSONObject fileSearchResources = new JSONObject();
+            JSONArray vectorStoreIds = new JSONArray();
+            vectorStoreIds.put("vs_682a4788c5508191949808a00cb6c4b7"); // Your Botvinnik vector store
+            fileSearchResources.put("vector_store_ids", vectorStoreIds);
+            toolResources.put("file_search", fileSearchResources);
+            requestBody.put("tool_resources", toolResources);
+
+            // Call OpenAI API
+            response = openAIService.createAssistant(requestBody.toString());
+
+            // Parse and store the assistant ID
+            JSONObject responseJson = new JSONObject(response);
+            String assistantId = responseJson.getString("id");
+            assistantIds.put("botvinnik", assistantId);
+
+            // Save to SharedPreferences
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    .edit()
+                    .putString("botvinnik_assistant_id", assistantId)
+                    .apply();
+
+            return assistantId;
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating Botvinnik Assistant: " + e.getMessage(), e);
             return null;
         }
     }

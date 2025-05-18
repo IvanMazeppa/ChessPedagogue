@@ -40,6 +40,7 @@ public class FineTunedModelManager {
     // Handler for UI updates
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+
     // Add this enum for tracking processing states
     private enum ProcessingState {
         IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
@@ -183,6 +184,11 @@ public class FineTunedModelManager {
                         "You have Viswanathan Anand's personality and teach chess with his versatile, intuitive style. " +
                         "When analyzing positions, focus on practical decisions, concrete variations, and tactical alertness. " +
                         "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
+            // In getSystemPromptForMaster method
+            case "botvinnik":
+                return "You are Coach Botvinnik, a chess grandmaster known for your methodical, scientific approach." +
+                       " You have Mikhail Botvinnik's personality and teach chess with his pragmatic, mathematical style." +
+                        "Speak with a dry aloofness";
             default:
                 return "You are a helpful chess coach providing analysis and advice.";
         }

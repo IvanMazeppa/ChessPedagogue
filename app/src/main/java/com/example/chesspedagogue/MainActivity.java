@@ -1103,9 +1103,43 @@ public class MainActivity extends AppCompatActivity {
 
             // Add a long-press listener for testing
             resetButton.setOnLongClickListener(v -> {
-                Toast.makeText(MainActivity.this, "Testing Assistants API...", Toast.LENGTH_SHORT).show();
-                testAssistantsAPI(); // This calls your test method
-                return true; // This indicates the long press was handled
+                Toast.makeText(MainActivity.this, "Testing Botvinnik Assistant...", Toast.LENGTH_SHORT).show();
+
+                // Start a background thread for the API call
+                new Thread(() -> {
+                    try {
+                        // Get the chess master agent manager
+                        ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                                OpenAIService.getInstance(), MainActivity.this);
+
+                        // Create Botvinnik assistant instead of Tal
+                        String assistantId = agentManager.createBotvinnikAssistant();
+                        Log.d(TAG, "✅ Created Botvinnik assistant: " + assistantId);
+
+                        if (assistantId == null) {
+                            throw new Exception("Failed to create Botvinnik assistant");
+                        }
+
+                        // Show success on UI thread
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this,
+                                    "Botvinnik assistant created successfully: " + assistantId,
+                                    Toast.LENGTH_LONG).show();
+                        });
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "❌ Error creating Botvinnik: " + e.getMessage());
+
+                        // Show error on UI thread
+                        runOnUiThread(() -> {
+                            Toast.makeText(MainActivity.this,
+                                    "Error: " + e.getMessage(),
+                                    Toast.LENGTH_LONG).show();
+                        });
+                    }
+                }).start();
+
+                return true; // Consume the long press
             });
         }
 
@@ -1222,6 +1256,38 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Couldn't create a good challenge. Let's try again!", Toast.LENGTH_SHORT).show();
             inChallengeMode = false;
         }
+    }
+
+    // Add this to your MainActivity test method or create a simple test button
+    private void testBotvinnikAssistant() {
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "🔍 Testing Botvinnik Assistant creation");
+
+                // Get the assistant manager
+                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                        OpenAIService.getInstance(), this);
+
+                // Create Botvinnik assistant
+                String assistantId = agentManager.createBotvinnikAssistant();
+                Log.d(TAG, "✅ Created Botvinnik assistant: " + assistantId);
+
+                if (assistantId != null) {
+                    runOnUiThread(() -> {
+                        Toast.makeText(this,
+                                "Botvinnik assistant created successfully!",
+                                Toast.LENGTH_LONG).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error creating Botvinnik: " + e.getMessage());
+                runOnUiThread(() -> {
+                    Toast.makeText(this,
+                            "Error creating Botvinnik: " + e.getMessage(),
+                            Toast.LENGTH_LONG).show();
+                });
+            }
+        }).start();
     }
 
     // Helper for parsing
