@@ -605,8 +605,25 @@ public class SimpleRecordService extends Service {
             byte[] audioData = readFileToBytes(audioFile);
 
             // Use OpenAI's Whisper API through your service
-            OpenAIWhisperService whisperService = new OpenAIWhisperService(apiKey);
-            String transcribedText = whisperService.transcribeAudio(audioData);
+
+            UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(this);
+            unifiedService.setApiKey(apiKey);
+            // Then find where you call whisperService.transcribeAudio() and change to:
+
+            unifiedService.setApiKey(apiKey);
+            String transcribedText = unifiedService.transcribeAudioSync(audioData);
+            unifiedService.transcribeAudio(audioData, new UnifiedOpenAIService.OpenAICallback<String>() {
+                @Override
+                public void onSuccess(String transcribedText) {
+                    // Your existing code to handle transcribed text
+                    Log.d(TAG, "Transcribed text: " + transcribedText);
+                }
+
+                @Override
+                public void onFailure(Exception e) {
+                    Log.e(TAG, "Transcription error: " + e.getMessage());
+                }
+            });
 
             Log.d(TAG, "Whisper API returned: " + transcribedText);
             return transcribedText;

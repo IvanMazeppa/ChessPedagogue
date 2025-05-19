@@ -30,16 +30,15 @@ public class ApiTester {
         // Create a simple test thread
         new Thread(() -> {
             try {
-                // Create a simple chat service instance
-                ChatService chatService = new OpenAIChatService(apiKey);
 
                 // Create a test message
                 List<ChatMessage> messages = new ArrayList<>();
                 messages.add(new ChatMessage("system", "You are a helpful chess coach."));
                 messages.add(new ChatMessage("user", "Say hello in one word."));
 
-                // Try to get a response
-                String response = chatService.generateReply(messages);
+                UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(context);
+                unifiedService.setApiKey(apiKey);
+                String response = unifiedService.generateReply(messages);
 
                 boolean success = response != null && !response.isEmpty();
                 String message = success ? "API key is working!" : "Failed to get a response";
