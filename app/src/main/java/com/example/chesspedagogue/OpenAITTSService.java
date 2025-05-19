@@ -92,16 +92,25 @@ public class OpenAITTSService implements TextToSpeechService {
     /**
      * Constructor with API key
      */
+    // In OpenAITTSService constructor
     public OpenAITTSService(Context context, String apiKey) {
         this.context = context.getApplicationContext();
+
+        // First, set the API key in the shared client
+        OpenAIClient sharedClient = OpenAIClient.getInstance();
+        sharedClient.setApiKey(apiKey);
+
+        // Store it locally too, for safety during transition
         this.apiKey = apiKey;
-        this.httpClient = new OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)  // Give more time to connect
-                .writeTimeout(30, TimeUnit.SECONDS)    // Give more time to send data
-                .readTimeout(90, TimeUnit.SECONDS)     // Give more time to receive the audio
-                .build();
+
+        // Use the shared HTTP client
+        this.httpClient = sharedClient.getHttpClient();
+
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newSingleThreadExecutor();
+
+        Log.d(TAG, "OpenAITTSService initialized with API key length: " +
+                (apiKey != null ? apiKey.length() : 0));
     }
 
     /**
@@ -113,82 +122,6 @@ public class OpenAITTSService implements TextToSpeechService {
         }
         return instance;
     }
-
-//    public void speakWithGPT4oMini(String text, TTSCallback callback) {
-//        // Show we're processing
-//        if (callback != null) {
-//            mainHandler.post(callback::onSpeechStarted);
-//        }
-//
-//
-//        if (callback != null) {
-//            mainHandler.post(callback::onSpeechStarted);
-//        }
-//
-//        // Process in background
-//        executorService.execute(() -> {
-//            try {
-//                String selectMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
-//                // The correct endpoint for TTS
-//                String TTS_API_URL = "https://api.openai.com/v1/audio/speech";
-//
-//                String voiceId = getVoiceId(selectMaster);
-//                JSONObject payload = new JSONObject();
-//                payload.put("model", "gpt-4o-mini-tts");
-//                payload.put("input", text);  // Use 'input' instead of messages array
-//                payload.put("voice", voiceId);  // Specify a voice
-//                payload.put("response_format", "mp3");  // Request MP3 format for better compatibility
-//                // In your OpenAITTSService.java, modify the TTS API payload:
-//
-//                String instructions = getVoiceInstructions(selectMaster);
-//                payload.put("instructions", instructions);
-//
-//                Log.d(TAG, "TTS request payload: " + payload.toString());
-//
-//                // Build the HTTP request
-//                RequestBody body = RequestBody.create(
-//                        MediaType.parse("application/json"),
-//                        payload.toString()
-//                );
-//
-//                Request request = new Request.Builder()
-//                        .url(TTS_API_URL)
-//                        .header("Authorization", "Bearer " + apiKey)
-//                        .post(body)
-//                        .build();
-//
-//                // Execute the request
-//                try (Response response = httpClient.newCall(request).execute()) {
-//                    if (!response.isSuccessful()) {
-//                        Log.e(TAG, "TTS API error: " + response.code());
-//                        if (response.body() != null) {
-//                            Log.e(TAG, "Error response: " + response.body().string());
-//                        }
-//                        notifyError("TTS error: " + response.code(), callback);
-//                        return;
-//                    }
-//
-//                    // Save the audio to a temporary file
-//                    File audioFile = saveAudioToFile(response.body().bytes());
-//
-//                    // Notify that we have the speech ready
-//                    if (callback != null) {
-//                        mainHandler.post(() -> callback.onSpeechReady(audioFile));
-//                    }
-//
-//                    // Play the audio
-//                    playAudio(audioFile, () -> {
-//                        if (callback != null) {
-//                            mainHandler.post(callback::onSpeechCompleted);
-//                        }
-//                    });
-//                }
-//            } catch (Exception e) {
-//                Log.e(TAG, "Error in TTS", e);
-//                notifyError("TTS error: " + e.getMessage(), callback);
-//            }
-//        });
-//    }
 
     /**
      * Helper method to notify callback of errors on the main thread
@@ -628,9 +561,12 @@ public class OpenAITTSService implements TextToSpeechService {
         }
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), payload.toString());
+
+
+        // Change to use both for safety during transition:
         Request request = new Request.Builder()
                 .url(TTS_URL)
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
                 .post(body)
                 .build();
 
@@ -822,9 +758,10 @@ public class OpenAITTSService implements TextToSpeechService {
                                 payload.toString()
                         );
 
+                        // Change to use both for safety during transition:
                         Request request = new Request.Builder()
                                 .url(TTS_URL)
-                                .header("Authorization", "Bearer " + apiKey)
+                                .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
                                 .post(body)
                                 .build();
 
@@ -1062,12 +999,12 @@ public class OpenAITTSService implements TextToSpeechService {
                             payload.toString()
                     );
 
+                    // Change to use both for safety during transition:
                     Request request = new Request.Builder()
                             .url(TTS_URL)
-                            .header("Authorization", "Bearer " + apiKey)
+                            .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
                             .post(body)
                             .build();
-
                     // Execute the request
                     try (Response response = httpClient.newCall(request).execute()) {
                         if (!response.isSuccessful()) {

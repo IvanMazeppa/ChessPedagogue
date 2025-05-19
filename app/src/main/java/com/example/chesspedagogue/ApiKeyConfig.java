@@ -28,6 +28,17 @@ public class ApiKeyConfig {
         }
     }
 
+    // Add this method to ApiKeyConfig class
+    public static void initializeOpenAIClient(Context context) {
+        String apiKey = getApiKey(context);
+        if (apiKey != null && !apiKey.isEmpty()) {
+            OpenAIClient.getInstance().setApiKey(apiKey);
+            Log.d(TAG, "Initialized OpenAIClient with API key from config");
+        } else {
+            Log.e(TAG, "Failed to initialize OpenAIClient - no API key available");
+        }
+    }
+
     /**
      * Retrieve the OpenAI API key
      */

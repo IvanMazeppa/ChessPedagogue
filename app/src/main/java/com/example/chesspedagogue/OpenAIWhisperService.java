@@ -26,8 +26,17 @@ public class OpenAIWhisperService implements SpeechToTextService {
     private static final String TAG = "OpenAIWhisperService";
 
     public OpenAIWhisperService(String apiKey) {
+        // Set the API key in the shared client first
+        OpenAIClient sharedClient = OpenAIClient.getInstance();
+        sharedClient.setApiKey(apiKey);
+
+        // Keep local reference for safety during transition
         this.apiKey = apiKey;
-        this.httpClient = new OkHttpClient();
+
+        // Use the shared HTTP client
+        this.httpClient = sharedClient.getHttpClient();
+
+        Log.d(TAG, "OpenAIWhisperService initialized with shared HTTP client");
     }
 
 
@@ -53,7 +62,7 @@ public class OpenAIWhisperService implements SpeechToTextService {
             // Create the request
             Request request = new Request.Builder()
                     .url(TRANSCRIBE_URL)
-                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
                     .post(requestBody)
                     .build();
 

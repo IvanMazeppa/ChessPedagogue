@@ -248,6 +248,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        // In onCreate or similar initialization method
+        ApiKeyConfig.initializeOpenAIClient(this);
 
         // Initialize all UI elements
         initializeViews();
