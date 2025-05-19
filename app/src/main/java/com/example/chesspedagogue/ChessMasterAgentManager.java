@@ -2,6 +2,8 @@ package com.example.chesspedagogue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -10,6 +12,8 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import retrofit2.Callback;
 
 public class ChessMasterAgentManager {
     private static final String TAG = "ChessMasterAgentManager";
@@ -21,107 +25,15 @@ public class ChessMasterAgentManager {
     // Store assistant IDs for each master
     private final Map<String, String> assistantIds = new HashMap<>();
 
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     public ChessMasterAgentManager(OpenAIService openAIService, Context context) {
         this.openAIService = openAIService;
         this.context = context.getApplicationContext();
     }
 
-    /**
-     * Creates a Tal Assistant if not already created
-     */
-    /**
-     * Creates a Tal Assistant if not already created
-     */
-    public String createTalAssistant() {
-        if (assistantIds.containsKey("tal")) {
-            Log.d(TAG, "Using existing Tal Assistant: " + assistantIds.get("tal"));
-            return assistantIds.get("tal");
-        }
 
-        String response = null;
-
-        try {
-            Log.d(TAG, "🌟 STARTING to create Tal Assistant...");
-
-            // Get Tal's system prompt from your existing manager
-            String talSystemPrompt = FineTunedModelManager.getInstance(context)
-                    .getSystemPromptForMaster("tal");
-
-            Log.d(TAG, "Using system prompt: " + talSystemPrompt.substring(0, Math.min(100, talSystemPrompt.length())) + "...");
-
-            // Create JSON request body
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("name", "Chess Coach Tal");
-            requestBody.put("instructions", talSystemPrompt);
-            requestBody.put("model", "gpt-4.1-2025-04-14");
-
-            // Add tools with detailed logging
-            Log.d(TAG, "Adding tools to Assistant...");
-            JSONArray tools = new JSONArray();
-// In ChessMasterAgentManager.java - createTalAssistant() method
-            JSONObject codeInterpreter = new JSONObject();
-            codeInterpreter.put("type", "code_interpreter");
-            tools.put(codeInterpreter);
-
-// Add file_search tool (without vector_store_ids here)
-            JSONObject fileSearch = new JSONObject();
-            fileSearch.put("type", "file_search");
-            tools.put(fileSearch);
-            requestBody.put("tools", tools);
-
-// Create the tool_resources structure
-            JSONObject toolResources = new JSONObject();
-            JSONObject fileSearchResources = new JSONObject();
-            JSONArray vectorStoreIds = new JSONArray();
-            vectorStoreIds.put("vs_6829ffe34a9881919fe788eb94e8b107"); // your Tal vector store
-            fileSearchResources.put("vector_store_ids", vectorStoreIds);
-            toolResources.put("file_search", fileSearchResources);
-            requestBody.put("tool_resources", toolResources);
-
-// Remove the separate retrieval_tool_config
-// No need for retrievalToolConfig anymore!
-
-            // Log the complete request body
-            Log.d(TAG, "Assistant creation request: " + requestBody);
-
-            // Call OpenAI API to create assistant
-            Log.d(TAG, "Calling OpenAI API to create Assistant...");
-            response = openAIService.createAssistant(requestBody.toString());
-
-            // Log the complete response
-            Log.d(TAG, "Assistant creation response: " + response);
-
-            // Parse the assistant ID from response
-            JSONObject responseJson = new JSONObject(response);
-            String assistantId = responseJson.getString("id");
-
-            // Store the ID for future use
-            assistantIds.put("tal", assistantId);
-
-            Log.d(TAG, "✅ Successfully created Tal Assistant with ID: " + assistantId);
-            return assistantId;
-// Add this in the catch block
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Error creating Tal Assistant: " + e.getMessage(), e);
-
-            // Add this to see the exact API error
-            if (e instanceof JSONException && response != null && response.contains("error")) {
-                try {
-                    JSONObject errorJson = new JSONObject(response);
-                    if (errorJson.has("error")) {
-                        JSONObject error = errorJson.getJSONObject("error");
-                        Log.e(TAG, "API Error Details: " + error.getString("message"));
-                    }
-                } catch (Exception e2) {
-                    Log.e(TAG, "Error parsing API error: " + e2.getMessage());
-                }
-            }
-
-            return null;
-        }
-    }
-
-    public String getBotvinnikAssistantId() {
+     public String getBotvinnikAssistantId() {
         // Check memory cache first
         if (assistantIds.containsKey("botvinnik")) {
             Log.d(TAG, "Using cached Botvinnik assistant ID");
@@ -147,6 +59,80 @@ public class ChessMasterAgentManager {
         }
 
         return assistantId;
+    }
+
+    // Locate the part in getBotvinnikAssistantId() that creates a new assistant:
+// assistantId = createBotvinnikAssistant();
+
+    // We won't change this yet since other code depends on it,
+// but we'll make a new fully async version of getBotvinnikAssistantId()
+    public void getBotvinnikAssistantIdFullyAsync(final Callback<String> callback) {
+        // Run all of this on a background thread
+        new Thread(() -> {
+            try {
+                // Check memory cache first
+                if (assistantIds.containsKey("botvinnik")) {
+                    Log.d(TAG, "Using cached Botvinnik assistant ID");
+                    String cachedId = assistantIds.get("botvinnik");
+                    mainHandler.post(() -> callback.onSuccess(cachedId));
+                    return;
+                }
+
+                // Check persistent storage next
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String assistantId = prefs.getString(KEY_BOTVINNIK_ASSISTANT_ID, null);
+
+                if (assistantId != null && !assistantId.isEmpty()) {
+                    Log.d(TAG, "Using stored Botvinnik assistant ID: " + assistantId);
+                    assistantIds.put("botvinnik", assistantId);
+                    mainHandler.post(() -> callback.onSuccess(assistantId));
+                    return;
+                }
+
+                // Create new if none exists - using our async method!
+                createBotvinnikAssistantAsync(new Callback<String>() {
+                    @Override
+                    public void onSuccess(String newAssistantId) {
+                        // Store it if creation was successful
+                        if (newAssistantId != null) {
+                            prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, newAssistantId).apply();
+                        }
+
+                        // Return the result to original caller
+                        callback.onSuccess(newAssistantId);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        callback.onError(errorMessage);
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error in fully async Botvinnik ID retrieval", e);
+                mainHandler.post(() -> callback.onError(e.getMessage()));
+            }
+        }).start();
+    }
+
+    public void getBotvinnikAssistantIdAsync(final Callback<String> callback) {
+        // Run this on a background thread to avoid blocking the UI
+        new Thread(() -> {
+            try {
+                // Use our existing method
+                String assistantId = getBotvinnikAssistantId();
+
+                // Call back on the main thread with the result
+                if (callback != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(assistantId));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting Botvinnik assistant ID", e);
+                // Call back with the error
+                if (callback != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onError(e.getMessage()));
+                }
+            }
+        }).start();
     }
 
     public String createBotvinnikAssistant() {
@@ -210,34 +196,29 @@ public class ChessMasterAgentManager {
         }
     }
 
-    // Add this method to get an existing assistant or create a new one
-    public String getTalAssistantId() {
-        // Check memory cache first
-        if (assistantIds.containsKey("tal")) {
-            Log.d(TAG, "Using cached Tal assistant ID");
-            return assistantIds.get("tal");
-        }
+    public void createBotvinnikAssistantAsync(final Callback<String> callback) {
+        // Run on a background thread for smoothness
+        new Thread(() -> {
+            try {
+                // Use our existing method
+                String assistantId = createBotvinnikAssistant();
 
-        // Check persistent storage next
-        android.content.SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String assistantId = prefs.getString(KEY_TAL_ASSISTANT_ID, null);
-
-        if (assistantId != null && !assistantId.isEmpty()) {
-            Log.d(TAG, "Using stored Tal assistant ID: " + assistantId);
-            assistantIds.put("tal", assistantId);
-            return assistantId;
-        }
-
-        // Create new if none exists
-        assistantId = createTalAssistant();
-
-        // Store it if creation was successful
-        if (assistantId != null) {
-            prefs.edit().putString(KEY_TAL_ASSISTANT_ID, assistantId).apply();
-        }
-
-        return assistantId;
+                // Call back on the main thread with the result
+                if (callback != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(assistantId));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error creating Botvinnik assistant", e);
+                // Call back with the error
+                if (callback != null) {
+                    final String errorMsg = e.getMessage();
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onError(errorMsg));
+                }
+            }
+        }).start();
     }
+
+
 
     /**
      * Creates a new thread for conversation
@@ -258,6 +239,28 @@ public class ChessMasterAgentManager {
             Log.e(TAG, "❌ Error creating conversation thread: " + e.getMessage(), e);
             return null;
         }
+    }
+
+    // STEP 2: Add this NEW method below it (don't delete the original yet)
+    public void createConversationThreadAsync(final Callback<String> callback) {
+        // Run on a background thread
+        new Thread(() -> {
+            try {
+                // Use the existing method
+                String threadId = createConversationThread();
+
+                // Call back on the main thread with the result
+                if (callback != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(threadId));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error in async thread creation", e);
+                // Call back with the error
+                if (callback != null) {
+                    new Handler(Looper.getMainLooper()).post(() -> callback.onError(e.getMessage()));
+                }
+            }
+        }).start();
     }
 
 
@@ -358,5 +361,32 @@ public class ChessMasterAgentManager {
             Log.e(TAG, "Error getting response", e);
             return "Sorry, I had trouble processing that. Let's try again.";
         }
+    }
+
+    /**
+     * Gets the chess master's response asynchronously, with proper background threading
+     */
+    public void getChessMasterResponseAsync(String threadId, String runId, Callback<String> callback) {
+        // Run everything on a background thread
+        new Thread(() -> {
+            try {
+                // Use our existing method
+                String response = getChessMasterResponse(threadId, runId);
+
+                // Return the result on the main thread
+                mainHandler.post(() -> callback.onSuccess(response));
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting chess master response", e);
+                // Call back with the error
+                final String errorMsg = e.getMessage();
+                mainHandler.post(() -> callback.onError(errorMsg != null ? errorMsg : "Unknown error"));
+            }
+        }).start();
+    }
+
+    // STEP 3: Add this interface at the bottom of your class (if it doesn't exist)
+    public interface Callback<T> {
+        void onSuccess(T result);
+        void onError(String errorMessage);
     }
 }

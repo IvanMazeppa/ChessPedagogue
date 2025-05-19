@@ -1,5 +1,7 @@
 package com.example.chesspedagogue;
 
+import static androidx.fragment.app.FragmentManager.TAG;
+
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -26,12 +28,19 @@ public class OpenAIChatService implements ChatService {
     // Optionally define the model and parameters
     private final String model = "gpt-4";
     private final double temperature = 0.7;
-
     public OpenAIChatService(String apiKey) {
-        this.apiKey = apiKey;
-        this.httpClient = new OkHttpClient();
-    }
+        // Set the API key in the shared client
+        OpenAIClient sharedClient = OpenAIClient.getInstance();
+        sharedClient.setApiKey(apiKey);
 
+        // Keep local reference during transition
+        this.apiKey = apiKey;
+
+        // Use the shared HTTP client
+        this.httpClient = sharedClient.getHttpClient();
+
+        Log.d(TAG, "OpenAIChatService initialized with shared HTTP client");
+    }
     @Override
     public String generateReply(List<ChatMessage> messageHistory) throws IOException {
         // Construct JSON payload for chat completion
@@ -53,9 +62,10 @@ public class OpenAIChatService implements ChatService {
         }
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), payload.toString());
+
         Request request = new Request.Builder()
                 .url(CHAT_URL)
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
                 .post(body)
                 .build();
 

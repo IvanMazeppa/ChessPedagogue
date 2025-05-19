@@ -305,64 +305,20 @@ public class MainActivity extends AppCompatActivity {
 
     // In your MainActivity.java or wherever you handle the main game loop
 // Make sure to call this when returning from settings or at the start of a conversation:
-
+// CHANGE TO:
     private void testAssistantsAPI() {
-        // Run in background
+        // Run this on a background thread
         new Thread(() -> {
             try {
-                Log.d(TAG, "🔍 Starting Assistants API test");
-
-                // Step 1: Create a chess master agent
+                // Initialize the Manager
                 ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        OpenAIService.getInstance(), MainActivity.this);
+                        OpenAIService.getInstance(), this);
 
-                // Step 2: Create a Tal assistant
-                String assistantId = agentManager.createTalAssistant();
-                Log.d(TAG, "✅ Created assistant: " + assistantId);
+                // Get Botvinnik Assistant instead of creating Tal
+                String assistantId = agentManager.getBotvinnikAssistantId();
+                Log.d("ChessTest", "Using Botvinnik assistant: " + assistantId);
 
-                if (assistantId == null) {
-                    throw new Exception("Failed to create assistant");
-                }
-
-                // Step 3: Create a conversation thread
-                String threadId = agentManager.createConversationThread();
-                Log.d(TAG, "✅ Created thread: " + threadId);
-
-                if (threadId == null) {
-                    throw new Exception("Failed to create thread");
-                }
-
-                // Step 4: Send a message with current board position
-                String userMessage = "What is your favorite opening?";
-                String fenPosition = chessBoardView.getCurrentFEN();
-
-                String runId = agentManager.sendMessageWithPosition(
-                        threadId, assistantId, userMessage, fenPosition);
-                Log.d(TAG, "✅ Created run: " + runId);
-
-                if (runId == null) {
-                    throw new Exception("Failed to create run");
-                }
-
-                // Step 5: Get the response
-                String response = agentManager.getChessMasterResponse(threadId, runId);
-                Log.d(TAG, "✅ Got response: " + response);
-
-                // Step 6: Update UI with response
-                runOnUiThread(() -> {
-                    // Show the response in UI
-                    updateCoachMessageText(response != null ?
-                            response : "No response received");
-
-                    View coachCard = findViewById(R.id.coachMessageCard);
-                    if (coachCard != null) {
-                        coachCard.setVisibility(View.VISIBLE);
-                    }
-
-                    Toast.makeText(MainActivity.this,
-                            "Assistants API test complete!", Toast.LENGTH_LONG).show();
-                });
-
+                // ... rest of the method with appropriate changes ...
             } catch (Exception e) {
                 Log.e(TAG, "❌ Assistants API test failed: " + e.getMessage(), e);
 
@@ -1547,56 +1503,6 @@ public class MainActivity extends AppCompatActivity {
                             "Assistant test failed: " + e.getMessage(),
                             Toast.LENGTH_LONG).show();
                 });
-            }
-        }).start();
-    }
-
-    private void testChessMasterAssistant() {
-        // Run this on a background thread
-        new Thread(() -> {
-            try {
-                // Initialize the Manager
-                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        OpenAIService.getInstance(), this);
-
-                // Create Tal Assistant
-                String assistantId = agentManager.createTalAssistant();
-                if (assistantId == null) {
-                    Log.e("ChessTest", "Failed to create assistant");
-                    return;
-                }
-
-                // Create conversation thread
-                String threadId = agentManager.createConversationThread();
-                if (threadId == null) {
-                    Log.e("ChessTest", "Failed to create thread");
-                    return;
-                }
-
-                // Current FEN position (starting position)
-                String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-                // Send a message
-                String userMessage = "What's your most famous game?";
-                agentManager.sendMessageWithPosition(threadId, assistantId, userMessage, fenPosition);
-
-                // This is where you'd need to implement a way to get the runId from the response
-                // For now, we'll mock it to show the structure
-                String runId = "run_123456"; // You'd get this from the createRun response
-
-                // Get response
-                String response = agentManager.getChessMasterResponse(threadId, runId);
-                Log.d("ChessTest", "Tal's response: " + response);
-
-                // Update UI on main thread
-                runOnUiThread(() -> {
-                    // Show response in UI
-                    updateCoachMessageText(response);
-                    updateResponseUI(response);
-                });
-
-            } catch (Exception e) {
-                Log.e("ChessTest", "Error testing Assistant", e);
             }
         }).start();
     }

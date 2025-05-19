@@ -80,23 +80,51 @@ public class SimpleRecordService extends Service {
         // Initialize OpenAI service
         openAIService = OpenAIService.getInstance();
         apiKey = getApiKeyFromPreferences();
-        // In SimpleRecordService.java's onCreate method, right after this line:
+
+        // Initialize the agent manager
         agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), this);
 
-// Add these lines:
         Log.d(TAG, "🚀🚀🚀 ATTEMPTING TO CREATE CHESS MASTER AGENT 🚀🚀🚀");
         Log.d(TAG, "💫💫💫 ChessMasterAgentManager initialized 💫💫💫");
-        Log.d(TAG, "🧙‍♂️🧙‍♂️🧙‍♂️ ABOUT TO CREATE TAL ASSISTANT 🧙‍♂️🧙‍♂️🧙‍♂️");
-        currentAssistantId = agentManager.createTalAssistant();
-        Log.d(TAG, "📝📝📝 Assistant ID result: " + currentAssistantId);
 
-        Log.d(TAG, "🧵🧵🧵 ABOUT TO CREATE CONVERSATION THREAD 🧵🧵🧵");
-        currentThreadId = agentManager.createConversationThread();
-        Log.d(TAG, "📝📝📝 Thread ID result: " + currentThreadId);
+        // THIS IS THE IMPORTANT CHANGE - Move network calls to a background thread
+        new Thread(() -> {
+            try {
+                Log.d(TAG, "🧙‍♂️🧙‍♂️🧙‍♂️ INITIALIZING BOTVINNIK ASSISTANT 🧙‍♂️🧙‍♂️🧙‍♂️");
+                agentManager.getBotvinnikAssistantIdFullyAsync(new ChessMasterAgentManager.Callback<String>() {
+                    @Override
+                    public void onSuccess(String assistantId) {
+                        currentAssistantId = assistantId;
+                        Log.d(TAG, "📝📝📝 Botvinnik Assistant ID: " + currentAssistantId);
+
+                        // Now that we have the assistant ID, create the thread
+                        agentManager.createConversationThreadAsync(new ChessMasterAgentManager.Callback<String>() {
+                            @Override
+                            public void onSuccess(String threadId) {
+                                currentThreadId = threadId;
+                                Log.d(TAG, "📝📝📝 Thread ID result: " + currentThreadId);
+                            }
+
+                            @Override
+                            public void onError(String errorMessage) {
+                                Log.e(TAG, "Error creating thread: " + errorMessage);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "Error getting Botvinnik assistant ID: " + errorMessage);
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error initializing assistant: " + e.getMessage(), e);
+            }
+        }).start();
 
         // Add this log to check if the API key is retrieved correctly
         Log.d(TAG, "API Key retrieved, length: " + (apiKey != null ? apiKey.length() : 0));
-
 
         openAIService.setApiKey(apiKey);
 
@@ -415,9 +443,23 @@ public class SimpleRecordService extends Service {
 
                     Log.d(TAG, "Created run: " + runId);
 
-                    // Get response from Assistant
+                    // Keep the original line that gets the response
                     String response = agentManager.getChessMasterResponse(currentThreadId, runId);
 
+// And add your async version to improve future responses
+                    agentManager.getChessMasterResponseAsync(currentThreadId, runId, new ChessMasterAgentManager.Callback<String>() {
+                        @Override
+                        public void onSuccess(String asyncResponse) {
+                            // Maybe log to compare with the synchronous response
+                            Log.d(TAG, "Async response matches sync? " + asyncResponse.equals(response));
+                            // You could do additional processing here if needed
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "Async approach had error: " + errorMessage);
+                        }
+                    });
                     // Add response to conversation history
                     conversationManager.addMessage("assistant", response);
 
@@ -694,6 +736,10 @@ public class SimpleRecordService extends Service {
      *
      * @param transcribedText The user's speech converted to text
      */
+    /**
+     * Process transcribed speech with AI response.
+     * Note: Currently unused but available for future speech processing.
+     */
     private void processTranscription(String transcribedText) {
         // Log the incoming transcription for debugging
         Log.d(TAG, "Processing transcription: " + transcribedText);
@@ -778,6 +824,20 @@ public class SimpleRecordService extends Service {
                             transcribedSpeech, fenPosition);
 
                     String response = agentManager.getChessMasterResponse(currentThreadId, "latest");
+                    agentManager.getChessMasterResponseAsync(currentThreadId, "latest", new ChessMasterAgentManager.Callback<String>() {
+                        @Override
+                        public void onSuccess(String asyncResponse) {
+                            // Maybe log to compare with the synchronous response
+                            Log.d(TAG, "Async response matches sync? " + asyncResponse.equals(response));
+                            // You could do additional processing here if needed
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "Async approach had error: " + errorMessage);
+                        }
+                    });
+
 
                     // Add response to conversation history
                     conversationManager.addMessage("assistant", response);
