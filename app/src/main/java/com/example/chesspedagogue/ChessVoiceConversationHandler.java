@@ -30,7 +30,7 @@ public class ChessVoiceConversationHandler {
     private String currentModel = OpenAITTSService.MODEL_STANDARD;
 
     // Service components
-    private OpenAIWhisperService whisperService;
+    private UnifiedOpenAIService unifiedService;
     private OpenAIService chatService;
     private OpenAITTSService ttsService;
 
@@ -92,7 +92,8 @@ public class ChessVoiceConversationHandler {
             return;
         }
 
-        whisperService = new OpenAIWhisperService(apiKey);
+        unifiedService = UnifiedOpenAIService.getInstance(context);
+        unifiedService.setApiKey(apiKey);
         chatService = OpenAIService.getInstance();
         chatService.setApiKey(apiKey);
         ttsService = new OpenAITTSService(context, apiKey);
@@ -161,7 +162,8 @@ public class ChessVoiceConversationHandler {
      */
     private String transcribeAudio(byte[] audioData) {
         try {
-            return whisperService.transcribeAudio(audioData);
+            // Change from whisperService to unifiedService.transcribeAudioSync
+            return unifiedService.transcribeAudioSync(audioData);
         } catch (Exception e) {
             Log.e(TAG, "Transcription error", e);
             return null;

@@ -41,6 +41,7 @@ public class VoiceService extends Service {
     private boolean running = false;
     private Thread audioThread;
     private ConversationManager conversationManager;
+    private UnifiedOpenAIService unifiedService;
     private AudioTrack ttsAudioTrack;
     private volatile boolean userInterrupted = false;  // flag for barge-in
 
@@ -57,14 +58,15 @@ public class VoiceService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
+        unifiedService = UnifiedOpenAIService.getInstance(this);
 
+        unifiedService.setApiKey(ApiKeyConfig.getApiKey(this));
         // CRITICAL NEW CODE - Check permission first!
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "❌ RECORD_AUDIO permission not granted - cannot start service properly");
             // Show a toast to let the user know why it's not working
-            Toast.makeText(this, "Microphone permission required", Toast.LENGTH_LONG).show();
-            // Stop the service since we can't function without the permission
+            Toast.makeText(this, "Microphone permission required", Toast.LENGTH_LONG).show();// Stop the service since we can't function without the permission
             stopSelf();
             return;
         }
@@ -81,11 +83,12 @@ public class VoiceService extends Service {
         }
 
         try {
-            SpeechToTextService sttService = new OpenAIWhisperService(apiKey);
+
             ChatService chatService = new OpenAIChatService(apiKey);
             TextToSpeechService ttsService = new OpenAITTSService(this, apiKey);
 
-            conversationManager = new ConversationManager(sttService, chatService, ttsService);
+            conversationManager = new ConversationManager();
+
             conversationManager.setSystemMessage("You are Coach Tal, a brilliant chess coach. " +
                     "Provide helpful, witty advice about chess moves. Keep responses concise " +
                     "and friendly. You love to teach tactics and strategy.");
@@ -277,8 +280,11 @@ public class VoiceService extends Service {
 
             // Transcribe with error catching
             try {
-                OpenAIWhisperService whisperService = new OpenAIWhisperService(apiKey);
-                String result = whisperService.transcribeAudio(audioData);
+
+                UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(this);
+                unifiedService.setApiKey(apiKey);
+
+                String result = unifiedService.transcribeAudioSync(audioData);
 
                 Log.d(TAG, "🎯 Transcription result: \"" + result + "\"");
                 showToastOnMainThread("I heard: " + result);
@@ -295,47 +301,6 @@ public class VoiceService extends Service {
     private void showToastOnMainThread(final String message) {
         new Handler(Looper.getMainLooper()).post(() ->
                 Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show());
-    }
-
-
-
-
-
-    // Handle the user speech after VAD triggers an utterance end
-
-    private void handleUserSpeech(byte[] audioData) {
-        try {
-            // Add this debug log
-            Log.d(TAG, "Processing speech: " + audioData.length + " bytes captured");
-
-            // Get your API key
-            String apiKey = ApiKeyConfig.getApiKey(this);
-            if (apiKey == null || apiKey.isEmpty()) {
-                Log.e(TAG, "No API key available for transcription");
-                state = State.IDLE;
-                return;
-            }
-
-            // Create an instance of your transcription service
-            SpeechToTextService transcriptionService = new OpenAIWhisperService(apiKey);
-
-            // This is the key line - transcribe the audio!
-            String transcribedText = transcriptionService.transcribeAudio(audioData);
-
-            // Add a visual confirmation of what was heard
-            Log.d(TAG, "Transcribed: " + transcribedText);
-
-            // Show a toast so you can see it working!
-            showTranscriptionToast(transcribedText);
-
-            // Later we'll add the call to generate a response here
-            // For now, just go back to listening
-            state = State.IDLE;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error transcribing speech: " + e.getMessage(), e);
-            state = State.IDLE;
-        }
     }
 
     // Add this helper method to show results on screen
