@@ -2,7 +2,6 @@ package com.example.chesspedagogue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -36,21 +35,9 @@ public class ChessVoiceConversationHandler {
     private OpenAITTSService ttsService;
 
     // Conversation state
-    private boolean isListening = false;
+    private final boolean isListening = false;
     private boolean isProcessing = false;
     private boolean isSpeaking = false;
-
-    // Callback interface for UI updates
-    public interface ConversationCallback {
-        void onListeningStarted();
-        void onSpeechTranscribed(String transcribedText);
-        void onProcessingStarted();
-        void onResponseReady(String responseText);
-        void onSpeakingStarted();
-        void onSpeakingCompleted();
-        void onError(String errorMessage);
-    }
-
     private ConversationCallback callback;
 
     /**
@@ -303,13 +290,13 @@ public class ChessVoiceConversationHandler {
         loadVoicePreferences();
     }
 
-    // Notification helper methods to call callbacks on main thread
-
     private void notifyListeningStarted() {
         if (callback != null) {
             mainHandler.post(() -> callback.onListeningStarted());
         }
     }
+
+    // Notification helper methods to call callbacks on main thread
 
     private void sendForTranscription(String audioFilePath) {
         // Simply log that this would process the recording
@@ -368,5 +355,22 @@ public class ChessVoiceConversationHandler {
      */
     public void shutdown() {
         stopSpeaking();
+    }
+
+    // Callback interface for UI updates
+    public interface ConversationCallback {
+        void onListeningStarted();
+
+        void onSpeechTranscribed(String transcribedText);
+
+        void onProcessingStarted();
+
+        void onResponseReady(String responseText);
+
+        void onSpeakingStarted();
+
+        void onSpeakingCompleted();
+
+        void onError(String errorMessage);
     }
 }

@@ -1,14 +1,14 @@
 package com.example.chesspedagogue;
 
 import android.annotation.SuppressLint;
-//import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-//import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
         } else {
             Log.d(TAG, "Received move history with " + moveHistory.size() + " moves");
             for (int i = 0; i < moveHistory.size(); i++) {
-                Log.d(TAG, "Move " + (i+1) + ": " + moveHistory.get(i));
+                Log.d(TAG, "Move " + (i + 1) + ": " + moveHistory.get(i));
             }
         }
 
@@ -170,7 +170,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
                 engine.setPositionFromMoves(movesArray);
                 positions[i + 1] = engine.getCurrentFEN();
 
-                Log.d(TAG, "Position " + (i+1) + " after move " + moveHistory.get(i) + ": " + positions[i+1]);
+                Log.d(TAG, "Position " + (i + 1) + " after move " + moveHistory.get(i) + ": " + positions[i + 1]);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error generating positions", e);
@@ -405,15 +405,26 @@ public class GameAnalysisActivity extends AppCompatActivity {
                 // For other pieces, show the piece letter + destination
                 char pieceChar = ' ';
                 switch (Character.toUpperCase(piece)) {
-                    case 'R': pieceChar = 'R'; break;
-                    case 'N': pieceChar = 'N'; break;
-                    case 'B': pieceChar = 'B'; break;
-                    case 'Q': pieceChar = 'Q'; break;
-                    case 'K': pieceChar = 'K'; break;
-                    default: return toFile + "" + toRank; // Default to just the destination
+                    case 'R':
+                        pieceChar = 'R';
+                        break;
+                    case 'N':
+                        pieceChar = 'N';
+                        break;
+                    case 'B':
+                        pieceChar = 'B';
+                        break;
+                    case 'Q':
+                        pieceChar = 'Q';
+                        break;
+                    case 'K':
+                        pieceChar = 'K';
+                        break;
+                    default:
+                        return toFile + "" + toRank; // Default to just the destination
                 }
 
-                return pieceChar + "" + toFile + "" + toRank;
+                return pieceChar + "" + toFile + toRank;
             }
         } catch (Exception e) {
             // If anything goes wrong, just return the destination square

@@ -1,11 +1,12 @@
 // GameViewModel.java
 
 package com.example.chesspedagogue.viewmodel;
-import com.example.chesspedagogue.GameStateRepository;
+
 import android.app.Application;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -23,23 +24,8 @@ public class GameViewModel extends AndroidViewModel {
     private static final String TAG = "GameViewModel";
     // Add these fields to your GameViewModel class
     private final MoveHistoryObserver moveHistoryObserver = new MoveHistoryObserver();
-
-    // Add this method to your GameViewModel class
-    public void addMoveHistoryListener(MoveHistoryObserver.MoveHistoryListener listener) {
-        moveHistoryObserver.addListener(listener);
-    }
-
-    // Add this interface inside the class
-    public interface Callback<T> {
-        void onResult(T result);
-    }
-
     private final GameRepository gameRepository;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    // Add the missing playerColor field here
-    private String playerColor = "white"; // Default to white
-
     // LiveData objects that the UI will observe
     private final MutableLiveData<GameState> gameStateLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> currentFEN = new MutableLiveData<>();
@@ -51,9 +37,28 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<int[]> _animateMoveEvent = new MutableLiveData<>();
     private final MutableLiveData<int[]> _lastMoveEvent = new MutableLiveData<>();
     private final MutableLiveData<int[]> _kingInCheckEvent = new MutableLiveData<>();
-
     // Add this field to GameViewModel.java class
     private final MutableLiveData<Boolean> _clearSelectionEvent = new MutableLiveData<>();
+    // Add the missing playerColor field here
+    private String playerColor = "white"; // Default to white
+    public GameViewModel(Application application) {
+        super(application);
+        // Initialize the repository - this will handle Stockfish and game data
+        gameRepository = new GameRepository(application);
+
+        // Set initial values
+        gameStateLiveData.setValue(new GameState());
+        currentFEN.setValue("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        isPlayerTurn.setValue(true);
+        isGameOver.setValue(false);
+        statusMessage.setValue("Game ready! Make your move.");
+        moveHistory.setValue(new ArrayList<>());
+    }
+
+    // Add this method to your GameViewModel class
+    public void addMoveHistoryListener(MoveHistoryObserver.MoveHistoryListener listener) {
+        moveHistoryObserver.addListener(listener);
+    }
 
     // Add this getter method
     public LiveData<Boolean> getClearSelectionEvent() {
@@ -124,7 +129,7 @@ public class GameViewModel extends AndroidViewModel {
                     c += Character.getNumericValue(ch);
                 } else if (ch == pieceChar) {
                     // Found the piece!
-                    return new int[] {r, c};
+                    return new int[]{r, c};
                 } else {
                     // Another piece
                     c++;
@@ -155,29 +160,34 @@ public class GameViewModel extends AndroidViewModel {
         return _animateMoveEvent;
     }
 
-    public GameViewModel(Application application) {
-        super(application);
-        // Initialize the repository - this will handle Stockfish and game data
-        gameRepository = new GameRepository(application);
-
-        // Set initial values
-        gameStateLiveData.setValue(new GameState());
-        currentFEN.setValue("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        isPlayerTurn.setValue(true);
-        isGameOver.setValue(false);
-        statusMessage.setValue("Game ready! Make your move.");
-        moveHistory.setValue(new ArrayList<>());
+    // Public getter methods for the LiveData objects
+    public LiveData<GameState> getGameState() {
+        return gameStateLiveData;
     }
 
-    // Public getter methods for the LiveData objects
-    public LiveData<GameState> getGameState() { return gameStateLiveData; }
-    public LiveData<String> getCurrentFEN() { return currentFEN; }
-    public LiveData<List<String>> getMoveHistory() { return moveHistory; }
-    public LiveData<String> getStatusMessage() { return statusMessage; }
-    public LiveData<Boolean> isPlayerTurn() { return isPlayerTurn; }
-    public LiveData<Boolean> isGameOver() { return isGameOver; }
-    public LiveData<String> getWinner() { return winner; }
+    public LiveData<String> getCurrentFEN() {
+        return currentFEN;
+    }
 
+    public LiveData<List<String>> getMoveHistory() {
+        return moveHistory;
+    }
+
+    public LiveData<String> getStatusMessage() {
+        return statusMessage;
+    }
+
+    public LiveData<Boolean> isPlayerTurn() {
+        return isPlayerTurn;
+    }
+
+    public LiveData<Boolean> isGameOver() {
+        return isGameOver;
+    }
+
+    public LiveData<String> getWinner() {
+        return winner;
+    }
 
     public void makePlayerMove(String move) {
         if (!isEngineReady()) {
@@ -413,5 +423,10 @@ public class GameViewModel extends AndroidViewModel {
         // Clean up resources when ViewModel is destroyed
         gameRepository.cleanup();
         super.onCleared();
+    }
+
+    // Add this interface inside the class
+    public interface Callback<T> {
+        void onResult(T result);
     }
 }

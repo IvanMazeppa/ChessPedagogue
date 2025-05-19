@@ -76,9 +76,6 @@
         <service android:name=".SimpleRecordService"
             android:enabled="true"
             android:exported="false" />
-        <activity android:name=".TestVoiceActivity"
-            android:label="Test Voice Integration"
-            android:exported="false" />
         <activity
             android:name=".ChessMasterSelectionActivity"
             android:exported="false"

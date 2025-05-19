@@ -1,8 +1,7 @@
 package com.example.chesspedagogue;
 
-import android.content.Context;
 import android.util.Log;
-import androidx.lifecycle.ViewModelProvider;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -12,7 +11,6 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -22,12 +20,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class StockfishManager {
     private static final String TAG = "StockfishManager";
+    private final List<String> outputBuffer = new CopyOnWriteArrayList<>();
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private Process process;
     private BufferedReader reader;
     private BufferedWriter writer;
     private Thread readerThread;
-    private final List<String> outputBuffer = new CopyOnWriteArrayList<>();
-    private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private boolean isReady = false;
 
     // Add this field to track the current FEN
@@ -307,7 +305,7 @@ public class StockfishManager {
     /**
      * Sets a UCI option for the engine.
      *
-     * @param name Option name
+     * @param name  Option name
      * @param value Option value
      * @return true if the option was set successfully
      */
@@ -414,6 +412,7 @@ public class StockfishManager {
 
     /**
      * Sets the skill level to limit engine strength
+     *
      * @param elo The desired Elo rating (1320-3190)
      */
     public boolean setEngineStrength(int elo) {
@@ -437,7 +436,7 @@ public class StockfishManager {
     /**
      * Get the evaluation of a specific move.
      *
-     * @param move The move to evaluate in UCI format
+     * @param move        The move to evaluate in UCI format
      * @param thinkTimeMs Time to analyze
      * @return The evaluation score in centipawns
      */
@@ -532,6 +531,7 @@ public class StockfishManager {
 
         return explanation.toString();
     }
+
     /**
      * Stops the engine process.
      */
@@ -650,7 +650,7 @@ public class StockfishManager {
             if (moves.isEmpty()) {
                 for (int r = 0; r < 8; r++) {
                     for (int c = 0; c < 8; c++) {
-                        String move = "" + file + rank + (char)('a' + c) + (8 - r);
+                        String move = "" + file + rank + (char) ('a' + c) + (8 - r);
                         if (isLegalMove(move)) {
                             moves.add(move);
                             Log.d(TAG, "Found legal move (fallback): " + move);

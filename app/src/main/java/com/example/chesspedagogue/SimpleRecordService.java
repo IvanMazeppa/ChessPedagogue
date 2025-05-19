@@ -838,7 +838,6 @@ public class SimpleRecordService extends Service {
     }
 
 
-
     /**
      * Creates an enhanced prompt that includes the chess context
      */

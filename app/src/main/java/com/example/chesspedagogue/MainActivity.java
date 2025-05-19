@@ -51,30 +51,21 @@ import okhttp3.Response;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
-    private AnimatorSet pulseAnimatorSet;
-    private OpenAIService openAIService;
-    private String selectedSquare = null;
-
-    private boolean isSpeaking = false;
-
-    private TextToSpeechManager textToSpeechManager;
-
-    // UI elements
-    private FloatingActionButton conversationButton;
-    private Button recordButton;
-    private Button settingsButton;
-
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     // Handler for UI updates
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    // Add this enum for tracking processing states
-    private enum ProcessingState {
-        IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
-    }
-
-
+    // State tracking
+    private final boolean conversationActive = false; // tracks if service is running
+    private AnimatorSet pulseAnimatorSet;
+    private OpenAIService openAIService;
+    private String selectedSquare = null;
+    private boolean isSpeaking = false;
+    private TextToSpeechManager textToSpeechManager;
+    // UI elements
+    private FloatingActionButton conversationButton;
+    private Button recordButton;
+    private Button settingsButton;
     private ChallengeData currentChallenge;
     private boolean inChallengeMode = false;
 
@@ -152,8 +143,6 @@ public class MainActivity extends AppCompatActivity {
     };
     // Game logic
     private GameViewModel gameViewModel;
-    // State tracking
-    private final boolean conversationActive = false; // tracks if service is running
 
     // Add this method to update coach message text
     private void updateCoachMessageText(String message) {
@@ -173,8 +162,6 @@ public class MainActivity extends AppCompatActivity {
             coachCard.setVisibility(View.VISIBLE);
         }
     }
-
-
 
     // In your SimpleRecordService or MainActivity
     public void processAdviceForHighlights(String coachAdvice) {
@@ -201,8 +188,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-
 
     private List<String> extractChessSquares(String text) {
         List<String> squares = new ArrayList<>();
@@ -308,9 +293,6 @@ public class MainActivity extends AppCompatActivity {
         updateVoiceForCurrentMaster();
     }
 
-    // In your MainActivity.java or wherever you handle the main game loop
-// Make sure to call this when returning from settings or at the start of a conversation:
-
     private void updateVoiceForCurrentMaster() {
         // Get the current selected master
         String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
@@ -318,6 +300,9 @@ public class MainActivity extends AppCompatActivity {
         // Update TTS settings to auto (which will use master-appropriate voice)
         ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
     }
+
+    // In your MainActivity.java or wherever you handle the main game loop
+// Make sure to call this when returning from settings or at the start of a conversation:
 
     private void testAssistantsAPI() {
         // Run in background
@@ -399,7 +384,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Binding to SimpleRecordService...");
     }
 
-
     private void setupSpeakButton() {
         FloatingActionButton speakButton = findViewById(R.id.speakButton);
         if (speakButton != null) {
@@ -431,14 +415,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Add these methods to your MainActivity class
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present
         getMenuInflater().inflate(R.menu.main_menu, menu);
         return true;
     }
+
+    // Add these methods to your MainActivity class
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -581,8 +565,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    // Add these methods to MainActivity class
-
     // Show microphone indicator
     private void showMicIndicator(boolean show) {
         View micIndicator = findViewById(R.id.micIndicator);
@@ -615,6 +597,8 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+
+    // Add these methods to MainActivity class
 
     // Start recording method
     private void startRecording() {
@@ -695,6 +679,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
     private void showChallenge(ChallengeData challenge) {
         try {
             // Validate the challenge before proceeding
@@ -1626,5 +1611,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onDestroy();
+    }
+
+    // Add this enum for tracking processing states
+    private enum ProcessingState {
+        IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
     }
 }

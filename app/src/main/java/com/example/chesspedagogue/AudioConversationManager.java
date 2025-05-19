@@ -51,47 +51,35 @@ public class AudioConversationManager {
     // ────────────────────────────────────────────────────────────
     //  State and configuration
     // ────────────────────────────────────────────────────────────
-
-    public enum State { IDLE, CONNECTING, LISTENING, PROCESSING, SPEAKING }
-
-    public interface ConversationListener {
-        void onStateChanged(State newState);
-        void onConnected();
-        void onTextResponse(@NonNull String text);      // final answer
-        void onPartialResponse(@NonNull String partial); // streaming partials
-        void onError(@NonNull String message);
-        default void onSpeechCompleted() {}             // for TTS, optional
-    }
-
     // Core state
     private final Context appCtx;
     private final TextView tv;
+    // Concurrent execution
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    // WebSocket components
+    private final OkHttpClient client;
+    private final AtomicBoolean isConnected = new AtomicBoolean(false);
+    private final AtomicBoolean isRecording = new AtomicBoolean(false);
+    private final int bufferSize;
     private ConversationListener listener;
     private volatile State current = State.IDLE;
     private String apiKey = "";
     private String systemPrompt = "";
     private volatile boolean pendingStart = false;
-
-    // Concurrent execution
-    private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
-    // WebSocket components
-    private final OkHttpClient client;
     private volatile WebSocket webSocket = null;
-    private final AtomicBoolean isConnected = new AtomicBoolean(false);
-
     // Audio recording
     private AudioRecord audioRecord;
-    private final AtomicBoolean isRecording = new AtomicBoolean(false);
-    private int bufferSize;
-
     // Audio playback
     private AudioTrack audioTrack;
     private int audioTrackState = AudioTrack.STATE_UNINITIALIZED;
     private StringBuilder currentResponseText = new StringBuilder();
+    // Add this field to the class
+    private String currentAudioItemId;
 
-    /** Convenience: supply a TextView that should mirror the live transcript. */
+    /**
+     * Convenience: supply a TextView that should mirror the live transcript.
+     */
     public AudioConversationManager(@NonNull TextView transcriptView) {
         appCtx = transcriptView.getContext().getApplicationContext();
         this.tv = transcriptView;
@@ -112,7 +100,9 @@ public class AudioConversationManager {
         bufferSize = minBufferSize * BUFFER_SIZE_FACTOR;
     }
 
-    /** Or just any Context if you don't need a live TextView. */
+    /**
+     * Or just any Context if you don't need a live TextView.
+     */
     public AudioConversationManager(@NonNull Context ctx) {
         appCtx = ctx.getApplicationContext();
         tv = null;
@@ -133,15 +123,19 @@ public class AudioConversationManager {
         bufferSize = minBufferSize * BUFFER_SIZE_FACTOR;
     }
 
+    public void setApiKey(@NonNull String key) {
+        apiKey = key;
+    }
+
     // ----- configuration -----------------------------------------------------
 
-    public void setApiKey(@NonNull String key) { apiKey = key; }
-    public void setSystemPrompt(@NonNull String p) { systemPrompt = p; }
-    public void setConversationListener(ConversationListener l) { listener = l; }
+    public void setSystemPrompt(@NonNull String p) {
+        systemPrompt = p;
+    }
 
-    // ----- lifecycle ---------------------------------------------------------
-
-    /** Opens the websocket; safe to call repeatedly. */
+    /**
+     * Opens the websocket; safe to call repeatedly.
+     */
     public void connect(@NonNull String key) {
         apiKey = key;
         if (isConnected()) {
@@ -152,7 +146,6 @@ public class AudioConversationManager {
         io.execute(this::connectWebSocket);
     }
 
-    /** Starts (or queues) a conversation. */
     /**
      * Start a conversation with proper format for OpenAI's realtime API
      */
@@ -180,10 +173,12 @@ public class AudioConversationManager {
 
         } catch (Exception e) {
             Log.e(TAG, "Error starting conversation", e);
-            if (listener != null) listener.onError("Error starting conversation: " + e.getMessage());
+            if (listener != null)
+                listener.onError("Error starting conversation: " + e.getMessage());
         }
     }
 
+    // ----- lifecycle ---------------------------------------------------------
 
     /**
      * Start capturing audio from the microphone with the correct item ID
@@ -236,13 +231,7 @@ public class AudioConversationManager {
         }
     }
 
-
-    // Add this field to the class
-    private String currentAudioItemId;
-
-
-
-
+    /** Starts (or queues) a conversation. */
 
     /**
      * Send an initial text message to get the conversation started
@@ -283,8 +272,9 @@ public class AudioConversationManager {
         }
     }
 
-
-    /** Sends user text – MainActivity also calls the alias sendUserText(). */
+    /**
+     * Sends user text – MainActivity also calls the alias sendUserText().
+     */
     public void sendUserMessage(@NonNull String text) {
         ensureConnected();
         changeState(State.PROCESSING);
@@ -292,18 +282,22 @@ public class AudioConversationManager {
                 "✓ Got it! (echo)\n\n\"" + text + "\""));
     }
 
-    // Add these methods to your AudioConversationManager.java class
-
     /**
      * Get the conversation listener
+     *
      * @return The current conversation listener
      */
     public ConversationListener getConversationListener() {
         return this.listener;
     }
 
+    public void setConversationListener(ConversationListener l) {
+        listener = l;
+    }
+
     /**
      * Start the websocket connection
+     *
      * @param apiKey The OpenAI API key
      */
     public void startWebSocketConnection(String apiKey) {
@@ -316,7 +310,11 @@ public class AudioConversationManager {
         connect(apiKey);
     }
 
-    /** Alias for sendUserMessage */
+    // Add these methods to your AudioConversationManager.java class
+
+    /**
+     * Alias for sendUserMessage
+     */
     public void sendUserText(@NonNull String text) {
         if (!isConnected()) {
             Log.e(TAG, "Cannot send message - not connected");
@@ -347,7 +345,9 @@ public class AudioConversationManager {
         }
     }
 
-    public State getCurrentState() { return current; }
+    public State getCurrentState() {
+        return current;
+    }
 
     public void endConversation() {
         stopMicrophoneCapture();
@@ -364,16 +364,18 @@ public class AudioConversationManager {
         io.shutdownNow();
     }
 
-    // ────────────────────────────────────────────────────────────
-    //  Private implementation methods
-    // ────────────────────────────────────────────────────────────
-
     private void changeState(State s) {
         current = s;
         if (listener != null) mainHandler.post(() -> listener.onStateChanged(s));
     }
 
-    private boolean isConnected() { return webSocket != null && isConnected.get(); }
+    private boolean isConnected() {
+        return webSocket != null && isConnected.get();
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Private implementation methods
+    // ────────────────────────────────────────────────────────────
 
     private void ensureConnected() {
         if (!isConnected()) throw new IllegalStateException("call connect() first");
@@ -657,11 +659,6 @@ public class AudioConversationManager {
     }
 
     /**
-     * Start capturing audio from the microphone and send it to the API
-     */
-
-
-    /**
      * Stop microphone capture
      */
     private void stopMicrophoneCapture() {
@@ -678,11 +675,6 @@ public class AudioConversationManager {
             audioRecord = null;
         }
     }
-
-    /**
-     * Process audio data from the microphone and send it to the API
-     * Based on B4X forum and Microsoft documentation for OpenAI real-time API
-     */
 
     /**
      * Process audio data from the microphone and send it to the API
@@ -741,6 +733,11 @@ public class AudioConversationManager {
             Log.e(TAG, "❌ Error processing audio data", e);
         }
     }
+
+    /**
+     * Start capturing audio from the microphone and send it to the API
+     */
+
     // Helper method to check network availability
     private boolean isNetworkAvailable() {
         try {
@@ -753,6 +750,11 @@ public class AudioConversationManager {
             return false;
         }
     }
+
+    /**
+     * Process audio data from the microphone and send it to the API
+     * Based on B4X forum and Microsoft documentation for OpenAI real-time API
+     */
 
     private void playAudioChunk(String base64Audio) {
         try {
@@ -905,7 +907,9 @@ public class AudioConversationManager {
         isConnected.set(false);
     }
 
-    /** Dummy streaming: emits partials then a final answer. */
+    /**
+     * Dummy streaming: emits partials then a final answer.
+     */
     private void mockStreamingResponse(String full) {
         try {
             String[] parts = full.split("\\s+");
@@ -915,7 +919,7 @@ public class AudioConversationManager {
                 String now = partial.toString().trim();
                 mainHandler.post(() -> {
                     if (listener != null) listener.onPartialResponse(now);
-                    if (tv != null)        tv.setText(now);
+                    if (tv != null) tv.setText(now);
                 });
                 Thread.sleep(90);        // stream speed
             }
@@ -924,5 +928,22 @@ public class AudioConversationManager {
                 changeState(State.LISTENING);
             });
         } catch (InterruptedException ignored) { /* shutdown */ }
+    }
+
+    public enum State {IDLE, CONNECTING, LISTENING, PROCESSING, SPEAKING}
+
+    public interface ConversationListener {
+        void onStateChanged(State newState);
+
+        void onConnected();
+
+        void onTextResponse(@NonNull String text);      // final answer
+
+        void onPartialResponse(@NonNull String partial); // streaming partials
+
+        void onError(@NonNull String message);
+
+        default void onSpeechCompleted() {
+        }             // for TTS, optional
     }
 }

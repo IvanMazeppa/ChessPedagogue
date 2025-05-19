@@ -12,20 +12,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ChessMasterAgentManager {
-    private final Context context;
     private static final String TAG = "ChessMasterAgentManager";
-    private final OpenAIService openAIService;
-
-
     private static final String PREFS_NAME = "ChessMasterPrefs";
     private static final String KEY_TAL_ASSISTANT_ID = "tal_assistant_id";
     private static final String KEY_BOTVINNIK_ASSISTANT_ID = "botvinnik_assistant_id";
-
-
-
-
+    private final Context context;
+    private final OpenAIService openAIService;
     // Store assistant IDs for each master
-    private Map<String, String> assistantIds = new HashMap<>();
+    private final Map<String, String> assistantIds = new HashMap<>();
 
     public ChessMasterAgentManager(OpenAIService openAIService, Context context) {
         this.openAIService = openAIService;
@@ -88,7 +82,7 @@ public class ChessMasterAgentManager {
 // No need for retrievalToolConfig anymore!
 
             // Log the complete request body
-            Log.d(TAG, "Assistant creation request: " + requestBody.toString());
+            Log.d(TAG, "Assistant creation request: " + requestBody);
 
             // Call OpenAI API to create assistant
             Log.d(TAG, "Calling OpenAI API to create Assistant...");
@@ -279,6 +273,7 @@ public class ChessMasterAgentManager {
             return null;
         }
     }
+
     /**
      * Sends a chess question to the assistant
      */

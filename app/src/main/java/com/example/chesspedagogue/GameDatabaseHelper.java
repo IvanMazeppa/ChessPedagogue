@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import android.util.Log;
 import java.util.List;
@@ -90,9 +91,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         List<String> movesList = new ArrayList<>();
         if (movesString != null && !movesString.isEmpty()) {
             String[] moves = movesString.split(",");
-            for (String move : moves) {
-                movesList.add(move);
-            }
+            Collections.addAll(movesList, moves);
         }
         return movesList;
     }
