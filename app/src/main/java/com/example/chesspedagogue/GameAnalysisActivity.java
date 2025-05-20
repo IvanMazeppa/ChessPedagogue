@@ -1,18 +1,22 @@
 package com.example.chesspedagogue;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Activity for analyzing chess games move by move with Stockfish engine.
@@ -24,6 +28,11 @@ public class GameAnalysisActivity extends AppCompatActivity {
     // Core components
     private StockfishManager engine;
     private ChessBoardView boardView;
+    private String selectedChessMaster = "tal";
+    private Button changeMasterButton;
+
+    private Button speakAnalysisButton;
+    private OpenAITTSService ttsService;
 
     // Game data
     private ArrayList<String> moveHistory;
@@ -42,6 +51,10 @@ public class GameAnalysisActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game_analysis);
 
+        String receivedFen = getIntent().getStringExtra("FEN");
+        moveHistory = getIntent().getStringArrayListExtra("MOVE_HISTORY");
+
+
         // Find UI components
         boardView = findViewById(R.id.analysisBoardView);
         moveInfoTextView = findViewById(R.id.moveInfoTextView);
@@ -49,6 +62,50 @@ public class GameAnalysisActivity extends AppCompatActivity {
         prevButton = findViewById(R.id.prevMoveButton);
         nextButton = findViewById(R.id.nextMoveButton);
         analyzeButton = findViewById(R.id.analyzeButton);
+        changeMasterButton = findViewById(R.id.changeMasterButton);
+        changeMasterButton.setOnClickListener(v -> showChessMasterSelector());
+
+
+        speakAnalysisButton = findViewById(R.id.speakAnalysisButton);
+
+
+        Log.d(TAG, "Received FEN: " + (receivedFen != null ? receivedFen : "NULL"));
+        Log.d(TAG, "Received move history: " + (moveHistory != null ? moveHistory.size() + " moves" : "NULL"));
+
+        if (receivedFen == null) {
+            // Use default starting position if nothing was passed
+            receivedFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            Log.d(TAG, "Using default starting position");
+        }
+
+        if (moveHistory == null) {
+            moveHistory = new ArrayList<>();
+            Log.d(TAG, "No move history received, using empty list");
+        }
+
+        // Initialize the engine
+        initializeStockfishEngine();
+
+        // Make sure to use the received FEN
+        positions = new String[moveHistory.size() + 1];
+        positions[0] = receivedFen;
+
+        // Generate remaining positions if we have moves
+        if (!moveHistory.isEmpty()) {
+            generatePositions();
+        }
+
+        // Show the initial position
+        updateToPosition(0);
+
+        if (speakAnalysisButton != null) {
+            speakAnalysisButton.setOnClickListener(v -> speakCurrentAnalysis());
+            Log.d(TAG, "Speak analysis button initialized");
+        } else {
+            Log.e(TAG, "Could not find speakAnalysisButton in layout!");
+        }
+        ttsService = new OpenAITTSService(this);
+        ttsService.setApiKey(ApiKeyConfig.getApiKey(this));
 
         // Get move history from intent - with extra logging
         moveHistory = getIntent().getStringArrayListExtra("MOVE_HISTORY");
@@ -99,6 +156,69 @@ public class GameAnalysisActivity extends AppCompatActivity {
 
     }
 
+    private void speakCurrentAnalysis() {
+        String analysis = analysisTextView.getText().toString();
+        if (analysis.isEmpty() || analysis.contains("analyzing")) {
+            Toast.makeText(this, "No analysis available to speak", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Show speaking indicator
+        Toast.makeText(this, "Coach " + selectedChessMaster + " is speaking...", Toast.LENGTH_SHORT).show();
+
+        // Get appropriate voice for the selected master
+        String voice = ChessMasterVoiceManager.getVoiceForMaster(selectedChessMaster);
+
+        // Speak the analysis with your improved chunking
+        ttsService.speakWithChunking(analysis, new OpenAITTSService.TTSCallback() {
+            @Override
+            public void onSpeechStarted() {
+                // Update UI if needed
+            }
+
+            @Override
+            public void onSpeechReady(File audioFile) {
+                // Not needed here
+            }
+
+            @Override
+            public void onSpeechCompleted() {
+                // Update UI when speech is done
+                runOnUiThread(() -> {
+                    Toast.makeText(GameAnalysisActivity.this,
+                            "Analysis complete", Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                runOnUiThread(() -> {
+                    Toast.makeText(GameAnalysisActivity.this,
+                            "Speech error: " + errorMessage, Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
+    // Add this method to show a dialog for selecting a chess master
+    private void showChessMasterSelector() {
+        String[] masters = {"Tal", "Botvinnik", "Kramnik", "Fischer", "Kasparov", "Karpov"};
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose Your Chess Coach")
+                .setItems(masters, (dialog, which) -> {
+                    selectedChessMaster = masters[which].toLowerCase();
+                    // Update UI to show selected master
+                    analyzeButton.setText("Analyze with " + masters[which]);
+                    // Clear previous analysis
+                    analysisTextView.setText("");
+
+                    Toast.makeText(this, masters[which] + " will analyze your position",
+                            Toast.LENGTH_SHORT).show();
+                });
+        builder.create().show();
+    }
+
     /**
      * Initialize the Stockfish chess engine
      */
@@ -140,6 +260,169 @@ public class GameAnalysisActivity extends AppCompatActivity {
             Toast.makeText(this, "Error: " + e.getMessage(),
                     Toast.LENGTH_LONG).show();
         }
+    }
+    private void getAIEnhancedAnalysis() {
+        // Show loading state
+        analysisTextView.setText("Coach " + selectedChessMaster.substring(0, 1).toUpperCase() +
+                selectedChessMaster.substring(1) + " is analyzing...");
+
+        // Get the current position and Stockfish evaluation
+        String currentFen = positions[currentMoveIndex];
+
+        // Run this on a background thread
+        new Thread(() -> {
+            try {
+                // Get Stockfish technical analysis
+                engine.setPosition(currentFen);
+                String engineAnalysis = getDetailedEngineAnalysis(2000); // 2 seconds analysis
+
+                // Format the analysis for the AI
+                StringBuilder prompt = new StringBuilder();
+                prompt.append("You are analyzing a chess position as ")
+                        .append(getFullNameForMaster(selectedChessMaster))
+                        .append(".\n\nFEN: ")
+                        .append(currentFen)
+                        .append("\n\nEngine analysis: ")
+                        .append(engineAnalysis);
+
+                // Add context about the move history
+                if (currentMoveIndex > 0) {
+                    prompt.append("\n\nPrevious moves: ");
+                    for (int i = 0; i < currentMoveIndex; i++) {
+                        int moveNum = (i / 2) + 1;
+                        if (i % 2 == 0) {
+                            prompt.append(moveNum).append(". ");
+                        }
+                        prompt.append(convertToAlgebraic(moveHistory.get(i))).append(" ");
+                    }
+                }
+
+                // Add specific instructions based on the selected master's style
+                prompt.append("\n\n").append(getStyleInstructionsForMaster(selectedChessMaster));
+
+                // Get response from OpenAI
+                String assistantResponse = getPersonalizedAnalysis(prompt.toString());
+
+                // Update UI on the main thread
+                runOnUiThread(() -> {
+                    // Display the analysis
+                    analysisTextView.setText(assistantResponse);
+
+                    // Process the analysis for visual highlighting
+                    processAnalysisForHighlights(assistantResponse);
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting AI analysis", e);
+                runOnUiThread(() -> {
+                    analysisTextView.setText("Analysis error: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
+    // Helper method to get the full name of the chess master
+    private String getFullNameForMaster(String master) {
+        switch (master.toLowerCase()) {
+            case "tal": return "Mikhail Tal";
+            case "botvinnik": return "Mikhail Botvinnik";
+            case "kramnik": return "Vladimir Kramnik";
+            case "fischer": return "Bobby Fischer";
+            case "kasparov": return "Garry Kasparov";
+            case "karpov": return "Anatoly Karpov";
+            default: return "Chess Master";
+        }
+    }
+
+    // Get specific instructions based on the master's style
+    private String getStyleInstructionsForMaster(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "As Mikhail Tal, focus on tactical opportunities, sacrifices, and attacking chances. " +
+                        "Look for creative combinations and dynamic piece play. Emphasize the beauty of sacrifices " +
+                        "when they lead to tactical advantages. Your analysis should highlight tactical motifs " +
+                        "like pins, forks, and discovered attacks. Speak with enthusiasm about tactical possibilities!";
+
+            case "botvinnik":
+                return "As Mikhail Botvinnik, analyze this position with scientific precision and methodical evaluation. " +
+                        "Focus on long-term strategic considerations, pawn structure analysis, and positional advantages. " +
+                        "Emphasize prophylactic thinking and thorough planning. Your analysis should be logical and systematic, " +
+                        "discussing key squares, weak pawns, and piece coordination. Speak with measured, authoritative tone.";
+
+            // Add more masters with their unique styles
+
+            default:
+                return "Provide a detailed analysis of this chess position. Discuss the strengths and weaknesses " +
+                        "of both sides, potential plans, and concrete calculations where relevant.";
+        }
+    }
+
+    // Add this method to process the analysis and highlight key squares
+    private void processAnalysisForHighlights(String analysis) {
+        // Clear any existing highlights on the board
+        boardView.clearHighlights();
+
+        // Extract chess squares mentioned in the analysis
+        List<String> mentionedSquares = extractChessSquares(analysis);
+
+        // Apply appropriate highlighting based on context
+        for (String square : mentionedSquares) {
+            // Determine color based on the context in the analysis
+            int highlightColor;
+
+            if (containsNearby(analysis, square, "weak", "vulnerability", "problem")) {
+                // Red for weaknesses
+                highlightColor = Color.parseColor("#FF6B6B");
+            } else if (containsNearby(analysis, square, "strong", "advantage", "control")) {
+                // Green for strengths
+                highlightColor = Color.parseColor("#4CAF50");
+            } else if (containsNearby(analysis, square, "key", "important", "critical")) {
+                // Purple for key squares
+                highlightColor = Color.parseColor("#9C27B0");
+            } else {
+                // Default blue for other mentioned squares
+                highlightColor = Color.parseColor("#2196F3");
+            }
+
+            // Apply the highlight to the board
+            boardView.highlightSquare(square, highlightColor, 10000); // 10 seconds duration
+        }
+    }
+
+    // Helper method to extract chess squares from text
+    private List<String> extractChessSquares(String text) {
+        List<String> squares = new ArrayList<>();
+
+        // Pattern for chess squares (a1-h8)
+        Pattern pattern = Pattern.compile("\\b[a-h][1-8]\\b");
+        Matcher matcher = pattern.matcher(text);
+
+        while (matcher.find()) {
+            squares.add(matcher.group());
+        }
+
+        return squares;
+    }
+
+    // Helper to check if specific terms appear near a square in the text
+    private boolean containsNearby(String text, String square, String... terms) {
+        // Find the position of the square in the text
+        int squarePos = text.indexOf(square);
+        if (squarePos == -1) return false;
+
+        // Check 50 characters before and after for the terms
+        int start = Math.max(0, squarePos - 50);
+        int end = Math.min(text.length(), squarePos + 50);
+        String context = text.substring(start, end);
+
+        // Check if any of the terms appear in this context
+        for (String term : terms) {
+            if (context.contains(term)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -246,131 +529,29 @@ public class GameAnalysisActivity extends AppCompatActivity {
     /**
      * Analyze the current position with Stockfish - Enhanced Version
      */
+    // Update your analyzeCurrentPosition method with more detailed logging
     private void analyzeCurrentPosition() {
-        Log.d(TAG, "Analyzing current position at index: " + currentMoveIndex);
+        Log.d(TAG, "🔍 analyzeCurrentPosition called - showing dialog");
 
-        try {
-            if (currentMoveIndex == moveHistory.size()) {
-                analysisTextView.setText("Game ended. No further moves to analyze.");
-                return;
-            }
-
-            // Show that analysis is in progress
-            analysisTextView.setText("Analyzing position... please wait");
-            String currentFen = positions[currentMoveIndex];
-            Log.d(TAG, "Setting engine to analyze position: " + currentFen);
-
-            // Set up the position to analyze
-            engine.setPosition(currentFen);
-
-            // Run analysis in a background thread
-            new Thread(() -> {
-                try {
-                    // Get actual move played
-                    String actualMove = currentMoveIndex < moveHistory.size() ?
-                            moveHistory.get(currentMoveIndex) : "";
-                    Log.d(TAG, "Actual move played: " + actualMove);
-
-                    // Run analysis
-                    engine.sendCommand("go depth 15 movetime 2000");
-
-                    // Wait for analysis and get best move
-                    String bestMove = waitForBestMove(3000);
-                    Log.d(TAG, "Best move from analysis: " + bestMove);
-
-                    // Also get the output buffer for more details
-                    List<String> outputBuffer = engine.getOutputBuffer();
-
-                    // Get evaluation score if available
-                    float evaluation = 0.0f;
-                    for (String line : outputBuffer) {
-                        if (line.contains("score cp ")) {
-                            try {
-                                int scoreIndex = line.indexOf("score cp ") + 9;
-                                int endIndex = line.indexOf(" ", scoreIndex);
-                                if (endIndex > scoreIndex) {
-                                    evaluation = Float.parseFloat(line.substring(scoreIndex, endIndex)) / 100.0f;
-                                    break;
-                                }
-                            } catch (Exception e) {
-                                // Continue if this line fails to parse
-                            }
-                        }
-                    }
-
-                    // Build a more detailed analysis
-                    StringBuilder analysisBuilder = new StringBuilder();
-
-                    // Header showing move and evaluation
-                    analysisBuilder.append("Position Analysis\n");
-                    analysisBuilder.append("----------------\n\n");
-
-                    // Add evaluation
-                    if (evaluation > 0) {
-                        analysisBuilder.append("Evaluation: +").append(String.format("%.2f", evaluation))
-                                .append(" (White advantage)\n\n");
-                    } else if (evaluation < 0) {
-                        analysisBuilder.append("Evaluation: ").append(String.format("%.2f", evaluation))
-                                .append(" (Black advantage)\n\n");
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Choose Analysis Type")
+                .setItems(new String[]{"Engine Only", "AI Coach Analysis"}, (dialog, which) -> {
+                    if (which == 0) {
+                        // Use your existing engine-only analysis
+                        Log.d(TAG, "🔍 User selected Engine Only analysis");
+                        performEngineOnlyAnalysis();
                     } else {
-                        analysisBuilder.append("Evaluation: 0.00 (Equal position)\n\n");
+                        // Use our new AI-enhanced analysis
+                        Log.d(TAG, "🔍 User selected AI Coach analysis");
+                        getAIEnhancedAnalysis();
                     }
+                });
+        builder.create().show();
+    }
 
-                    // Best move section
-                    analysisBuilder.append("Best Move: ").append(convertToAlgebraic(bestMove)).append("\n");
-
-                    // Your move comparison
-                    analysisBuilder.append("Your move: ").append(convertToAlgebraic(actualMove)).append("\n\n");
-
-                    if (bestMove.equals(actualMove)) {
-                        analysisBuilder.append("Excellent! You found the best move! 🌟\n");
-                    } else {
-                        analysisBuilder.append("There's a stronger move available.\n");
-                    }
-
-                    // Add positional advice based on game phase
-                    int moveNumber = (currentMoveIndex / 2) + 1;
-                    if (moveNumber <= 10) {
-                        // Opening advice
-                        analysisBuilder.append("\nOpening Tip: ");
-                        if (moveNumber <= 3) {
-                            analysisBuilder.append("Focus on controlling the center with pawns and developing your knights early.");
-                        } else if (moveNumber <= 6) {
-                            analysisBuilder.append("Try to castle early to keep your king safe and connect your rooks.");
-                        } else {
-                            analysisBuilder.append("Complete your development and look for tactical opportunities.");
-                        }
-                    } else if (moveNumber <= 25) {
-                        // Middlegame advice
-                        analysisBuilder.append("\nMiddlegame Tip: ");
-                        analysisBuilder.append("Look for piece coordination and potential tactical shots. Consider your pawn structure and piece activity.");
-                    } else {
-                        // Endgame advice
-                        analysisBuilder.append("\nEndgame Tip: ");
-                        analysisBuilder.append("Activate your king and try to create passed pawns. Centralize your pieces for maximum effectiveness.");
-                    }
-
-                    final String analysis = analysisBuilder.toString();
-
-                    // Update UI on main thread
-                    runOnUiThread(() -> {
-                        analysisTextView.setText(analysis);
-                        Log.d(TAG, "Analysis complete, displayed results");
-                    });
-                } catch (Exception e) {
-                    Log.e(TAG, "Error during analysis", e);
-                    runOnUiThread(() -> {
-                        Toast.makeText(GameAnalysisActivity.this,
-                                "Analysis error: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                        analysisTextView.setText("Analysis failed. Please try again. Error: " + e.getMessage());
-                    });
-                }
-            }).start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error initiating analysis", e);
-            analysisTextView.setText("Could not start analysis: " + e.getMessage());
-        }
+    // Rename your current analyzeCurrentPosition method to:
+    private void performEngineOnlyAnalysis() {
+        // Your existing engine analysis code here
     }
 
     /**
@@ -467,6 +648,120 @@ public class GameAnalysisActivity extends AppCompatActivity {
         // If we timed out, try stopping the analysis
         engine.sendCommand("stop");
         return "none";
+    }
+
+    // Add these methods to GameAnalysisActivity.java (not OpenAIService)
+
+    // Get analysis from OpenAI
+    private String getPersonalizedAnalysis(String prompt) throws IOException {
+        Log.d(TAG, "💬 Starting personalized analysis request");
+
+        // Get API key with clear error message if missing
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "❌ API key not configured");
+            throw new IOException("API key not configured in settings");
+        }
+
+        // Use your unified OpenAI service with detailed logging
+        UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(this);
+        unifiedService.setApiKey(apiKey);
+        Log.d(TAG, "💬 API key set, unified service ready");
+
+        // Format the system prompt for the selected master
+        String systemPrompt = "You are " + getFullNameForMaster(selectedChessMaster) +
+                ", a chess grandmaster analyzing a position.";
+        Log.d(TAG, "💬 System prompt: " + systemPrompt);
+
+        // Generate the response with careful error handling
+        try {
+            Log.d(TAG, "💬 Sending request to OpenAI");
+            String response = unifiedService.generateChatResponseSync(systemPrompt, prompt);
+            Log.d(TAG, "💬 Received response: " + (response.length() > 100 ?
+                    response.substring(0, 100) + "..." : response));
+            return response;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ OpenAI API error: " + e.getMessage(), e);
+            // Rethrow with a more helpful message
+            throw new IOException("Could not connect to AI service: " + e.getMessage());
+        }
+    }
+    // Get detailed engine analysis
+    private String getDetailedEngineAnalysis(int thinkTimeMs) throws IOException {
+        StringBuilder analysis = new StringBuilder();
+
+        // Clear previous output
+        engine.sendCommand("stop");
+
+        // Start analysis with multipv to get multiple lines
+        engine.sendCommand("go depth 15 multipv 3 movetime " + thinkTimeMs);
+
+        // Wait for completion
+        try {
+            Thread.sleep(thinkTimeMs + 500);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Stop analysis
+        engine.sendCommand("stop");
+
+        // Get the engine output
+        List<String> outputBuffer = engine.getOutputBuffer();
+
+        // Process the output to extract the main evaluation and lines
+        float evaluation = 0;
+        List<String> bestLines = new ArrayList<>();
+
+        for (String line : outputBuffer) {
+            if (line.contains("score cp ") && line.contains(" pv ")) {
+                // Extract evaluation
+                try {
+                    int scoreIndex = line.indexOf("score cp ") + 9;
+                    int endIndex = line.indexOf(" ", scoreIndex);
+                    if (endIndex > scoreIndex) {
+                        float score = Float.parseFloat(line.substring(scoreIndex, endIndex)) / 100.0f;
+
+                        if (bestLines.size() == 0) {
+                            evaluation = score; // Save the top evaluation
+                        }
+
+                        // Extract the move sequence
+                        int pvIndex = line.indexOf(" pv ") + 4;
+                        String moveSequence = line.substring(pvIndex);
+
+                        // Convert moves to more readable form
+                        String[] moves = moveSequence.split(" ");
+                        StringBuilder prettyLine = new StringBuilder();
+                        for (int i = 0; i < Math.min(moves.length, 5); i++) { // Show first 5 moves
+                            prettyLine.append(convertToAlgebraic(moves[i])).append(" ");
+                        }
+
+                        // Add this line to our best lines with its evaluation
+                        bestLines.add(String.format("Line %d (%.2f): %s",
+                                bestLines.size() + 1, score, prettyLine.toString()));
+
+                        if (bestLines.size() >= 3) break; // Keep top 3 lines
+                    }
+                } catch (Exception e) {
+                    // Skip problematic lines
+                }
+            }
+        }
+
+        // Format the analysis output
+        analysis.append(String.format("Evaluation: %.2f pawns", evaluation))
+                .append(evaluation > 0 ? " (White advantage)" :
+                        evaluation < 0 ? " (Black advantage)" : " (Equal)")
+                .append("\n\n");
+
+        analysis.append("Best lines:\n");
+        for (String line : bestLines) {
+            analysis.append(line).append("\n");
+        }
+
+        return analysis.toString();
     }
 
     private void loadSavedGame(long gameId) {

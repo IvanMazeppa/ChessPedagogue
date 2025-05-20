@@ -326,6 +326,7 @@ public class ChessCoachManager {
     }
 
     public void testVoice(String testPhrase, ChessCoachCallback chessCoachCallback) {
+
     }
 
     // Callback interface for responses

@@ -189,6 +189,8 @@ public class FineTunedModelManager {
         }
     }
 
+
+
     // Add this enum for tracking processing states
     private enum ProcessingState {
         IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING

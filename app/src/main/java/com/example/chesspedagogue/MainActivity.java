@@ -331,6 +331,25 @@ public class MainActivity extends AppCompatActivity {
         }).start();
     }
 
+    // In MainActivity, when launching the analysis activity:
+    public void openAnalysisScreen() {
+        Intent intent = new Intent(this, GameAnalysisActivity.class);
+
+        // Pass the current FEN
+        String currentFen = chessBoardView.getCurrentFEN();
+        intent.putExtra("FEN", currentFen);
+
+        // Pass the move history
+        ArrayList<String> moveHistoryList = new ArrayList<>(GameHistoryManager.getInstance().getCurrentGameMoves());
+        intent.putStringArrayListExtra("MOVE_HISTORY", moveHistoryList);
+
+        // Log what we're sending for debugging
+        Log.d("MainActivity", "Sending to analysis: FEN=" + currentFen);
+        Log.d("MainActivity", "Sending moves: " + moveHistoryList.size() + " moves");
+
+        startActivity(intent);
+    }
+
     /**
      * Bind to the SimpleRecordService
      */
@@ -1102,10 +1121,23 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-
+// In MainActivity.java - Find where you handle the gameAnalysisButton click
         gameAnalysisButton.setOnClickListener(v -> {
-            // Open game analysis activity
-            Intent intent = new Intent(MainActivity.this, GameAnalysisActivity.class);
+            Log.d("CHESS_DATA_FLOW", "🌟🌟🌟 ANALYSIS BUTTON CLICKED! 🌟🌟🌟");
+
+            // Get current game data
+            String currentFen = chessBoardView.getCurrentFEN();
+            ArrayList<String> moveHistoryList = new ArrayList<>(GameHistoryManager.getInstance().getCurrentGameMoves());
+
+            Log.d("CHESS_DATA_FLOW", "📝 Current FEN: " + currentFen);
+            Log.d("CHESS_DATA_FLOW", "📝 Move history size: " + moveHistoryList.size());
+
+            // Create intent with this data
+            Intent intent = new Intent(this, GameAnalysisActivity.class);
+            intent.putExtra("FEN", currentFen);
+            intent.putStringArrayListExtra("MOVE_HISTORY", moveHistoryList);
+
+            Log.d("CHESS_DATA_FLOW", "🚀 Starting analysis activity with data...");
             startActivity(intent);
         });
 
