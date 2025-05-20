@@ -151,7 +151,7 @@ public class ChessCoachManager {
 
     /**
      * Test the current voice settings with a sample phrase
-     */
+
     // In ChessCoachManager.java
     public void testVoice(String testPhrase, ChessCoachCallback callback) {
         OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
@@ -186,7 +186,7 @@ public class ChessCoachManager {
         });
     }
 
-    /**
+
      * Send a text message to the chess coach and get a response
      */
 
@@ -323,6 +323,9 @@ public class ChessCoachManager {
      */
     public String getPlayerColor() {
         return "white"; // Default value for compatibility
+    }
+
+    public void testVoice(String testPhrase, ChessCoachCallback chessCoachCallback) {
     }
 
     // Callback interface for responses

@@ -203,9 +203,7 @@ public class OpenAITTSService implements TextToSpeechService {
         }
     }
 
-    // Add these methods to your OpenAITTSService class
-
-    // In OpenAITTSService.java, let's try a different approach to playing audio
+    /**
     private void playMp3Audio(File audioFile, Runnable onCompletion) {
         try {
             // Stop any currently playing audio
@@ -250,6 +248,7 @@ public class OpenAITTSService implements TextToSpeechService {
             }
         }
     }
+    **/
 
     /**
      * Set whether to use personality-based instructions
@@ -301,6 +300,7 @@ public class OpenAITTSService implements TextToSpeechService {
         return ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
     }
 
+    /**
     // Replace this problematic method with a proper implementation
     public void generateSpeech(String text, TTSCallback callback) {
         if (apiKey == null || apiKey.isEmpty()) {
@@ -340,6 +340,8 @@ public class OpenAITTSService implements TextToSpeechService {
      * Speak text using the selected voice and model
      */
     public void speak(String text, String voice, String model, TTSCallback callback) {
+
+        Log.d(TAG, "🔍 METHOD CALLED: speak");
         if (callback != null) {
             mainHandler.post(callback::onSpeechStarted);
         }
@@ -391,24 +393,13 @@ public class OpenAITTSService implements TextToSpeechService {
         });
     }
 
-    public void speakWithChunkingForGPT4oMini(String text, TTSCallback masterCallback) {
-        // Add this clear marker
-
-        Log.d(TAG, "🔴 PATH CHECK: speakWithChunkingForGPT4oMini called - uses GPT4oMiniSpeechChunker");
-
-        // Create the chunker for GPT-4o-mini-tts
-        GPT4oMiniSpeechChunker chunker = new GPT4oMiniSpeechChunker(text, masterCallback);
-        chunker.startSpeaking();
-    }
-
-    // Add this method to your OpenAITTSService class
-    // In OpenAITTSService.java
 
     /**
      * Speak text using chunking for improved responsiveness
      */
     public void speakWithChunking(String text, TTSCallback masterCallback) {
         Log.d(TAG, "🔴 PATH CHECK: speakWithChunking called - uses SpeechChunker");
+
         // Create the chunker that will manage speaking segments
         SpeechChunker chunker = new SpeechChunker(text, masterCallback);
         chunker.startSpeaking();
@@ -416,6 +407,9 @@ public class OpenAITTSService implements TextToSpeechService {
 
     /**
      * Play audio file and call completion handler when done
+     **/
+    /**
+     * Improved audio playback for smoother transitions
      */
     public void playAudio(File audioFile, Runnable onCompletion) {
         try {
@@ -454,16 +448,15 @@ public class OpenAITTSService implements TextToSpeechService {
 
             currentPlayer = player;
 
-            // Set completion listener
+            // IMPROVED: Optimized completion handling for smoother transitions
             player.setOnCompletionListener(mp -> {
                 // Important: release resources properly
                 mp.release();
                 currentPlayer = null;
-                mainHandler.postDelayed(() -> {
-                    if (onCompletion != null) {
-                        mainHandler.post(onCompletion);
-                    }
-                }, 50); // Small delay to prevent glitches
+                // IMPROVEMENT: Remove delay for faster transitions between chunks
+                if (onCompletion != null) {
+                    mainHandler.post(onCompletion);
+                }
             });
 
             // Start playback
@@ -478,7 +471,7 @@ public class OpenAITTSService implements TextToSpeechService {
 
     /**
      * Play PCM audio data directly using AudioTrack
-     */
+
     public void playPCMAudio(byte[] audioData, int sampleRate, Runnable onCompletion) {
         try {
             // Stop any currently playing audio
@@ -530,6 +523,7 @@ public class OpenAITTSService implements TextToSpeechService {
             }
         }
     }
+    **/
 
     @Override
     public byte[] synthesizeSpeech(String text) throws IOException {
@@ -605,218 +599,16 @@ public class OpenAITTSService implements TextToSpeechService {
         void onError(String errorMessage);
     }
 
-    // Add this new inner class for GPT-4o-mini-tts chunking
-    private class GPT4oMiniSpeechChunker {
-        private String lastChunkEndingSentence = "";
-        private final String[] chunks;
-        private final TTSCallback masterCallback;
-        private int currentChunkIndex = 0;
-        private boolean interruptRequested = false;
-        private boolean retryAttempted = false;
-
-        public GPT4oMiniSpeechChunker(String text, TTSCallback callback) {
-            this.masterCallback = callback;
-
-
-            Log.d(TAG, "🌈🌈🌈 CREATED: GPT4oMiniSpeechChunker");
-
-
-            // Same chunking code as before
-            String[] sentences = text.split("(?<=[.!?])\\s+");
-            List<String> chunkList = new ArrayList<>();
-            StringBuilder currentChunk = new StringBuilder();
-
-            for (String sentence : sentences) {
-                if (currentChunk.length() + sentence.length() > 80) {
-                    chunkList.add(currentChunk.toString().trim());
-                    currentChunk = new StringBuilder();
-                }
-                currentChunk.append(sentence).append(" ");
-            }
-
-            if (currentChunk.length() > 0) {
-                chunkList.add(currentChunk.toString());
-            }
-
-            this.chunks = chunkList.toArray(new String[0]);
-            Log.d(TAG, "Split speech into " + chunks.length + " chunks for GPT-4o-mini-tts");
-        }
-
-        public void startSpeaking() {
-
-            Log.d(TAG, "🌈🌈🌈 STARTED: GPT4oMiniSpeechChunker.startSpeaking()");
-            if (masterCallback != null) {
-                mainHandler.post(masterCallback::onSpeechStarted);
-            }
-            currentChunkIndex = 0;
-            speakNextChunk();
-        }
-
-        public void stopSpeaking() {
-            interruptRequested = true;
-        }
-
-        private void speakNextChunk() {
-            // At the very beginning of your speakNextChunk method:
-            Log.d(TAG, "🔎 BEFORE CHECK: interruptRequested=" + interruptRequested +
-                    ", currentChunkIndex=" + currentChunkIndex + "/" + chunks.length);
-            // Check for interruption or completion
-            if (interruptRequested || currentChunkIndex >= chunks.length) {
-                if (interruptRequested) {
-                    Log.d(TAG, "GPT-4o-mini-tts speech interrupted");
-                    interruptRequested = false;
-                }
-                if (masterCallback != null) {
-                    mainHandler.post(masterCallback::onSpeechCompleted);
-                }
-                return;
-            }
-
-            // Get the current chunk text
-            String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", "");
-
-            try {
-                // Create the JSON payload
-                JSONObject payload = new JSONObject();
-                payload.put("model", "gpt-4o-mini-tts");
-                payload.put("input", currentText);
-
-                // Get the current selected master and voice
-                String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
-                String voiceId = getVoiceId(selectedMaster);
-                payload.put("voice", voiceId);
-                payload.put("response_format", "mp3");
-
-                // HERE'S THE KEY DIFFERENCE: Direct control of instructions
-                String baseInstruction = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
-                String instructions;
-
-                if (currentChunkIndex == 0) {
-                    // First chunk: establish the voice
-                    instructions = baseInstruction;
-                    Log.d(TAG, "Using initial voice instruction for chunk 0: " + instructions);
-                } else {
-                    // Subsequent chunks: maintain EXACT continuity
-                    instructions = baseInstruction +
-                            " IMPORTANT: Continue with the same voice, accent, and speaking style as before.";
-                    Log.d(TAG, "Using continuity instruction for chunk " + currentChunkIndex);
-                }
-
-                payload.put("instructions", instructions);
-
-                // Extra logging to verify our instructions are being included
-                Log.d(TAG, "Chunk " + currentChunkIndex + " instructions: " + instructions);
-                Log.d(TAG, "TTS API payload: " + payload);
-
-                // Create a callback for this chunk
-                TTSCallback chunkCallback = new TTSCallback() {
-                    @Override
-                    public void onSpeechStarted() {
-                        // Report start only for first chunk
-                        if (currentChunkIndex == 0 && masterCallback != null) {
-                            mainHandler.post(masterCallback::onSpeechStarted);
-                        }
-                    }
-
-                    @Override
-                    public void onSpeechReady(File audioFile) {
-                        // Pass through to master callback
-                        if (masterCallback != null) {
-                            mainHandler.post(() -> masterCallback.onSpeechReady(audioFile));
-                        }
-                    }
-
-                    @Override
-                    public void onSpeechCompleted() {
-                        mainHandler.post(() -> {
-                            Log.d(TAG, "Completed chunk " + currentChunkIndex);
-                            currentChunkIndex++;
-                            // MINIMUM DELAY: Just enough to prevent audio glitches
-                            mainHandler.postDelayed(() -> speakNextChunk(), 40);
-                        });
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        Log.e(TAG, "Error with chunk " + currentChunkIndex + ": " + errorMessage);
-                        if (!retryAttempted) {
-                            retryAttempted = true;
-                            mainHandler.postDelayed(() -> speakNextChunk(), 500);
-                        } else {
-                            currentChunkIndex++;
-                            retryAttempted = false;
-                            speakNextChunk();
-                        }
-                    }
-                };
-
-                // Use existing method to send the request
-                executorService.execute(() -> {
-                    try {
-                        // Build the HTTP request
-                        RequestBody body = RequestBody.create(
-                                MediaType.parse("application/json"),
-                                payload.toString()
-                        );
-
-                        // Change to use both for safety during transition:
-                        Request request = new Request.Builder()
-                                .url(TTS_URL)
-                                .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
-                                .post(body)
-                                .build();
-
-                        // Execute the request
-                        try (Response response = httpClient.newCall(request).execute()) {
-                            if (!response.isSuccessful()) {
-                                Log.e(TAG, "TTS API error: " + response.code());
-                                if (response.body() != null) {
-                                    Log.e(TAG, "Error response: " + response.body().string());
-                                }
-                                notifyError("TTS error: " + response.code(), chunkCallback);
-                                return;
-                            }
-
-                            // Save the audio to a temporary file
-                            File audioFile = saveAudioToFile(response.body().bytes());
-
-                            // Notify that we have the speech ready
-                            if (chunkCallback != null) {
-                                mainHandler.post(() -> chunkCallback.onSpeechReady(audioFile));
-                            }
-
-                            // Play the audio
-                            playAudio(audioFile, () -> {
-                                if (chunkCallback != null) {
-                                    mainHandler.post(chunkCallback::onSpeechCompleted);
-                                }
-                            });
-                        }
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error in TTS", e);
-                        notifyError("TTS error: " + e.getMessage(), chunkCallback);
-                    }
-                });
-
-            } catch (JSONException e) {
-                Log.e(TAG, "Error creating payload for chunk " + currentChunkIndex, e);
-                currentChunkIndex++;
-                speakNextChunk();
-            }
-        }
-    }
-
-    /**
-     * Helper class to manage chunked speech
-     */
-    // Then add the SpeechChunker inner class:
     private class SpeechChunker {
         private final String[] chunks;
         private final TTSCallback masterCallback;
-        private final String currentVoice;  // Add this!
-        private final String currentModel;  // Add this!
+        private final String currentVoice;
+        private final String currentModel;
         private int currentChunkIndex = 0;
         private boolean retryAttempted = false;
+
+        // NEW: Track the end of each chunk for better continuity
+        private String lastChunkEnding = "";
 
         public SpeechChunker(String text, TTSCallback callback) {
             this.masterCallback = callback;
@@ -825,68 +617,33 @@ public class OpenAITTSService implements TextToSpeechService {
 
             List<String> chunkList = new ArrayList<>();
 
-            // First, convert the text to be more conversational
-            String conversationalText = text
-                    // Convert headings to conversational phrases
-                    .replaceAll("\\*\\*(.+):\\*\\*", "Let me tell you about $1.")
-                    .replaceAll("\\*\\*(.+)\\*\\*", "$1")
+            // IMPROVED: Better sentence boundary detection for natural chunks
+            // Don't split mid-thought or at awkward points
+            String[] sentences = text.split("(?<=[.!?])\\s+");
+            StringBuilder currentChunk = new StringBuilder();
+            int currentSize = 0;
+            int targetSize = 150; // Target around 150 characters per chunk
 
-                    // Convert bullet points to natural speech
-                    .replaceAll("\\n\\s*-\\s*\\*(.+)\\*\\s*", ". First, $1. ")
-                    .replaceAll("\\n\\s*-\\s*", ". Also, ")
-
-                    // Remove markdown formatting
-                    .replaceAll("\\*", "")
-
-                    // Convert newlines to spaces
-                    .replaceAll("\\n\\s*", " ")
-
-                    // Fix any double periods
-                    .replaceAll("\\.\\.", ".")
-                    .replaceAll("\\. \\.", ".")
-
-                    // Add natural pauses after sentences
-                    .replaceAll("\\. ", ". [pause] ")
-
-                    .trim();
-
-            // Split into natural speaking segments (aim for ~15 second chunks)
-            if (conversationalText.length() < 150) {
-                // Short response - just use as one chunk
-                chunkList.add(conversationalText);
-            } else {
-                // Split at sentence boundaries for longer responses
-                String[] sentences = conversationalText.split("\\[pause\\]\\s+");
-
-                StringBuilder currentChunk = new StringBuilder();
-                for (String sentence : sentences) {
-                    // Start a new chunk if this would make it too long
-                    // Aim for chunks that would take about 10-15 seconds to speak
-                    if (currentChunk.length() > 0 &&
-                            currentChunk.length() + sentence.length() > 200) {
-
-                        chunkList.add(currentChunk.toString().trim());
-                        currentChunk = new StringBuilder();
-                    }
-
-                    currentChunk.append(sentence).append(" ");
-                }
-
-                // Add the final chunk
-                if (currentChunk.length() > 0) {
+            for (String sentence : sentences) {
+                // Don't split mid-sentence, and ensure chunks aren't too small
+                if (currentSize + sentence.length() > targetSize && currentSize > 50) {
                     chunkList.add(currentChunk.toString().trim());
+                    currentChunk = new StringBuilder();
+                    currentSize = 0;
                 }
+
+                currentChunk.append(sentence).append(" ");
+                currentSize += sentence.length();
             }
 
-            // Final safety check - never allow empty chunks
-            for (int i = chunkList.size() - 1; i >= 0; i--) {
-                if (chunkList.get(i).isEmpty()) {
-                    chunkList.remove(i);
-                }
+            // Add the final chunk
+            if (currentChunk.length() > 0) {
+                chunkList.add(currentChunk.toString().trim());
             }
 
+            // Add log for better debugging
             this.chunks = chunkList.toArray(new String[0]);
-            Log.d(TAG, "Split speech into " + chunkList.size() + " conversational chunks");
+            Log.d(TAG, "Split speech into " + chunkList.size() + " natural chunks");
         }
 
         public void startSpeaking() {
@@ -902,7 +659,6 @@ public class OpenAITTSService implements TextToSpeechService {
         private void speakNextChunk() {
             // Check if we're done or interrupted
             if (interruptRequested || currentChunkIndex >= chunks.length) {
-                // We've been interrupted or finished all chunks
                 if (interruptRequested) {
                     Log.d(TAG, "Speech interrupted, stopping chunk processing");
                     interruptRequested = false; // Reset for next speech
@@ -916,7 +672,13 @@ public class OpenAITTSService implements TextToSpeechService {
 
             // Get current chunk text (with ellipses removed)
             String currentText = chunks[currentChunkIndex].replaceAll("\\.{3,}", "");
-            final boolean isFirstChunk = (currentChunkIndex == 0);
+
+            // NEW: Save the last ~30 characters of this chunk for continuity
+            if (currentText.length() > 30) {
+                lastChunkEnding = currentText.substring(currentText.length() - 30);
+            } else {
+                lastChunkEnding = currentText;
+            }
 
             // Create a callback for this chunk
             TTSCallback chunkCallback = new TTSCallback() {
@@ -938,11 +700,12 @@ public class OpenAITTSService implements TextToSpeechService {
 
                 @Override
                 public void onSpeechCompleted() {
-                    // Move to next chunk with a small delay
+                    // Move to next chunk with minimal delay
                     mainHandler.post(() -> {
                         Log.d(TAG, "Completed chunk " + currentChunkIndex + ", preparing next chunk");
                         currentChunkIndex++;
-                        mainHandler.postDelayed(() -> speakNextChunk(), 100);
+                        // IMPROVED: Reduced delay between chunks from 100ms to 50ms
+                        mainHandler.postDelayed(() -> speakNextChunk(), 50);
                     });
                 }
 
@@ -967,29 +730,33 @@ public class OpenAITTSService implements TextToSpeechService {
             // Execute the TTS request on a background thread
             executorService.execute(() -> {
                 try {
-                    // Create payload for TTS
+                    // IMPROVED: Get selected chess master for voice personalization
+                    String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+
+                    // Create TTS request
                     JSONObject payload = new JSONObject();
                     payload.put("model", "gpt-4o-mini-tts");
                     payload.put("input", currentText);
 
                     // Get the master and appropriate voice
-                    String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
                     String voiceId = getVoiceId(selectedMaster);
                     payload.put("voice", voiceId);
                     payload.put("response_format", "mp3");
 
-                    // Set appropriate instructions based on chunk position
+                    // IMPROVED: Enhanced continuity instructions
                     String baseInstruction = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
                     String instructions;
 
-                    if (isFirstChunk) {
+                    if (currentChunkIndex == 0) {
                         // First chunk - basic instruction
                         instructions = baseInstruction;
                         Log.d(TAG, "Using basic instruction for first chunk: " + instructions);
                     } else {
-                        // Subsequent chunks - add continuity instruction
-                        instructions = baseInstruction + " Continue exactly as before.";
-                        Log.d(TAG, "Continuity instruction for chunk " + currentChunkIndex + ": " + instructions);
+                        // GREATLY IMPROVED: Detailed continuity instructions with last chunk ending
+                        instructions = baseInstruction +
+                                " CRITICAL: Continue with the EXACT same voice, accent, pacing, and emotional tone." +
+                                " This is a direct continuation where you just finished saying: \"" + lastChunkEnding + "\"";
+                        Log.d(TAG, "Enhanced continuity for chunk " + currentChunkIndex + " with reference to previous speech");
                     }
 
                     payload.put("instructions", instructions);
@@ -1000,12 +767,12 @@ public class OpenAITTSService implements TextToSpeechService {
                             payload.toString()
                     );
 
-                    // Change to use both for safety during transition:
                     Request request = new Request.Builder()
                             .url(TTS_URL)
-                            .header("Authorization", "Bearer " + (apiKey != null ? apiKey : OpenAIClient.getInstance().getAuthorizationHeader()))
+                            .header("Authorization", "Bearer " + apiKey)
                             .post(body)
                             .build();
+
                     // Execute the request
                     try (Response response = httpClient.newCall(request).execute()) {
                         if (!response.isSuccessful()) {
@@ -1013,7 +780,7 @@ public class OpenAITTSService implements TextToSpeechService {
                             if (response.body() != null) {
                                 Log.e(TAG, "Error response: " + response.body().string());
                             }
-                            notifyError("TTS error: " + response.code(), chunkCallback);
+                            mainHandler.post(() -> chunkCallback.onError("TTS error: " + response.code()));
                             return;
                         }
 
@@ -1024,6 +791,7 @@ public class OpenAITTSService implements TextToSpeechService {
                         mainHandler.post(() -> chunkCallback.onSpeechReady(audioFile));
 
                         // Play the audio
+                        Log.d(TAG, "🔍 METHOD CALLED: playAudio");
                         playAudio(audioFile, () -> mainHandler.post(chunkCallback::onSpeechCompleted));
                     }
 
