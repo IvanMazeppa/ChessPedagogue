@@ -1,17 +1,38 @@
 package com.example.chesspedagogue;
 
-import java.io.IOException;
+import java.io.File;
 
 /**
- * Interface for services that convert text to speech audio.
+ * Interface for text-to-speech services that can convert text to spoken audio.
  */
 public interface TextToSpeechService {
     /**
-     * Convert text to speech audio
-     *
-     * @param text The text to convert to speech
-     * @return The audio data as a byte array
-     * @throws IOException If there's an error communicating with the API
+     * Speak the provided text and notify through callbacks
      */
-    byte[] synthesizeSpeech(String text) throws IOException;
+    void speak(String text, TTSCallback callback);
+
+    /**
+     * Stop any ongoing speech
+     */
+    void stopSpeaking();
+
+    /**
+     * Check if currently speaking
+     */
+    boolean isSpeaking();
+
+    /**
+     * Release resources
+     */
+    void release();
+
+    /**
+     * Callback interface for TTS operations
+     */
+    interface TTSCallback {
+        void onSpeechStarted();
+        void onSpeechCompleted();
+        void onAudioReady(File audioFile); // Optional - for caching/reuse
+        void onError(String errorMessage);
+    }
 }

@@ -32,7 +32,7 @@ import okhttp3.Response;
 /**
  * Implementation of TextToSpeechService using OpenAI's TTS API.
  */
-public class OpenAITTSService implements TextToSpeechService {
+public class OpenAITTSService {
     public static final String MODEL_TTS = "gpt-4o-mini-tts";
     // Voice options
     public static final String VOICE_GRANDMASTER = "onyx";  // Deeper, authoritative voice
@@ -525,7 +525,6 @@ public class OpenAITTSService implements TextToSpeechService {
     }
     **/
 
-    @Override
     public byte[] synthesizeSpeech(String text) throws IOException {
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API key not set");

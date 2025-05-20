@@ -187,45 +187,6 @@ public class UnifiedOpenAIService {
 
     // TEXT-TO-SPEECH METHODS
 
-    /**
-     * Generate speech from text
-     */
-    public void generateSpeech(String text, String voice,
-                               OpenAICallback<File> callback) {
-        executorService.execute(() -> {
-            try {
-                // Create request payload
-                MediaType json = MediaType.parse("application/json; charset=utf-8");
-
-                String requestBody = "{"
-                        + "\"model\": \"gpt-4o-mini-tts\","
-                        + "\"input\": \"" + escapeJson(text) + "\","
-                        + "\"voice\": \"" + voice + "\","
-                        + "\"response_format\": \"mp3\""
-                        + "}";
-
-                RequestBody body = RequestBody.create(requestBody, json);
-                Request request = new Request.Builder()
-                        .url(TTS_URL)
-                        .header("Authorization", client.getAuthorizationHeader())
-                        .post(body)
-                        .build();
-
-                Response response = client.executeRequest(request);
-
-                if (response.isSuccessful() && response.body() != null) {
-                    byte[] audioData = response.body().bytes();
-                    File audioFile = saveAudioToFile(audioData);
-                    mainHandler.post(() -> callback.onSuccess(audioFile));
-                } else {
-                    String errorMsg = "TTS API error: " + response.code();
-                    mainHandler.post(() -> callback.onFailure(new IOException(errorMsg)));
-                }
-            } catch (Exception e) {
-                mainHandler.post(() -> callback.onFailure(e));
-            }
-        });
-    }
 
     // Add this method to UnifiedOpenAIService:
 
@@ -315,6 +276,8 @@ public class UnifiedOpenAIService {
         });
     }
 
+
+
     // HELPER METHODS
 
     private String escapeJson(String text) {
@@ -337,6 +300,43 @@ public class UnifiedOpenAIService {
         int textStart = json.indexOf("\"text\":\"") + 8;
         int textEnd = json.indexOf("\"", textStart);
         return json.substring(textStart, textEnd);
+    }
+
+    // Add this method to UnifiedOpenAIService if not already present
+    public void generateSpeech(String text, String voice, OpenAICallback<File> callback) {
+        executorService.execute(() -> {
+            try {
+                // Create request payload
+                MediaType json = MediaType.parse("application/json; charset=utf-8");
+
+                String requestBody = "{"
+                        + "\"model\": \"gpt-4o-mini-tts\","
+                        + "\"input\": \"" + escapeJson(text) + "\","
+                        + "\"voice\": \"" + voice + "\","
+                        + "\"response_format\": \"mp3\""
+                        + "}";
+
+                RequestBody body = RequestBody.create(requestBody, json);
+                Request request = new Request.Builder()
+                        .url("https://api.openai.com/v1/audio/speech")
+                        .header("Authorization", client.getAuthorizationHeader())
+                        .post(body)
+                        .build();
+
+                Response response = client.executeRequest(request);
+
+                if (response.isSuccessful() && response.body() != null) {
+                    byte[] audioData = response.body().bytes();
+                    File audioFile = saveAudioToFile(audioData);
+                    mainHandler.post(() -> callback.onSuccess(audioFile));
+                } else {
+                    String errorMsg = "TTS API error: " + response.code();
+                    mainHandler.post(() -> callback.onFailure(new IOException(errorMsg)));
+                }
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onFailure(e));
+            }
+        });
     }
 
     private File saveAudioToFile(byte[] audioData) throws IOException {
