@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
 import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
@@ -41,6 +43,11 @@ public class UnifiedOpenAIService {
 
     // Client using our shared implementation
     private final OpenAIClient client;
+    
+    private String apiKey;
+    private OkHttpClient httpClient;
+    private String currentModel;
+
 
     // Private constructor
     private UnifiedOpenAIService(Context context) {
@@ -60,14 +67,7 @@ public class UnifiedOpenAIService {
         }
         return instance;
     }
-
-    /**
-     * Set the API key for all OpenAI services
-     */
-    public void setApiKey(String apiKey) {
-        client.setApiKey(apiKey);
-    }
-
+    
     // CHAT COMPLETION METHODS
 
     /**
@@ -300,6 +300,36 @@ public class UnifiedOpenAIService {
         int textStart = json.indexOf("\"text\":\"") + 8;
         int textEnd = json.indexOf("\"", textStart);
         return json.substring(textStart, textEnd);
+    }
+
+    // In UnifiedOpenAIService.java
+
+    // Add these methods from OpenAIClient and OpenAIService
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+        // Update shared HTTP client configuration
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build();
+    }
+
+    // Add the chess master model selection functionality
+    public void selectChessMaster(String master) {
+        // Get the appropriate model ID based on the master
+        String modelId = getModelIdForMaster(master);
+        this.currentModel = modelId;
+    }
+
+    private String getModelIdForMaster(String master) {
+        // Logic from FineTunedModelManager
+        switch(master.toLowerCase()) {
+            case "tal": return "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+            case "kramnik": return "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+            // Add other masters...
+            default: return "gpt-4.1"; // Default model
+        }
     }
 
     // Add this method to UnifiedOpenAIService if not already present

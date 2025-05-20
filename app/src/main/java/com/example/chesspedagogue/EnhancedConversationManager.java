@@ -30,6 +30,8 @@ public class EnhancedConversationManager {
         return instance;
     }
 
+
+
     // Add a message to the conversation and save it
     public void addMessage(String role, String content) {
         ConversationManager.Message message = new ConversationManager.Message(role, content);
@@ -66,7 +68,10 @@ public class EnhancedConversationManager {
         return "session_" + System.currentTimeMillis();
     }
 
-    // In EnhancedConversationManager.java - add this method
+    // Let's enhance EnhancedConversationManager to absorb functionality from other managers
+// In EnhancedConversationManager.java:
+
+    // Add this method to incorporate game state into your conversations
     public void addGameStateToCurrentContext(GameStateInfo gameState) {
         // Store the current game state in the conversation context
         String gameStateContext = "Current position (FEN): " + gameState.getCurrentFen() + "\n" +
@@ -77,6 +82,8 @@ public class EnhancedConversationManager {
         // Add as a hidden system message that will be included in each turn
         addMessage("system", "CHESS_STATE: " + gameStateContext);
     }
+
+// Call this method each time before processing a user query
 
 // Call this method each time before processing a user query
 

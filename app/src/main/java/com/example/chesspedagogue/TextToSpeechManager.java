@@ -1,5 +1,10 @@
 package com.example.chesspedagogue;
 
+import static com.example.chesspedagogue.ChessMasterVoiceManager.VOICE_ALLOY;
+import static com.example.chesspedagogue.ChessMasterVoiceManager.VOICE_ECHO;
+import static com.example.chesspedagogue.ChessMasterVoiceManager.VOICE_FABLE;
+import static com.example.chesspedagogue.ChessMasterVoiceManager.VOICE_ONYX;
+
 import android.content.Context;
 import android.util.Log;
 
@@ -86,6 +91,53 @@ public class TextToSpeechManager {
     }
 
 
+    /**
+     * Get the best voice for a specific chess master
+     */
+    public static String getVoiceForMaster(String master) {
+        // Default to a neutral voice if master is unknown
+        if (master == null) return VOICE_ALLOY;
+
+        switch (master.toLowerCase()) {
+            // Deep, authoritative voice for the commanding Russian players
+            case "karpov":
+                return VOICE_ONYX;
+            case "kasparov":
+                return VOICE_ONYX;
+
+            // American voice for American players
+            case "fischer":
+                return VOICE_ECHO;
+
+            // British voice for classical/elegant players
+            case "capablanca":
+                return VOICE_FABLE;
+            case "lasker":
+                return VOICE_FABLE;
+            case "morphy":
+                return VOICE_FABLE;
+
+            // More energetic, modern players with American voice
+            case "tal":
+                return VOICE_ECHO;
+            case "carlsen":
+                return VOICE_ECHO;
+            case "anand":
+                return VOICE_ECHO;
+
+            // Measured, analytical players with British voice
+            case "kramnik":
+                return VOICE_FABLE;
+
+            // Default fallback
+            default:
+                return VOICE_ALLOY;
+        }
+    }
+
+
+
+
     public void stopSpeech() {
         stop();
     }
@@ -140,36 +192,62 @@ public class TextToSpeechManager {
         });
     }
 
-    // Speak method with Runnable callback (for backward compatibility)public void speak(String text) {
-    //    Log.d(TAG, "Speech started with consistent chunking");
-    //    isSpeaking = true;
-    //    interrupted = false;
-    //
-    //    // Use our new consistent chunking method
-    //    openAITTS.speakWithConsistentChunking(text, new OpenAITTSService.TTSCallback() {
-    //        @Override
-    //        public void onSpeechStarted() {
-    //            // Already set isSpeaking = true above
-    //        }
-    //
-    //        @Override
-    //        public void onSpeechReady(File audioFile) {
-    //            // Nothing to do here
-    //        }
-    //
-    //        @Override
-    //        public void onSpeechCompleted() {
-    //            isSpeaking = false;
-    //            Log.d(TAG, "Speech completed");
-    //        }
-    //
-    //        @Override
-    //        public void onError(String errorMessage) {
-    //            Log.e(TAG, "TTS error: " + errorMessage);
-    //            isSpeaking = false;
-    //        }
-    //    });
-    //}
+    // Enhance speak method to support chess master personalities
+    // Add this method to TextToSpeechManager.java
+    private String getInstructionsForMaster(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "Speak with a Latvian accent. Sound enthusiastic about chess.";
+            case "kramnik":
+                return "Speak with a Russian accent. Sound calm and thoughtful.";
+            case "karpov":
+                return "Speak with a Russian accent. Sound methodical and patient.";
+            case "fischer":
+                return "Speak with an American accent. Sound confident and direct.";
+            case "lasker":
+                return "Speak with a German accent. Sound philosophical and wise.";
+            case "kasparov":
+                return "Speak with a Russian accent. Sound energetic and passionate.";
+            // Add other masters as needed
+            default:
+                return "Speak as an experienced chess coach.";
+        }
+    }
+
+    // IMPORTANT: Fix the speak method to use the right signature
+    public void speak(String text, String chessMaster, OnSpeechCompletedListener listener) {
+        // Get the appropriate voice for this master
+        String voice = getVoiceForMaster(chessMaster);
+
+        // Use just the text and callback with proper implementation
+        openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
+            @Override
+            public void onSpeechStarted() {
+                // Implementation
+            }
+
+            @Override
+            public void onSpeechReady(File audioFile) {
+                // Implementation
+            }
+
+            @Override
+            public void onSpeechCompleted() {
+                if (listener != null) {
+                    listener.onSpeechCompleted();
+                }
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                // Add this missing method!
+                Log.e("TextToSpeechManager", "TTS error: " + errorMessage);
+                if (listener != null) {
+                    listener.onSpeechCompleted(); // Still notify completion on error
+                }
+            }
+        });
+    }
 
     public boolean isSpeaking() {
         return isSpeaking;
