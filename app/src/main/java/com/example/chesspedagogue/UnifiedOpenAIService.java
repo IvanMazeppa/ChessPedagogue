@@ -280,23 +280,21 @@ public class UnifiedOpenAIService {
     /**
      * Transcribe audio to text
      */
+    // Add or update this method in UnifiedOpenAIService.java
     public void transcribeAudio(byte[] audioData, OpenAICallback<String> callback) {
         executorService.execute(() -> {
             try {
-                // Convert to WAV if needed (simplified - you may need your actual conversion)
-                byte[] wavData = audioData; // Assume already in correct format
-
-                // Create multipart request
+                // Create multipart request with WAV data
                 RequestBody requestBody = new MultipartBody.Builder()
                         .setType(MultipartBody.FORM)
                         .addFormDataPart("file", "audio.wav",
-                                RequestBody.create(MediaType.parse("audio/wav"), wavData))
-                        .addFormDataPart("model", "whisper-1")
+                                RequestBody.create(MediaType.parse("audio/wav"), audioData))
+                        .addFormDataPart("model", "gpt-4o-mini-transcribe") // Update to new model
                         .addFormDataPart("language", "en")
                         .build();
 
                 Request request = new Request.Builder()
-                        .url(TRANSCRIBE_URL)
+                        .url("https://api.openai.com/v1/audio/transcriptions")
                         .header("Authorization", client.getAuthorizationHeader())
                         .post(requestBody)
                         .build();
