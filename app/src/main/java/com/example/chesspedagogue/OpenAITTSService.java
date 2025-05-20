@@ -204,53 +204,6 @@ public class OpenAITTSService {
     }
 
     /**
-    private void playMp3Audio(File audioFile, Runnable onCompletion) {
-        try {
-            // Stop any currently playing audio
-            stopPlayback();
-
-            // Create a more robust MediaPlayer setup
-            MediaPlayer player = new MediaPlayer();
-            player.setAudioAttributes(
-                    new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .build()
-            );
-
-            // Set data source with better error handling
-            try {
-                player.setDataSource(context, Uri.fromFile(audioFile));
-                player.prepare();
-            } catch (IOException e) {
-                Log.e(TAG, "MediaPlayer preparation failed", e);
-                return;
-            }
-
-            currentPlayer = player;
-
-            // Set completion listener
-            player.setOnCompletionListener(mp -> {
-                // Important: release resources properly
-                mp.release();
-                currentPlayer = null;
-                if (onCompletion != null) {
-                    mainHandler.post(onCompletion);
-                }
-            });
-
-            // Start playback
-            player.start();
-        } catch (Exception e) {
-            Log.e(TAG, "Error playing audio", e);
-            if (onCompletion != null) {
-                mainHandler.post(onCompletion);
-            }
-        }
-    }
-    **/
-
-    /**
      * Set whether to use personality-based instructions
      */
     public void setVoicePersonalization(boolean usePersonality) {
@@ -299,42 +252,6 @@ public class OpenAITTSService {
         // Otherwise use master-specific instructions
         return ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
     }
-
-    /**
-    // Replace this problematic method with a proper implementation
-    public void generateSpeech(String text, TTSCallback callback) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            callback.onError("API key not set");
-            return;
-        }
-
-        // Use executorService instead of executor
-        executorService.execute(() -> {
-            try {
-                // Get the selected chess master
-                String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
-
-                // Get the appropriate voice based on settings
-                String voiceId = getVoiceId(selectedMaster);
-
-                // Get appropriate instructions based on settings
-                String voiceInstructions = getVoiceInstructions(selectedMaster);
-
-                // Log for debugging
-                Log.d(TAG, "Using voice: " + voiceId + " with instructions: " + voiceInstructions);
-
-                // Use the chunking approach we've already implemented
-                speakWithChunking(text, callback);
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error generating speech: " + e.getMessage());
-                // Use mainHandler instead of handler
-                mainHandler.post(() -> callback.onError("Error generating speech: " + e.getMessage()));
-            }
-        });
-    }
-
-    // In your OpenAITTSService.java generateSpeech method
 
     /**
      * Speak text using the selected voice and model
@@ -468,62 +385,6 @@ public class OpenAITTSService {
             }
         }
     }
-
-    /**
-     * Play PCM audio data directly using AudioTrack
-
-    public void playPCMAudio(byte[] audioData, int sampleRate, Runnable onCompletion) {
-        try {
-            // Stop any currently playing audio
-            stopPlayback();
-
-            // Create and configure AudioTrack
-            int minBufferSize = AudioTrack.getMinBufferSize(sampleRate,
-                    AudioFormat.CHANNEL_OUT_MONO,
-                    AudioFormat.ENCODING_PCM_16BIT);
-
-            currentAudioTrack = new AudioTrack.Builder()
-                    .setAudioAttributes(new AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                            .build())
-                    .setAudioFormat(new AudioFormat.Builder()
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .setSampleRate(sampleRate)
-                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                            .build())
-                    .setBufferSizeInBytes(Math.max(minBufferSize, audioData.length))
-                    .build();
-
-            currentAudioTrack.setPlaybackPositionUpdateListener(new AudioTrack.OnPlaybackPositionUpdateListener() {
-                @Override
-                public void onMarkerReached(AudioTrack track) {
-                    track.release();
-                    currentAudioTrack = null;
-                    if (onCompletion != null) {
-                        mainHandler.post(onCompletion);
-                    }
-                }
-
-                @Override
-                public void onPeriodicNotification(AudioTrack track) {
-                    // Not used
-                }
-            });
-
-            // Start playback
-            currentAudioTrack.play();
-            currentAudioTrack.write(audioData, 0, audioData.length);
-            currentAudioTrack.setNotificationMarkerPosition(audioData.length / 4); // Position is in frames
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error playing PCM audio", e);
-            if (onCompletion != null) {
-                mainHandler.post(onCompletion);
-            }
-        }
-    }
-    **/
 
     public byte[] synthesizeSpeech(String text) throws IOException {
         if (apiKey == null || apiKey.isEmpty()) {

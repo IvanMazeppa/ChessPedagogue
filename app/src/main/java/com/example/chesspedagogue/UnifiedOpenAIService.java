@@ -49,6 +49,7 @@ public class UnifiedOpenAIService {
     private String currentModel;
 
 
+
     // Private constructor
     private UnifiedOpenAIService(Context context) {
         this.context = context != null ? context.getApplicationContext() : null;
@@ -124,33 +125,20 @@ public class UnifiedOpenAIService {
         });
     }
 
-    /**
-     * Generate a chat completion with system prompt and user message
-     * This simpler interface is perfect for quick interactions
-     */
-
-    public void generateChatResponse(String systemPrompt, String userMessage,
-                                     OpenAICallback<String> callback) {
-        // Create a simple message list
-        List<ChatMessage> messages = new ArrayList<>();
-        messages.add(new ChatMessage("system", systemPrompt));
-        messages.add(new ChatMessage("user", userMessage));
-
-        // Use our existing method
-        generateChatCompletion(messages, callback);
-    }
+    // Add this method to UnifiedOpenAIService.java:
 
     /**
-     * Synchronous version for compatibility with existing code
+     * Generate a reply based on message history
+     * This matches the OpenAIChatService interface for easy migration
      */
-    public String generateChatResponseSync(String systemPrompt, String userMessage)
-            throws IOException {
-        // Create a way to wait for and return the result
+    public String generateReply(List<ChatMessage> messages) throws IOException {
+        // Create synchronous wrapper around our async implementation
         final String[] result = new String[1];
         final Exception[] error = new Exception[1];
         final Object lock = new Object();
 
-        generateChatResponse(systemPrompt, userMessage, new OpenAICallback<String>() {
+        // Call our async method
+        generateChatCompletion(messages, new OpenAICallback<String>() {
             @Override
             public void onSuccess(String response) {
                 synchronized (lock) {
@@ -185,23 +173,33 @@ public class UnifiedOpenAIService {
         return result[0];
     }
 
-    // TEXT-TO-SPEECH METHODS
+    /**
+     * Generate a chat completion with system prompt and user message
+     * This simpler interface is perfect for quick interactions
+     */
 
+    public void generateChatResponse(String systemPrompt, String userMessage,
+                                     OpenAICallback<String> callback) {
+        // Create a simple message list
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(new ChatMessage("system", systemPrompt));
+        messages.add(new ChatMessage("user", userMessage));
 
-    // Add this method to UnifiedOpenAIService:
+        // Use our existing method
+        generateChatCompletion(messages, callback);
+    }
 
     /**
-     * Generate a reply based on message history
-     * This matches the OpenAIChatService interface for easy migration
+     * Synchronous version for compatibility with existing code
      */
-    public String generateReply(List<ChatMessage> messages) throws IOException {
-        // Create synchronous wrapper around our async implementation
+    public String generateChatResponseSync(String systemPrompt, String userMessage)
+            throws IOException {
+        // Create a way to wait for and return the result
         final String[] result = new String[1];
         final Exception[] error = new Exception[1];
         final Object lock = new Object();
 
-        // Call our async method
-        generateChatCompletion(messages, new OpenAICallback<String>() {
+        generateChatResponse(systemPrompt, userMessage, new OpenAICallback<String>() {
             @Override
             public void onSuccess(String response) {
                 synchronized (lock) {

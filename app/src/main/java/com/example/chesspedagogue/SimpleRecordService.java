@@ -533,25 +533,6 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Placeholder for determining opening from move history
-     */
-    private String determineOpening(List<String> moves) {
-        // This is a very simple implementation - you can expand this
-        // to recognize more openings based on move patterns
-        if (moves.size() >= 4) {
-            String firstFourMoves = String.join(" ", moves.subList(0, Math.min(4, moves.size())));
-            if (firstFourMoves.startsWith("1. d4 Nf6 2. c4 e6")) {
-                return "Nimzo-Indian Defense";
-            } else if (firstFourMoves.startsWith("1. e4 e5 2. Nf3")) {
-                return "Open Game";
-            } else if (firstFourMoves.startsWith("1. e4 c5")) {
-                return "Sicilian Defense";
-            }
-        }
-        return null;
-    }
-
-    /**
      * Resets the current conversation and starts a new one
      */
     // In SimpleRecordService.java - Make sure resetConversation() is thorough:
@@ -686,33 +667,6 @@ public class SimpleRecordService extends Service {
             // This shouldn't happen with ByteArrayOutputStream
             Log.e(TAG, "Error writing bytes", e);
         }
-    }
-
-    private String determineQuestionType(String question) {
-        question = question.toLowerCase(); // Make case-insensitive for better matching
-
-        // Chess position/move questions
-        if (question.contains("best move") || question.contains("position") ||
-                question.contains("play") || question.contains("should i") ||
-                question.contains("what move") || question.contains("next move")) {
-            return "CHESS_POSITION";
-        }
-
-        // Expanded chess history/people questions - much more inclusive
-        if (question.contains("tal") || question.contains("kramnik") || question.contains("botvinnik") ||
-                question.contains("kasparov") || question.contains("fischer") ||
-                question.contains("capablanca") || question.contains("karpov") ||
-                question.contains("anand") || question.contains("carlsen") ||
-                question.contains("history") || question.contains("story") ||
-                question.contains("stories") || question.contains("famous") ||
-                question.contains("championship") || question.contains("match") ||
-                question.contains("tournament") || question.contains("grandmaster") ||
-                question.contains("who was") || question.contains("tell me about")) {
-            return "CHESS_HISTORY";
-        }
-
-        // Default
-        return "GENERAL";
     }
 
     // Add to SimpleRecordService class
