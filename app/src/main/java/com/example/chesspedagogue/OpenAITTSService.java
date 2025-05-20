@@ -607,6 +607,7 @@ public class OpenAITTSService implements TextToSpeechService {
 
     // Add this new inner class for GPT-4o-mini-tts chunking
     private class GPT4oMiniSpeechChunker {
+        private String lastChunkEndingSentence = "";
         private final String[] chunks;
         private final TTSCallback masterCallback;
         private int currentChunkIndex = 0;

@@ -124,61 +124,11 @@ public class UnifiedOpenAIService {
         });
     }
 
-    // Add these methods to UnifiedOpenAIService.java
-
-    /**
-     * Generate a reply based on a list of messages
-     * This matches the signature of OpenAIChatService for easy transition
-     */
-    public String generateReply(List<ChatMessage> messageHistory) throws IOException {
-        // Create a way to wait for and return the result
-        final String[] result = new String[1];
-        final Exception[] error = new Exception[1];
-        final Object lock = new Object();
-
-        // Use our async method
-        generateChatCompletion(messageHistory, new OpenAICallback<String>() {
-            @Override
-            public void onSuccess(String response) {
-                synchronized (lock) {
-                    result[0] = response;
-                    lock.notify();
-                }
-            }
-
-            @Override
-            public void onFailure(Exception e) {
-                synchronized (lock) {
-                    error[0] = e;
-                    lock.notify();
-                }
-            }
-        });
-
-        // Wait for result
-        synchronized (lock) {
-            try {
-                lock.wait(30000); // Wait up to 30 seconds
-            } catch (InterruptedException e) {
-                throw new IOException("Chat completion interrupted", e);
-            }
-        }
-
-        // Check for errors
-        if (error[0] != null) {
-            throw new IOException("Chat completion failed", error[0]);
-        }
-
-        return result[0];
-    }
-
-    // In UnifiedOpenAIService.java, find the generateChatCompletion method
-// Let's add a simpler version that works with strings directly:
-
     /**
      * Generate a chat completion with system prompt and user message
      * This simpler interface is perfect for quick interactions
      */
+
     public void generateChatResponse(String systemPrompt, String userMessage,
                                      OpenAICallback<String> callback) {
         // Create a simple message list
@@ -275,6 +225,54 @@ public class UnifiedOpenAIService {
                 mainHandler.post(() -> callback.onFailure(e));
             }
         });
+    }
+
+    // Add this method to UnifiedOpenAIService:
+
+    /**
+     * Generate a reply based on message history
+     * This matches the OpenAIChatService interface for easy migration
+     */
+    public String generateReply(List<ChatMessage> messages) throws IOException {
+        // Create synchronous wrapper around our async implementation
+        final String[] result = new String[1];
+        final Exception[] error = new Exception[1];
+        final Object lock = new Object();
+
+        // Call our async method
+        generateChatCompletion(messages, new OpenAICallback<String>() {
+            @Override
+            public void onSuccess(String response) {
+                synchronized (lock) {
+                    result[0] = response;
+                    lock.notify();
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                synchronized (lock) {
+                    error[0] = e;
+                    lock.notify();
+                }
+            }
+        });
+
+        // Wait for result
+        synchronized (lock) {
+            try {
+                lock.wait(30000); // Wait up to 30 seconds
+            } catch (InterruptedException e) {
+                throw new IOException("Chat completion interrupted", e);
+            }
+        }
+
+        // Check for errors
+        if (error[0] != null) {
+            throw new IOException("Chat completion failed", error[0]);
+        }
+
+        return result[0];
     }
 
     // SPEECH-TO-TEXT METHODS
