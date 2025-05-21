@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.os.Message;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.List;
 public class EnhancedConversationManager {
     private static final String TAG = "EnhancedConversationManager";
     private static EnhancedConversationManager instance;
+    private EnhancedConversationManager enhancedManager;
     private final Context context;
     private final List<ConversationManager.Message> activeConversation = new ArrayList<>();
     private final ConversationStorage storage;
@@ -30,16 +32,38 @@ public class EnhancedConversationManager {
         return instance;
     }
 
+    // In EnhancedConversationManager.java - streamline the system messages
+    public List<ConversationManager.Message> getConversationHistory() {
+        // Create a fresh list with just ONE well-crafted system message
+        List<ConversationManager.Message> result = new ArrayList<>();
+
+        // ONE combined system message with all the important instructions
+        result.add(new ConversationManager.Message("system",
+                "You are Coach Tal, a chess grandmaster known for tactical brilliance. " +
+                        "Always answer questions directly and personally. If asked about yourself, " +
+                        "respond as Mikhail Tal, the famous chess player from Latvia. Be personable, " +
+                        "direct, and enthusiastic about chess. Keep responses concise."));
+
+        // Only add user and assistant messages from activeConversation
+        for (ConversationManager.Message msg : activeConversation) {
+            if ("user".equals(msg.getRole()) || "assistant".equals(msg.getRole())) {
+                result.add(msg);
+            }
+        }
+
+        return result;
+    }
+
+
+    public void clear() {
+        enhancedManager.startNewConversation();
+    }
+
     // Add a message to the conversation and save it
     public void addMessage(String role, String content) {
         ConversationManager.Message message = new ConversationManager.Message(role, content);
         activeConversation.add(message);
         Log.d(TAG, "Added message with role: " + role + ", length: " + (content != null ? content.length() : 0));
-    }
-
-    // Get the current conversation history
-    public List<ConversationManager.Message> getConversationHistory() {
-        return new ArrayList<>(activeConversation);
     }
 
     // Save the current conversation to storage
@@ -66,7 +90,10 @@ public class EnhancedConversationManager {
         return "session_" + System.currentTimeMillis();
     }
 
-    // In EnhancedConversationManager.java - add this method
+    // Let's enhance EnhancedConversationManager to absorb functionality from other managers
+// In EnhancedConversationManager.java:
+
+    // Add this method to incorporate game state into your conversations
     public void addGameStateToCurrentContext(GameStateInfo gameState) {
         // Store the current game state in the conversation context
         String gameStateContext = "Current position (FEN): " + gameState.getCurrentFen() + "\n" +
@@ -77,8 +104,6 @@ public class EnhancedConversationManager {
         // Add as a hidden system message that will be included in each turn
         addMessage("system", "CHESS_STATE: " + gameStateContext);
     }
-
-// Call this method each time before processing a user query
 
     // Start a new conversation
     public void startNewConversation() {

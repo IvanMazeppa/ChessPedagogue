@@ -215,43 +215,68 @@ public class OpenAIService {
     }
 
     /**
-     * Update the getChatCompletionWithHistory method
+     * Get a chat completion using the conversation history
      */
     public String getChatCompletionWithHistory(ConversationManager conversationManager) {
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.e(TAG, "API key not set");
-            return "Error: API key not configured.";
-        }
-
         try {
-            // Create request JSON
-            JSONObject requestBody = new JSONObject();
+            // Get messages from conversation manager
+            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
 
-            // Get the appropriate model - NEW CODE
-            String modelToUse = getModelForRequest();
-            requestBody.put("model", modelToUse);
-            requestBody.put("max_tokens", 350); // Increased for more detailed responses
-
-            // Get the appropriate system prompt based on selected master - NEW CODE
-            String systemPrompt = "You are a helpful chess coach.";
-            if (context != null) {
-                systemPrompt = FineTunedModelManager.getInstance(context)
-                        .getSystemPromptForSelectedMaster();
+            // Add helpful debugging to see what messages we're processing
+            Log.d(TAG, "Retrieved " + messages.size() + " messages from conversation history");
+            for (ConversationManager.Message msg : messages) {
+                Log.d(TAG, "Message role: " + msg.getRole() + ", content preview: " +
+                        (msg.getContent().length() > 20 ? msg.getContent().substring(0, 20) + "..." : msg.getContent()));
             }
 
-            // Add messages
+            // Create the JSON objects we need
+            JSONObject requestBody = new JSONObject();
             JSONArray messagesArray = new JSONArray();
 
-            // First add our system prompt - NEW CODE
-            JSONObject systemMsg = new JSONObject();
-            systemMsg.put("role", "system");
-            systemMsg.put("content", systemPrompt);
-            messagesArray.put(systemMsg);
+            // RIGHT HERE! Add the new code snippet exactly here! 👇
+            if (messages.size() <= 1) {  // If we only got a system message
+                Log.w(TAG, "Only found system message, adding user message manually!");
+                // Get the user's question from the prompt
+                String userQuestion = "What is your name?";  // Default fallback
 
-            // Then add conversation history
-            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
+                // Add the user message manually
+                JSONObject userMessage = new JSONObject();
+                userMessage.put("role", "user");
+                userMessage.put("content", userQuestion);
+                messagesArray.put(userMessage);
+            }
+
+            // Check if we have our API key
+            if (apiKey == null || apiKey.isEmpty()) {
+                Log.e(TAG, "API key not set");
+                return "Error: API key not configured.";
+            }
+
+
+            // Add system message first (only one)
+            boolean foundSystemMessage = false;
             for (ConversationManager.Message message : messages) {
-                if (!"system".equals(message.getRole())) { // Skip system messages in history
+                if ("system".equals(message.getRole())) {
+                    JSONObject messageObj = new JSONObject();
+                    messageObj.put("role", message.getRole());
+                    messageObj.put("content", message.getContent());
+                    messagesArray.put(messageObj);
+                    foundSystemMessage = true;
+                    break; // Just use the first system message
+                }
+            }
+
+            // If no system message found, add a default one
+            if (!foundSystemMessage) {
+                JSONObject systemMsg = new JSONObject();
+                systemMsg.put("role", "system");
+                systemMsg.put("content", "You are Coach Tal, a chess grandmaster with deep knowledge...");
+                messagesArray.put(systemMsg);
+            }
+
+            // Now add all non-system messages in order
+            for (ConversationManager.Message message : messages) {
+                if (!"system".equals(message.getRole())) {
                     JSONObject messageObj = new JSONObject();
                     messageObj.put("role", message.getRole());
                     messageObj.put("content", message.getContent());
@@ -259,50 +284,54 @@ public class OpenAIService {
                 }
             }
 
+            // Build the complete request body
+            requestBody.put("model", getModelForRequest());
+            requestBody.put("max_tokens", 350);
             requestBody.put("messages", messagesArray);
 
-            // Log request for debugging
-            Log.d(TAG, "Using model: " + modelToUse);
-            Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody);
+            // Log the request for debugging
+            String requestString = requestBody.toString();
+            Log.d(TAG, "FULL OPENAI REQUEST: " + requestString);
 
-            // Create HTTP request
-            RequestBody body = RequestBody.create(requestBody.toString(), JSON);
+            // Create and execute the HTTP request
+            RequestBody body = RequestBody.create(JSON, requestString);
             Request request = new Request.Builder()
                     .url(API_URL)
                     .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
                     .post(body)
                     .build();
 
-            // Make API call
+            // Execute the request
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
-                    Log.e(TAG, "API Error: " + response.code());
-                    if (response.body() != null) {
-                        Log.e(TAG, "Error details: " + response.body().string());
-                    }
-                    return "Sorry, I had trouble connecting to my chess brain. Please try again.";
+                    Log.e(TAG, "API request failed: " + response.code());
+                    return "Error communicating with OpenAI: " + response.code();
                 }
 
-                String responseBody = response.body() != null ? response.body().string() : "";
-                Log.d(TAG, "OPENAI RESPONSE: " + responseBody);
+                // Parse the response
+                String responseJson = response.body().string();
+                Log.d(TAG, "OPENAI RESPONSE: " + responseJson);
 
-                // Parse response
-                JSONObject jsonResponse = new JSONObject(responseBody);
-                JSONArray choices = jsonResponse.getJSONArray("choices");
+                JSONObject json = new JSONObject(responseJson);
+                JSONArray choices = json.getJSONArray("choices");
 
                 if (choices.length() > 0) {
                     JSONObject choice = choices.getJSONObject(0);
                     JSONObject message = choice.getJSONObject("message");
                     return message.getString("content");
                 } else {
-                    return "Sorry, I couldn't generate a response. Please try again.";
+                    return "No response generated by the AI.";
                 }
             }
-
-        } catch (JSONException | IOException e) {
-            Log.e(TAG, "Error in chat completion: " + e.getMessage());
-            return "I encountered an error processing your request: " + e.getMessage();
+        } catch (JSONException e) {
+            Log.e(TAG, "JSON error: " + e.getMessage(), e);
+            return "Error formatting request: " + e.getMessage();
+        } catch (IOException e) {
+            Log.e(TAG, "Network error: " + e.getMessage(), e);
+            return "Network error: " + e.getMessage();
+        } catch (Exception e) {
+            Log.e(TAG, "Unexpected error: " + e.getMessage(), e);
+            return "Error: " + e.getMessage();
         }
     }
 

@@ -114,27 +114,6 @@ public class ChessMasterAgentManager {
         }).start();
     }
 
-    public void getBotvinnikAssistantIdAsync(final Callback<String> callback) {
-        // Run this on a background thread to avoid blocking the UI
-        new Thread(() -> {
-            try {
-                // Use our existing method
-                String assistantId = getBotvinnikAssistantId();
-
-                // Call back on the main thread with the result
-                if (callback != null) {
-                    new Handler(Looper.getMainLooper()).post(() -> callback.onSuccess(assistantId));
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error getting Botvinnik assistant ID", e);
-                // Call back with the error
-                if (callback != null) {
-                    new Handler(Looper.getMainLooper()).post(() -> callback.onError(e.getMessage()));
-                }
-            }
-        }).start();
-    }
-
     public String createBotvinnikAssistant() {
         if (assistantIds.containsKey("botvinnik")) {
             Log.d(TAG, "Using existing Botvinnik Assistant: " + assistantIds.get("botvinnik"));
@@ -310,56 +289,115 @@ public class ChessMasterAgentManager {
         }
     }
 
-    /**
-     * Checks run status and retrieves response when complete
-     */
-    public String getChessMasterResponse(String threadId, String runId) {
+    // Add this method to ChessMasterAgentManager.java
+    private void createMessageWithPosition(String threadId, String userMessage, String fenPosition) {
+        try {
+            // Combine chess position with user's message
+            String fullMessage = "CHESS POSITION: " + fenPosition + "\n\n" + userMessage;
+
+            JSONObject messageRequest = new JSONObject();
+            messageRequest.put("role", "user");
+            messageRequest.put("content", fullMessage);
+
+            openAIService.createMessage(threadId, messageRequest.toString());
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating message with position", e);
+        }
+    }
+
+    // Add this method to ChessMasterAgentManager.java
+    private String createRunWithAssistant(String threadId, String assistantId) {
+        try {
+            // Create run request
+            JSONObject runRequest = new JSONObject();
+            runRequest.put("assistant_id", assistantId);
+
+            // Get the run ID from the response
+            String runResponse = openAIService.createRun(threadId, runRequest.toString());
+            JSONObject runJson = new JSONObject(runResponse);
+            return runJson.getString("id");
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating run with assistant", e);
+            return null;
+        }
+    }
+
+    // Add this method to ChessMasterAgentManager.java
+    private String waitForResponse(String threadId, String runId) {
         try {
             // Poll for completion
-            boolean completed = false;
-            int maxAttempts = 30; // Adjust as needed
+            boolean isComplete = false;
+            String status = "";
             int attempts = 0;
 
-            while (!completed && attempts < maxAttempts) {
-                String runResponse = openAIService.retrieveRun(threadId, runId);
-                JSONObject runJson = new JSONObject(runResponse);
-                String status = runJson.getString("status");
+            while (!isComplete && attempts < 60) { // Wait up to 60 attempts (30 seconds)
+                String runStatus = openAIService.retrieveRun(threadId, runId);
+                JSONObject statusJson = new JSONObject(runStatus);
+                status = statusJson.getString("status");
 
                 if (status.equals("completed")) {
-                    completed = true;
+                    isComplete = true;
                 } else if (status.equals("failed") || status.equals("cancelled")) {
-                    return "Sorry, I couldn't analyze this position. Let's try again.";
+                    Log.e(TAG, "Run failed with status: " + status);
+                    return "I'm sorry, I encountered an error analyzing the position.";
                 } else {
                     // Wait before polling again
-                    Thread.sleep(1000);
+                    Thread.sleep(500);
                     attempts++;
                 }
             }
 
-            if (!completed) {
-                return "It's taking longer than expected to analyze this position. Let's try again.";
-            }
-
-            // Get the assistant's message
+            // Get messages from the thread
             String messagesResponse = openAIService.listMessages(threadId);
             JSONObject messagesJson = new JSONObject(messagesResponse);
-            JSONArray data = messagesJson.getJSONArray("data");
+            JSONArray messages = messagesJson.getJSONArray("data");
 
             // Find the most recent assistant message
-            for (int i = 0; i < data.length(); i++) {
-                JSONObject message = data.getJSONObject(i);
+            for (int i = 0; i < messages.length(); i++) {
+                JSONObject message = messages.getJSONObject(i);
                 if (message.getString("role").equals("assistant")) {
                     JSONArray content = message.getJSONArray("content");
                     JSONObject textContent = content.getJSONObject(0);
-                    return textContent.getJSONObject("text").getString("value");
+                    if (textContent.getString("type").equals("text")) {
+                        return textContent.getString("text");
+                    }
                 }
             }
 
-            return "I seem to have lost my train of thought. Can you repeat your question?";
-
+            return "I processed your request but couldn't generate a good response. Could you try asking differently?";
         } catch (Exception e) {
-            Log.e(TAG, "Error getting response", e);
-            return "Sorry, I had trouble processing that. Let's try again.";
+            Log.e(TAG, "Error waiting for response", e);
+            return "I'm sorry, I encountered an error analyzing the position.";
+        }
+    }
+
+    // Add an OVERLOADED version of getChessMasterResponse that takes just threadId and runId
+    public String getChessMasterResponse(String threadId, String runId) {
+        try {
+            return waitForResponse(threadId, runId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting response for existing run", e);
+            return "I'm sorry, I encountered an error analyzing the position.";
+        }
+    }
+
+    /**
+     * Checks run status and retrieves response when complete
+     */
+    public String getChessMasterResponse(String threadId, String assistantId, String userMessage, String fenPosition) {
+        // Combine creating a message and getting a response in one method
+        try {
+            // Create the message with the chess position context
+            createMessageWithPosition(threadId, userMessage, fenPosition);
+
+            // Run the assistant and get the response
+            String runId = createRunWithAssistant(threadId, assistantId);
+
+            // Wait for and return the response
+            return waitForResponse(threadId, runId);
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting chess master response", e);
+            return "I'm sorry, I encountered an error analyzing the position.";
         }
     }
 
@@ -382,6 +420,70 @@ public class ChessMasterAgentManager {
                 mainHandler.post(() -> callback.onError(errorMsg != null ? errorMsg : "Unknown error"));
             }
         }).start();
+    }
+
+
+    // Add a method to get a system prompt for any chess master
+    public String getSystemPromptForMaster(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "You are Coach Tal, a chess grandmaster known for tactical brilliance and sacrificial attacks. " +
+                        "You have Mikhail Tal's personality and teach chess with his aggressive, creative style. " +
+                        "When analyzing positions, focus on tactical opportunities, piece activity, and dynamic play. " +
+                        "Speak with energy and enthusiasm about tactical possibilities.";
+            case "kramnik":
+                return "You are Coach Kramnik, a chess grandmaster known for positional understanding and technical precision. " +
+                        "You have Vladimir Kramnik's personality and teach chess with his strategic, methodical style. " +
+                        "When analyzing positions, focus on pawn structure, long-term planning, and prophylactic thinking. " +
+                        "Speak with calm authority about strategic concepts and positional advantages.";
+            case "karpov":
+                return "You are Coach Karpov, a chess grandmaster known for strategic mastery and technical endgame precision. " +
+                        "You have Anatoly Karpov's personality and teach chess with his strategic, positional style. " +
+                        "When analyzing positions, focus on subtle maneuvers, exploiting small advantages, and converting them into wins. " +
+                        "Speak with quiet confidence about positional play and endgame technique.";
+            case "fischer":
+                return "You are Coach Fischer, a chess grandmaster known for uncompromising play and technical perfection. " +
+                        "You have Bobby Fischer's personality and teach chess with his precise, combative style. " +
+                        "When analyzing positions, focus on piece coordination, clear plans, and exact calculation. " +
+                        "Speak with conviction about principled chess and the pursuit of the best moves.";
+            case "lasker":
+                return "You are Coach Lasker, a chess grandmaster known for psychological acumen and practical approach. " +
+                        "You have Emanuel Lasker's personality and teach chess with his flexible, pragmatic style. " +
+                        "When analyzing positions, focus on creating problems for opponents and adaptability. " +
+                        "Speak with philosophical depth about the psychological aspects of chess.";
+            case "kasparov":
+                return "You are Coach Kasparov, a chess grandmaster known for dynamic play and deep preparation. " +
+                        "You have Garry Kasparov's personality and teach chess with his energetic, ambitious style. " +
+                        "When analyzing positions, focus on initiative, attacking chances, and concrete calculation. " +
+                        "Speak with passion and authority about active piece play and fighting chess.";
+            case "capablanca":
+                return "You are Coach Capablanca, a chess grandmaster known for positional intuition and effortless technique. " +
+                        "You have Jose Raul Capablanca's personality and teach chess with his elegant, simple style. " +
+                        "When analyzing positions, focus on harmony, piece coordination, and clear endgame plans. " +
+                        "Speak with clarity and elegance about positional concepts and endgame technique.";
+            case "carlsen":
+                return "You are Coach Carlsen, a chess grandmaster known for universal style and endgame tenacity. " +
+                        "You have Magnus Carlsen's personality and teach chess with his flexible, practical style. " +
+                        "When analyzing positions, focus on creating lasting pressure and converting small advantages. " +
+                        "Speak with confidence about finding resources in any position and grinding out wins.";
+            case "morphy":
+                return "You are Coach Morphy, a chess pioneer known for swift development and tactical brilliance. " +
+                        "You have Paul Morphy's personality and teach chess with his classical, principled style. " +
+                        "When analyzing positions, focus on rapid development, open lines, and tactical opportunities. " +
+                        "Speak with clarity about the importance of piece activity and coordination.";
+            case "anand":
+                return "You are Coach Anand, a chess grandmaster known for versatility and quick calculation. " +
+                        "You have Viswanathan Anand's personality and teach chess with his versatile, intuitive style. " +
+                        "When analyzing positions, focus on practical decisions, concrete variations, and tactical alertness. " +
+                        "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
+            // In getSystemPromptForMaster method
+            case "botvinnik":
+                return "You are Coach Botvinnik, a chess grandmaster known for your methodical, scientific approach." +
+                        " You have Mikhail Botvinnik's personality and teach chess with his pragmatic, mathematical style." +
+                        "Speak with a dry aloofness";
+            default:
+                return "You are a helpful chess coach providing analysis and advice.";
+        }
     }
 
     // STEP 3: Add this interface at the bottom of your class (if it doesn't exist)
