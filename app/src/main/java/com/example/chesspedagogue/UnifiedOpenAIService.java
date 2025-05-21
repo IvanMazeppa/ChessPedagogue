@@ -98,7 +98,7 @@ public class UnifiedOpenAIService {
 
                 String requestBody = "{"
                         + "\"model\": \"gpt-4.1-2025-04-14\","
-                        + "\"messages\": " + messageJson.toString()
+                        + "\"messages\": " + messageJson
                         + "}";
 
                 RequestBody body = RequestBody.create(requestBody, json);

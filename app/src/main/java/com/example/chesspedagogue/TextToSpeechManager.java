@@ -5,22 +5,36 @@ import android.util.Log;
 
 import java.io.File;
 
+/**
+ * Manages text-to-speech operations with OpenAI's TTS service
+ * Enhanced for low latency response
+ */
 public class TextToSpeechManager {
     private static final String TAG = "TextToSpeechManager";
     private final Context context;
     private OpenAITTSService openAITTS;
     private boolean isSpeaking = false;
     private boolean interrupted = false;
-
-    private android.media.MediaPlayer mediaPlayer;
-    private java.util.Queue<File> remainingChunks = new java.util.LinkedList<>();
     private SpeechCallback speechCallback;
 
-    // Define the interface for speech completion callbacks
+    /**
+     * Interface for receiving speech completion notifications
+     */
     public interface OnSpeechCompletedListener {
         void onSpeechCompleted();
     }
 
+    /**
+     * Interface for speech callbacks
+     */
+    public interface SpeechCallback {
+        void onSpeechCompleted(String text);
+        void onSpeechInterrupted();
+    }
+
+    /**
+     * Constructor
+     */
     public TextToSpeechManager(Context context) {
         this.context = context;
 
@@ -33,81 +47,86 @@ public class TextToSpeechManager {
         this.openAITTS.setVoice(OpenAITTSService.VOICE_GRANDMASTER);
     }
 
+    /**
+     * Set the speech callback
+     */
+    public void setSpeechCallback(SpeechCallback callback) {
+        this.speechCallback = callback;
+    }
 
-    // Fixed interrupt method for TextToSpeechManager.java
+    /**
+     * Interrupt ongoing speech
+     */
     public void interrupt() {
         interrupted = true;
         if (isSpeaking) {
-            openAITTS.stopPlayback(); // Use your existing openAITTS
+            openAITTS.stopPlayback();
             Log.d(TAG, "Speech interrupted by user");
-            isSpeaking = false; // Make sure we reset the speaking state
+            isSpeaking = false;
+
+            if (speechCallback != null) {
+                speechCallback.onSpeechInterrupted();
+            }
         }
     }
 
-    public void speak(String text) {
-        Log.d(TAG, "Speech started");
+
+
+    /**
+     * Speak text with completion listener
+     */
+    /**
+     * Speak text with completion listener
+     */
+    public void speak(String text, OnSpeechCompletedListener listener) {
+        Log.d(TAG, "Speech started with listener - text length: " + (text != null ? text.length() : 0));
         isSpeaking = true;
         interrupted = false;
 
-        // Create a flag to track if this is the first speech completed callback
-        final boolean[] isFirstCompletion = {true};
+        // Add some debugging info
+        String apiKey = ApiKeyConfig.getApiKey(context);
+        Log.d(TAG, "API key available: " + (apiKey != null && !apiKey.isEmpty()));
 
         openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
             @Override
             public void onSpeechStarted() {
+                Log.d(TAG, "TTS Speech STARTED callback received");
                 // Already set isSpeaking = true above
             }
 
             @Override
             public void onSpeechReady(File audioFile) {
-                // Nothing to do here
+                Log.d(TAG, "TTS Speech READY callback received - file: " +
+                        (audioFile != null ? audioFile.getAbsolutePath() : "null"));
             }
 
             @Override
             public void onSpeechCompleted() {
-                // VERY IMPORTANT: Only set isSpeaking to false if this isn't the first completion
-                // The first completion is just the first chunk finishing
-                if (!isFirstCompletion[0]) {
-                    isSpeaking = false;
-                    Log.d(TAG, "All speech chunks completed");
-                } else {
-                    // This is just the first chunk completing - don't stop speaking!
-                    isFirstCompletion[0] = false;
-                    Log.d(TAG, "First chunk completed, continuing with next chunks");
+                Log.d(TAG, "TTS Speech COMPLETED callback received");
+                isSpeaking = false;
+                if (listener != null && !interrupted) {
+                    listener.onSpeechCompleted();
                 }
             }
 
             @Override
             public void onError(String errorMessage) {
-                Log.e(TAG, "TTS error: " + errorMessage);
+                Log.e(TAG, "TTS ERROR callback received: " + errorMessage);
                 isSpeaking = false;
+                if (listener != null) {
+                    listener.onSpeechCompleted(); // Still call callback on error
+                }
             }
         });
     }
 
-
-    public void stopSpeech() {
-        stop();
-    }
-
-    // Add this interface method to your callback
-    public interface SpeechCallback {
-        void onSpeechCompleted(String text);
-        void onSpeechInterrupted(); // New method
-
-
-    }
-
-    // Add this method to set the callback
-    public void setSpeechCallback(SpeechCallback callback) {
-        this.speechCallback = callback;
-    }
-
-
-    // Speak method with OnSpeechCompletedListener callback
-    public void speak(String text, OnSpeechCompletedListener listener) {
+    /**
+     * Speak text
+     */
+    public void speak(String text) {
         Log.d(TAG, "Speech started");
         isSpeaking = true;
+        interrupted = false;
 
         openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
             @Override
@@ -124,8 +143,9 @@ public class TextToSpeechManager {
             public void onSpeechCompleted() {
                 isSpeaking = false;
                 Log.d(TAG, "Speech completed");
-                if (listener != null) {
-                    listener.onSpeechCompleted();
+
+                if (speechCallback != null && !interrupted) {
+                    speechCallback.onSpeechCompleted(text);
                 }
             }
 
@@ -133,70 +153,30 @@ public class TextToSpeechManager {
             public void onError(String errorMessage) {
                 Log.e(TAG, "TTS error: " + errorMessage);
                 isSpeaking = false;
-                if (listener != null) {
-                    listener.onSpeechCompleted(); // Still call callback on error
-                }
             }
         });
     }
 
-    // Speak method with Runnable callback (for backward compatibility)public void speak(String text) {
-    //    Log.d(TAG, "Speech started with consistent chunking");
-    //    isSpeaking = true;
-    //    interrupted = false;
-    //
-    //    // Use our new consistent chunking method
-    //    openAITTS.speakWithConsistentChunking(text, new OpenAITTSService.TTSCallback() {
-    //        @Override
-    //        public void onSpeechStarted() {
-    //            // Already set isSpeaking = true above
-    //        }
-    //
-    //        @Override
-    //        public void onSpeechReady(File audioFile) {
-    //            // Nothing to do here
-    //        }
-    //
-    //        @Override
-    //        public void onSpeechCompleted() {
-    //            isSpeaking = false;
-    //            Log.d(TAG, "Speech completed");
-    //        }
-    //
-    //        @Override
-    //        public void onError(String errorMessage) {
-    //            Log.e(TAG, "TTS error: " + errorMessage);
-    //            isSpeaking = false;
-    //        }
-    //    });
-    //}
-
+    /**
+     * Check if currently speaking
+     */
     public boolean isSpeaking() {
         return isSpeaking;
     }
 
+    /**
+     * Stop speaking
+     */
+    public void stopSpeech() {
+        stop();
+    }
+
+    /**
+     * Stop speaking (internal method)
+     */
     public void stop() {
         if (isSpeaking) {
             openAITTS.stopPlayback();
-
-            // Clear any remaining chunks
-            if (remainingChunks != null) {
-                remainingChunks.clear();
-            }
-
-            // Stop and release MediaPlayer if it exists
-            if (mediaPlayer != null) {
-                try {
-                    if (mediaPlayer.isPlaying()) {
-                        mediaPlayer.stop();
-                    }
-                    mediaPlayer.release();
-                } catch (Exception e) {
-                    Log.e(TAG, "Error stopping MediaPlayer", e);
-                }
-                mediaPlayer = null;
-            }
-
             isSpeaking = false;
 
             // Notify via callback if available
@@ -206,7 +186,9 @@ public class TextToSpeechManager {
         }
     }
 
-    // Add the shutdown method that was missing
+    /**
+     * Release resources
+     */
     public void shutdown() {
         stop();
         if (openAITTS != null) {
