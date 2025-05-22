@@ -34,9 +34,9 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Tal Card -->
+            <!-- Alexander Alekhine Card -->
             <androidx.cardview.widget.CardView
-                android:id="@+id/talCard"
+                android:id="@+id/alekhineCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -57,9 +57,9 @@
                         <ImageView
                             android:layout_width="60dp"
                             android:layout_height="60dp"
-                            android:src="@android:drawable/ic_menu_myplaces"
-                            android:contentDescription="Tal icon"
-                            android:tint="#FF5722" />
+                            android:src="@android:drawable/ic_menu_mapmode"
+                            android:contentDescription="Alekhine icon"
+                            app:tint="#673AB7" />
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -70,14 +70,14 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Mikhail Tal"
+                                android:text="Alexander Alekhine"
                                 android:textSize="18sp"
                                 android:textStyle="bold" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="The Magician from Riga"
+                                android:text="The Combinational Artist"
                                 android:textStyle="italic" />
                         </LinearLayout>
                     </LinearLayout>
@@ -85,83 +85,19 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Master of sacrificial attacks and tactical brilliance. Tal's games feature stunning combinations that create beautiful, complex positions."
+                        android:text="Master of brilliant tactical combinations and imaginative attacks. Alekhine's games feature deep, artistic sequences that transform positions through sheer combinational vision."
                         android:layout_marginTop="12dp" />
 
                     <RadioButton
-                        android:id="@+id/radioTal"
+                        android:id="@+id/radioAlekhine"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Select Coach Tal"
-                        android:checked="true"
+                        android:text="Select Coach Alekhine"
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Kramnik Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/kramnikCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@android:drawable/ic_menu_sort_by_size"
-                            android:contentDescription="Kramnik icon"
-                            android:tint="#3F51B5" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_marginStart="16dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Vladimir Kramnik"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="The Berlin Wall"
-                                android:textStyle="italic" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Master of positional play and endgame technique. Kramnik's approach focuses on solid structures, subtle advantages, and technical precision."
-                        android:layout_marginTop="12dp" />
-
-                    <RadioButton
-                        android:id="@+id/radioKramnik"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Select Coach Kramnik"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Karpov Card -->
+            <!-- Anatoly Karpov Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/karpovCard"
                 android:layout_width="match_parent"
@@ -224,7 +160,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Fischer Card -->
+            <!-- Bobby Fischer Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/fischerCard"
                 android:layout_width="match_parent"
@@ -287,7 +223,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Lasker Card -->
+            <!-- Emanuel Lasker Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/laskerCard"
                 android:layout_width="match_parent"
@@ -350,7 +286,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Kasparov Card -->
+            <!-- Garry Kasparov Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/kasparovCard"
                 android:layout_width="match_parent"
@@ -413,7 +349,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Capablanca Card -->
+            <!-- Jose Raul Capablanca Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/capablancaCard"
                 android:layout_width="match_parent"
@@ -476,7 +412,7 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Carlsen Card -->
+            <!-- Magnus Carlsen Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/carlsenCard"
                 android:layout_width="match_parent"
@@ -539,7 +475,134 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Morphy Card -->
+            <!-- Mikhail Botvinnik Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/botvinnikCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@android:drawable/ic_menu_edit"
+                            android:contentDescription="Botvinnik icon"
+                            app:tint="#4285F4" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mikhail Botvinnik"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="The Patriarch of Soviet Chess"
+                                android:textStyle="italic" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Master of methodical analysis and scientific approach to chess. Botvinnik's games demonstrate systematic preparation, strategic clarity, and exceptional endgame technique."
+                        android:layout_marginTop="12dp" />
+
+                    <RadioButton
+                        android:id="@+id/radioBotvinnik"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Coach Botvinnik"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Mikhail Tal Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/talCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@android:drawable/ic_menu_myplaces"
+                            android:contentDescription="Tal icon"
+                            app:tint="#FF5722" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Mikhail Tal"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="The Magician from Riga"
+                                android:textStyle="italic" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Master of sacrificial attacks and tactical brilliance. Tal's games feature stunning combinations that create beautiful, complex positions."
+                        android:layout_marginTop="12dp" />
+
+                    <RadioButton
+                        android:id="@+id/radioTal"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Coach Tal"
+                        android:checked="true"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Paul Morphy Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/morphyCard"
                 android:layout_width="match_parent"
@@ -602,7 +665,70 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Anand Card -->
+            <!-- Vladimir Kramnik Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/kramnikCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="8dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="60dp"
+                            android:layout_height="60dp"
+                            android:src="@android:drawable/ic_menu_sort_by_size"
+                            android:contentDescription="Kramnik icon"
+                            app:tint="#3F51B5" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:layout_marginStart="16dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Vladimir Kramnik"
+                                android:textSize="18sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="The Berlin Wall"
+                                android:textStyle="italic" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Master of positional play and endgame technique. Kramnik's approach focuses on solid structures, subtle advantages, and technical precision."
+                        android:layout_marginTop="12dp" />
+
+                    <RadioButton
+                        android:id="@+id/radioKramnik"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Select Coach Kramnik"
+                        android:layout_marginTop="8dp" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Viswanathan Anand Card -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/anandCard"
                 android:layout_width="match_parent"
@@ -664,68 +790,7 @@
                         android:layout_marginTop="8dp" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
-            <!-- Botvinnik Card -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/botvinnikCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardCornerRadius="8dp"
-                app:cardElevation="4dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="60dp"
-                            android:layout_height="60dp"
-                            android:src="@android:drawable/ic_menu_edit"
-                            android:contentDescription="Botvinnik icon"
-                            app:tint="#4285F4" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_marginStart="16dp">
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Mikhail Botvinnik"
-                                android:textSize="18sp"
-                                android:textStyle="bold" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="The Patriarch of Soviet Chess"
-                                android:textStyle="italic" />
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Master of methodical analysis and scientific approach to chess. Botvinnik's games demonstrate systematic preparation, strategic clarity, and exceptional endgame technique."
-                        android:layout_marginTop="12dp" />
-
-                    <RadioButton
-                        android:id="@+id/radioBotvinnik"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Select Coach Botvinnik"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
         </LinearLayout>
     </ScrollView>
 

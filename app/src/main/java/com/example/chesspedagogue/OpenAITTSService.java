@@ -9,11 +9,15 @@ import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.util.LruCache;
+
+import com.google.android.exoplayer2.source.chunk.Chunk;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,6 +30,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.ConnectionPool;
+import okhttp3.Dispatcher;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -58,6 +63,10 @@ public class OpenAITTSService {
     private static final int MAX_CHARS_PER_CHUNK = 200;      // Smaller chunks for faster initial response
     private static final int PREFETCH_COUNT = 2;             // Number of chunks to prefetch
 
+
+    private final LruCache<String, File> audioCache = new LruCache<>(20); // Cache up to 20 audio files
+
+
     // Singleton instance
     private static OpenAITTSService instance;
 
@@ -75,6 +84,7 @@ public class OpenAITTSService {
     private boolean interruptRequested = false;
     private boolean usePersonalityInstructions = true;
     private String voiceIdOverride = null;
+    private boolean playedBufferingSound = false;
 
     /**
      * Constructor for the service
@@ -84,11 +94,13 @@ public class OpenAITTSService {
         this.apiKey = null; // Will be set later
 
         // Create an optimized OkHttpClient with connection pooling
+        // In the OpenAITTSService constructor
         this.httpClient = new OkHttpClient.Builder()
-                .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(15, TimeUnit.SECONDS)
-                .writeTimeout(10, TimeUnit.SECONDS)
+                .connectionPool(new ConnectionPool(10, 30, TimeUnit.SECONDS)) // Increased from 5 to 10
+                .connectTimeout(5, TimeUnit.SECONDS)  // Reduced from 10 to 5
+                .readTimeout(10, TimeUnit.SECONDS)    // Reduced from 15 to 10
+                .writeTimeout(5, TimeUnit.SECONDS)    // Reduced from 10 to 5
+                .dispatcher(new Dispatcher(Executors.newFixedThreadPool(10))) // Custom dispatcher with more threads
                 .build();
 
         this.mainHandler = new Handler(Looper.getMainLooper());
@@ -229,6 +241,7 @@ public class OpenAITTSService {
         private int currentChunkIndex = 0;
         private boolean isPlaying = false;
         private String lastChunkEnding = "";
+        private static final int MAX_CHARS_PER_CHUNK = 100;
 
         public OptimizedSpeechChunker(String text, TTSCallback callback) {
             this.masterCallback = callback;
@@ -243,6 +256,14 @@ public class OpenAITTSService {
 
         private List<String> splitTextIntoNaturalChunks(String text) {
             List<String> chunks = new ArrayList<>();
+
+
+            // First chunk should be even smaller for ultra-fast initial response
+            String firstSentence = extractFirstSentence(text);
+            if (firstSentence.length() > 0) {
+                chunks.add(firstSentence);
+                text = text.substring(firstSentence.length()).trim();
+            }
 
             // Split by sentences
             String[] sentences = text.split("(?<=[.!?])\\s+");
@@ -296,6 +317,7 @@ public class OpenAITTSService {
 
         private void prefetchChunks() {
             int endIndex = Math.min(currentChunkIndex + PREFETCH_COUNT, chunks.length);
+            int prefetchCount = currentChunkIndex == 0 ? 3 : PREFETCH_COUNT;
 
             Log.d(TAG, "🔄 Prefetching chunks " + currentChunkIndex + " to " + (endIndex-1));
 
@@ -413,6 +435,25 @@ public class OpenAITTSService {
                     long now = System.currentTimeMillis();
                     if (now - startTime > 2000) { // 2 second threshold
                         // Play the first available chunk, whatever it is
+                        ChunkData bestChunk = null;
+                        int bestIndex = Integer.MAX_VALUE;
+
+                        for (ChunkData chunk : readyChunks) {
+                            if (chunk.index < 3 && chunk.index < bestIndex) {
+                                bestChunk = chunk;
+                                bestIndex = chunk.index;
+                            }
+                        }
+
+                        if (bestChunk != null) {
+                            // Play the best available early chunk
+                            readyChunks.remove(bestChunk);
+                            isPlaying = true;
+                            playChunk(bestChunk);
+                            currentChunkIndex = bestChunk.index + 1;
+                            prefetchChunks();
+                            return;
+                        }
                         ChunkData nextChunk = readyChunks.iterator().next();
                         Log.d(TAG, "⚡ Playing available chunk " + nextChunk.index + " to reduce latency!");
 
@@ -444,6 +485,16 @@ public class OpenAITTSService {
 
                 if (nextChunk != null) {
                     Log.d(TAG, "✅ Found chunk " + currentChunkIndex + " ready to play!");
+
+
+                    if (nextChunk == null) {
+                        // If we've been waiting too long with nothing to play, give audio feedback
+                        long waitingTime = System.currentTimeMillis() - startTime;
+                        if (currentChunkIndex == 0 && waitingTime > 4000 && !playedBufferingSound) {
+                            playedBufferingSound = true;
+                            playBufferingSound();
+                        }
+                    }
 
                     // Remove from queue
                     readyChunks.remove(nextChunk);
@@ -482,12 +533,13 @@ public class OpenAITTSService {
                     mainHandler.post(() -> masterCallback.onSpeechReady(chunk.audioFile));
                 }
 
-                // Create MediaPlayer
+                // Create MediaPlayerd
                 MediaPlayer player = new MediaPlayer();
                 player.setAudioAttributes(
                         new AudioAttributes.Builder()
                                 .setUsage(AudioAttributes.USAGE_MEDIA)
                                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .setFlags(AudioAttributes.FLAG_LOW_LATENCY) // Add this for lower latency
                                 .build()
                 );
 
@@ -559,6 +611,27 @@ public class OpenAITTSService {
         }
     }
 
+    // Helper method to extract just the first sentence for ultra-fast response
+    private String extractFirstSentence(String text) {
+        int endIndex = -1;
+        for (int i = 0; i < Math.min(100, text.length()); i++) {
+            char c = text.charAt(i);
+            if (c == '.' || c == '!' || c == '?') {
+                endIndex = i + 1;
+                break;
+            }
+        }
+
+        if (endIndex > 0) {
+            return text.substring(0, endIndex);
+        } else if (text.length() <= 80) {
+            return text;
+        } else {
+            // If no sentence end found in first 100 chars, take first 80 chars
+            return text.substring(0, 80);
+        }
+    }
+
     private static class ChunkData {
         final int index;
         final File audioFile;
@@ -603,63 +676,34 @@ public class OpenAITTSService {
         return audioFile;
     }
 
-    /**
-     * Get audio data directly from OpenAI TTS API
-     */
-    public byte[] synthesizeSpeech(String text) throws IOException {
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.e(TAG, "API key not set");
-            return new byte[0];
+    // Helper method to read a file to bytes
+    private byte[] readFileToBytes(File file) throws IOException {
+        byte[] bytes = new byte[(int) file.length()];
+        try (FileInputStream fis = new FileInputStream(file)) {
+            fis.read(bytes);
         }
-
-        String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
-
-        // Create JSON payload for TTS request
-        JSONObject payload = new JSONObject();
-        try {
-            payload.put("model", "gpt-4o-mini-tts");
-            payload.put("input", text);
-            payload.put("voice", voice);
-            payload.put("response_format", "mp3");
-
-            // Add instructions for the chess grandmaster character
-            String masterInstructions = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
-            payload.put("instructions", masterInstructions);
-
-            Log.d(TAG, "TTS API payload for " + selectedMaster + ": " + payload);
-        } catch (JSONException e) {
-            Log.e(TAG, "TTS JSON construction error", e);
-            return new byte[0];
-        }
-
-        RequestBody body = RequestBody.create(MediaType.parse("application/json"), payload.toString());
-
-        Request request = new Request.Builder()
-                .url(TTS_URL)
-                .header("Authorization", "Bearer " + apiKey)
-                .post(body)
-                .build();
-
-        Response response = httpClient.newCall(request).execute();
-        if (!response.isSuccessful() || response.body() == null) {
-            String errorBody = response.body() != null ? response.body().string() : "No error body";
-            Log.e(TAG, "TTS API error: " + response.code() + " - " + errorBody);
-            return new byte[0];
-        }
-
-        // The TTS API responds with audio data
-        byte[] audioData = response.body().bytes();
-        response.close();
-
-        return audioData;
+        return bytes;
     }
-
     /**
      * Release resources when the service is no longer needed
      */
     public void shutdown() {
         stopPlayback();
         executorService.shutdown();
+    }
+
+    private void playBufferingSound() {
+        try {
+            // Play a short "thinking" sound from your app's resources
+            MediaPlayer player = MediaPlayer.create(context, R.raw.thinking_sound);
+            if (player != null) {
+                player.setOnCompletionListener(MediaPlayer::release);
+                player.start();
+            }
+        } catch (Exception e) {
+            // Ignore - just a nice-to-have
+            Log.e(TAG, "Error playing thinking sound", e);
+        }
     }
 
     /**

@@ -17,7 +17,7 @@ public class FineTunedModelManager {
     private static final String PREFS_NAME = "ChessFineTunedModels";
     private static final String KEY_SELECTED_MASTER = "selected_master";
 
-    // In FineTunedModelManager.java, replace the model constants:
+    // Model constants - Updated with Alekhine's specific model
     private static final String MODEL_TAL = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
@@ -28,18 +28,17 @@ public class FineTunedModelManager {
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe"; // NEW: Alekhine's specific model
 
     // Default model if fine-tuned model is not available
     private static final String DEFAULT_MODEL = "gpt-4.1";
+
     // Singleton instance
     private static FineTunedModelManager instance;
     private final Context context;
     private final SharedPreferences prefs;
-    // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
-    // Handler for UI updates
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-
 
     /**
      * Private constructor
@@ -111,6 +110,8 @@ public class FineTunedModelManager {
                 return MODEL_MORPHY;
             case "anand":
                 return MODEL_ANAND;
+            case "alekhine": // NEW: Add Alekhine case
+                return MODEL_ALEKHINE;
             default:
                 return DEFAULT_MODEL;
         }
@@ -179,7 +180,13 @@ public class FineTunedModelManager {
                         "You have Viswanathan Anand's personality and teach chess with his versatile, intuitive style. " +
                         "When analyzing positions, focus on practical decisions, concrete variations, and tactical alertness. " +
                         "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
-            // In getSystemPromptForMaster method
+            case "alekhine": // NEW: Add Alekhine's system prompt
+                return "You are Coach Alekhine, a chess grandmaster known for your brilliant combinational vision and relentless attacking style. " +
+                        "You have Alexander Alekhine's personality and teach chess with his ambitious, creative approach. " +
+                        "When analyzing positions, focus on complex combinations, tactical sequences, and imaginative sacrifices that lead to devastating attacks. " +
+                        "You excel at finding deep, multi-move combinations that others might miss. Speak with confidence and artistic flair about the beauty of chess combinations, " +
+                        "the importance of calculation, and how to transform seemingly quiet positions into tactical masterpieces. " +
+                        "Emphasize the value of ambitious play and never settling for boring, safe moves when brilliant tactics are possible.";
             case "botvinnik":
                 return "You are Coach Botvinnik, a chess grandmaster known for your methodical, scientific approach." +
                         " You have Mikhail Botvinnik's personality and teach chess with his pragmatic, mathematical style." +
@@ -188,8 +195,6 @@ public class FineTunedModelManager {
                 return "You are a helpful chess coach providing analysis and advice.";
         }
     }
-
-
 
     // Add this enum for tracking processing states
     private enum ProcessingState {
