@@ -191,6 +191,9 @@ public class SettingsActivity extends AppCompatActivity {
     /**
      * Updates the UI to display the currently selected chess master
      */
+    /**
+     * Updates the UI to display the currently selected chess master
+     */
     private void updateChessMasterDisplay() {
         // Get the current selected master
         String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
@@ -229,6 +232,9 @@ public class SettingsActivity extends AppCompatActivity {
                 break;
             case "anand":
                 chessMasterTextView.setText("Current Coach: Viswanathan Anand (The Lightning Kid)");
+                break;
+            case "alekhine": // NEW: Add Alekhine case
+                chessMasterTextView.setText("Current Coach: Alexander Alekhine (The Combinational Artist)");
                 break;
             default:
                 chessMasterTextView.setText("Current Coach: " + selectedMaster);

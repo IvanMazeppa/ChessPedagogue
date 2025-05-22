@@ -41,7 +41,6 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         });
     }
 
-    // In ChessMasterSelectionActivity.java
     private void saveMasterSelection() {
         // Simply call the method with the selected master
         saveMasterSelection(selectedMaster);
@@ -60,7 +59,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         RadioButton radioMorphy = findViewById(R.id.radioMorphy);
         RadioButton radioAnand = findViewById(R.id.radioAnand);
         RadioButton radioBotvinnik = findViewById(R.id.radioBotvinnik);
-
+        RadioButton radioAlekhine = findViewById(R.id.radioAlekhine); // NEW: Add Alekhine radio button
 
         // Check the appropriate radio button based on current selection
         switch(selectedMaster.toLowerCase()) {
@@ -97,6 +96,9 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             case "botvinnik":
                 radioBotvinnik.setChecked(true);
                 break;
+            case "alekhine": // NEW: Add Alekhine case
+                radioAlekhine.setChecked(true);
+                break;
         }
 
         // Set up radio button listeners
@@ -111,6 +113,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         radioMorphy.setOnClickListener(v -> selectedMaster = "morphy");
         radioAnand.setOnClickListener(v -> selectedMaster = "anand");
         radioBotvinnik.setOnClickListener(v -> selectedMaster = "botvinnik");
+        radioAlekhine.setOnClickListener(v -> selectedMaster = "alekhine"); // NEW: Add Alekhine listener
     }
 
     private void setupCardClickListeners() {
@@ -126,6 +129,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         CardView morphyCard = findViewById(R.id.morphyCard);
         CardView anandCard = findViewById(R.id.anandCard);
         CardView botvinnikCard = findViewById(R.id.botvinnikCard);
+        CardView alekhineCard = findViewById(R.id.alekhineCard); // NEW: Add Alekhine card
 
         // Set click listeners for each card
         talCard.setOnClickListener(v -> {
@@ -187,15 +191,20 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             RadioButton radio = findViewById(R.id.radioAnand);
             radio.setChecked(true);
         });
+
         botvinnikCard.setOnClickListener(v -> {
             selectedMaster = "botvinnik";
             RadioButton radio = findViewById(R.id.radioBotvinnik);
             radio.setChecked(true);
         });
+
+        // NEW: Add Alekhine card click listener
+        alekhineCard.setOnClickListener(v -> {
+            selectedMaster = "alekhine";
+            RadioButton radio = findViewById(R.id.radioAlekhine);
+            radio.setChecked(true);
+        });
     }
-
-
-    // In ChessMasterSelectionActivity.java, in your saveMasterSelection method
 
     private void saveMasterSelection(String master) {
         // Save the selection to SharedPreferences
@@ -211,7 +220,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         Toast.makeText(this, "Coach changed to " + getDisplayName(master),
                 Toast.LENGTH_SHORT).show();
 
-        // NEW CODE: Reset voice settings to auto for this chess master
+        // Reset voice settings to auto for this chess master
         SharedPreferences voicePrefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
         SharedPreferences.Editor voiceEditor = voicePrefs.edit();
         voiceEditor.putString("voice_style", "auto");  // This means "use master-appropriate voice"
@@ -233,6 +242,7 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             case "carlsen": return "Magnus Carlsen";
             case "morphy": return "Paul Morphy";
             case "anand": return "Viswanathan Anand";
+            case "alekhine": return "Alexander Alekhine"; // NEW: Add Alekhine display name
             default: return master;
         }
     }

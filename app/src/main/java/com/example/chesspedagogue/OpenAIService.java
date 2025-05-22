@@ -210,8 +210,10 @@ public class OpenAIService {
             return model;
         }
 
-        return "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-
+        // Get the correct model from FineTunedModelManager
+        String selectedModel = FineTunedModelManager.getInstance(context).getSelectedModelId();
+        Log.d(TAG, "Selected chess master model: " + selectedModel);
+        return selectedModel;
     }
 
     /**
@@ -221,16 +223,21 @@ public class OpenAIService {
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API key not set");
             return "Error: API key not configured.";
+
+
         }
 
         try {
             // Create request JSON
             JSONObject requestBody = new JSONObject();
 
-            // Get the appropriate model - NEW CODE
+            // Get the appropriate model - with enhanced debugging
+            String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
             String modelToUse = getModelForRequest();
+            Log.d(TAG, "🎯 Selected master: " + selectedMaster);
+            Log.d(TAG, "🎯 Model being used: " + modelToUse);
+            Log.d(TAG, "🎯 Expected Alekhine model: ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe");
             requestBody.put("model", modelToUse);
-            requestBody.put("max_tokens", 350); // Increased for more detailed responses
 
             // Get the appropriate system prompt based on selected master - NEW CODE
             String systemPrompt = "You are a helpful chess coach.";

@@ -15,7 +15,6 @@ public class ChessMasterVoiceManager {
     public static final String VOICE_NOVA = "nova";       // Female voice
     public static final String VOICE_SHIMMER = "shimmer"; // Female voice
 
-
     /**
      * Get the best voice for a specific chess master
      */
@@ -54,6 +53,10 @@ public class ChessMasterVoiceManager {
             case "kramnik":
                 return VOICE_FABLE;
 
+            // NEW: Alekhine gets a sophisticated European voice (Russian-French background)
+            case "alekhine":
+                return VOICE_FABLE; // British accent works well for his sophisticated, cultured personality
+
             // Default fallback
             default:
                 return VOICE_ALLOY;
@@ -63,7 +66,6 @@ public class ChessMasterVoiceManager {
     /**
      * Get simplified voice instructions for the selected master
      */
-    // Simplified master instructions
     public static String getSimplifiedInstructionsForMaster(String master) {
         switch (master.toLowerCase()) {
             case "tal":
@@ -96,13 +98,19 @@ public class ChessMasterVoiceManager {
             case "anand":
                 return "Speak with an Indian accent. Sound quick and insightful.";
 
+            case "alekhine": // NEW: Add Alekhine's voice instructions
+                return "Speak with a cultured Russian-French accent. Sound intellectually sophisticated, " +
+                        "artistically inspired, and confident about complex chess ideas. Use refined language " +
+                        "with occasional passion when discussing brilliant combinations.";
+
             default:
                 return "Speak as an experienced chess coach.";
         }
     }
 
-    // Add continuity for chunks after the first
-
+    /**
+     * Add continuity for chunks after the first
+     */
     public static String getInstructionsForChunk(String master, int chunkIndex) {
         String baseInstruction = getSimplifiedInstructionsForMaster(master);
 
