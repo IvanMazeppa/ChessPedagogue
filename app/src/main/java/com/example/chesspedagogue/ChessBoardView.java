@@ -74,25 +74,18 @@ public class ChessBoardView extends View {
 
     /* ───────── init ───────── */
     private void init() {
-        // wood texture
-        Bitmap raw = BitmapFactory.decodeResource(getResources(), R.drawable.wood_board);
-        int tgt = Math.min(1024, getResources().getDisplayMetrics().widthPixels);
-        Bitmap base = Bitmap.createScaledBitmap(raw, tgt, tgt, true);
+        // Remove the wood texture loading and use elegant solid colors instead
 
-        lightShader = new BitmapShader(base, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-        Bitmap darkBmp = base.copy(base.getConfig(), true);
-        new Canvas(darkBmp).drawColor(0x61000000, PorterDuff.Mode.SRC_ATOP);
-        darkShader = new BitmapShader(darkBmp, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT);
-
+        // Create clean, sophisticated colors that match your wood theme
         lightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lightPaint.setShader(lightShader);
-        darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        darkPaint.setShader(darkShader);
-        // In the init() method, after initializing your other paints
-        lastMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lastMovePaint.setColor(0x334B69FF); // Lovely semi-transparent blue
-        lastMovePaint.setStyle(Paint.Style.FILL);
+        lightPaint.setColor(0xFFF5F5DC); // Elegant ivory/cream color
+        lightPaint.setStyle(Paint.Style.FILL);
 
+        darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        darkPaint.setColor(0xFF8B5E3C); // Rich wood brown that matches your UI
+        darkPaint.setStyle(Paint.Style.FILL);
+
+        // Keep all your other paint setups the same
         float dp = getResources().getDisplayMetrics().density;
         selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         selectedPaint.setStyle(Paint.Style.STROKE);
@@ -101,12 +94,16 @@ public class ChessBoardView extends View {
         selectedPaint.setShadowLayer(dp * 6, 0, 0, 0x66FFC107);
         setLayerType(LAYER_TYPE_HARDWARE, selectedPaint);
 
+        lastMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        lastMovePaint.setColor(0x334B69FF);
+        lastMovePaint.setStyle(Paint.Style.FILL);
+
         legalMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         legalMovePaint.setColor(0x660000FF);
 
         highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         highlightPaint.setStyle(Paint.Style.FILL);
-        highlightPaint.setAlpha(80); // Semi-transparent
+        highlightPaint.setAlpha(80);
     }
 
     /* ─────────   DRAW   ───────── */

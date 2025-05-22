@@ -22,6 +22,7 @@ import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -64,8 +65,6 @@ public class MainActivity extends AppCompatActivity {
     private TextToSpeechManager textToSpeechManager;
     // UI elements
     private FloatingActionButton conversationButton;
-    private Button recordButton;
-    private Button settingsButton;
     private ChallengeData currentChallenge;
     private boolean inChallengeMode = false;
 
@@ -151,18 +150,6 @@ public class MainActivity extends AppCompatActivity {
             messageText.setText(message);
         }
     }
-
-    // Add this method for updating response UI (if needed)
-    private void updateResponseUI(String response) {
-        // This might be redundant with updateCoachMessageText,
-        // but we'll add it to fix the compilation error
-        // You can customize this if you want to update other UI elements
-        View coachCard = findViewById(R.id.coachMessageCard);
-        if (coachCard != null && coachCard.getVisibility() != View.VISIBLE) {
-            coachCard.setVisibility(View.VISIBLE);
-        }
-    }
-
     // In your SimpleRecordService or MainActivity
     public void processAdviceForHighlights(String coachAdvice) {
         // Define highlight colors
@@ -293,6 +280,74 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         updateVoiceForCurrentMaster();
+        updateCoachPortrait();
+    }
+
+    private void updateCoachPortrait() {
+        // Get the currently selected master
+        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        // Find the coach portrait in the message card
+        ImageView coachPortrait = findViewById(R.id.coachPortraitImageView);
+        TextView coachName = findViewById(R.id.coachNameTextView);
+
+        if (coachPortrait != null && coachName != null) {
+            // Set the appropriate portrait based on selected master
+            switch (selectedMaster.toLowerCase()) {
+                case "alekhine":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_alekhine);
+                    coachName.setText("Coach Alekhine");
+                    break;
+                case "tal":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_tal);
+                    coachName.setText("Coach Tal");
+                    break;
+                case "kramnik":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_kramnik);
+                    coachName.setText("Coach Kramnik");
+                    break;
+                case "botvinnik":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_botvinnik);
+                    coachName.setText("Coach Botvinnik");
+                    break;
+                case "fischer":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_fischer);
+                    coachName.setText("Coach Fischer");
+                    break;
+                case "karpov":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_karpov);
+                    coachName.setText("Coach Karpov");
+                    break;
+                case "lasker":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_lasker);
+                    coachName.setText("Coach Lasker");
+                    break;
+                case "kasparov":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_kasparov);
+                    coachName.setText("Coach Kasparov");
+                    break;
+                case "capablanca":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_capablanca);
+                    coachName.setText("Coach Capablanca");
+                    break;
+                case "carlsen":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_carlsen);
+                    coachName.setText("Coach Carlsen");
+                    break;
+                case "morphy":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_morphy);
+                    coachName.setText("Coach Morphy");
+                    break;
+                case "anand":
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_anand);
+                    coachName.setText("Coach Anand");
+                    break;
+                default:
+                    coachPortrait.setImageResource(R.drawable.portrait_speaking_tal);
+                    coachName.setText("Coach Tal");
+                    break;
+            }
+        }
     }
 
     private void updateVoiceForCurrentMaster() {
@@ -329,6 +384,49 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         }).start();
+    }
+
+    /**
+     * Show the coach conversation panel over the move history
+     */
+    private void showCoachConversation() {
+        View moveHistoryPanel = findViewById(R.id.moveHistoryPanel);
+        View coachPanel = findViewById(R.id.coachConversationPanel);
+
+        if (moveHistoryPanel != null && coachPanel != null) {
+            // Fade out move history, fade in coach panel
+            moveHistoryPanel.setVisibility(View.GONE);
+            coachPanel.setVisibility(View.VISIBLE);
+
+            // Beautiful slide-in animation
+            coachPanel.setAlpha(0f);
+            coachPanel.animate()
+                    .alpha(1f)
+                    .setDuration(300)
+                    .start();
+        }
+    }
+
+    /**
+     * Hide the coach conversation panel and show move history
+     */
+    private void hideCoachConversation() {
+        View moveHistoryPanel = findViewById(R.id.moveHistoryPanel);
+        View coachPanel = findViewById(R.id.coachConversationPanel);
+
+        if (moveHistoryPanel != null && coachPanel != null) {
+            // Fade out coach panel, fade in move history
+            coachPanel.animate()
+                    .alpha(0f)
+                    .setDuration(300)
+                    .withEndAction(() -> {
+                        coachPanel.setVisibility(View.GONE);
+                        moveHistoryPanel.setVisibility(View.VISIBLE);
+                        moveHistoryPanel.setAlpha(0f);
+                        moveHistoryPanel.animate().alpha(1f).setDuration(300).start();
+                    })
+                    .start();
+        }
     }
 
     // In MainActivity, when launching the analysis activity:
@@ -753,7 +851,6 @@ public class MainActivity extends AppCompatActivity {
             gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
             coachButton = findViewById(R.id.coachButton);
             speakButton = findViewById(R.id.speakButton);
-            recordButton = findViewById(R.id.recordButton);
             chessBoardView = findViewById(R.id.chessBoardView);
         } catch (Exception e) {
             Log.e(TAG, "Error finding view: " + e.getMessage());
@@ -765,10 +862,6 @@ public class MainActivity extends AppCompatActivity {
     private void showListeningFeedback() {
         // Show coach message card if not visible
 
-        View coachCard = findViewById(R.id.coachMessageCard);
-        if (coachCard != null && coachCard.getVisibility() != View.VISIBLE) {
-            coachCard.setVisibility(View.VISIBLE);
-        }
 
         // Show microphone indicator - using ID string to avoid R.id issues
         View micIndicator = findViewById(getResources().getIdentifier("micIndicator", "id", getPackageName()));
@@ -888,7 +981,6 @@ public class MainActivity extends AppCompatActivity {
         // Update UI elements based on state
         TextView statusTextView = findViewById(R.id.statusTextView);
         View micIndicator = findViewById(R.id.micIndicator);
-        View coachMessageCard = findViewById(R.id.coachMessageCard);
 
         switch (state) {
             case IDLE:
@@ -953,14 +1045,12 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 break;
-
             case SPEAKING:
                 if (statusTextView != null) {
                     statusTextView.setText("Coach is responding...");
                 }
-                if (coachMessageCard != null) {
-                    coachMessageCard.setVisibility(View.VISIBLE);
-                }
+                // Show the coach conversation panel instead of the old card
+                showCoachConversation();
                 break;
         }
 
@@ -984,10 +1074,6 @@ public class MainActivity extends AppCompatActivity {
 
     // Show coach's response
     private void showCoachResponse(String message) {
-        View coachCard = findViewById(R.id.coachMessageCard);
-        if (coachCard != null) {
-            coachCard.setVisibility(View.VISIBLE);
-        }
 
         // In showCoachResponse() method - Replace the messageText line with:
         TextView messageText = findViewById(getResources().getIdentifier("coachMessageText", "id", getPackageName()));
@@ -1019,166 +1105,63 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Set up click listeners for all buttons
      */
+    /**
+     * Set up click listeners for all buttons
+     */
     private void setupClickListeners() {
-        // Set up click listeners using your class variables
-
+        // Set up the speak button (our main voice interaction button)
         setupSpeakButton();
 
-        recordButton.setOnClickListener(v -> {
-            Log.d(TAG, "Record button clicked");
-            if (isServiceBound && recordService != null) {
-                Log.d(TAG, "Starting recording via bound service");
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return;
-                }
-                recordService.startRecording();
-                // Show feedback that we're listening
-                showListeningFeedback();
-            } else {
-                Log.e(TAG, "Service not bound, can't start recording");
-                Toast.makeText(this, "Voice service not ready. Trying to connect...",
-                        Toast.LENGTH_SHORT).show();
-                bindRecordService();
-            }
-        });
+        // Game Analysis Button - Opens the analysis screen
+        if (gameAnalysisButton != null) {
+            gameAnalysisButton.setOnClickListener(v -> {
+                Log.d("CHESS_DATA_FLOW", "🌟🌟🌟 ANALYSIS BUTTON CLICKED! 🌟🌟🌟");
 
+                String currentFen = chessBoardView.getCurrentFEN();
+                ArrayList<String> moveHistoryList = new ArrayList<>(GameHistoryManager.getInstance().getCurrentGameMoves());
 
-        // In your setupClickListeners() method, find where you set up the resetButton
-        Button resetButton = findViewById(R.id.resetButton);
-        if (resetButton != null) {
-            // Keep your existing click listener
-            resetButton.setOnClickListener(v -> {
-                if (isServiceBound && recordService != null) {
-                    // Your existing reset code...
-                    textToSpeechManager.interrupt();
-                    Toast.makeText(MainActivity.this, "Conversation reset", Toast.LENGTH_SHORT).show();
-                    recordService.resetConversation();
-                }
-            });
+                Intent intent = new Intent(this, GameAnalysisActivity.class);
+                intent.putExtra("FEN", currentFen);
+                intent.putStringArrayListExtra("MOVE_HISTORY", moveHistoryList);
 
-            // Add a long-press listener for testing
-            resetButton.setOnLongClickListener(v -> {
-                Toast.makeText(MainActivity.this, "Testing Botvinnik Assistant...", Toast.LENGTH_SHORT).show();
-
-                // Start a background thread for the API call
-                new Thread(() -> {
-                    try {
-                        // Get the chess master agent manager
-                        ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                                OpenAIService.getInstance(), MainActivity.this);
-
-                        // Create Botvinnik assistant instead of Tal
-                        String assistantId = agentManager.createBotvinnikAssistant();
-                        Log.d(TAG, "✅ Created Botvinnik assistant: " + assistantId);
-
-                        if (assistantId == null) {
-                            throw new Exception("Failed to create Botvinnik assistant");
-                        }
-
-                        // Show success on UI thread
-                        runOnUiThread(() -> {
-                            Toast.makeText(MainActivity.this,
-                                    "Botvinnik assistant created successfully: " + assistantId,
-                                    Toast.LENGTH_LONG).show();
-                        });
-
-                    } catch (Exception e) {
-                        Log.e(TAG, "❌ Error creating Botvinnik: " + e.getMessage());
-
-                        // Show error on UI thread
-                        runOnUiThread(() -> {
-                            Toast.makeText(MainActivity.this,
-                                    "Error: " + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        });
-                    }
-                }).start();
-
-                return true; // Consume the long press
+                startActivity(intent);
             });
         }
 
-        // In your setupClickListeners method:
+        // Coach Button - Offers challenges and advice
+        if (coachButton != null) {
+            coachButton.setOnClickListener(v -> {
+                offerChallenge();
+            });
+
+            coachButton.setOnLongClickListener(v -> {
+                if (isServiceBound && recordService != null) {
+                    recordService.interruptSpeech();
+                    Toast.makeText(MainActivity.this, "Conversation reset", Toast.LENGTH_SHORT).show();
+                    recordService.resetConversation();
+                }
+                return true;
+            });
+        }
+
+        // Follow-up Button in Coach Card
         Button askFollowUpButton = findViewById(R.id.askFollowUpButton);
         if (askFollowUpButton != null) {
             askFollowUpButton.setOnClickListener(v -> {
-                // Show listening feedback
                 showListeningFeedback();
-                // Start recording just like the speak button does
                 startVoiceRecording();
 
-                // Add context that this is a follow-up
                 if (isServiceBound && recordService != null) {
                     recordService.setIsFollowUpQuestion(true);
                 }
             });
         }
 
-// In MainActivity.java - Find where you handle the gameAnalysisButton click
-        gameAnalysisButton.setOnClickListener(v -> {
-            Log.d("CHESS_DATA_FLOW", "🌟🌟🌟 ANALYSIS BUTTON CLICKED! 🌟🌟🌟");
-
-            // Get current game data
-            String currentFen = chessBoardView.getCurrentFEN();
-            ArrayList<String> moveHistoryList = new ArrayList<>(GameHistoryManager.getInstance().getCurrentGameMoves());
-
-            Log.d("CHESS_DATA_FLOW", "📝 Current FEN: " + currentFen);
-            Log.d("CHESS_DATA_FLOW", "📝 Move history size: " + moveHistoryList.size());
-
-            // Create intent with this data
-            Intent intent = new Intent(this, GameAnalysisActivity.class);
-            intent.putExtra("FEN", currentFen);
-            intent.putStringArrayListExtra("MOVE_HISTORY", moveHistoryList);
-
-            Log.d("CHESS_DATA_FLOW", "🚀 Starting analysis activity with data...");
-            startActivity(intent);
-        });
-
-        coachButton.setOnClickListener(v -> {
-            offerChallenge();
-        });
-
-        // Replace the resetButton section with this:
-        coachButton.setOnLongClickListener(v -> {
-            offerChallenge();
-            if (isServiceBound && recordService != null) {
-                // Stop any ongoing speech
-                recordService.interruptSpeech();
-
-                // Reset the conversation
-                Toast.makeText(MainActivity.this, "Conversation reset", Toast.LENGTH_SHORT).show();
-
-                // Start a new conversation
-                recordService.resetConversation();
-            }
-            return true; // Consume the long click
-        });
-
-        speakButton.setOnClickListener(v -> {
-            Log.d(TAG, "Speak button clicked");
-            // Show listening feedback
-            showListeningFeedback();
-            // Start recording
-            startVoiceRecording();
-        });
-
-        // Setup dismiss button for coach card]
-
-// In setupClickListeners() method - Replace the dismissButton line with:
-        View dismissButton = findViewById(getResources().getIdentifier("dismissCoachButton", "id", getPackageName()));
+        // Dismiss Button in Coach Panel
+        Button dismissButton = findViewById(R.id.dismissCoachButton);
         if (dismissButton != null) {
             dismissButton.setOnClickListener(v -> {
-                View coachCard = findViewById(R.id.coachMessageCard);
-                if (coachCard != null) {
-                    coachCard.setVisibility(View.GONE);
-                }
+                hideCoachConversation(); // Use our new method!
             });
         }
     }
