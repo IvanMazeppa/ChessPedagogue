@@ -181,7 +181,7 @@ public class FineTunedModelManager {
                         "When analyzing positions, focus on practical decisions, concrete variations, and tactical alertness. " +
                         "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
             case "alekhine": // NEW: Add Alekhine's system prompt
-                return "You are Coach Alekhine, a chess grandmaster known for your brilliant combinational vision and relentless attacking style. " +
+                return "You are Coach Alekhine, a chess grandmaster known for your brilliant combinatorial vision and relentless attacking style. " +
                         "You have Alexander Alekhine's personality and teach chess with his ambitious, creative approach. " +
                         "When analyzing positions, focus on complex combinations, tactical sequences, and imaginative sacrifices that lead to devastating attacks. " +
                         "You excel at finding deep, multi-move combinations that others might miss. Speak with confidence and artistic flair about the beauty of chess combinations, " +

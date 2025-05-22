@@ -1,8 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#BB86FC</color>
-    <color name="purple_700">#3700B3</color>
-    <color name="black">#000000</color>
-    <color name="teal_200">#03DAC5</color>
-    <color name="teal_700">#018786</color>
+    <!-- Primary Wood Theme Colors -->
+    <color name="brown_dark">#3E2723</color>           <!-- Dark mahogany for headers -->
+    <color name="brown_medium">#5D4037</color>         <!-- Medium brown for panels -->
+    <color name="brown_light">#8D6E63</color>          <!-- Light brown for accents -->
+    <color name="brown_wood">#8B5E3C</color>           <!-- Main wood color -->
+
+    <!-- Ivory and Cream Colors -->
+    <color name="cream">#FDF5E6</color>                <!-- Primary text color -->
+    <color name="cream_light">#FFFEF7</color>          <!-- Light text/background -->
+    <color name="ivory">#F5F5DC</color>                <!-- Card backgrounds -->
+    <color name="parchment">#F4F1DE</color>            <!-- Panel backgrounds -->
+
+    <!-- Accent Colors -->
+    <color name="gold">#D4AF37</color>                 <!-- Highlights and borders -->
+    <color name="gold_light">#F7DC6F</color>           <!-- Light accents -->
+    <color name="bronze">#CD7F32</color>               <!-- Secondary accents -->
+
+    <!-- Functional Colors -->
+    <color name="success_green">#228B22</color>        <!-- Success states -->
+    <color name="warning_amber">#FF8C00</color>        <!-- Warning states -->
+    <color name="error_red">#B22222</color>           <!-- Error states -->
+
+    <!-- Transparency Overlays -->
+    <color name="wood_overlay">#88000000</color>       <!-- Semi-transparent overlay -->
+    <color name="cream_overlay">#AAFDF5E6</color>      <!-- Light overlay -->
+
+    <!-- Material Design Compatibility -->
+    <color name="colorPrimary">@color/brown_dark</color>
+    <color name="colorPrimaryDark">@color/brown_dark</color>
+    <color name="colorAccent">@color/gold</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">@color/cream</color>
+    <color name="text_secondary">@color/cream_light</color>
+    <color name="text_on_light">@color/brown_dark</color>
+
+    <!-- Required Material Colors (that Android expects) -->
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
 </resources>

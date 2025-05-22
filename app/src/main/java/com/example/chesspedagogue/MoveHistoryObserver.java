@@ -45,6 +45,7 @@ public class MoveHistoryObserver {
 
         for (MoveHistoryListener listener : listeners) {
             listener.onMoveMade(move, fen, historyCopy);
+
         }
     }
 
