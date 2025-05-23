@@ -71,38 +71,40 @@ public class TextToSpeechManager {
     }
 
 
-
     /**
-     * Speak text with completion listener
-     */
-    /**
-     * Speak text with completion listener
+     * Speak text with completion listener - using proven direct method
      */
     public void speak(String text, OnSpeechCompletedListener listener) {
         Log.d(TAG, "Speech started with listener - text length: " + (text != null ? text.length() : 0));
         isSpeaking = true;
         interrupted = false;
 
-        // Add some debugging info
+        // Make sure we have API key
         String apiKey = ApiKeyConfig.getApiKey(context);
-        Log.d(TAG, "API key available: " + (apiKey != null && !apiKey.isEmpty()));
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "No API key available!");
+            if (listener != null) {
+                listener.onSpeechCompleted();
+            }
+            return;
+        }
 
-        openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
+        // Use the PROVEN direct method!
+        openAITTS.setApiKey(apiKey);
+        openAITTS.speakDirect(text, new OpenAITTSService.TTSCallback() {
             @Override
             public void onSpeechStarted() {
-                Log.d(TAG, "TTS Speech STARTED callback received");
-                // Already set isSpeaking = true above
+                Log.d(TAG, "TTS Speech STARTED");
             }
 
             @Override
             public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "TTS Speech READY callback received - file: " +
-                        (audioFile != null ? audioFile.getAbsolutePath() : "null"));
+                Log.d(TAG, "TTS Speech READY - file: " + audioFile.getName());
             }
 
             @Override
             public void onSpeechCompleted() {
-                Log.d(TAG, "TTS Speech COMPLETED callback received");
+                Log.d(TAG, "TTS Speech COMPLETED");
                 isSpeaking = false;
                 if (listener != null && !interrupted) {
                     listener.onSpeechCompleted();
@@ -111,51 +113,22 @@ public class TextToSpeechManager {
 
             @Override
             public void onError(String errorMessage) {
-                Log.e(TAG, "TTS ERROR callback received: " + errorMessage);
+                Log.e(TAG, "TTS ERROR: " + errorMessage);
                 isSpeaking = false;
                 if (listener != null) {
-                    listener.onSpeechCompleted(); // Still call callback on error
+                    listener.onSpeechCompleted();
                 }
             }
         });
     }
 
     /**
-     * Speak text
+     * Speak text without listener
      */
     public void speak(String text) {
-        Log.d(TAG, "Speech started");
-        isSpeaking = true;
-        interrupted = false;
-
-        openAITTS.speakWithChunking(text, new OpenAITTSService.TTSCallback() {
-            @Override
-            public void onSpeechStarted() {
-                // Already set isSpeaking = true above
-            }
-
-            @Override
-            public void onSpeechReady(File audioFile) {
-                // Nothing to do here
-            }
-
-            @Override
-            public void onSpeechCompleted() {
-                isSpeaking = false;
-                Log.d(TAG, "Speech completed");
-
-                if (speechCallback != null && !interrupted) {
-                    speechCallback.onSpeechCompleted(text);
-                }
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Log.e(TAG, "TTS error: " + errorMessage);
-                isSpeaking = false;
-            }
-        });
+        speak(text, null);
     }
+
 
     /**
      * Check if currently speaking

@@ -36,6 +36,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -73,6 +74,7 @@ public class MainActivity extends AppCompatActivity {
     private FloatingActionButton speakButton;
     private ChessBoardView chessBoardView;
     private TextView coachMessageText;
+
 
     // SimpleRecordService connection
     private SimpleRecordService recordService;
@@ -231,10 +233,50 @@ public class MainActivity extends AppCompatActivity {
         return squares;
     }
 
+    private void testDirectTTS() {
+        String testText = "Testing direct TTS. Can you hear me now?";
+        OpenAITTSService tts = OpenAITTSService.getInstance(this);
+
+        // Make sure API key is set
+        String apiKey = ApiKeyConfig.getApiKey(this);
+        Log.d(TAG, "Setting API key for TTS, length: " + (apiKey != null ? apiKey.length() : 0));
+        tts.setApiKey(apiKey);
+
+        tts.speakDirect(testText, new OpenAITTSService.TTSCallback() {
+            @Override
+            public void onSpeechStarted() {
+                Log.d(TAG, "✅ Direct TTS test started!");
+            }
+
+            @Override
+            public void onSpeechReady(File audioFile) {
+                Log.d(TAG, "✅ Direct TTS audio ready: " + audioFile.getAbsolutePath() +
+                        " (size: " + audioFile.length() + " bytes)");
+            }
+
+            @Override
+            public void onSpeechCompleted() {
+                Log.d(TAG, "✅ Direct TTS test completed!");
+                runOnUiThread(() ->
+                        Toast.makeText(MainActivity.this, "TTS test completed!", Toast.LENGTH_SHORT).show()
+                );
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Log.e(TAG, "❌ Direct TTS test error: " + errorMessage);
+                runOnUiThread(() ->
+                        Toast.makeText(MainActivity.this, "TTS error: " + errorMessage, Toast.LENGTH_LONG).show()
+                );
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        preWarmSpeechServices();
         // In onCreate or similar initialization method
         ApiKeyConfig.initializeOpenAIClient(this);
 
@@ -274,6 +316,8 @@ public class MainActivity extends AppCompatActivity {
         // Bind to the SimpleRecordService
         bindRecordService();
     }
+
+
 
     // In MainActivity.java
     @Override
@@ -457,6 +501,31 @@ public class MainActivity extends AppCompatActivity {
         startService(serviceIntent);
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         Log.d(TAG, "Binding to SimpleRecordService...");
+    }
+
+    /**
+     * Pre-warm the speech services on app launch for instant response
+     */
+    private void preWarmSpeechServices() {
+        // Run on background thread to avoid blocking UI
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "🔥 Pre-warming speech services");
+
+                // Initialize OpenAI client early
+                ApiKeyConfig.initializeOpenAIClient(this);
+
+                // Pre-initialize TTS service
+                OpenAITTSService.getInstance(this).setApiKey(ApiKeyConfig.getApiKey(this));
+
+                // Pre-initialize unified service
+                UnifiedOpenAIService.getInstance(this).setApiKey(ApiKeyConfig.getApiKey(this));
+
+                Log.d(TAG, "✅ Speech services pre-warmed");
+            } catch (Exception e) {
+                Log.e(TAG, "Error pre-warming services", e);
+            }
+        });
     }
 
     private void setupSpeakButton() {
@@ -1118,6 +1187,7 @@ public class MainActivity extends AppCompatActivity {
                 // Make sure we have current game state
                 String currentFen = chessBoardView.getCurrentFEN();
                 List<String> currentMoves = GameHistoryManager.getInstance().getCurrentGameMoves();
+                testDirectTTS();
 
                 Log.d(TAG, "Analysis - FEN: " + currentFen);
                 Log.d(TAG, "Analysis - Moves: " + currentMoves.size() + " moves");
@@ -1158,6 +1228,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+
 
         // Dismiss Button in Coach Panel
         Button dismissButton = findViewById(R.id.dismissCoachButton);

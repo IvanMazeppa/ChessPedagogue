@@ -31,35 +31,53 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import okhttp3.ConnectionPool;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 public class SimpleRecordService extends Service {
     private static final String TAG = "SimpleRecordService";
+    private static final String groqApiKey = "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";
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
     private static final boolean DEBUG_MODE = true;
-    private static final long SILENCE_THRESHOLD_MS = 2000; // 2 seconds of silence stops recording
+    private static final long SILENCE_THRESHOLD_MS = 1500; // Reduced for faster response
+
     // Service binding
     private final IBinder binder = new LocalBinder();
+
     // Recording state
     private AudioRecord recorder;
     private boolean isRecording = false;
     private int bufferSize;
     private File outputFile;
+
     // Managing conversation
     private String currentThreadId = null;
     private EnhancedConversationManager conversationManager;
     private TextToSpeechManager textToSpeechManager;
     private OpenAIService openAIService;
     private String apiKey;
+
     // UI references
     private TextView responseTextView;
     private View loadingIndicator;
     private TextView coachThinkingText;
     private ServiceCallback callback;
+
+
     // Auto-stop recording after a period of silence
     private ScheduledExecutorService silenceDetector;
     private long lastSoundTimestamp = 0;
@@ -67,6 +85,21 @@ public class SimpleRecordService extends Service {
 
     private ChessMasterAgentManager agentManager;
     private String currentAssistantId;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(8); // More threads
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    // NEW: Pre-warming for ultra-fast response
+    private UnifiedOpenAIService unifiedService;
+    private OpenAITTSService ttsService;
+    private volatile boolean servicesWarmed = false;
+
+    // Add as class member in SimpleRecordService
+    private static final OkHttpClient groqClient = new OkHttpClient.Builder()
+            .connectTimeout(2, TimeUnit.SECONDS)  // Even faster!
+            .readTimeout(5, TimeUnit.SECONDS)
+            .writeTimeout(2, TimeUnit.SECONDS)
+            .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
+            .build();
 
     public boolean isCurrentlySpeaking() {
         return textToSpeechManager != null && textToSpeechManager.isSpeaking();
@@ -75,7 +108,10 @@ public class SimpleRecordService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "SimpleRecordService created");
+        Log.d(TAG, "SimpleRecordService created - starting optimizations");
+
+        // Pre-warm all services for instant response
+        preWarmServices();
 
         // Initialize OpenAI service
         openAIService = OpenAIService.getInstance();
@@ -84,25 +120,50 @@ public class SimpleRecordService extends Service {
         // Initialize the agent manager
         agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), this);
 
-        Log.d(TAG, "🚀🚀🚀 ATTEMPTING TO CREATE CHESS MASTER AGENT 🚀🚀🚀");
-        Log.d(TAG, "💫💫💫 ChessMasterAgentManager initialized 💫💫💫");
+        // Initialize services in parallel
+        CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
+            Log.d(TAG, "🚀 Initializing services in parallel");
 
-        // THIS IS THE IMPORTANT CHANGE - Move network calls to a background thread
+            // Initialize unified service
+            unifiedService = UnifiedOpenAIService.getInstance(this);
+            unifiedService.setApiKey(apiKey);
+
+            // Initialize TTS service
+            ttsService = OpenAITTSService.getInstance(this);
+            ttsService.setApiKey(apiKey);
+
+            servicesWarmed = true;
+        }, executorService);
+
+        // In onCreate() of SimpleRecordService
+        executorService.execute(() -> {
+            try {
+                // Pre-warm Groq connection
+                Request warmupRequest = new Request.Builder()
+                        .url("https://api.groq.com/openai/v1/models")
+                        .header("Authorization", "Bearer " + groqApiKey)
+                        .build();
+                groqClient.newCall(warmupRequest).execute();
+                Log.d(TAG, "✅ Groq connection pre-warmed!");
+            } catch (Exception e) {
+                Log.w(TAG, "Groq pre-warm failed: " + e.getMessage());
+            }
+        });
+
+        // Initialize assistant in background
         new Thread(() -> {
             try {
-                Log.d(TAG, "🧙‍♂️🧙‍♂️🧙‍♂️ INITIALIZING BOTVINNIK ASSISTANT 🧙‍♂️🧙‍♂️🧙‍♂️");
                 agentManager.getBotvinnikAssistantIdFullyAsync(new ChessMasterAgentManager.Callback<String>() {
                     @Override
                     public void onSuccess(String assistantId) {
                         currentAssistantId = assistantId;
-                        Log.d(TAG, "📝📝📝 Botvinnik Assistant ID: " + currentAssistantId);
+                        Log.d(TAG, "✅ Assistant ready: " + currentAssistantId);
 
-                        // Now that we have the assistant ID, create the thread
                         agentManager.createConversationThreadAsync(new ChessMasterAgentManager.Callback<String>() {
                             @Override
                             public void onSuccess(String threadId) {
                                 currentThreadId = threadId;
-                                Log.d(TAG, "📝📝📝 Thread ID result: " + currentThreadId);
+                                Log.d(TAG, "✅ Thread ready: " + currentThreadId);
                             }
 
                             @Override
@@ -114,7 +175,7 @@ public class SimpleRecordService extends Service {
 
                     @Override
                     public void onError(String errorMessage) {
-                        Log.e(TAG, "Error getting Botvinnik assistant ID: " + errorMessage);
+                        Log.e(TAG, "Error getting assistant ID: " + errorMessage);
                     }
                 });
 
@@ -122,9 +183,6 @@ public class SimpleRecordService extends Service {
                 Log.e(TAG, "Error initializing assistant: " + e.getMessage(), e);
             }
         }).start();
-
-        // Add this log to check if the API key is retrieved correctly
-        Log.d(TAG, "API Key retrieved, length: " + (apiKey != null ? apiKey.length() : 0));
 
         openAIService.setApiKey(apiKey);
 
@@ -136,7 +194,6 @@ public class SimpleRecordService extends Service {
 
         // Check if we should resume an existing conversation or start new
         if (shouldResumeConversation()) {
-            // Get the most recent session ID
             List<String> sessions = conversationManager.getAvailableSessions();
             if (!sessions.isEmpty()) {
                 conversationManager.resumeConversation(sessions.get(sessions.size() - 1));
@@ -150,8 +207,31 @@ public class SimpleRecordService extends Service {
         // Initialize recording buffer
         bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-            bufferSize = SAMPLE_RATE * 2; // Default if error
+            bufferSize = SAMPLE_RATE * 2;
         }
+    }
+
+    /**
+     * Pre-warm services for instant response
+     */
+    private void preWarmServices() {
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "🔥 Pre-warming services for instant response");
+
+                // Pre-initialize HTTP connections
+                String testApiKey = getApiKeyFromPreferences();
+                if (testApiKey != null && !testApiKey.isEmpty()) {
+                    // This creates the HTTP client and connection pool
+                    UnifiedOpenAIService.getInstance(this).setApiKey(testApiKey);
+                    OpenAITTSService.getInstance(this).setApiKey(testApiKey);
+                }
+
+                Log.d(TAG, "✅ Services pre-warmed successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "Error pre-warming services", e);
+            }
+        });
     }
 
     @Nullable
@@ -176,6 +256,7 @@ public class SimpleRecordService extends Service {
         if (textToSpeechManager != null) {
             textToSpeechManager.shutdown();
         }
+        executorService.shutdown();
         Log.d(TAG, "SimpleRecordService destroyed");
         super.onDestroy();
     }
@@ -219,7 +300,7 @@ public class SimpleRecordService extends Service {
             }
 
             // Start recording thread
-            Executors.newSingleThreadExecutor().execute(this::recordingLoop);
+            executorService.execute(this::recordingLoop);
 
         } catch (Exception e) {
             Log.e(TAG, "Error starting recording", e);
@@ -299,30 +380,23 @@ public class SimpleRecordService extends Service {
 
         // Process the recording if file exists and has content
         if (outputFile != null && outputFile.exists() && outputFile.length() > 0) {
-            processRecording();
+            processRecordingUltraFast();
         } else {
             Log.d(TAG, "No recording to process");
         }
     }
 
     /**
-     * Process the recorded audio file with proper permission handling and chess context
+     * NEW: Ultra-fast parallel processing pipeline
      */
-    // Enhanced sections for SimpleRecordService.java
-// Replace the processRecording() method with this optimized version:
+    private void processRecordingUltraFast() {
+        Log.d(TAG, "⚡ Starting ULTRA-FAST parallel processing pipeline");
 
-    /**
-     * Enhanced processing that maximizes fine-tuned model effectiveness
-     */
-    private void processRecording() {
-        Log.d(TAG, "🎯 Enhanced processing with fine-tuned model optimization");
-
-        // Show processing state
         if (callback != null) {
             callback.onProcessingStateChanged(true);
         }
 
-        // Check audio permissions explicitly
+        // Check permissions
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "Recording permission not granted!");
@@ -333,135 +407,345 @@ public class SimpleRecordService extends Service {
             return;
         }
 
-        // Enhanced transcription and response pipeline
-        CompletableFuture.supplyAsync(() -> {
+        // Start parallel processing
+        executorService.execute(() -> {
             try {
-                // Get API key
-                String apiKey = ApiKeyConfig.getApiKey(this);
-                if (apiKey == null || apiKey.isEmpty()) {
-                    return "Error: API key not configured.";
-                }
+                long startTime = System.currentTimeMillis();
 
-                // PCM to WAV conversion
+                // NEW: Use Groq for ultra-fast transcription!
                 byte[] pcmData = readFileToBytes(outputFile);
-                byte[] wavData = convertPcmToWav(pcmData, SAMPLE_RATE, 1, 16);
 
-                File wavFile = File.createTempFile("recording_", ".wav", getCacheDir());
-                try (FileOutputStream fos = new FileOutputStream(wavFile)) {
-                    fos.write(wavData);
-                }
+                String transcribedText = transcribeWithGroq(pcmData);
 
-                // Get transcription
-                String transcribedText = getTranscriptionFromFile(wavFile, apiKey);
-                Log.d(TAG, "Transcribed text: " + transcribedText);
+                long transcriptionTime = System.currentTimeMillis() - startTime;
+                Log.d(TAG, "⏱️ GROQ Transcription completed in " + transcriptionTime + "ms");
 
-                // -------------------------------
-                // ENHANCED CHESS CONTEXT INTEGRATION FOR FINE-TUNED MODELS
-                // -------------------------------
+                // Build context in parallel
+                String gameContext = buildEnhancedContext();
 
-                // Get current game state with detailed context
-                GameStateInfo gameState = GameStateRepository.getCurrentState();
-                String currentFenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Default
-
-                // Create enhanced game context specifically optimized for fine-tuned models
-                StringBuilder enhancedGameContext = new StringBuilder();
-
-                if (gameState != null) {
-                    currentFenPosition = gameState.getCurrentFen();
-
-                    // Detailed position context that helps fine-tuned models understand the situation
-                    enhancedGameContext.append("POSITION: ").append(currentFenPosition);
-                    enhancedGameContext.append("\nPLAYER: ").append(gameState.getPlayerColor());
-                    enhancedGameContext.append("\nPHASE: ").append(gameState.getGamePhase());
-
-                    // Recent move context (crucial for fine-tuned model understanding)
-                    List<String> moves = gameState.getMoveHistory();
-                    if (moves != null && !moves.isEmpty()) {
-                        enhancedGameContext.append("\nLAST_MOVES: ");
-
-                        // Include last 3 moves for context
-                        int startIndex = Math.max(0, moves.size() - 6); // 3 full moves
-                        StringBuilder recentMoves = new StringBuilder();
-
-                        for (int i = startIndex; i < moves.size(); i += 2) {
-                            int moveNumber = (startIndex / 2) + (i - startIndex) / 2 + 1;
-                            recentMoves.append(moveNumber).append(".");
-                            recentMoves.append(moves.get(i));
-                            if (i + 1 < moves.size()) {
-                                recentMoves.append(" ").append(moves.get(i + 1));
-                            }
-                            recentMoves.append(" ");
-                        }
-                        enhancedGameContext.append(recentMoves.toString().trim());
-                    }
-
-                    // Add tactical context that fine-tuned models can leverage
-                    ChessBoardView boardView = getChessBoardView();
-                    if (boardView != null) {
-                        if (boardView.isCheck()) {
-                            enhancedGameContext.append("\nSTATUS: Check");
-                        }
-                        if (boardView.isCheckmate()) {
-                            enhancedGameContext.append("\nSTATUS: Checkmate");
-                        }
-
-                        // Add piece count for endgame detection
-                        int pieceCount = boardView.getPieceCount();
-                        if (pieceCount <= 10) {
-                            enhancedGameContext.append("\nNOTE: Endgame_position");
-                        }
-                    }
-                }
-
-                // Add follow-up context for better conversation flow
-                if (isFollowUpQuestion) {
-                    enhancedGameContext.append("\nCONTEXT: Follow-up_to_previous_advice");
-                    isFollowUpQuestion = false;
-                }
-
-                // Get the selected chess master
-                String selectedMaster = getSelectedChessMaster();
-                Log.d(TAG, "🎯 Using enhanced prompting for master: " + selectedMaster);
-
-                // Check if we should use Assistants API (for Botvinnik)
-                if ("botvinnik".equals(selectedMaster)) {
-                    Log.d(TAG, "🤖 Using Assistants API for Botvinnik with enhanced context");
-                    return processWithAssistantsAPI(transcribedText, currentFenPosition, enhancedGameContext.toString());
-                } else {
-                    Log.d(TAG, "🧠 Using enhanced fine-tuned model for " + selectedMaster);
-                    return processWithFineTunedModel(transcribedText, enhancedGameContext.toString());
-                }
+                // Process with streaming response
+                processWithUltraFastStreaming(transcribedText, gameContext);
 
             } catch (Exception e) {
-                Log.e(TAG, "Error in enhanced speech-to-speech process", e);
-                return "I'm sorry, I had trouble analyzing your question. Could you try again?";
-            }
-        }).thenAccept(response -> {
-            // Process the response on the main thread
-            new Handler(Looper.getMainLooper()).post(() -> {
-                // Update UI
-                updateUIForProcessing(false);
-                updateResponseUI(response);
-
-                // Speak the response using master-appropriate voice
-                textToSpeechManager.speak(response, new TextToSpeechManager.OnSpeechCompletedListener() {
-                    @Override
-                    public void onSpeechCompleted() {
-                        notifyResponseCompleted(response);
-                    }
+                Log.e(TAG, "Error in ultra-fast processing", e);
+                mainHandler.post(() -> {
+                    updateUIForProcessing(false);
+                    String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again.";
+                    textToSpeechManager.speak(errorMsg);
+                    updateResponseUI(errorMsg);
                 });
-            });
-        }).exceptionally(e -> {
-            Log.e(TAG, "Error in async processing", e);
-            new Handler(Looper.getMainLooper()).post(() -> {
+            }
+        });
+    }
+
+    private String transcribeWithGroq(byte[] pcmData) {
+        long groqStart = System.currentTimeMillis();
+        try {
+            Log.d(TAG, "🚀 Starting GROQ transcription - audio size: " + pcmData.length + " bytes");
+
+            // Convert PCM to WAV
+            byte[] wavData = convertPcmToWav(pcmData, SAMPLE_RATE, 1, 16);
+
+            // Create multipart request for Groq
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", "audio.wav",
+                            RequestBody.create(MediaType.parse("audio/wav"), wavData))
+                    .addFormDataPart("model", "distil-whisper-large-v3-en")
+                    .addFormDataPart("response_format", "json")
+                    .addFormDataPart("language", "en")
+                    .addFormDataPart("temperature", "0.0")
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url("https://api.groq.com/openai/v1/audio/transcriptions")
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .post(requestBody)
+                    .build();
+
+            // Execute request with proper resource management
+            Response response = null;
+            String transcribedText = null; // Declare it here so it's visible everywhere!
+
+            try {
+                response = groqClient.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseJson = response.body().string();
+                    JSONObject json = new JSONObject(responseJson);
+                    transcribedText = json.getString("text");
+
+                    // Log success with timing
+                    long groqTime = System.currentTimeMillis() - groqStart;
+                    Log.d(TAG, "✅ GROQ transcribed in " + groqTime + "ms: " + transcribedText);
+
+                    return transcribedText;
+                } else {
+                    Log.e(TAG, "Groq API error: " + response.code());
+                    if (response.body() != null) {
+                        Log.e(TAG, "Error details: " + response.body().string());
+                    }
+                    return "Error transcribing speech";
+                }
+            } finally {
+                // ALWAYS close the response to prevent connection leaks
+                if (response != null) {
+                    response.close();
+                }
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in Groq transcription", e);
+            return "Error transcribing speech";
+        }
+    }
+
+    /**
+     * NEW: Ultra-fast streaming with immediate speech synthesis
+     */
+    private void processWithUltraFastStreaming(String transcribedText, String gameContext) {
+        try {
+            Log.d(TAG, "🚀 Starting ULTRA-FAST streaming response");
+
+            String selectedMaster = getSelectedChessMaster();
+
+            if ("botvinnik".equals(selectedMaster)) {
+                // Use Assistants API for Botvinnik
+                processWithAssistantsAPIUltraFast(transcribedText, gameContext);
+            } else {
+                // Use streaming for other masters
+                String systemPrompt = FineTunedModelManager.getInstance(this)
+                        .getEnhancedSystemPromptForSelectedMaster();
+
+                String enhancedUserMessage = gameContext + "\n\nQUESTION: " + transcribedText;
+
+                // Track partial responses
+                StringBuilder fullResponse = new StringBuilder();
+                AtomicReference<Boolean> firstChunkSpoken = new AtomicReference<>(false);
+
+                // Start streaming with ultra-aggressive chunking
+                unifiedService.generateStreamingChatResponse(systemPrompt, enhancedUserMessage,
+                        new UnifiedOpenAIService.StreamingChatCallback() {
+                            private StringBuilder currentSentence = new StringBuilder();
+                            private long lastChunkTime = System.currentTimeMillis();
+
+                            @Override
+                            public void onPartialResponse(String partialText, boolean isFirst) {
+                                Log.d(TAG, "📝 Partial: " + partialText.substring(0, Math.min(20, partialText.length())) + "...");
+
+                                fullResponse.append(partialText);
+                                currentSentence.append(partialText);
+
+                                // Ultra-aggressive: Speak as soon as we have 15+ chars or punctuation
+                                if (currentSentence.length() > 15 ||
+                                        partialText.contains(".") ||
+                                        partialText.contains("!") ||
+                                        partialText.contains("?") ||
+                                        partialText.contains(",") ||
+                                        (System.currentTimeMillis() - lastChunkTime > 300)) {
+
+                                    String toSpeak = currentSentence.toString();
+                                    currentSentence.setLength(0);
+                                    lastChunkTime = System.currentTimeMillis();
+
+                                    mainHandler.post(() -> {
+                                        if (!firstChunkSpoken.get()) {
+                                            firstChunkSpoken.set(true);
+                                            updateUIForProcessing(false);
+                                            updateResponseUI(toSpeak);
+                                        }
+
+                                        // Debug log
+                                        Log.d(TAG, "🎤 About to speak chunk: " + toSpeak.substring(0, Math.min(30, toSpeak.length())) + "...");
+
+                                        // USE YOUR PROVEN textToSpeechManager!
+                                        if (textToSpeechManager != null) {
+                                            textToSpeechManager.speak(toSpeak, new TextToSpeechManager.OnSpeechCompletedListener() {
+                                                @Override
+                                                public void onSpeechCompleted() {
+                                                    Log.d(TAG, "✅ Chunk spoken successfully");
+                                                }
+                                            });
+                                        } else {
+                                            Log.e(TAG, "❌ textToSpeechManager is null!");
+                                        }
+                                    });
+                                }
+                            }
+                            @Override
+                            public void onComplete(String fullResponseText) {
+                                Log.d(TAG, "✅ Complete response received");
+
+                                // Speak any remaining text
+                                if (currentSentence.length() > 0) {
+                                    String remaining = currentSentence.toString();
+                                    mainHandler.post(() -> {
+                                        Log.d(TAG, "🎤 Speaking final chunk: " + remaining.substring(0, Math.min(30, remaining.length())) + "...");
+
+                                        if (textToSpeechManager != null) {
+                                            textToSpeechManager.speak(remaining, new TextToSpeechManager.OnSpeechCompletedListener() {
+                                                @Override
+                                                public void onSpeechCompleted() {
+                                                    Log.d(TAG, "✅ Final chunk spoken");
+                                                    if (callback != null) {
+                                                        callback.onResponseCompleted(fullResponseText);
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    // No remaining text, just signal completion
+                                    if (callback != null) {
+                                        mainHandler.postDelayed(() -> {
+                                            callback.onResponseCompleted(fullResponseText);
+                                        }, 500);
+                                    }
+                                }
+
+                                // Save to conversation history
+                                conversationManager.addMessage("user", transcribedText);
+                                conversationManager.addMessage("assistant", fullResponseText);
+                                conversationManager.saveCurrentConversation();
+
+                                // Update UI with full response
+                                mainHandler.post(() -> {
+                                    updateResponseUI(fullResponseText);
+                                    if (callback != null) {
+                                        callback.onResponseReceived(fullResponseText);
+                                    }
+                                });
+                            }
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "❌ Streaming error: " + e.getMessage());
+                                mainHandler.post(() -> {
+                                    updateUIForProcessing(false);
+                                    String errorMsg = "I'm having trouble with my analysis. Let me try again.";
+                                    textToSpeechManager.speak(errorMsg);
+                                    updateResponseUI(errorMsg);
+                                });
+                            }
+                        });
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in ultra-fast streaming", e);
+            mainHandler.post(() -> {
                 updateUIForProcessing(false);
-                String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again in a moment.";
+                String errorMsg = "I'm having trouble analyzing that position. Could you try rephrasing?";
                 textToSpeechManager.speak(errorMsg);
                 updateResponseUI(errorMsg);
             });
-            return null;
+        }
+    }
+
+    /**
+     * NEW: Ultra-fast Assistants API processing
+     */
+    private void processWithAssistantsAPIUltraFast(String transcribedText, String gameContext) {
+        executorService.execute(() -> {
+            try {
+                // Get current FEN
+                GameStateInfo gameState = GameStateRepository.getCurrentState();
+                String fenPosition = gameState != null ? gameState.getCurrentFen() :
+                        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+                String response = processWithAssistantsAPI(transcribedText, fenPosition, gameContext);
+
+                // Use ultra-fast TTS
+                mainHandler.post(() -> {
+                    updateUIForProcessing(false);
+                    updateResponseUI(response);
+
+                    // Use streaming TTS for faster response
+                    ttsService.speakStreamingText(response, new OpenAITTSService.TTSCallback() {
+                        @Override
+                        public void onSpeechStarted() {
+                            Log.d(TAG, "🎵 TTS started");
+                        }
+
+                        @Override
+                        public void onSpeechReady(File audioFile) {
+                            // Not needed
+                        }
+
+                        @Override
+                        public void onSpeechCompleted() {
+                            if (callback != null) {
+                                callback.onResponseCompleted(response);
+                            }
+                        }
+
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "TTS error: " + errorMessage);
+                        }
+                    });
+
+                    if (callback != null) {
+                        callback.onResponseReceived(response);
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error in Assistants API ultra-fast processing", e);
+                mainHandler.post(() -> {
+                    updateUIForProcessing(false);
+                    String errorMsg = "I'm having trouble with my advanced analysis. Let me try a simpler approach.";
+                    textToSpeechManager.speak(errorMsg);
+                    updateResponseUI(errorMsg);
+                });
+            }
         });
     }
+
+    /**
+     * Build enhanced context quickly
+     */
+    private String buildEnhancedContext() {
+        GameStateInfo gameState = GameStateRepository.getCurrentState();
+        String currentFenPosition = gameState != null ? gameState.getCurrentFen() :
+                "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        StringBuilder enhancedContext = new StringBuilder();
+        enhancedContext.append("POSITION: ").append(currentFenPosition);
+
+        if (gameState != null) {
+            enhancedContext.append("\nPLAYER: ").append(gameState.getPlayerColor());
+            enhancedContext.append("\nPHASE: ").append(gameState.getGamePhase());
+
+            List<String> moves = gameState.getMoveHistory();
+            if (moves != null && !moves.isEmpty()) {
+                enhancedContext.append("\nRECENT_MOVES: ");
+                int startIndex = Math.max(0, moves.size() - 6);
+                for (int i = startIndex; i < moves.size(); i += 2) {
+                    int moveNumber = (startIndex / 2) + (i - startIndex) / 2 + 1;
+                    enhancedContext.append(moveNumber).append(".");
+                    enhancedContext.append(moves.get(i));
+                    if (i + 1 < moves.size()) {
+                        enhancedContext.append(" ").append(moves.get(i + 1));
+                    }
+                    enhancedContext.append(" ");
+                }
+            }
+        }
+
+        return enhancedContext.toString();
+    }
+
+    public void testTTS() {
+        mainHandler.post(() -> {
+            if (textToSpeechManager != null) {
+                textToSpeechManager.speak("Testing speech output. Can you hear me?");
+                Log.d(TAG, "🔊 Test TTS triggered");
+            } else {
+                Log.e(TAG, "❌ textToSpeechManager is null in test!");
+            }
+        });
+    }
+
+    // [Keep all the existing helper methods like processWithAssistantsAPI, convertPcmToWav, etc.]
+    // I'm not repeating them here to save space, but they remain unchanged in your implementation
 
     /**
      * Process using Assistants API (for Botvinnik)
@@ -508,31 +792,6 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Process using enhanced fine-tuned model
-     */
-    private String processWithFineTunedModel(String transcribedText, String gameContext) {
-        try {
-            // Use the enhanced OpenAI service with optimized prompting
-            OpenAIService openAIService = OpenAIService.getInstance();
-
-            // Get enhanced response using contextual prompting
-            String response = openAIService.getEnhancedChatCompletion(transcribedText, gameContext);
-
-            // Add to conversation history
-            conversationManager.addMessage("user", transcribedText);
-            conversationManager.addMessage("assistant", response);
-            conversationManager.saveCurrentConversation();
-
-            Log.d(TAG, "✅ Enhanced fine-tuned model response generated successfully");
-            return response;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error in fine-tuned model processing", e);
-            return "I'm having trouble analyzing that position. Could you try rephrasing your question?";
-        }
-    }
-
-    /**
      * Placeholder for determining opening from move history
      */
     private String determineOpening(List<String> moves) {
@@ -554,7 +813,6 @@ public class SimpleRecordService extends Service {
     /**
      * Resets the current conversation and starts a new one
      */
-    // In SimpleRecordService.java - Make sure resetConversation() is thorough:
     public void resetConversation() {
         // Stop any ongoing speech
         if (textToSpeechManager != null) {
@@ -564,10 +822,8 @@ public class SimpleRecordService extends Service {
         // Clear ALL conversation history
         conversationManager.startNewConversation();
 
-
         String sessionId = "new-session-" + System.currentTimeMillis();
         Log.d(TAG, "✨ Conversation fully reset - new session created: " + sessionId);
-
 
         // Add an initial system message to set the coach's personality
         // Get the selected chess master
@@ -590,46 +846,6 @@ public class SimpleRecordService extends Service {
         if (textToSpeechManager != null) {
             textToSpeechManager.interrupt();
             Log.d(TAG, "Speech interrupted by user tap");
-        }
-    }
-
-    /**
-     * Simple implementation of audio transcription
-     * For debugging/development, you can return a fixed string
-     */
-    private String getTranscriptionFromFile(File audioFile, String apiKey) {
-        try {
-            Log.d(TAG, "About to transcribe with Whisper API: " + audioFile.getAbsolutePath());
-
-            // Read the WAV file into a byte array
-            byte[] audioData = readFileToBytes(audioFile);
-
-            // Use OpenAI's Whisper API through your service
-
-            UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(this);
-            unifiedService.setApiKey(apiKey);
-            // Then find where you call whisperService.transcribeAudio() and change to:
-
-            unifiedService.setApiKey(apiKey);
-            String transcribedText = unifiedService.transcribeAudioSync(audioData);
-            unifiedService.transcribeAudio(audioData, new UnifiedOpenAIService.OpenAICallback<String>() {
-                @Override
-                public void onSuccess(String transcribedText) {
-                    // Your existing code to handle transcribed text
-                    Log.d(TAG, "Transcribed text: " + transcribedText);
-                }
-
-                @Override
-                public void onFailure(Exception e) {
-                    Log.e(TAG, "Transcription error: " + e.getMessage());
-                }
-            });
-
-            Log.d(TAG, "Whisper API returned: " + transcribedText);
-            return transcribedText;
-        } catch (Exception e) {
-            Log.e(TAG, "Error using Whisper API", e);
-            return "Error transcribing speech: " + e.getMessage();
         }
     }
 
@@ -683,13 +899,12 @@ public class SimpleRecordService extends Service {
         try {
             out.write(data);
         } catch (IOException e) {
-            // This shouldn't happen with ByteArrayOutputStream
             Log.e(TAG, "Error writing bytes", e);
         }
     }
 
     private String determineQuestionType(String question) {
-        question = question.toLowerCase(); // Make case-insensitive for better matching
+        question = question.toLowerCase();
 
         // Chess position/move questions
         if (question.contains("best move") || question.contains("position") ||
@@ -698,7 +913,7 @@ public class SimpleRecordService extends Service {
             return "CHESS_POSITION";
         }
 
-        // Expanded chess history/people questions - much more inclusive
+        // Expanded chess history/people questions
         if (question.contains("tal") || question.contains("kramnik") || question.contains("botvinnik") ||
                 question.contains("kasparov") || question.contains("fischer") ||
                 question.contains("capablanca") || question.contains("karpov") ||
@@ -715,25 +930,21 @@ public class SimpleRecordService extends Service {
         return "GENERAL";
     }
 
-    // Add to SimpleRecordService class
     private boolean shouldUseAssistantsApi() {
         String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
         return "botvinnik".equals(currentMaster);
     }
 
-    // In SimpleRecordService.java
     public void refreshVoiceSettings() {
         // Get current master
         String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
 
         // Update the TTS service
         if (textToSpeechManager != null) {
-            // Get the voice style and use from shared preferences
             SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
             String voiceStyle = prefs.getString("voice_style", "auto");
             boolean usePersonality = prefs.getBoolean("use_master_personality", true);
 
-            // Update TTS settings
             ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
         }
     }
@@ -748,269 +959,6 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Processes the user's speech transcription, enhances it with chess context,
-     * and generates a response from Coach Tal.
-     *
-     * @param transcribedText The user's speech converted to text
-     */
-    /**
-     * Process transcribed speech with AI response.
-     * Note: Currently unused but available for future speech processing.
-     */
-    private void processTranscription(String transcribedText) {
-        // Log the incoming transcription for debugging
-        Log.d(TAG, "Processing transcription: " + transcribedText);
-
-        // Get the selected chess master
-        String selectedMaster = getSelectedChessMaster();
-        String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
-        String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster providing guidance.";
-
-        // Determine question type and set appropriate prompt
-        String questionType = determineQuestionType(transcribedText);
-        if (questionType.equals("CHESS_HISTORY")) {
-            systemPrompt = "You are Coach Tal, a chess grandmaster with encyclopedic knowledge " +
-                    "of chess history and famous players. Share engaging, colorful stories about " +
-                    "any chess player, match, tournament or historical moment mentioned. " +
-                    "Be particularly vivid when describing famous games and the personalities " +
-                    "of the players. If specific players like Botvinnik, Fischer, Kasparov, etc. " +
-                    "are mentioned, focus your response on them specifically.";
-        } else if (questionType.equals("CHESS_POSITION")) {
-            systemPrompt = "You are Coach Tal, analyzing the current chess position...";
-        }
-
-        try {
-            // 1. Create a rich context package that includes game state
-            String enhancedPrompt = createEnhancedPromptWithContext(transcribedText);
-
-            // 2. Add the user's message to conversation history
-            conversationManager.addMessage("user", enhancedPrompt);
-
-            // 3. Show a visual indicator that Coach Tal is thinking
-            updateUIForProcessing(true);
-
-            // 4. Get response from OpenAI with full conversation history
-            // 4. Get response from OpenAI with full conversation history
-            CompletableFuture.supplyAsync(() -> {
-                try {
-                    // Get API key
-                    String apiKey = ApiKeyConfig.getApiKey(this);
-                    if (apiKey == null || apiKey.isEmpty()) {
-                        return "Error: API key not configured.";
-                    }
-
-                    // PCM to WAV conversion
-                    byte[] pcmData = readFileToBytes(outputFile);
-                    byte[] wavData = convertPcmToWav(pcmData, SAMPLE_RATE, 1, 16);
-
-                    File wavFile = File.createTempFile("recording_", ".wav", getCacheDir());
-                    try (FileOutputStream fos = new FileOutputStream(wavFile)) {
-                        fos.write(wavData);
-                    }
-
-                    // Get transcription
-                    String transcribedSpeech = getTranscriptionFromFile(wavFile, apiKey);
-                    Log.d(TAG, "Transcribed text: " + transcribedSpeech);
-
-                    // Get current FEN position
-                    String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Default
-                    ChessBoardView boardView = getChessBoardView();
-                    if (boardView != null) {
-                        fenPosition = boardView.getCurrentFEN();
-                    }
-
-                    // ✨ HERE'S THE MAGIC - USE THE ASSISTANT INSTEAD OF DIRECT CHAT ✨
-                    // Send message to the Assistant with chess position context
-                    JSONObject messageRequest = new JSONObject();
-                    messageRequest.put("role", "user");
-                    messageRequest.put("content", "CHESS POSITION: " + fenPosition + "\n\nQUESTION: " + transcribedSpeech);
-
-                    // Create message in the thread
-                    String messageResponse = agentManager.createMessage(currentThreadId, messageRequest.toString());
-                    JSONObject messageJson = new JSONObject(messageResponse);
-                    String messageId = messageJson.getString("id");
-
-                    // Create run request
-                    JSONObject runRequest = new JSONObject();
-                    runRequest.put("assistant_id", currentAssistantId);
-
-                    // Start the run
-
-                    // ✨ Use the sendMessageWithPosition method which handles both creating the message and running
-                    agentManager.sendMessageWithPosition(currentThreadId, currentAssistantId,
-                            transcribedSpeech, fenPosition);
-
-                    String response = agentManager.getChessMasterResponse(currentThreadId, "latest");
-                    agentManager.getChessMasterResponseAsync(currentThreadId, "latest", new ChessMasterAgentManager.Callback<String>() {
-                        @Override
-                        public void onSuccess(String asyncResponse) {
-                            // Maybe log to compare with the synchronous response
-                            Log.d(TAG, "Async response matches sync? " + asyncResponse.equals(response));
-                            // You could do additional processing here if needed
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            Log.e(TAG, "Async approach had error: " + errorMessage);
-                        }
-                    });
-
-
-                    // Add response to conversation history
-                    conversationManager.addMessage("assistant", response);
-
-                    // Save the conversation
-                    conversationManager.saveCurrentConversation();
-
-                    // Clean up temp file
-                    wavFile.delete();
-
-                    return response;
-                } catch (Exception e) {
-                    Log.e(TAG, "Error in speech-to-speech process", e);
-                    return "I'm sorry, I had trouble analyzing your question. Could you try again?";
-                }
-            }).thenAccept(coachResponse -> {
-                // Rest of your code remains the same...
-                // 5. Handle the coach's response on the main thread
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    // Add assistant response to history
-                    conversationManager.addMessage("assistant", coachResponse);
-
-                    // Save conversation after every exchange
-                    conversationManager.saveCurrentConversation();
-
-                    // Convert text to speech
-                    textToSpeechManager.speak(coachResponse, new TextToSpeechManager.OnSpeechCompletedListener() {
-                        @Override
-                        public void onSpeechCompleted() {
-                            // When speech is done, update UI and notify listeners
-                            updateUIForProcessing(false);
-                            notifyResponseCompleted(coachResponse);
-                        }
-                    });
-
-                    // Also update any visual representation of the response
-                    updateResponseUI(coachResponse);
-                });
-            }).exceptionally(e -> {
-                Log.e(TAG, "Error in async processing", e);
-                new Handler(Looper.getMainLooper()).post(() -> {
-                    updateUIForProcessing(false);
-                    String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again in a moment.";
-                    textToSpeechManager.speak(errorMsg);
-                    updateResponseUI(errorMsg);
-                });
-                return null;
-            });
-        } catch (Exception e) {
-            Log.e(TAG, "Error in processTranscription", e);
-            updateUIForProcessing(false);
-        }
-
-        if (transcribedText.startsWith("Error")) {
-            Log.e(TAG, "Transcription error: " + transcribedText);
-            updateUIForProcessing(false);
-        }
-    }
-
-
-    /**
-     * Creates an enhanced prompt that includes the chess context
-     */
-    private String createEnhancedPromptWithContext(String userQuestion) {
-        StringBuilder contextBuilder = new StringBuilder();
-
-        // Add the user's original question
-        contextBuilder.append("User question: ").append(userQuestion).append("\n\n");
-
-        try {
-            // Add current board state if available
-            ChessBoardView boardView = getChessBoardView();
-            if (boardView != null) {
-                // Get FEN notation of current position
-                String fenPosition = boardView.getCurrentFEN();
-                contextBuilder.append("Current board position (FEN): ").append(fenPosition).append("\n");
-
-                // Add who's turn it is
-                boolean isWhiteTurn = boardView.isWhiteTurn();
-                contextBuilder.append("Current turn: ").append(isWhiteTurn ? "White" : "Black").append("\n");
-
-                // Add player's color
-                String playerColor = getPlayerColor();
-                contextBuilder.append("Player is playing as: ").append(playerColor).append("\n");
-
-                // Determine game phase (opening, middlegame, endgame)
-                String gamePhase = determineGamePhase(boardView);
-                contextBuilder.append("Game phase: ").append(gamePhase).append("\n\n");
-
-                // Add recent moves if available
-                List<String> moveHistory = getMoveHistory();
-                if (moveHistory != null && !moveHistory.isEmpty()) {
-                    contextBuilder.append("Recent moves:\n");
-
-                    // Limit to last 10 moves to keep context concise
-                    int startIdx = Math.max(0, moveHistory.size() - 10);
-                    int moveNumber = (startIdx / 2) + 1;
-
-                    for (int i = startIdx; i < moveHistory.size(); i += 2) {
-                        contextBuilder.append(moveNumber).append(". ").append(moveHistory.get(i));
-                        if (i + 1 < moveHistory.size()) {
-                            contextBuilder.append(" ").append(moveHistory.get(i + 1));
-                        }
-                        contextBuilder.append("\n");
-                        moveNumber++;
-                    }
-                }
-
-                // Add any special game conditions
-                if (boardView.isCheck()) {
-                    contextBuilder.append("Special condition: ").append(isWhiteTurn ? "White" : "Black")
-                            .append(" is in check.\n");
-                }
-
-                if (boardView.isCheckmate()) {
-                    contextBuilder.append("Special condition: Checkmate. Game over.\n");
-                }
-
-                if (boardView.isStalemate()) {
-                    contextBuilder.append("Special condition: Stalemate. Game drawn.\n");
-                }
-            }
-
-            // Add conversation history length as context
-            int messageCount = conversationManager.getConversationHistory().size();
-            if (messageCount > 0) {
-                contextBuilder.append("\nThis is message #").append(messageCount / 2 + 1)
-                        .append(" in our conversation.\n");
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating enhanced prompt", e);
-            // If we can't get context, just use the original question
-            return userQuestion;
-        }
-
-        return contextBuilder.toString();
-    }
-
-    /**
-     * Determines the current phase of the chess game
-     */
-    private String determineGamePhase(ChessBoardView boardView) {
-        // This is a simple heuristic - you can make it more sophisticated
-        int pieceCount = boardView.getPieceCount();
-
-        if (pieceCount > 28) {  // Most pieces still on board
-            return "Opening";
-        } else if (pieceCount > 10) {  // Some pieces captured
-            return "Middlegame";
-        } else {  // Few pieces remain
-            return "Endgame";
-        }
-    }
-
-    /**
      * Updates UI elements when processing starts/stops
      */
     private void updateUIForProcessing(boolean isProcessing) {
@@ -1018,9 +966,7 @@ public class SimpleRecordService extends Service {
             callback.onProcessingStateChanged(isProcessing);
         }
 
-        // You can also update UI elements directly if they're accessible
         try {
-            // This assumes you have a way to access these UI elements
             if (loadingIndicator != null) {
                 loadingIndicator.setVisibility(isProcessing ? View.VISIBLE : View.GONE);
             }
@@ -1041,22 +987,12 @@ public class SimpleRecordService extends Service {
             callback.onResponseReceived(response);
         }
 
-        // If you have direct access to UI elements, update them here
         try {
             if (responseTextView != null) {
                 responseTextView.setText(response);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error updating response UI", e);
-        }
-    }
-
-    /**
-     * Notify listeners that a response has completed
-     */
-    private void notifyResponseCompleted(String response) {
-        if (callback != null) {
-            callback.onResponseCompleted(response);
         }
     }
 
@@ -1071,7 +1007,6 @@ public class SimpleRecordService extends Service {
                 long now = System.currentTimeMillis();
                 if (now - lastSoundTimestamp > SILENCE_THRESHOLD_MS) {
                     Log.d(TAG, "Silence detected, stopping recording");
-                    // Stop on main thread
                     new Handler(Looper.getMainLooper()).post(this::stopRecording);
                 }
             }
@@ -1082,18 +1017,15 @@ public class SimpleRecordService extends Service {
      * Check if the audio buffer represents silence
      */
     private boolean isSilence(byte[] buffer, int size) {
-        // Convert byte array to short array
         short[] shorts = new short[size / 2];
         ByteBuffer.wrap(buffer, 0, size).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().get(shorts);
 
-        // Calculate RMS (root mean square)
         double sum = 0;
         for (short value : shorts) {
             sum += value * value;
         }
         double rms = Math.sqrt(sum / shorts.length);
 
-        // Threshold for silence (adjust as needed)
         return rms < 200;
     }
 
@@ -1111,25 +1043,21 @@ public class SimpleRecordService extends Service {
      * Helper method to get the ChessBoardView
      */
     private ChessBoardView getChessBoardView() {
-        // This should be implemented to get access to your chess board
-        // For example, through a singleton or by passing it to the service
         return ChessBoardManager.getInstance().getCurrentBoardView();
     }
 
     /**
-     * Gets the selected chess coach profile (Tal or Kramnik)
+     * Gets the selected chess coach profile
      */
     private String getSelectedChessMaster() {
-        // Use ChessAppPrefs to match the key used in the settings
         SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
-        return prefs.getString("selected_master", "tal"); // Default to Tal if not set
+        return prefs.getString("selected_master", "tal");
     }
 
     /**
-     * Gets the player's color (white or black)
+     * Gets the player's color
      */
     private String getPlayerColor() {
-        // Get this from your game settings or preferences
         SharedPreferences prefs = getSharedPreferences("chess_prefs", MODE_PRIVATE);
         return prefs.getString("player_color", "White");
     }
@@ -1138,19 +1066,14 @@ public class SimpleRecordService extends Service {
      * Gets the move history from the current game
      */
     private List<String> getMoveHistory() {
-        // This should access your move history storage
         return GameHistoryManager.getInstance().getCurrentGameMoves();
     }
 
     private String getApiKeyFromPreferences() {
-        // You mentioned you have this working elsewhere in your app,
-        // so let's make sure we're using the same method:
         String apiKey = ApiKeyConfig.getApiKey(this);
 
-        // Double-check that it's not empty
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "❌ API Key is empty or null! Check your ApiKeyConfig class.");
-            // Fallback to preferences if ApiKeyConfig doesn't work in service context
             SharedPreferences prefs = getSharedPreferences("api_prefs", MODE_PRIVATE);
             apiKey = prefs.getString("openai_api_key", "");
             Log.d(TAG, "Fallback API key retrieved, length: " + apiKey.length());
@@ -1163,15 +1086,12 @@ public class SimpleRecordService extends Service {
      * Determine if we should resume a conversation from before
      */
     private boolean shouldResumeConversation() {
-        // Get the last conversation time
         SharedPreferences prefs = getSharedPreferences("conversation_prefs", MODE_PRIVATE);
         long lastConversationTime = prefs.getLong("last_conversation_time", 0);
 
-        // If less than 30 minutes have passed, resume the conversation
         long thirtyMinutesInMillis = 30 * 60 * 1000;
         boolean shouldResume = System.currentTimeMillis() - lastConversationTime < thirtyMinutesInMillis;
 
-        // Update the last conversation time
         prefs.edit().putLong("last_conversation_time", System.currentTimeMillis()).apply();
 
         return shouldResume;
@@ -1198,13 +1118,9 @@ public class SimpleRecordService extends Service {
      */
     public interface ServiceCallback {
         void onRecordingStarted();
-
         void onRecordingStopped();
-
         void onProcessingStateChanged(boolean isProcessing);
-
         void onResponseReceived(String response);
-
         void onResponseCompleted(String response);
     }
 

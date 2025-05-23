@@ -12,15 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Compatibility class that bridges between old and new speech recognition implementations.
- * This class implements the new SpeechRecognizer interface while maintaining
- * the old SpeechRecognitionManager API.
+ * Speech recognition manager with automatic Groq optimization
  */
 public class SpeechRecognitionManager implements SpeechRecognizer {
     private static final String TAG = "SpeechRecognitionManager";
 
     private final Context context;
-    private final OpenAISpeechRecognizer modernRecognizer;
+    private final SpeechRecognizer activeRecognizer;
     private final Handler mainHandler;
     private final List<SpeechRecognitionCallback> callbacks = new ArrayList<>();
     private boolean isListening = false;
@@ -33,8 +31,11 @@ public class SpeechRecognitionManager implements SpeechRecognizer {
 
     public SpeechRecognitionManager(Context context) {
         this.context = context;
-        this.modernRecognizer = new OpenAISpeechRecognizer(context);
         this.mainHandler = new Handler(Looper.getMainLooper());
+
+        // Always use Groq for that sweet 240x speed!
+        Log.d(TAG, "🚀 Initializing Groq ultra-fast speech recognition!");
+        this.activeRecognizer = new GroqSpeechRecognizer(context);
     }
 
     // Old API method
@@ -44,8 +45,8 @@ public class SpeechRecognitionManager implements SpeechRecognizer {
             callbacks.add(callback);
         }
 
-        // Use the new implementation
-        modernRecognizer.startListening(new SpeechCallback() {
+        // Use the active implementation
+        activeRecognizer.startListening(new SpeechCallback() {
             @Override
             public void onPartialResult(String partialText) {
                 // Old API didn't have partial results, so we ignore this
@@ -75,13 +76,13 @@ public class SpeechRecognitionManager implements SpeechRecognizer {
     @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     @Override
     public void startListening(SpeechCallback callback) {
-        modernRecognizer.startListening(callback);
+        activeRecognizer.startListening(callback);
         isListening = true;
     }
 
     @Override
     public void stopListening() {
-        modernRecognizer.stopListening();
+        activeRecognizer.stopListening();
         isListening = false;
     }
 
@@ -94,7 +95,7 @@ public class SpeechRecognitionManager implements SpeechRecognizer {
     public void release() {
         stopListening();
         callbacks.clear();
-        modernRecognizer.release();
+        activeRecognizer.release();
     }
 
     /**
