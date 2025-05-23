@@ -64,7 +64,7 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
         this.mainHandler = new Handler(Looper.getMainLooper());
 
         // Use shared HTTP client if available
-        this.httpClient = OpenAIClient.getInstance().getHttpClient();
+        this.httpClient = OpenAIService.getInstance().getHttpClient();
 
         // Calculate buffer size
         bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);

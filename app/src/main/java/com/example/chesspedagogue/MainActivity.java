@@ -289,8 +289,8 @@ public class MainActivity extends AppCompatActivity {
         // Initialize game ViewModel
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
-        openAIService = OpenAIService.getInstance();
-        OpenAIService.getInstance().init(this);
+        openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
+        com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
 
         Button debugButton = new Button(this);
@@ -409,7 +409,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 // Initialize the Manager
                 ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        OpenAIService.getInstance(), this);
+                        com.example.chesspedagogue.OpenAIService.getInstance(), this);
 
                 // Get Botvinnik Assistant instead of creating Tal
                 String assistantId = agentManager.getBotvinnikAssistantId();
@@ -517,7 +517,7 @@ public class MainActivity extends AppCompatActivity {
                 OpenAITTSService.getInstance(this).setApiKey(ApiKeyConfig.getApiKey(this));
 
                 // Pre-initialize unified service
-                UnifiedOpenAIService.getInstance(this).setApiKey(ApiKeyConfig.getApiKey(this));
+                OpenAIService.getInstance().setApiKey(ApiKeyConfig.getApiKey(this));
 
                 Log.d(TAG, "✅ Speech services pre-warmed");
             } catch (Exception e) {
@@ -1341,7 +1341,7 @@ public class MainActivity extends AppCompatActivity {
 
                 // Get the assistant manager
                 ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        OpenAIService.getInstance(), this);
+                        com.example.chesspedagogue.OpenAIService.getInstance(), this);
 
                 // Create Botvinnik assistant
                 String assistantId = agentManager.createBotvinnikAssistant();

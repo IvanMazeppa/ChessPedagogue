@@ -32,7 +32,7 @@ public class ApiKeyConfig {
     public static void initializeOpenAIClient(Context context) {
         String apiKey = getApiKey(context);
         if (apiKey != null && !apiKey.isEmpty()) {
-            OpenAIClient.getInstance().setApiKey(apiKey);
+            OpenAIService.getInstance().setApiKey(apiKey);
             Log.d(TAG, "Initialized OpenAIClient with API key from config");
         } else {
             Log.e(TAG, "Failed to initialize OpenAIClient - no API key available");

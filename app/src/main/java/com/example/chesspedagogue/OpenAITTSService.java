@@ -75,7 +75,7 @@ public class OpenAITTSService {
         this.prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
 
         // Use shared HTTP client if available, otherwise create one
-        this.httpClient = OpenAIClient.getInstance().getHttpClient();
+        this.httpClient = OpenAIService.getInstance().getHttpClient();
 
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newFixedThreadPool(4);

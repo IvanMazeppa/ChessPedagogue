@@ -73,7 +73,7 @@ public class FineTunedModelManager {
         prefs.edit().putString(KEY_SELECTED_MASTER, master.toLowerCase()).apply();
 
         // Also update the OpenAI service
-        OpenAIService.getInstance().selectChessMaster(master);
+        com.example.chesspedagogue.OpenAIService.getInstance().selectChessMaster(master);
 
         Log.d(TAG, "Chess master set to: " + master);
     }

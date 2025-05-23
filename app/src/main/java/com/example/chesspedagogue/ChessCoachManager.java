@@ -47,7 +47,7 @@ public class ChessCoachManager {
         // Initialize TTS service
         this.ttsService = new OpenAITTSService(context);
 
-        this.agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), context);
+        this.agentManager = new ChessMasterAgentManager(com.example.chesspedagogue.OpenAIService.getInstance(), context);
 
         // Try to load API key
         apiKey = ApiKeyConfig.getApiKey(context);
@@ -158,7 +158,7 @@ public class ChessCoachManager {
         }
 
         // Set API key
-        OpenAIService.getInstance().setApiKey(apiKey);
+        com.example.chesspedagogue.OpenAIService.getInstance().setApiKey(apiKey);
 
         // Use a background thread for API calls
         new Thread(() -> {
@@ -192,7 +192,7 @@ public class ChessCoachManager {
                 } else {
                     // Use traditional fine-tuned model approach
                     Log.d(TAG, "Using fine-tuned model with master: " + currentMaster);
-                    response = OpenAIService.getInstance().sendMessage(text);
+                    response = com.example.chesspedagogue.OpenAIService.getInstance().sendMessage(text);
                 }
 
                 // Speak the response if needed

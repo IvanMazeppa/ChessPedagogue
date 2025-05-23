@@ -34,7 +34,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -69,7 +68,7 @@ public class SimpleRecordService extends Service {
 
     // Managing conversation
     private String currentThreadId = null;
-    private EnhancedConversationManager conversationManager;
+    private ConversationManager conversationManager;
     private OpenAIService openAIService;
     private String apiKey;
 
@@ -91,7 +90,6 @@ public class SimpleRecordService extends Service {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // NEW: Pre-warming for ultra-fast response
-    private UnifiedOpenAIService unifiedService;
     private OpenAITTSService ttsService;
     private volatile boolean servicesWarmed = false;
 
@@ -120,15 +118,15 @@ public class SimpleRecordService extends Service {
         apiKey = getApiKeyFromPreferences();
 
         // Initialize the agent manager
-        agentManager = new ChessMasterAgentManager(OpenAIService.getInstance(), this);
+        agentManager = new ChessMasterAgentManager(com.example.chesspedagogue.OpenAIService.getInstance(), this);
 
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
             Log.d(TAG, "🚀 Initializing services in parallel");
 
             // Initialize unified service
-            unifiedService = UnifiedOpenAIService.getInstance(this);
-            unifiedService.setApiKey(apiKey);
+            openAIService = OpenAIService.getInstance();
+            openAIService.setApiKey(apiKey);
 
             // Initialize TTS service
             ttsService = OpenAITTSService.getInstance(this);
@@ -190,7 +188,7 @@ public class SimpleRecordService extends Service {
 
 
         // Initialize conversation manager
-        conversationManager = EnhancedConversationManager.getInstance(this);
+        conversationManager = ConversationManager.getInstance(this);
 
         // Check if we should resume an existing conversation or start new
         if (shouldResumeConversation()) {
@@ -223,7 +221,7 @@ public class SimpleRecordService extends Service {
                 String testApiKey = getApiKeyFromPreferences();
                 if (testApiKey != null && !testApiKey.isEmpty()) {
                     // This creates the HTTP client and connection pool
-                    UnifiedOpenAIService.getInstance(this).setApiKey(testApiKey);
+                    OpenAIService.getInstance().setApiKey(testApiKey);
                     OpenAITTSService.getInstance(this).setApiKey(testApiKey);
                 }
 
@@ -521,8 +519,8 @@ public class SimpleRecordService extends Service {
                 AtomicReference<Boolean> firstChunkSpoken = new AtomicReference<>(false);
 
                 // Start streaming with ultra-aggressive chunking
-                unifiedService.generateStreamingChatResponse(systemPrompt, enhancedUserMessage,
-                        new UnifiedOpenAIService.StreamingChatCallback() {
+                openAIService.generateStreamingChatResponse(systemPrompt, enhancedUserMessage,
+                        new OpenAIService.StreamingChatCallback() {
                             private StringBuilder currentSentence = new StringBuilder();
                             private long lastChunkTime = System.currentTimeMillis();
 
@@ -741,7 +739,7 @@ public class SimpleRecordService extends Service {
     private String processWithAssistantsAPI(String transcribedText, String fenPosition, String gameContext) {
         try {
             ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                    OpenAIService.getInstance(), this);
+                    com.example.chesspedagogue.OpenAIService.getInstance(), this);
 
             String assistantId = agentManager.getBotvinnikAssistantId();
             if (assistantId == null) {

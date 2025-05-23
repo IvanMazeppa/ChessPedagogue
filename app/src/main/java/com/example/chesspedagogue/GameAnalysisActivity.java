@@ -664,8 +664,8 @@ public class GameAnalysisActivity extends AppCompatActivity {
         }
 
         // Use your unified OpenAI service with detailed logging
-        UnifiedOpenAIService unifiedService = UnifiedOpenAIService.getInstance(this);
-        unifiedService.setApiKey(apiKey);
+        OpenAIService openAIService = OpenAIService.getInstance();
+        openAIService.setApiKey(apiKey);
         Log.d(TAG, "💬 API key set, unified service ready");
 
         // Format the system prompt for the selected master
@@ -676,7 +676,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
         // Generate the response with careful error handling
         try {
             Log.d(TAG, "💬 Sending request to OpenAI");
-            String response = unifiedService.generateChatResponseSync(systemPrompt, prompt);
+            String response = openAIService.generateChatResponseSync(systemPrompt, prompt);
             Log.d(TAG, "💬 Received response: " + (response.length() > 100 ?
                     response.substring(0, 100) + "..." : response));
             return response;
