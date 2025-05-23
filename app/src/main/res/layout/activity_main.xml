@@ -41,6 +41,15 @@
                     android:textSize="16sp"
                     android:layout_marginStart="8dp"
                     android:fontFamily="serif" />
+               <!--  <Button
+                    android:id="@+id/btnCoachMatch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Coach Match: Tal vs Fischer"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="16dp"/> -->
+
+
 
                 <!-- Beautiful Action Buttons with Wood Styling -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton

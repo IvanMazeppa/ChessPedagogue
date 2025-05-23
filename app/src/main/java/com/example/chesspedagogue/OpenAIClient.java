@@ -10,33 +10,30 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import okhttp3.*;
+
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Unified client for OpenAI API interactions.
- * This class centralizes HTTP client management and API key handling.
+ * This class centralizes API key handling and uses the shared HTTP client.
  */
 public class OpenAIClient {
     private static final String TAG = "OpenAIClient";
     private static OpenAIClient instance;
 
-    // One shared HTTP client with optimized settings
+    // Use the shared HTTP client manager
     private final OkHttpClient httpClient;
     private String apiKey;
 
-
-
     // Private constructor for singleton
     private OpenAIClient() {
-        this.httpClient = new OkHttpClient.Builder()
-                .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .build();
-
-        Log.d(TAG, "OpenAIClient initialized with optimized HTTP client");
+        // Get the appropriate client from our manager
+        this.httpClient = HttpClientManager.getInstance().getGeneralClient();
+        Log.d(TAG, "OpenAIClient initialized with shared HTTP client");
     }
 
     // Singleton accessor
@@ -53,12 +50,12 @@ public class OpenAIClient {
         Log.d(TAG, "API key set, length: " + (apiKey != null ? apiKey.length() : 0));
     }
 
-    // Add this to OpenAIClient.java
+    // Check if API key is set
     public boolean hasApiKey() {
         return apiKey != null && !apiKey.isEmpty();
     }
 
-    // Also improve the getAuthorizationHeader method to include validation
+    // Get authorization header with validation
     public String getAuthorizationHeader() {
         if (!hasApiKey()) {
             Log.e(TAG, "Attempting to use API key before it's set!");
@@ -72,12 +69,10 @@ public class OpenAIClient {
         return "Bearer " + apiKey;
     }
 
-    // Get the HTTP client (for existing services to use during transition)
+    // Get the HTTP client
     public OkHttpClient getHttpClient() {
         return httpClient;
     }
-
-    // Add these methods to OpenAIClient.java
 
     /**
      * Performs a chat completion request directly
@@ -87,7 +82,7 @@ public class OpenAIClient {
 
         JSONObject requestBody = new JSONObject();
         try {
-            requestBody.put("model", "gpt-4.1");
+            requestBody.put("model", "gpt-4-turbo-preview");
 
             JSONArray messages = new JSONArray();
 
@@ -138,11 +133,8 @@ public class OpenAIClient {
         return "No response generated";
     }
 
-    // Add these methods to OpenAIClient.java
-
     /**
-     * Executes a request on a background thread and returns the result
-     * This solves the NetworkOnMainThreadException problem!
+     * Callback interface for async operations
      */
     public interface ApiCallback<T> {
         void onSuccess(T result);

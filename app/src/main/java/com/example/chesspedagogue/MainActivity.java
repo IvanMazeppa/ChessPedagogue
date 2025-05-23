@@ -33,6 +33,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.chesspedagogue.repository.GameRepository;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
@@ -59,17 +60,19 @@ public class MainActivity extends AppCompatActivity {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     // State tracking
     private final boolean conversationActive = false; // tracks if service is running
+
     private AnimatorSet pulseAnimatorSet;
     private OpenAIService openAIService;
     private String selectedSquare = null;
     private boolean isSpeaking = false;
-    private TextToSpeechManager textToSpeechManager;
+
     // UI elements
     private FloatingActionButton conversationButton;
     private ChallengeData currentChallenge;
     private boolean inChallengeMode = false;
 
     private FloatingActionButton gameAnalysisButton;
+    private FloatingActionButton coachMatchBtn;
     private FloatingActionButton coachButton;
     private FloatingActionButton speakButton;
     private ChessBoardView chessBoardView;
@@ -286,18 +289,13 @@ public class MainActivity extends AppCompatActivity {
         // Initialize game ViewModel
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
-
-        textToSpeechManager = new TextToSpeechManager(this);
-
         openAIService = OpenAIService.getInstance();
         OpenAIService.getInstance().init(this);
 
 
         Button debugButton = new Button(this);
-        debugButton.setText("Test Assistants API");
-        debugButton.setBackgroundColor(Color.RED);
-        debugButton.setTextColor(Color.WHITE);
-        debugButton.setOnClickListener(v -> testAssistantsAPI());
+
+        //Button coachMatchBtn = findViewById(R.id.btnCoachMatch);
         // Set up click listeners
         setupClickListeners();
 
@@ -534,12 +532,10 @@ public class MainActivity extends AppCompatActivity {
             speakButton.setOnClickListener(v -> {
                 Log.d(TAG, "Speak button clicked");
 
-                if (textToSpeechManager != null && textToSpeechManager.isSpeaking()) {
-                    // If Coach Tal is speaking, interrupt him
-                    textToSpeechManager.stopSpeech();
-
-                    // Set callback to be notified when speech is interrupted
-                    textToSpeechManager.setSpeechCallback(new TextToSpeechManager.SpeechCallback() {
+                OpenAITTSService tts = OpenAITTSService.getInstance(this);
+                if (tts != null && tts.isSpeaking()) {
+                    tts.stopSpeech();
+                    tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
                         @Override
                         public void onSpeechCompleted(String text) {
                             // Not used here
@@ -963,14 +959,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Add this method to SimpleRecordService
-    public void interruptSpeech() {
-        if (textToSpeechManager != null) {
-            textToSpeechManager.interrupt();
-            Log.d(TAG, "Speech interrupted by user tap");
-        }
-    }
-
     // Stops the listening animation
     private void stopListeningFeedback() {
         // In stopListeningFeedback() method - Replace the micIndicator line with:
@@ -1200,6 +1188,28 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
+        if (coachMatchBtn != null) {
+            coachMatchBtn.setOnClickListener(v -> {
+                try {
+                    CoachVsCoachSimulator simulator = new CoachVsCoachSimulator(
+                            this,
+                            // You may need to pass the correct instance for GameRepository and ChessCoachManager:
+                            // If using ViewModelProvider, get the instance as you do elsewhere
+                            new GameRepository(this),
+                            ChessCoachManager.getInstance(this),
+                            "tal",
+                            "fischer",
+                            1000, // move think time in ms
+                            200   // move limit (for runaway games)
+                    );
+                    simulator.start();
+                } catch (Exception e) {
+                    Log.e("MainActivity", "Error starting Coach Match: " + e.getMessage(), e);
+                }
+            });
+        }
+
+
         // Coach Button - Offers challenges and advice
         if (coachButton != null) {
             coachButton.setOnClickListener(v -> {
@@ -1424,11 +1434,8 @@ public class MainActivity extends AppCompatActivity {
         // Show a red flash or animation
         Toast.makeText(this, "Try again", Toast.LENGTH_SHORT).show();
     }
-
     private void speakEncouragement(String message) {
-        if (textToSpeechManager != null) {
-            textToSpeechManager.speak(message);
-        }
+        OpenAITTSService.getInstance(this).speak(message);
     }
 
     private void highlightSelectedSquare(int row, int col) {

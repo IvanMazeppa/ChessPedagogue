@@ -1,5 +1,7 @@
 package com.example.chesspedagogue;
 
+import com.example.chesspedagogue.OpenAITTSService.OnSpeechCompletedListener;
+
 import android.Manifest;
 import android.app.Service;
 import android.content.Intent;
@@ -15,6 +17,7 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
+
 
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
@@ -67,7 +70,6 @@ public class SimpleRecordService extends Service {
     // Managing conversation
     private String currentThreadId = null;
     private EnhancedConversationManager conversationManager;
-    private TextToSpeechManager textToSpeechManager;
     private OpenAIService openAIService;
     private String apiKey;
 
@@ -102,7 +104,7 @@ public class SimpleRecordService extends Service {
             .build();
 
     public boolean isCurrentlySpeaking() {
-        return textToSpeechManager != null && textToSpeechManager.isSpeaking();
+        return OpenAITTSService.getInstance(this) != null && OpenAITTSService.getInstance(this).isSpeaking();
     }
 
     @Override
@@ -186,8 +188,6 @@ public class SimpleRecordService extends Service {
 
         openAIService.setApiKey(apiKey);
 
-        // Initialize text-to-speech
-        textToSpeechManager = new TextToSpeechManager(this);
 
         // Initialize conversation manager
         conversationManager = EnhancedConversationManager.getInstance(this);
@@ -253,9 +253,6 @@ public class SimpleRecordService extends Service {
     @Override
     public void onDestroy() {
         stopRecording();
-        if (textToSpeechManager != null) {
-            textToSpeechManager.shutdown();
-        }
         executorService.shutdown();
         Log.d(TAG, "SimpleRecordService destroyed");
         super.onDestroy();
@@ -431,7 +428,7 @@ public class SimpleRecordService extends Service {
                 mainHandler.post(() -> {
                     updateUIForProcessing(false);
                     String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again.";
-                    textToSpeechManager.speak(errorMsg);
+                    OpenAITTSService.getInstance(this).speak(errorMsg);
                     updateResponseUI(errorMsg);
                 });
             }
@@ -558,9 +555,9 @@ public class SimpleRecordService extends Service {
                                         // Debug log
                                         Log.d(TAG, "🎤 About to speak chunk: " + toSpeak.substring(0, Math.min(30, toSpeak.length())) + "...");
 
-                                        // USE YOUR PROVEN textToSpeechManager!
-                                        if (textToSpeechManager != null) {
-                                            textToSpeechManager.speak(toSpeak, new TextToSpeechManager.OnSpeechCompletedListener() {
+                                        OpenAITTSService tts = OpenAITTSService.getInstance(SimpleRecordService.this);
+                                        if (tts != null) {
+                                            tts.speak(toSpeak, new OpenAITTSService.OnSpeechCompletedListener() {
                                                 @Override
                                                 public void onSpeechCompleted() {
                                                     Log.d(TAG, "✅ Chunk spoken successfully");
@@ -582,8 +579,9 @@ public class SimpleRecordService extends Service {
                                     mainHandler.post(() -> {
                                         Log.d(TAG, "🎤 Speaking final chunk: " + remaining.substring(0, Math.min(30, remaining.length())) + "...");
 
-                                        if (textToSpeechManager != null) {
-                                            textToSpeechManager.speak(remaining, new TextToSpeechManager.OnSpeechCompletedListener() {
+                                        OpenAITTSService tts = OpenAITTSService.getInstance(SimpleRecordService.this);
+                                        if (tts != null) {
+                                            tts.speak(remaining, new OnSpeechCompletedListener() {
                                                 @Override
                                                 public void onSpeechCompleted() {
                                                     Log.d(TAG, "✅ Final chunk spoken");
@@ -622,7 +620,7 @@ public class SimpleRecordService extends Service {
                                 mainHandler.post(() -> {
                                     updateUIForProcessing(false);
                                     String errorMsg = "I'm having trouble with my analysis. Let me try again.";
-                                    textToSpeechManager.speak(errorMsg);
+                                    ttsService.speak(errorMsg);
                                     updateResponseUI(errorMsg);
                                 });
                             }
@@ -634,7 +632,7 @@ public class SimpleRecordService extends Service {
             mainHandler.post(() -> {
                 updateUIForProcessing(false);
                 String errorMsg = "I'm having trouble analyzing that position. Could you try rephrasing?";
-                textToSpeechManager.speak(errorMsg);
+                OpenAITTSService.getInstance(this).speak(errorMsg);
                 updateResponseUI(errorMsg);
             });
         }
@@ -692,7 +690,7 @@ public class SimpleRecordService extends Service {
                 mainHandler.post(() -> {
                     updateUIForProcessing(false);
                     String errorMsg = "I'm having trouble with my advanced analysis. Let me try a simpler approach.";
-                    textToSpeechManager.speak(errorMsg);
+                    OpenAITTSService.getInstance(this).speak(errorMsg);
                     updateResponseUI(errorMsg);
                 });
             }
@@ -733,16 +731,6 @@ public class SimpleRecordService extends Service {
         return enhancedContext.toString();
     }
 
-    public void testTTS() {
-        mainHandler.post(() -> {
-            if (textToSpeechManager != null) {
-                textToSpeechManager.speak("Testing speech output. Can you hear me?");
-                Log.d(TAG, "🔊 Test TTS triggered");
-            } else {
-                Log.e(TAG, "❌ textToSpeechManager is null in test!");
-            }
-        });
-    }
 
     // [Keep all the existing helper methods like processWithAssistantsAPI, convertPcmToWav, etc.]
     // I'm not repeating them here to save space, but they remain unchanged in your implementation
@@ -814,9 +802,9 @@ public class SimpleRecordService extends Service {
      * Resets the current conversation and starts a new one
      */
     public void resetConversation() {
-        // Stop any ongoing speech
-        if (textToSpeechManager != null) {
-            textToSpeechManager.interrupt();
+        OpenAITTSService tts = OpenAITTSService.getInstance(this);
+        if (tts != null) {
+            tts.interrupt();
         }
 
         // Clear ALL conversation history
@@ -843,8 +831,8 @@ public class SimpleRecordService extends Service {
      * Interrupts any ongoing speech from the coach
      */
     public void interruptSpeech() {
-        if (textToSpeechManager != null) {
-            textToSpeechManager.interrupt();
+        if (OpenAITTSService.getInstance(this) != null) {
+            OpenAITTSService.getInstance(this).interrupt();
             Log.d(TAG, "Speech interrupted by user tap");
         }
     }
@@ -940,13 +928,12 @@ public class SimpleRecordService extends Service {
         String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
 
         // Update the TTS service
-        if (textToSpeechManager != null) {
-            SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
-            String voiceStyle = prefs.getString("voice_style", "auto");
-            boolean usePersonality = prefs.getBoolean("use_master_personality", true);
+        // We don't need the null check anymore since we're using the singleton
+        SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        String voiceStyle = prefs.getString("voice_style", "auto");
+        boolean usePersonality = prefs.getBoolean("use_master_personality", true);
 
-            ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
-        }
+        ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
     }
 
     // Helper to read file to byte array

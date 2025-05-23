@@ -149,48 +149,7 @@ public class ChessCoachManager {
         this.useOpenAIVoice = useOpenAIVoice;
     }
 
-    /**
-     * Test the current voice settings with a sample phrase
-
-    // In ChessCoachManager.java
-    public void testVoice(String testPhrase, ChessCoachCallback callback) {
-        OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
-
-        // Use the chunking version that respects voice settings
-        ttsService.speakWithChunkingForGPT4oMini(testPhrase, new OpenAITTSService.TTSCallback() {
-            @Override
-            public void onSpeechStarted() {
-                Log.d(TAG, "Test speech started");
-            }
-
-            @Override
-            public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "Test speech ready in file: " + audioFile.getAbsolutePath());
-            }
-
-            @Override
-            public void onSpeechCompleted() {
-                Log.d(TAG, "Test speech completed");
-                if (callback != null) {
-                    callback.onSpeechCompleted();
-                }
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Log.e(TAG, "Test speech error: " + errorMessage);
-                if (callback != null) {
-                    callback.onError(errorMessage);
-                }
-            }
-        });
-    }
-
-
-     * Send a text message to the chess coach and get a response
-     */
-
-    public void sendMessage(String text, ChessCoachCallback callback) {
+   public void sendMessage(String text, ChessCoachCallback callback) {
         if (text == null || text.isEmpty()) {
             if (callback != null) {
                 mainHandler.post(() -> callback.onError("Empty message"));
