@@ -176,9 +176,7 @@ public class FineTunedModelManager {
             case "anand":
                 return "Speak with an Indian accent. Sound quick and insightful.";
             case "alekhine":
-                return "Speak with a cultured Russian-French accent. Sound intellectually sophisticated, " +
-                        "artistically inspired, and confident about complex chess ideas. Use refined language " +
-                        "with occasional passion when discussing brilliant combinations.";
+                return "Speak with a cultured Russian-French accent. Sound intellectually sophisticated.";
             case "botvinnik":
                 return "Speak with a Russian accent. Sound scientific and authoritative.";
             default:
