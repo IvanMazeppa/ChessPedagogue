@@ -308,15 +308,21 @@ public class SimpleRecordService extends Service {
     /**
      * Process the recorded audio file with proper permission handling and chess context
      */
+    // Enhanced sections for SimpleRecordService.java
+// Replace the processRecording() method with this optimized version:
+
+    /**
+     * Enhanced processing that maximizes fine-tuned model effectiveness
+     */
     private void processRecording() {
-        Log.d(TAG, "Processing recording");
+        Log.d(TAG, "🎯 Enhanced processing with fine-tuned model optimization");
 
         // Show processing state
         if (callback != null) {
             callback.onProcessingStateChanged(true);
         }
 
-        // IMPORTANT: Check audio permissions explicitly
+        // Check audio permissions explicitly
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "Recording permission not granted!");
@@ -327,7 +333,7 @@ public class SimpleRecordService extends Service {
             return;
         }
 
-        // Transcribe audio on background thread
+        // Enhanced transcription and response pipeline
         CompletableFuture.supplyAsync(() -> {
             try {
                 // Get API key
@@ -350,159 +356,84 @@ public class SimpleRecordService extends Service {
                 Log.d(TAG, "Transcribed text: " + transcribedText);
 
                 // -------------------------------
-                // CHESS CONTEXT INTEGRATION
+                // ENHANCED CHESS CONTEXT INTEGRATION FOR FINE-TUNED MODELS
                 // -------------------------------
 
-                // Get current game state with null check
+                // Get current game state with detailed context
                 GameStateInfo gameState = GameStateRepository.getCurrentState();
-
-                // Create an enhanced prompt with ALL chess details
-                StringBuilder enhancedPrompt = new StringBuilder();
-
-                // 1. Add detailed chess position context first
-                // Add position info in a more compact format
-                enhancedPrompt.append("CHESS POSITION: ");
-
-                // Store FEN position for Assistants API
                 String currentFenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Default
 
-                if (gameState != null) {
-                    // Include only essential information
-                    currentFenPosition = gameState.getCurrentFen();
-                    enhancedPrompt.append("FEN=").append(currentFenPosition);
-                    enhancedPrompt.append(", Color=").append(gameState.getPlayerColor());
+                // Create enhanced game context specifically optimized for fine-tuned models
+                StringBuilder enhancedGameContext = new StringBuilder();
 
-                    // Only include the last few moves
+                if (gameState != null) {
+                    currentFenPosition = gameState.getCurrentFen();
+
+                    // Detailed position context that helps fine-tuned models understand the situation
+                    enhancedGameContext.append("POSITION: ").append(currentFenPosition);
+                    enhancedGameContext.append("\nPLAYER: ").append(gameState.getPlayerColor());
+                    enhancedGameContext.append("\nPHASE: ").append(gameState.getGamePhase());
+
+                    // Recent move context (crucial for fine-tuned model understanding)
                     List<String> moves = gameState.getMoveHistory();
                     if (moves != null && !moves.isEmpty()) {
-                        int startIndex = Math.max(0, moves.size() - 3);
-                        enhancedPrompt.append(", LastMoves=");
-                        for (int i = startIndex; i < moves.size(); i++) {
-                            enhancedPrompt.append(moves.get(i));
-                            if (i < moves.size() - 1) enhancedPrompt.append(",");
+                        enhancedGameContext.append("\nLAST_MOVES: ");
+
+                        // Include last 3 moves for context
+                        int startIndex = Math.max(0, moves.size() - 6); // 3 full moves
+                        StringBuilder recentMoves = new StringBuilder();
+
+                        for (int i = startIndex; i < moves.size(); i += 2) {
+                            int moveNumber = (startIndex / 2) + (i - startIndex) / 2 + 1;
+                            recentMoves.append(moveNumber).append(".");
+                            recentMoves.append(moves.get(i));
+                            if (i + 1 < moves.size()) {
+                                recentMoves.append(" ").append(moves.get(i + 1));
+                            }
+                            recentMoves.append(" ");
                         }
+                        enhancedGameContext.append(recentMoves.toString().trim());
                     }
 
-                    // Add critical game state in compact form
+                    // Add tactical context that fine-tuned models can leverage
                     ChessBoardView boardView = getChessBoardView();
                     if (boardView != null) {
-                        if (boardView.isCheck()) enhancedPrompt.append(", InCheck=true");
-                        enhancedPrompt.append(", Phase=").append(determineGamePhase(boardView));
+                        if (boardView.isCheck()) {
+                            enhancedGameContext.append("\nSTATUS: Check");
+                        }
+                        if (boardView.isCheckmate()) {
+                            enhancedGameContext.append("\nSTATUS: Checkmate");
+                        }
+
+                        // Add piece count for endgame detection
+                        int pieceCount = boardView.getPieceCount();
+                        if (pieceCount <= 10) {
+                            enhancedGameContext.append("\nNOTE: Endgame_position");
+                        }
                     }
-                } else {
-                    enhancedPrompt.append("No active game");
                 }
 
-                // And right BEFORE you add the user's question, add this:
+                // Add follow-up context for better conversation flow
                 if (isFollowUpQuestion) {
-                    enhancedPrompt.append("NOTE: This is a follow-up question to the previous advice.\n\n");
-                    isFollowUpQuestion = false; // Reset for next time
+                    enhancedGameContext.append("\nCONTEXT: Follow-up_to_previous_advice");
+                    isFollowUpQuestion = false;
                 }
-
-                enhancedPrompt.append("\n\nQUESTION: ").append(transcribedText);
 
                 // Get the selected chess master
                 String selectedMaster = getSelectedChessMaster();
+                Log.d(TAG, "🎯 Using enhanced prompting for master: " + selectedMaster);
 
                 // Check if we should use Assistants API (for Botvinnik)
                 if ("botvinnik".equals(selectedMaster)) {
-                    // *** NEW ASSISTANTS API PATH FOR BOTVINNIK ***
-                    Log.d(TAG, "Using Assistants API for Botvinnik");
-
-                    // Get the ChessMasterAgentManager
-                    ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                            OpenAIService.getInstance(), SimpleRecordService.this);
-
-                    // Get Botvinnik's assistant ID
-                    String assistantId = agentManager.getBotvinnikAssistantId();
-
-                    if (assistantId == null) {
-                        Log.e(TAG, "Failed to get Botvinnik Assistant ID");
-                        return "I'm having trouble connecting to my chess memory. Please try again.";
-                    }
-
-                    // Create thread if needed
-                    if (currentThreadId == null) {
-                        currentThreadId = agentManager.createConversationThread();
-                        Log.d(TAG, "Created new thread: " + currentThreadId);
-                    }
-
-                    if (currentThreadId == null) {
-                        Log.e(TAG, "Failed to create conversation thread");
-                        return "I'm having trouble starting our conversation. Please try again.";
-                    }
-
-                    // Send message with position context
-                    String runId = agentManager.sendMessageWithPosition(
-                            currentThreadId, assistantId, transcribedText, currentFenPosition);
-
-                    if (runId == null) {
-                        Log.e(TAG, "Failed to create run");
-                        return "I'm having trouble analyzing your question. Please try again.";
-                    }
-
-                    Log.d(TAG, "Created run: " + runId);
-
-                    // Keep the original line that gets the response
-                    String response = agentManager.getChessMasterResponse(currentThreadId, runId);
-
-// And add your async version to improve future responses
-                    agentManager.getChessMasterResponseAsync(currentThreadId, runId, new ChessMasterAgentManager.Callback<String>() {
-                        @Override
-                        public void onSuccess(String asyncResponse) {
-                            // Maybe log to compare with the synchronous response
-                            Log.d(TAG, "Async response matches sync? " + asyncResponse.equals(response));
-                            // You could do additional processing here if needed
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            Log.e(TAG, "Async approach had error: " + errorMessage);
-                        }
-                    });
-                    // Add response to conversation history
-                    conversationManager.addMessage("assistant", response);
-
-                    // Save the conversation
-                    conversationManager.saveCurrentConversation();
-
-                    // Clean up temp file
-                    wavFile.delete();
-
-                    return response;
+                    Log.d(TAG, "🤖 Using Assistants API for Botvinnik with enhanced context");
+                    return processWithAssistantsAPI(transcribedText, currentFenPosition, enhancedGameContext.toString());
                 } else {
-                    // *** ORIGINAL FINE-TUNED MODEL PATH FOR OTHER MASTERS ***
-                    String coachName = selectedMaster.equals("kramnik") ? "Kramnik" : "Tal";
-                    String coachStyle = selectedMaster.equals("kramnik")
-                            ? "emphasizing positional understanding, prophylaxis, and long-term planning"
-                            : "emphasizing tactical vision, creative sacrifices, and dynamic attacking play";
-
-                    String systemPrompt = "You are Coach " + coachName + ", a chess grandmaster " + coachStyle + ". " +
-                            "Be extremely concise and focused - limit to 2-3 sentences maximum. " +
-                            "Don't repeat information like FEN or move lists that I already know. " +
-                            "Get straight to the point with the best move or plan, using clear chess notation. " +
-                            "Speak naturally as if we're in the middle of a game with time pressure.";
-
-                    // Log the complete prompt for debugging
-                    Log.d(TAG, "SYSTEM PROMPT: " + systemPrompt);
-                    Log.d(TAG, "ENHANCED PROMPT: " + enhancedPrompt);
-
-                    // Make the API call with BOTH the system prompt and enhanced prompt
-                    String response = openAIService.getChatCompletion(systemPrompt, enhancedPrompt.toString());
-
-                    // Add response to conversation history
-                    conversationManager.addMessage("assistant", response);
-
-                    // Save the conversation
-                    conversationManager.saveCurrentConversation();
-
-                    // Clean up temp file
-                    wavFile.delete();
-
-                    return response;
+                    Log.d(TAG, "🧠 Using enhanced fine-tuned model for " + selectedMaster);
+                    return processWithFineTunedModel(transcribedText, enhancedGameContext.toString());
                 }
+
             } catch (Exception e) {
-                Log.e(TAG, "Error in speech-to-speech process", e);
+                Log.e(TAG, "Error in enhanced speech-to-speech process", e);
                 return "I'm sorry, I had trouble analyzing your question. Could you try again?";
             }
         }).thenAccept(response -> {
@@ -512,7 +443,7 @@ public class SimpleRecordService extends Service {
                 updateUIForProcessing(false);
                 updateResponseUI(response);
 
-                // Speak the response
+                // Speak the response using master-appropriate voice
                 textToSpeechManager.speak(response, new TextToSpeechManager.OnSpeechCompletedListener() {
                     @Override
                     public void onSpeechCompleted() {
@@ -530,6 +461,75 @@ public class SimpleRecordService extends Service {
             });
             return null;
         });
+    }
+
+    /**
+     * Process using Assistants API (for Botvinnik)
+     */
+    private String processWithAssistantsAPI(String transcribedText, String fenPosition, String gameContext) {
+        try {
+            ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
+                    OpenAIService.getInstance(), this);
+
+            String assistantId = agentManager.getBotvinnikAssistantId();
+            if (assistantId == null) {
+                return "I'm having trouble connecting to my chess memory. Please try again.";
+            }
+
+            if (currentThreadId == null) {
+                currentThreadId = agentManager.createConversationThread();
+            }
+
+            if (currentThreadId == null) {
+                return "I'm having trouble starting our conversation. Please try again.";
+            }
+
+            // Enhanced message with full context for Assistants API
+            String enhancedMessage = gameContext + "\n\nQUESTION: " + transcribedText;
+
+            String runId = agentManager.sendMessageWithPosition(
+                    currentThreadId, assistantId, enhancedMessage, fenPosition);
+
+            if (runId == null) {
+                return "I'm having trouble analyzing your question. Please try again.";
+            }
+
+            String response = agentManager.getChessMasterResponse(currentThreadId, runId);
+
+            // Add response to conversation history
+            conversationManager.addMessage("assistant", response);
+            conversationManager.saveCurrentConversation();
+
+            return response;
+        } catch (Exception e) {
+            Log.e(TAG, "Error in Assistants API processing", e);
+            return "I'm having trouble with my advanced analysis. Let me try a simpler approach.";
+        }
+    }
+
+    /**
+     * Process using enhanced fine-tuned model
+     */
+    private String processWithFineTunedModel(String transcribedText, String gameContext) {
+        try {
+            // Use the enhanced OpenAI service with optimized prompting
+            OpenAIService openAIService = OpenAIService.getInstance();
+
+            // Get enhanced response using contextual prompting
+            String response = openAIService.getEnhancedChatCompletion(transcribedText, gameContext);
+
+            // Add to conversation history
+            conversationManager.addMessage("user", transcribedText);
+            conversationManager.addMessage("assistant", response);
+            conversationManager.saveCurrentConversation();
+
+            Log.d(TAG, "✅ Enhanced fine-tuned model response generated successfully");
+            return response;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error in fine-tuned model processing", e);
+            return "I'm having trouble analyzing that position. Could you try rephrasing your question?";
+        }
     }
 
     /**

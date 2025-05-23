@@ -24,7 +24,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * Service for communicating with OpenAI API
+ * Enhanced OpenAI service with optimized fine-tuned model integration
  */
 public class OpenAIService {
     static final String API_URL = "https://api.openai.com/v1/chat/completions";
@@ -93,9 +93,6 @@ public class OpenAIService {
         }
     }
 
-// Similarly update createThread, createMessage, etc.
-
-
     private void initFineTunedModels() {
         // Use your actual fine-tuned model for all masters
         String actualModelId = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
@@ -132,8 +129,8 @@ public class OpenAIService {
         }
     }
 
-        // Update createMessage method
-        public String createMessage(String threadId, String messageBody) {
+    // Update createMessage method
+    public String createMessage(String threadId, String messageBody) {
         try {
             Request request = getAssistantsApiRequestBuilder()
                     .url("https://api.openai.com/v1/threads/" + threadId + "/messages")
@@ -217,42 +214,49 @@ public class OpenAIService {
     }
 
     /**
-     * Update the getChatCompletionWithHistory method
+     * Enhanced chat completion method with fine-tuned model optimization
      */
     public String getChatCompletionWithHistory(ConversationManager conversationManager) {
         if (apiKey == null || apiKey.isEmpty()) {
             Log.e(TAG, "API key not set");
             return "Error: API key not configured.";
-
-
         }
 
         try {
-            // Create request JSON
-            JSONObject requestBody = new JSONObject();
-
-            // Get the appropriate model - with enhanced debugging
+            // Get the appropriate model and optimization settings
             String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
             String modelToUse = getModelForRequest();
+            FineTunedModelManager.ModelOptimizationSettings optimizationSettings =
+                    FineTunedModelManager.getInstance(context).getOptimizationSettings();
+
             Log.d(TAG, "🎯 Selected master: " + selectedMaster);
             Log.d(TAG, "🎯 Model being used: " + modelToUse);
-            Log.d(TAG, "🎯 Expected Alekhine model: ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe");
+            Log.d(TAG, "🎯 Temperature: " + optimizationSettings.temperature);
+
+            // Create request JSON with optimization settings
+            JSONObject requestBody = new JSONObject();
             requestBody.put("model", modelToUse);
 
-            // Get the appropriate system prompt based on selected master - NEW CODE
-            String systemPrompt = "You are a helpful chess coach.";
-            if (context != null) {
-                systemPrompt = FineTunedModelManager.getInstance(context)
-                        .getSystemPromptForSelectedMaster();
+            // Apply optimization settings
+            requestBody.put("temperature", optimizationSettings.temperature);
+            requestBody.put("max_tokens", optimizationSettings.maxTokens);
+
+            // Add top_p for creative masters
+            if (optimizationSettings.allowCreativeLiberty) {
+                requestBody.put("top_p", 0.9);
             }
+
+            // Get the enhanced system prompt
+            String enhancedSystemPrompt = FineTunedModelManager.getInstance(context)
+                    .getEnhancedSystemPromptForSelectedMaster();
 
             // Add messages
             JSONArray messagesArray = new JSONArray();
 
-            // First add our system prompt - NEW CODE
+            // First add our enhanced system prompt
             JSONObject systemMsg = new JSONObject();
             systemMsg.put("role", "system");
-            systemMsg.put("content", systemPrompt);
+            systemMsg.put("content", enhancedSystemPrompt);
             messagesArray.put(systemMsg);
 
             // Then add conversation history
@@ -269,8 +273,7 @@ public class OpenAIService {
             requestBody.put("messages", messagesArray);
 
             // Log request for debugging
-            Log.d(TAG, "Using model: " + modelToUse);
-            Log.d(TAG, "FULL OPENAI REQUEST: " + requestBody);
+            Log.d(TAG, "Using model: " + modelToUse + " with temperature: " + optimizationSettings.temperature);
 
             // Create HTTP request
             RequestBody body = RequestBody.create(requestBody.toString(), JSON);
@@ -292,7 +295,7 @@ public class OpenAIService {
                 }
 
                 String responseBody = response.body() != null ? response.body().string() : "";
-                Log.d(TAG, "OPENAI RESPONSE: " + responseBody);
+                Log.d(TAG, "Enhanced API response received for " + selectedMaster);
 
                 // Parse response
                 JSONObject jsonResponse = new JSONObject(responseBody);
@@ -308,9 +311,33 @@ public class OpenAIService {
             }
 
         } catch (JSONException | IOException e) {
-            Log.e(TAG, "Error in chat completion: " + e.getMessage());
+            Log.e(TAG, "Error in enhanced chat completion: " + e.getMessage());
             return "I encountered an error processing your request: " + e.getMessage();
         }
+    }
+
+    /**
+     * Enhanced contextual chat completion for better fine-tuned model performance
+     */
+    public String getEnhancedChatCompletion(String userInput, String gameContext) {
+        if (context == null) {
+            Log.w(TAG, "Context not available for enhanced completion");
+            return getChatCompletion("You are a helpful chess coach.", userInput);
+        }
+
+        FineTunedModelManager manager = FineTunedModelManager.getInstance(context);
+
+        // Generate contextual prompt optimized for fine-tuned models
+        String contextualPrompt = manager.generateContextualPrompt(userInput, gameContext);
+        String enhancedSystemPrompt = manager.getEnhancedSystemPromptForSelectedMaster();
+
+        // Create temporary conversation for this request
+        ConversationManager tempManager = new ConversationManager();
+        tempManager.clear();
+        tempManager.addSystemMessage(enhancedSystemPrompt);
+        tempManager.addUserMessage(contextualPrompt);
+
+        return getChatCompletionWithHistory(tempManager);
     }
 
     // New method to select fine-tuned model
@@ -330,7 +357,6 @@ public class OpenAIService {
         this.model = model;
     }
 
-
     /**
      * Get a direct completion with system prompt and user message
      */
@@ -347,18 +373,26 @@ public class OpenAIService {
      * Method to match existing API - this helps fix the compilation error
      */
     public String sendMessage(String userMessage) {
-        // Create a temporary conversation
-        ConversationManager tempManager = new ConversationManager();
+        if (context != null) {
+            // Use enhanced system prompt for better fine-tuned model performance
+            String enhancedSystemPrompt = FineTunedModelManager.getInstance(context)
+                    .getEnhancedSystemPromptForSelectedMaster();
 
-        // Add system message
-        tempManager.addSystemMessage("You are Coach Tal, a FIDE-rated chess expert analyzing games. " +
-                "Be encouraging, supportive, and share insights about chess strategy in your responses. " +
-                "Keep your answers concise and focused.");
+            // Create a temporary conversation
+            ConversationManager tempManager = new ConversationManager();
+            tempManager.addSystemMessage(enhancedSystemPrompt);
+            tempManager.addUserMessage(userMessage);
 
-        // Add user message
-        tempManager.addUserMessage(userMessage);
+            return getChatCompletionWithHistory(tempManager);
+        } else {
+            // Fallback for when context is not available
+            ConversationManager tempManager = new ConversationManager();
+            tempManager.addSystemMessage("You are Coach Tal, a FIDE-rated chess expert analyzing games. " +
+                    "Be encouraging, supportive, and share insights about chess strategy in your responses. " +
+                    "Keep your answers concise and focused.");
+            tempManager.addUserMessage(userMessage);
 
-        // Get response
-        return getChatCompletionWithHistory(tempManager);
+            return getChatCompletionWithHistory(tempManager);
+        }
     }
 }

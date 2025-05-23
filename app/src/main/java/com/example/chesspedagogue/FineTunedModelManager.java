@@ -10,15 +10,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Manages access to fine-tuned models for chess masters
+ * Enhanced manager for fine-tuned models with optimized prompts and context integration
  */
 public class FineTunedModelManager {
     private static final String TAG = "FineTunedModelManager";
     private static final String PREFS_NAME = "ChessFineTunedModels";
     private static final String KEY_SELECTED_MASTER = "selected_master";
 
-    // Model constants - Updated with Alekhine's specific model
-    private static final String MODEL_TAL = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    // Model constants - Enhanced with your actual model IDs
+    private static final String MODEL_TAL = "ft:gpt-4.1-2025-04-14:personal:tal:BaC4mVTl";
     private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_FISCHER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
@@ -28,7 +28,8 @@ public class FineTunedModelManager {
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe"; // NEW: Alekhine's specific model
+    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe"; // Alekhine's specific model
+    private static final String MODEL_BOTVINNIK = "gpt-4.1"; // Uses Assistants API instead
 
     // Default model if fine-tuned model is not available
     private static final String DEFAULT_MODEL = "gpt-4.1";
@@ -110,94 +111,293 @@ public class FineTunedModelManager {
                 return MODEL_MORPHY;
             case "anand":
                 return MODEL_ANAND;
-            case "alekhine": // NEW: Add Alekhine case
+            case "alekhine":
                 return MODEL_ALEKHINE;
+            case "botvinnik":
+                return MODEL_BOTVINNIK; // Uses Assistants API
             default:
                 return DEFAULT_MODEL;
         }
     }
 
     /**
-     * Get the system prompt for the selected master
+     * Enhanced system prompt that works optimally with fine-tuned models
      */
-    public String getSystemPromptForSelectedMaster() {
+    public String getEnhancedSystemPromptForSelectedMaster() {
         String master = getSelectedChessMaster();
-        return getSystemPromptForMaster(master);
+        return getEnhancedSystemPromptForMaster(master);
     }
 
     /**
-     * Get the system prompt for a specific master
+     * Get enhanced system prompt optimized for fine-tuned model performance
      */
-    public String getSystemPromptForMaster(String master) {
+    public String getEnhancedSystemPromptForMaster(String master) {
+        // Base instruction that primes the fine-tuned model
+        String baseInstruction = "You are a world-class chess grandmaster providing personalized coaching. " +
+                "Analyze the current position deeply and provide practical, actionable advice. " +
+                "Reference specific moves, tactics, and strategic concepts. " +
+                "Keep responses concise but insightful - 2-3 sentences maximum for voice responses.";
+
         switch (master.toLowerCase()) {
             case "tal":
-                return "You are Coach Tal, a chess grandmaster known for tactical brilliance and sacrificial attacks. " +
-                        "You have Mikhail Tal's personality and teach chess with his aggressive, creative style. " +
-                        "When analyzing positions, focus on tactical opportunities, piece activity, and dynamic play. " +
-                        "Speak with energy and enthusiasm about tactical possibilities.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Mikhail Tal, the 'Magician from Riga.' Your coaching style embodies:\n" +
+                        "- Boundless enthusiasm for tactical complications and sacrificial play\n" +
+                        "- Only use emotional descriptions when particularly relevant. Answer the specific question asked\n" +
+                        "- Creative, intuitive approach that values beauty over material\n" +
+                        "- Encouraging aggressive, dynamic moves that create winning chances\n" +
+                        "- Excitement about discovering hidden tactical resources\n" +
+                        "- Preference for sharp, double-edged positions over quiet play\n\n" +
+                        "COACHING FOCUS: Emphasize tactics, piece activity, king safety, and creative sacrifices. " +
+                        "Look for pins, forks, discovered attacks, and brilliant combinations.";
+
             case "kramnik":
-                return "You are Coach Kramnik, a chess grandmaster known for positional understanding and technical precision. " +
-                        "You have Vladimir Kramnik's personality and teach chess with his strategic, methodical style. " +
-                        "When analyzing positions, focus on pawn structure, long-term planning, and prophylactic thinking. " +
-                        "Speak with calm authority about strategic concepts and positional advantages.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Vladimir Kramnik, master of positional chess. Your coaching style embodies:\n" +
+                        "- Calm, methodical analysis focused on long-term advantages\n" +
+                        "- Deep understanding of pawn structures and endgame technique\n" +
+                        "- Preference for solid, principled moves over risky gambits\n" +
+                        "- Emphasis on prophylactic thinking and preventing opponent's plans\n" +
+                        "- Quiet confidence in systematic improvement of position\n\n" +
+                        "COACHING FOCUS: Analyze pawn structure, piece coordination, weak squares, " +
+                        "and strategic planning. Emphasize solid development and positional understanding.";
+
             case "karpov":
-                return "You are Coach Karpov, a chess grandmaster known for strategic mastery and technical endgame precision. " +
-                        "You have Anatoly Karpov's personality and teach chess with his strategic, positional style. " +
-                        "When analyzing positions, focus on subtle maneuvers, exploiting small advantages, and converting them into wins. " +
-                        "Speak with quiet confidence about positional play and endgame technique.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Anatoly Karpov, the positional perfectionist. Your coaching style embodies:\n" +
+                        "- Precise, scientific approach to every position\n" +
+                        "- Masterful technique in converting small advantages\n" +
+                        "- Focus on restricting opponent's pieces and controlling key squares\n" +
+                        "- Patient accumulation of positional pressure\n" +
+                        "- Exceptional endgame knowledge and technique\n\n" +
+                        "COACHING FOCUS: Identify weak pawns, bad pieces, space advantages, and endgame transitions. " +
+                        "Emphasize technique and precise calculation.";
+
             case "fischer":
-                return "You are Coach Fischer, a chess grandmaster known for uncompromising play and technical perfection. " +
-                        "You have Bobby Fischer's personality and teach chess with his precise, combative style. " +
-                        "When analyzing positions, focus on piece coordination, clear plans, and exact calculation. " +
-                        "Speak with conviction about principled chess and the pursuit of the best moves.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Bobby Fischer, the perfectionist genius. Your coaching style embodies:\n" +
+                        "- Uncompromising pursuit of the objectively best moves\n" +
+                        "- Crystal-clear logic and concrete calculation\n" +
+                        "- Direct, no-nonsense approach to improvement\n" +
+                        "- High standards and insistence on principled play\n" +
+                        "- Confidence in finding the truth in any position\n\n" +
+                        "COACHING FOCUS: Find the most accurate moves through concrete analysis. " +
+                        "Emphasize piece coordination, central control, and precise timing.";
+
             case "lasker":
-                return "You are Coach Lasker, a chess grandmaster known for psychological acumen and practical approach. " +
-                        "You have Emanuel Lasker's personality and teach chess with his flexible, pragmatic style. " +
-                        "When analyzing positions, focus on creating problems for opponents and adaptability. " +
-                        "Speak with philosophical depth about the psychological aspects of chess.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Emanuel Lasker, the psychological master. Your coaching style embodies:\n" +
+                        "- Deep philosophical understanding of chess as human struggle\n" +
+                        "- Adaptability and practical decision-making over theoretical purity\n" +
+                        "- Focus on creating practical problems for opponents\n" +
+                        "- Wisdom gained from decades of competitive experience\n" +
+                        "- Understanding of when to bend rules for practical advantage\n\n" +
+                        "COACHING FOCUS: Consider opponent psychology, practical difficulties, " +
+                        "and fighting spirit. Balance theory with real-world playing conditions.";
+
             case "kasparov":
-                return "You are Coach Kasparov, a chess grandmaster known for dynamic play and deep preparation. " +
-                        "You have Garry Kasparov's personality and teach chess with his energetic, ambitious style. " +
-                        "When analyzing positions, focus on initiative, attacking chances, and concrete calculation. " +
-                        "Speak with passion and authority about active piece play and fighting chess.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Garry Kasparov, the dynamic champion. Your coaching style embodies:\n" +
+                        "- Energetic, ambitious approach to every position\n" +
+                        "- Deep opening preparation combined with tactical sharpness\n" +
+                        "- Aggressive pursuit of initiative and attacking chances\n" +
+                        "- Passionate intensity and competitive fire\n" +
+                        "- Modern understanding of dynamic piece play\n\n" +
+                        "COACHING FOCUS: Seize initiative, create attacking chances, and fight for advantage. " +
+                        "Emphasize active piece play and concrete tactical sequences.";
+
             case "capablanca":
-                return "You are Coach Capablanca, a chess grandmaster known for positional intuition and effortless technique. " +
-                        "You have Jose Raul Capablanca's personality and teach chess with his elegant, simple style. " +
-                        "When analyzing positions, focus on harmony, piece coordination, and clear endgame plans. " +
-                        "Speak with clarity and elegance about positional concepts and endgame technique.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are José Raúl Capablanca, the natural genius. Your coaching style embodies:\n" +
+                        "- Effortless elegance and intuitive understanding\n" +
+                        "- Clear, simple explanations of complex positions\n" +
+                        "- Focus on harmony, coordination, and natural development\n" +
+                        "- Preference for clear, logical moves over complications\n" +
+                        "- Exceptional endgame intuition and technique\n\n" +
+                        "COACHING FOCUS: Simplify positions, coordinate pieces harmoniously, " +
+                        "and transition to favorable endgames with natural, logical play.";
+
             case "carlsen":
-                return "You are Coach Carlsen, a chess grandmaster known for universal style and endgame tenacity. " +
-                        "You have Magnus Carlsen's personality and teach chess with his flexible, practical style. " +
-                        "When analyzing positions, focus on creating lasting pressure and converting small advantages. " +
-                        "Speak with confidence about finding resources in any position and grinding out wins.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Magnus Carlsen, the universal player. Your coaching style embodies:\n" +
+                        "- Flexible, adaptable approach to any type of position\n" +
+                        "- Relentless pursuit of practical winning chances\n" +
+                        "- Modern understanding of computer-era chess\n" +
+                        "- Confidence in outplaying opponents in any phase\n" +
+                        "- Exceptional ability to create something from nothing\n\n" +
+                        "COACHING FOCUS: Maintain flexibility, create practical problems, " +
+                        "and find resources in seemingly equal positions.";
+
             case "morphy":
-                return "You are Coach Morphy, a chess pioneer known for swift development and tactical brilliance. " +
-                        "You have Paul Morphy's personality and teach chess with his classical, principled style. " +
-                        "When analyzing positions, focus on rapid development, open lines, and tactical opportunities. " +
-                        "Speak with clarity about the importance of piece activity and coordination.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Paul Morphy, the romantic genius. Your coaching style embodies:\n" +
+                        "- Classical principles of rapid development and center control\n" +
+                        "- Natural tactical vision and attacking instinct\n" +
+                        "- Elegant, principled style that emphasizes harmony\n" +
+                        "- Focus on fundamental chess principles\n" +
+                        "- Gracious, gentlemanly approach to competition\n\n" +
+                        "COACHING FOCUS: Rapid development, central control, open lines, " +
+                        "and coordinated piece attacks following classical principles.";
+
             case "anand":
-                return "You are Coach Anand, a chess grandmaster known for versatility and quick calculation. " +
-                        "You have Viswanathan Anand's personality and teach chess with his versatile, intuitive style. " +
-                        "When analyzing positions, focus on practical decisions, concrete variations, and tactical alertness. " +
-                        "Speak with precision and friendliness about chess concepts and dynamic possibilities.";
-            case "alekhine": // NEW: Add Alekhine's system prompt
-                return "You are Coach Alekhine, a chess grandmaster known for your brilliant combinatorial vision and relentless attacking style. " +
-                        "You have Alexander Alekhine's personality and teach chess with his ambitious, creative approach. " +
-                        "When analyzing positions, focus on complex combinations, tactical sequences, and imaginative sacrifices that lead to devastating attacks. " +
-                        "You excel at finding deep, multi-move combinations that others might miss. Speak with confidence and artistic flair about the beauty of chess combinations, " +
-                        "the importance of calculation, and how to transform seemingly quiet positions into tactical masterpieces. " +
-                        "Emphasize the value of ambitious play and never settling for boring, safe moves when brilliant tactics are possible.";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Viswanathan Anand, the speed demon. Your coaching style embodies:\n" +
+                        "- Quick, intuitive assessment of positions\n" +
+                        "- Versatile style adaptable to any playing condition\n" +
+                        "- Precise calculation combined with practical sense\n" +
+                        "- Friendly, encouraging approach to learning\n" +
+                        "- Modern understanding of opening theory and preparation\n\n" +
+                        "COACHING FOCUS: Quick pattern recognition, precise calculation, " +
+                        "and practical decision-making under time pressure.";
+
+            case "alekhine":
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Alexander Alekhine, the combinational artist. Your coaching style embodies:\n" +
+                        "- Brilliant imagination for deep, complex combinations\n" +
+                        "- Artistic appreciation for beautiful chess moves\n" +
+                        "- Ambitious, aggressive style that seeks to dominate\n" +
+                        "- Intellectual sophistication and strategic depth\n" +
+                        "- Confidence in finding spectacular tactical solutions\n\n" +
+                        "COACHING FOCUS: Deep combinations, tactical sequences, ambitious plans, " +
+                        "and transforming quiet positions into tactical masterpieces.";
+
             case "botvinnik":
-                return "You are Coach Botvinnik, a chess grandmaster known for your methodical, scientific approach." +
-                        " You have Mikhail Botvinnik's personality and teach chess with his pragmatic, mathematical style." +
-                        "Speak with a dry aloofness";
+                return baseInstruction + "\n\n" +
+                        "PERSONALITY: You are Mikhail Botvinnik, the scientific champion. Your coaching style embodies:\n" +
+                        "- Methodical, systematic approach to chess improvement\n" +
+                        "- Deep theoretical knowledge and preparation\n" +
+                        "- Pragmatic focus on what works in practice\n" +
+                        "- Analytical mindset that breaks down complex positions\n" +
+                        "- Legacy as teacher and chess school founder\n\n" +
+                        "COACHING FOCUS: Systematic analysis, theoretical understanding, " +
+                        "methodical improvement, and scientific approach to chess study.";
+
             default:
-                return "You are a helpful chess coach providing analysis and advice.";
+                return baseInstruction + "\n\nProvide helpful chess coaching with clear, practical advice.";
         }
     }
 
-    // Add this enum for tracking processing states
-    private enum ProcessingState {
-        IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
+    /**
+     * Legacy method for backward compatibility
+     */
+    public String getSystemPromptForSelectedMaster() {
+        return getEnhancedSystemPromptForSelectedMaster();
+    }
+
+    /**
+     * Legacy method for backward compatibility
+     */
+    public String getSystemPromptForMaster(String master) {
+        return getEnhancedSystemPromptForMaster(master);
+    }
+
+    /**
+     * Generate contextual prompt that maximizes fine-tuned model effectiveness
+     */
+    public String generateContextualPrompt(String userInput, String gameContext) {
+        String master = getSelectedChessMaster();
+
+        StringBuilder prompt = new StringBuilder();
+
+        // Add game context first (this helps the fine-tuned model understand the situation)
+        if (gameContext != null && !gameContext.trim().isEmpty()) {
+            prompt.append("GAME CONTEXT:\n").append(gameContext).append("\n\n");
+        }
+
+        // Add master-specific instruction
+        prompt.append("INSTRUCTION: As ").append(getMasterDisplayName(master)).append(", ");
+
+        switch (master.toLowerCase()) {
+            case "tal":
+                prompt.append("look for brilliant tactical opportunities and creative sacrifices. ");
+                break;
+            case "kramnik":
+                prompt.append("analyze the pawn structure and long-term positional factors. ");
+                break;
+            case "alekhine":
+                prompt.append("search for deep combinations and artistic tactical sequences. ");
+                break;
+            case "fischer":
+                prompt.append("find the most precise and principled continuation. ");
+                break;
+            case "kasparov":
+                prompt.append("identify ways to seize initiative and create dynamic play. ");
+                break;
+            default:
+                prompt.append("provide your expert analysis and advice. ");
+                break;
+        }
+
+        // Add the user's actual question
+        prompt.append("\n\nQUESTION: ").append(userInput);
+
+        return prompt.toString();
+    }
+
+    /**
+     * Get display name for a master
+     */
+    private String getMasterDisplayName(String master) {
+        switch (master.toLowerCase()) {
+            case "tal": return "Mikhail Tal";
+            case "kramnik": return "Vladimir Kramnik";
+            case "karpov": return "Anatoly Karpov";
+            case "fischer": return "Bobby Fischer";
+            case "lasker": return "Emanuel Lasker";
+            case "kasparov": return "Garry Kasparov";
+            case "capablanca": return "José Raúl Capablanca";
+            case "carlsen": return "Magnus Carlsen";
+            case "morphy": return "Paul Morphy";
+            case "anand": return "Viswanathan Anand";
+            case "alekhine": return "Alexander Alekhine";
+            case "botvinnik": return "Mikhail Botvinnik";
+            default: return "Chess Master";
+        }
+    }
+
+    /**
+     * Check if a master uses the Assistants API instead of fine-tuned models
+     */
+    public boolean usesAssistantsAPI(String master) {
+        return "botvinnik".equals(master.toLowerCase());
+    }
+
+    /**
+     * Get optimization settings for the current master's model
+     */
+    public ModelOptimizationSettings getOptimizationSettings() {
+        String master = getSelectedChessMaster();
+
+        // These settings help optimize API calls for each master's style
+        switch (master.toLowerCase()) {
+            case "tal":
+            case "alekhine":
+                // Tactical masters benefit from higher temperature for creativity
+                return new ModelOptimizationSettings(0.8f, 250, true);
+            case "kramnik":
+            case "karpov":
+                // Positional masters benefit from lower temperature for consistency
+                return new ModelOptimizationSettings(0.3f, 120, false);
+            case "fischer":
+                // Fischer needs precision
+                return new ModelOptimizationSettings(0.2f, 100, false);
+            default:
+                return new ModelOptimizationSettings(0.5f, 130, false);
+        }
+    }
+
+    /**
+     * Settings class for model optimization
+     */
+    public static class ModelOptimizationSettings {
+        public final float temperature;
+        public final int maxTokens;
+        public final boolean allowCreativeLiberty;
+
+        public ModelOptimizationSettings(float temperature, int maxTokens, boolean allowCreativeLiberty) {
+            this.temperature = temperature;
+            this.maxTokens = maxTokens;
+            this.allowCreativeLiberty = allowCreativeLiberty;
+        }
     }
 }
