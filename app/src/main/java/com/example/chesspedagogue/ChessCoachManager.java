@@ -26,7 +26,6 @@ public class ChessCoachManager {
     private boolean useOpenAIVoice = true;
 
 
-    private ChessMasterAgentManager agentManager;
     private String currentMaster = "tal"; // Default master
     private boolean useAssistantsApi = false;
     private String currentAssistantId = null;
@@ -47,8 +46,6 @@ public class ChessCoachManager {
         // Initialize TTS service
         this.ttsService = new OpenAITTSService(context);
 
-        this.agentManager = new ChessMasterAgentManager(com.example.chesspedagogue.OpenAIService.getInstance(), context);
-
         // Try to load API key
         apiKey = ApiKeyConfig.getApiKey(context);
         if (apiKey != null && !apiKey.isEmpty()) {
@@ -64,9 +61,8 @@ public class ChessCoachManager {
         if ("botvinnik".equals(master)) {
             Log.d(TAG, "Switching to Botvinnik (Assistants API)");
             useAssistantsApi = true;
-            currentAssistantId = agentManager.getBotvinnikAssistantId();
-            // Create a new thread for the conversation
-            currentThreadId = agentManager.createConversationThread();
+            currentAssistantId = FineTunedModelManager.getInstance(context).getBotvinnikAssistantId();
+            currentThreadId = FineTunedModelManager.getInstance(context).createConversationThread();
 
         } else {
             // Other masters still use the fine-tuned model approach
@@ -171,7 +167,7 @@ public class ChessCoachManager {
 
                     // Create a thread if needed
                     if (currentThreadId == null) {
-                        currentThreadId = agentManager.createConversationThread();
+                        currentThreadId = FineTunedModelManager.getInstance(context).createConversationThread();
                         Log.d(TAG, "Created new thread: " + currentThreadId);
                     }
 
@@ -179,13 +175,13 @@ public class ChessCoachManager {
                     String fenPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
                     // Send message with position context
-                    String runId = agentManager.sendMessageWithPosition(
+                    String runId = FineTunedModelManager.getInstance(context).sendMessageWithPosition(
                             currentThreadId, currentAssistantId, text, fenPosition);
 
                     if (runId != null) {
                         Log.d(TAG, "Created run: " + runId);
                         // Get response from the assistant
-                        response = agentManager.getChessMasterResponse(currentThreadId, runId);
+                        response = FineTunedModelManager.getInstance(context).getChessMasterResponse(currentThreadId, runId);
                     } else {
                         response = "I'm having trouble connecting to my chess memory. Let's try again.";
                     }

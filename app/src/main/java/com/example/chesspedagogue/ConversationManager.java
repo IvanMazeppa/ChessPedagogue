@@ -59,7 +59,7 @@ public class ConversationManager {
      * Constructor for VoiceService compatibility
      */
     public ConversationManager(SpeechToTextService sttService, ChatService chatService, TextToSpeechService ttsService) {
-        this(null); // Use the default context-less initialization
+        this((Context)null); // Use the default context-less initialization
         this.sttService = sttService;
         this.chatService = chatService;
         this.ttsService = ttsService;
@@ -250,6 +250,73 @@ public class ConversationManager {
     }
 
     /**
+     * Delete a saved conversation
+     */
+    public void deleteConversation(String sessionId) {
+        // Remove from SharedPreferences
+        prefs.edit().remove(sessionId).apply();
+
+        // Update session list
+        List<String> sessions = getAllSessionIds();
+        sessions.remove(sessionId);
+        String json = gson.toJson(sessions);
+        prefs.edit().putString("session_list", json).apply();
+
+        Log.d(TAG, "Deleted conversation: " + sessionId);
+    }
+
+    /**
+     * Delete all saved conversations
+     */
+    public void deleteAllConversations() {
+        // Get all session IDs
+        List<String> sessions = getAllSessionIds();
+
+        // Remove each conversation
+        for (String sessionId : sessions) {
+            prefs.edit().remove(sessionId).apply();
+        }
+
+        // Clear the session list
+        prefs.edit().putString("session_list", "[]").apply();
+
+        Log.d(TAG, "Deleted all " + sessions.size() + " conversations");
+    }
+
+    /**
+     * Get conversation metadata (for display purposes)
+     */
+    public ConversationMetadata getConversationMetadata(String sessionId) {
+        List<Message> conversation = loadConversation(sessionId);
+        if (conversation.isEmpty()) {
+            return null;
+        }
+
+        // Extract first user message as preview
+        String preview = "New conversation";
+        for (Message msg : conversation) {
+            if ("user".equals(msg.getRole())) {
+                preview = msg.getContent();
+                if (preview.length() > 50) {
+                    preview = preview.substring(0, 47) + "...";
+                }
+                break;
+            }
+        }
+
+        // Parse timestamp from session ID
+        long timestamp = 0;
+        try {
+            String timeStr = sessionId.replace("session_", "");
+            timestamp = Long.parseLong(timeStr);
+        } catch (Exception e) {
+            // Ignore parsing errors
+        }
+
+        return new ConversationMetadata(sessionId, preview, timestamp, conversation.size());
+    }
+
+    /**
      * Add game state to current context
      */
     public void addGameStateToCurrentContext(GameStateInfo gameState) {
@@ -333,5 +400,27 @@ public class ConversationManager {
         public String getContent() {
             return content;
         }
+    }
+
+    /**
+     * Metadata class for conversation display
+     */
+    public static class ConversationMetadata {
+        private final String sessionId;
+        private final String preview;
+        private final long timestamp;
+        private final int messageCount;
+
+        public ConversationMetadata(String sessionId, String preview, long timestamp, int messageCount) {
+            this.sessionId = sessionId;
+            this.preview = preview;
+            this.timestamp = timestamp;
+            this.messageCount = messageCount;
+        }
+
+        public String getSessionId() { return sessionId; }
+        public String getPreview() { return preview; }
+        public long getTimestamp() { return timestamp; }
+        public int getMessageCount() { return messageCount; }
     }
 }

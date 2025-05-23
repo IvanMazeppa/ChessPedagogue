@@ -408,11 +408,10 @@ public class MainActivity extends AppCompatActivity {
         new Thread(() -> {
             try {
                 // Initialize the Manager
-                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        com.example.chesspedagogue.OpenAIService.getInstance(), this);
+                FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
 
                 // Get Botvinnik Assistant instead of creating Tal
-                String assistantId = agentManager.getBotvinnikAssistantId();
+                String assistantId = modelManager.getBotvinnikAssistantId();
                 Log.d("ChessTest", "Using Botvinnik assistant: " + assistantId);
 
                 // ... rest of the method with appropriate changes ...
@@ -1340,11 +1339,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "🔍 Testing Botvinnik Assistant creation");
 
                 // Get the assistant manager
-                ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                        com.example.chesspedagogue.OpenAIService.getInstance(), this);
+                FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
 
                 // Create Botvinnik assistant
-                String assistantId = agentManager.createBotvinnikAssistant();
+                String assistantId = modelManager.createBotvinnikAssistant();
                 Log.d(TAG, "✅ Created Botvinnik assistant: " + assistantId);
 
                 if (assistantId != null) {

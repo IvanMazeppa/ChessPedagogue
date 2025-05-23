@@ -84,7 +84,7 @@ public class SimpleRecordService extends Service {
     private long lastSoundTimestamp = 0;
     private boolean isFollowUpQuestion = false;
 
-    private ChessMasterAgentManager agentManager;
+    //private ChessMasterAgentManager agentManager;
     private String currentAssistantId;
     private final ExecutorService executorService = Executors.newFixedThreadPool(8); // More threads
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -118,7 +118,6 @@ public class SimpleRecordService extends Service {
         apiKey = getApiKeyFromPreferences();
 
         // Initialize the agent manager
-        agentManager = new ChessMasterAgentManager(com.example.chesspedagogue.OpenAIService.getInstance(), this);
 
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
@@ -153,14 +152,14 @@ public class SimpleRecordService extends Service {
         // Initialize assistant in background
         new Thread(() -> {
             try {
-                agentManager.getBotvinnikAssistantIdFullyAsync(new ChessMasterAgentManager.Callback<String>() {
+                FineTunedModelManager.getInstance(this).getBotvinnikAssistantIdFullyAsync(new FineTunedModelManager.Callback<String>() {
                     @Override
                     public void onSuccess(String assistantId) {
                         currentAssistantId = assistantId;
                         Log.d(TAG, "✅ Assistant ready: " + currentAssistantId);
 
-                        agentManager.createConversationThreadAsync(new ChessMasterAgentManager.Callback<String>() {
-                            @Override
+                        FineTunedModelManager.getInstance(SimpleRecordService.this).createConversationThreadAsync(new FineTunedModelManager.Callback<String>() {
+                        @Override
                             public void onSuccess(String threadId) {
                                 currentThreadId = threadId;
                                 Log.d(TAG, "✅ Thread ready: " + currentThreadId);
@@ -738,16 +737,14 @@ public class SimpleRecordService extends Service {
      */
     private String processWithAssistantsAPI(String transcribedText, String fenPosition, String gameContext) {
         try {
-            ChessMasterAgentManager agentManager = new ChessMasterAgentManager(
-                    com.example.chesspedagogue.OpenAIService.getInstance(), this);
-
-            String assistantId = agentManager.getBotvinnikAssistantId();
+            FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
+            String assistantId = FineTunedModelManager.getInstance(this).getBotvinnikAssistantId();
             if (assistantId == null) {
                 return "I'm having trouble connecting to my chess memory. Please try again.";
             }
 
             if (currentThreadId == null) {
-                currentThreadId = agentManager.createConversationThread();
+                currentThreadId = modelManager.createConversationThread();
             }
 
             if (currentThreadId == null) {
@@ -757,14 +754,14 @@ public class SimpleRecordService extends Service {
             // Enhanced message with full context for Assistants API
             String enhancedMessage = gameContext + "\n\nQUESTION: " + transcribedText;
 
-            String runId = agentManager.sendMessageWithPosition(
+            String runId = modelManager.sendMessageWithPosition(
                     currentThreadId, assistantId, enhancedMessage, fenPosition);
 
             if (runId == null) {
                 return "I'm having trouble analyzing your question. Please try again.";
             }
 
-            String response = agentManager.getChessMasterResponse(currentThreadId, runId);
+            String response = modelManager.getChessMasterResponse(currentThreadId, runId);
 
             // Add response to conversation history
             conversationManager.addMessage("assistant", response);

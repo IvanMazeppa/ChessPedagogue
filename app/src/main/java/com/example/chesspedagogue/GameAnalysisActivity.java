@@ -167,7 +167,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
         Toast.makeText(this, "Coach " + selectedChessMaster + " is speaking...", Toast.LENGTH_SHORT).show();
 
         // Get appropriate voice for the selected master
-        String voice = ChessMasterVoiceManager.getVoiceForMaster(selectedChessMaster);
+        String voice = FineTunedModelManager.getInstance(this).getVoiceForMaster(selectedChessMaster);
 
         // Speak the analysis with your improved chunking
         ttsService.speakWithChunking(analysis, new OpenAITTSService.TTSCallback() {

@@ -223,7 +223,7 @@ public class OpenAITTSService {
         }
 
         // Otherwise use the master's default voice
-        return ChessMasterVoiceManager.getVoiceForMaster(currentMaster);
+        return FineTunedModelManager.getInstance(context).getVoiceForMaster(currentMaster);
     }
 
     public void setApiKey(String apiKey) {
@@ -266,7 +266,7 @@ public class OpenAITTSService {
 
                 // Add personality if enabled
                 if (shouldUsePersonality()) {
-                    String instructions = ChessMasterVoiceManager.getSimplifiedInstructionsForMaster(selectedMaster);
+                    String instructions = FineTunedModelManager.getInstance(context).getSimplifiedInstructionsForMaster(selectedMaster);
                     if (instructions != null) {
                         payload.put("instructions", instructions);
                     }
