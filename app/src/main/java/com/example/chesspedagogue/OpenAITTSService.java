@@ -14,11 +14,16 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -27,8 +32,7 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * Consolidated TTS service that handles all text-to-speech operations
- * Merged from TextToSpeechManager and OpenAITTSService
+ * Consolidated TTS service with proper chunk ordering and simplified voice instructions
  */
 public class OpenAITTSService {
     private static final String TAG = "OpenAITTSService";
@@ -62,21 +66,36 @@ public class OpenAITTSService {
     private boolean isSpeaking = false;
     private SharedPreferences prefs;
 
-    // Audio playback queue
-    private final Queue<AudioPlaybackTask> playbackQueue = new LinkedList<>();
-    private boolean isCurrentlyPlaying = false;
-    private final Object playbackLock = new Object();
+    // Chunk management
+    private final ConcurrentLinkedQueue<ChunkPlaybackItem> chunkQueue = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean isPlayingChunks = new AtomicBoolean(false);
+    private final AtomicInteger chunkIdCounter = new AtomicInteger(0);
+    private final Map<Integer, ChunkPlaybackItem> pendingChunks = new HashMap<>();
+    private int nextChunkToPlay = 0;
 
-    // Speech callbacks (from TextToSpeechManager)
     private SpeechCallback speechCallback;
+
+    // Inner class for chunk management
+    private static class ChunkPlaybackItem {
+        final int chunkId;
+        final File audioFile;
+        final String text;
+        final TTSCallback callback;
+        final boolean isFinalChunk;
+
+        ChunkPlaybackItem(int chunkId, File audioFile, String text, TTSCallback callback, boolean isFinalChunk) {
+            this.chunkId = chunkId;
+            this.audioFile = audioFile;
+            this.text = text;
+            this.callback = callback;
+            this.isFinalChunk = isFinalChunk;
+        }
+    }
 
     public OpenAITTSService(Context context) {
         this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
-
-        // Use shared HTTP client if available, otherwise create one
         this.httpClient = OpenAIService.getInstance().getHttpClient();
-
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newFixedThreadPool(4);
     }
@@ -88,34 +107,7 @@ public class OpenAITTSService {
         return instance;
     }
 
-    /**
-     * Set voice personalization (personality usage)
-     */
-    public void setVoicePersonalization(boolean usePersonality) {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putBoolean("use_master_personality", usePersonality);
-        editor.apply();
-    }
-
-    /**
-     * Override the voice selection
-     */
-    public void setVoiceOverride(String voiceStyle) {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("voice_style", voiceStyle);
-        editor.apply();
-    }
-
-    /**
-     * Clear any voice override (return to automatic)
-     */
-    public void clearVoiceOverride() {
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("voice_style", "auto");
-        editor.apply();
-    }
-
-    // Simple speech callback interface (from TextToSpeechManager)
+    // Simple speech callback interface
     public interface SpeechCallback {
         void onSpeechCompleted(String text);
         void onSpeechInterrupted();
@@ -125,30 +117,34 @@ public class OpenAITTSService {
         void onSpeechCompleted();
     }
 
-    // Set speech callback
     public void setSpeechCallback(SpeechCallback callback) {
         this.speechCallback = callback;
     }
 
     /**
-     * Main speak method - simplified from TextToSpeechManager
-     */
-    public void speak(String text) {
-        speak(text, (OnSpeechCompletedListener) null);
-    }
-
-    /**
-     * Speak with completion listener
+     * Main speak method with proper chunk ordering
      */
     public void speak(String text, OnSpeechCompletedListener listener) {
         Log.d(TAG, "Speaking text, length: " + (text != null ? text.length() : 0));
+
+        if (text == null || text.isEmpty()) {
+            if (listener != null) {
+                listener.onSpeechCompleted();
+            }
+            return;
+        }
+
         isSpeaking = true;
         interruptRequested = false;
 
-        // Get voice for current chess master
-        String voiceToUse = getVoiceForCurrentMaster();
+        // Reset chunk counter for this speech session
+        chunkIdCounter.set(0);
+        nextChunkToPlay = 0;
+        chunkQueue.clear();
+        pendingChunks.clear();
 
-        speakDirect(text, new TTSCallback() {
+        // Use a single TTSCallback that manages ordering
+        TTSCallback orderingCallback = new TTSCallback() {
             @Override
             public void onSpeechStarted() {
                 Log.d(TAG, "Speech started");
@@ -156,121 +152,56 @@ public class OpenAITTSService {
 
             @Override
             public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "Audio ready: " + audioFile.getName());
+                // This is handled in the chunk management
             }
 
             @Override
             public void onSpeechCompleted() {
-                Log.d(TAG, "Speech completed");
-                isSpeaking = false;
-                if (listener != null && !interruptRequested) {
-                    listener.onSpeechCompleted();
-                }
+                Log.d(TAG, "All chunks completed");
+                mainHandler.post(() -> {
+                    isSpeaking = false;
+                    if (listener != null) {
+                        listener.onSpeechCompleted();
+                    }
+                });
             }
 
             @Override
             public void onError(String errorMessage) {
-                Log.e(TAG, "TTS error: " + errorMessage);
-                isSpeaking = false;
-                if (listener != null) {
-                    listener.onSpeechCompleted();
-                }
+                Log.e(TAG, "TTS Error: " + errorMessage);
+                mainHandler.post(() -> {
+                    isSpeaking = false;
+                    if (listener != null) {
+                        listener.onSpeechCompleted();
+                    }
+                });
             }
-        });
+        };
+
+        // Generate a single chunk for the entire text
+        generateTTSChunk(text, 0, true, orderingCallback);
     }
 
     /**
-     * Check if currently speaking
+     * Generate TTS for a chunk with simplified voice instructions
      */
-    public boolean isSpeaking() {
-        return isSpeaking;
-    }
-
-    /**
-     * Stop/interrupt speech
-     */
-    public void stopSpeech() {
-        interrupt();
-    }
-
-    /**
-     * Interrupt ongoing speech
-     */
-    public void interrupt() {
-        interruptRequested = true;
-        if (isSpeaking) {
-            stopPlayback();
-            Log.d(TAG, "Speech interrupted");
-            isSpeaking = false;
-
-            if (speechCallback != null) {
-                speechCallback.onSpeechInterrupted();
-            }
-        }
-    }
-
-    /**
-     * Get voice for current chess master
-     */
-    private String getVoiceForCurrentMaster() {
-        SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
-        String currentMaster = masterPrefs.getString("selected_master", "tal");
-        String voiceOverride = prefs.getString("voice_style", "auto");
-
-        // If user has selected a specific voice, use that
-        if (!"auto".equals(voiceOverride)) {
-            return voiceOverride;
-        }
-
-        // Otherwise use the master's default voice
-        return FineTunedModelManager.getInstance(context).getVoiceForMaster(currentMaster);
-    }
-
-    public void setApiKey(String apiKey) {
-        this.apiKey = apiKey;
-    }
-
-    public void setVoice(String voice) {
-        this.voice = voice;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
-    }
-
-    /**
-     * Direct TTS - simplified and working
-     */
-    public void speakDirect(String text, TTSCallback callback) {
-        Log.d(TAG, "Direct TTS starting");
-
-        if (apiKey == null || apiKey.isEmpty()) {
-            Log.e(TAG, "No API key set!");
-            if (callback != null) {
-                callback.onError("API key not set");
-            }
-            return;
-        }
-
+    private void generateTTSChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
         executorService.execute(() -> {
             try {
-                // Get voice and instructions
                 String voiceToUse = getVoiceForCurrentMaster();
                 String selectedMaster = getCurrentChessMaster();
 
+                // Build the TTS request with SIMPLIFIED approach
                 JSONObject payload = new JSONObject();
-                payload.put("model", MODEL_STANDARD);
-                payload.put("input", text);
+                payload.put("model", "gpt-4o-mini-tts");  // Using the new model
                 payload.put("voice", voiceToUse);
-                payload.put("response_format", "mp3");
+                payload.put("speed", 1.0);
 
-                // Add personality if enabled
-                if (shouldUsePersonality()) {
-                    String instructions = FineTunedModelManager.getInstance(context).getSimplifiedInstructionsForMaster(selectedMaster);
-                    if (instructions != null) {
-                        payload.put("instructions", instructions);
-                    }
-                }
+                // SIMPLIFIED: Combine the instruction with the text itself
+                String enhancedText = createEnhancedText(text, selectedMaster);
+                payload.put("input", enhancedText);
+
+                Log.d(TAG, "Generating chunk " + chunkId + " with voice: " + voiceToUse);
 
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),
@@ -288,138 +219,252 @@ public class OpenAITTSService {
                     if (!response.isSuccessful()) {
                         String error = "TTS API error: " + response.code();
                         Log.e(TAG, error);
-                        mainHandler.post(() -> callback.onError(error));
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError(error));
+                        }
                         return;
                     }
 
                     byte[] audioData = response.body().bytes();
                     File audioFile = saveAudioToFile(audioData);
 
-                    // Queue for playback
-                    queueAudioPlayback(audioFile, callback);
+                    // Create chunk item and add to pending
+                    ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
+                            chunkId, audioFile, text, callback, isFinalChunk);
+
+                    // Add to pending chunks
+                    synchronized (pendingChunks) {
+                        pendingChunks.put(chunkId, chunkItem);
+
+                        // Check if we can play any chunks now
+                        tryPlayNextChunks();
+                    }
                 }
             } catch (Exception e) {
                 Log.e(TAG, "TTS error: " + e.getMessage(), e);
-                mainHandler.post(() -> {
-                    if (callback != null) {
-                        callback.onError("TTS error: " + e.getMessage());
-                    }
-                });
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError("TTS error: " + e.getMessage()));
+                }
             }
         });
     }
 
     /**
-     * Legacy method names for compatibility
+     * Creates enhanced text with simple voice instructions embedded naturally
      */
-    public void speak(String text, String voice, String model, TTSCallback callback) {
-        this.voice = voice;
-        this.model = model;
-        speakDirect(text, callback);
+    private String createEnhancedText(String originalText, String master) {
+        // Get simple voice instruction from FineTunedModelManager
+        String voiceInstruction = FineTunedModelManager.getInstance(context)
+                .getSimplifiedInstructionsForMaster(master);
+
+        // For gpt-4o-mini-tts, embed the instruction naturally at the beginning
+        return "[" + voiceInstruction + "] " + originalText;
     }
 
-    public void speakWithChunking(String text, TTSCallback callback) {
-        speakDirect(text, callback);
-    }
+    /**
+     * Try to play the next chunks in order
+     */
+    private void tryPlayNextChunks() {
+        synchronized (pendingChunks) {
+            // Add any ready chunks to the queue
+            while (pendingChunks.containsKey(nextChunkToPlay)) {
+                ChunkPlaybackItem chunk = pendingChunks.remove(nextChunkToPlay);
+                chunkQueue.offer(chunk);
+                nextChunkToPlay++;
+            }
 
-    public void speakStreamingText(String text, TTSCallback callback) {
-        speakDirect(text, callback);
-    }
-
-    private void queueAudioPlayback(File audioFile, TTSCallback callback) {
-        synchronized (playbackLock) {
-            playbackQueue.offer(new AudioPlaybackTask(audioFile, callback));
-
-            if (!isCurrentlyPlaying) {
-                playNextInQueue();
+            // Start playback if not already playing
+            if (!isPlayingChunks.get() && !chunkQueue.isEmpty()) {
+                playNextChunk();
             }
         }
     }
 
-    private void playNextInQueue() {
-        synchronized (playbackLock) {
-            if (playbackQueue.isEmpty()) {
-                isCurrentlyPlaying = false;
-                return;
-            }
+    /**
+     * Play the next chunk in the queue
+     */
+    private void playNextChunk() {
+        if (interruptRequested) {
+            cleanupPlayback();
+            return;
+        }
 
-            isCurrentlyPlaying = true;
-            AudioPlaybackTask task = playbackQueue.poll();
+        ChunkPlaybackItem chunk = chunkQueue.poll();
+        if (chunk == null) {
+            isPlayingChunks.set(false);
+            return;
+        }
 
-            mainHandler.post(() -> {
-                try {
-                    if (task.callback != null) {
-                        task.callback.onSpeechReady(task.audioFile);
-                    }
+        isPlayingChunks.set(true);
 
-                    MediaPlayer player = new MediaPlayer();
-                    player.setAudioAttributes(
-                            new AudioAttributes.Builder()
-                                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                    .build()
-                    );
+        mainHandler.post(() -> {
+            try {
+                Log.d(TAG, "Playing chunk " + chunk.chunkId);
 
-                    player.setOnPreparedListener(mp -> {
-                        Log.d(TAG, "Playing audio");
-                        currentPlayer = mp;
-                        mp.start();
-                    });
-
-                    player.setOnCompletionListener(mp -> {
-                        Log.d(TAG, "Audio playback completed");
-                        mp.release();
-                        currentPlayer = null;
-
-                        if (task.callback != null) {
-                            task.callback.onSpeechCompleted();
-                        }
-
-                        synchronized (playbackLock) {
-                            isCurrentlyPlaying = false;
-                            playNextInQueue();
-                        }
-                    });
-
-                    player.setOnErrorListener((mp, what, extra) -> {
-                        Log.e(TAG, "MediaPlayer error: " + what + ", " + extra);
-                        mp.release();
-                        currentPlayer = null;
-
-                        if (task.callback != null) {
-                            task.callback.onError("Playback error: " + what);
-                        }
-
-                        synchronized (playbackLock) {
-                            isCurrentlyPlaying = false;
-                            playNextInQueue();
-                        }
-
-                        return true;
-                    });
-
-                    player.setDataSource(context, Uri.fromFile(task.audioFile));
-                    player.prepareAsync();
-
-                } catch (Exception e) {
-                    Log.e(TAG, "Error playing audio", e);
-
-                    if (task.callback != null) {
-                        task.callback.onError("Playback error: " + e.getMessage());
-                    }
-
-                    synchronized (playbackLock) {
-                        isCurrentlyPlaying = false;
-                        playNextInQueue();
-                    }
+                if (chunk.callback != null) {
+                    chunk.callback.onSpeechReady(chunk.audioFile);
                 }
-            });
+
+                MediaPlayer player = new MediaPlayer();
+                player.setAudioAttributes(
+                        new AudioAttributes.Builder()
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .build()
+                );
+
+                player.setOnPreparedListener(mp -> {
+                    currentPlayer = mp;
+                    mp.start();
+                    if (chunk.callback != null) {
+                        chunk.callback.onSpeechStarted();
+                    }
+                });
+
+                player.setOnCompletionListener(mp -> {
+                    Log.d(TAG, "Chunk " + chunk.chunkId + " completed");
+                    mp.release();
+                    currentPlayer = null;
+
+                    // Play next chunk or finish
+                    if (chunk.isFinalChunk && chunkQueue.isEmpty()) {
+                        isPlayingChunks.set(false);
+                        isSpeaking = false;
+                        if (chunk.callback != null) {
+                            chunk.callback.onSpeechCompleted();
+                        }
+                    } else {
+                        // Small delay between chunks for natural speech
+                        mainHandler.postDelayed(() -> playNextChunk(), 50);
+                    }
+                });
+
+                player.setOnErrorListener((mp, what, extra) -> {
+                    Log.e(TAG, "MediaPlayer error: " + what + ", " + extra);
+                    mp.release();
+                    currentPlayer = null;
+
+                    if (chunk.callback != null) {
+                        chunk.callback.onError("Playback error: " + what);
+                    }
+
+                    // Try to continue with next chunk
+                    mainHandler.postDelayed(() -> playNextChunk(), 100);
+                    return true;
+                });
+
+                player.setDataSource(context, Uri.fromFile(chunk.audioFile));
+                player.prepareAsync();
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error playing chunk " + chunk.chunkId, e);
+                if (chunk.callback != null) {
+                    chunk.callback.onError("Playback error: " + e.getMessage());
+                }
+
+                // Try to continue with next chunk
+                mainHandler.postDelayed(() -> playNextChunk(), 100);
+            }
+        });
+    }
+
+    /**
+     * Enhanced streaming TTS with proper chunk ordering
+     */
+    public void speakStreamingText(String text, TTSCallback callback) {
+        Log.d(TAG, "Speaking streaming text with chunking");
+
+        if (text == null || text.isEmpty()) {
+            if (callback != null) {
+                callback.onError("Empty text");
+            }
+            return;
+        }
+
+        isSpeaking = true;
+        interruptRequested = false;
+
+        // Reset chunk management
+        chunkIdCounter.set(0);
+        nextChunkToPlay = 0;
+        chunkQueue.clear();
+        pendingChunks.clear();
+
+        // Split text into natural chunks
+        String[] sentences = text.split("(?<=[.!?])\\s+");
+
+        for (int i = 0; i < sentences.length; i++) {
+            String chunk = sentences[i];
+            boolean isFinal = (i == sentences.length - 1);
+
+            // Generate TTS for each chunk with proper ordering
+            generateTTSChunk(chunk, i, isFinal, callback);
         }
     }
 
-    public void stopPlayback() {
+    /**
+     * Simple direct TTS without chunking complexity
+     */
+    public void speakDirect(String text, TTSCallback callback) {
+        generateTTSChunk(text, 0, true, callback);
+    }
+
+    /**
+     * Get voice for current chess master
+     */
+    private String getVoiceForCurrentMaster() {
+        SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        String currentMaster = masterPrefs.getString("selected_master", "tal");
+        String voiceOverride = prefs.getString("voice_style", "auto");
+
+        if (!"auto".equals(voiceOverride)) {
+            return voiceOverride;
+        }
+
+        return FineTunedModelManager.getInstance(context).getVoiceForMaster(currentMaster);
+    }
+
+    /**
+     * Get current chess master
+     */
+    private String getCurrentChessMaster() {
+        SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        return masterPrefs.getString("selected_master", "tal");
+    }
+
+    /**
+     * Check if currently speaking
+     */
+    public boolean isSpeaking() {
+        return isSpeaking;
+    }
+
+    /**
+     * Stop/interrupt speech
+     */
+    public void stopSpeech() {
+        interrupt();
+    }
+
+    /**
+     * Public method to generate and queue a TTS chunk with proper ordering
+     */
+    public void speakChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
+        generateTTSChunk(text, chunkId, isFinalChunk, callback);
+    }
+
+    /**
+     * Interrupt current speech
+     */
+    public void interrupt() {
+        Log.d(TAG, "Interrupting speech");
         interruptRequested = true;
 
+        // Clear all pending chunks
+        chunkQueue.clear();
+        pendingChunks.clear();
+
+        // Stop current playback
         if (currentPlayer != null) {
             try {
                 if (currentPlayer.isPlaying()) {
@@ -428,22 +473,43 @@ public class OpenAITTSService {
                 currentPlayer.release();
                 currentPlayer = null;
             } catch (Exception e) {
-                Log.e(TAG, "Error stopping media player", e);
+                Log.e(TAG, "Error stopping player", e);
             }
         }
 
         isSpeaking = false;
+        isPlayingChunks.set(false);
+
+        if (speechCallback != null) {
+            speechCallback.onSpeechInterrupted();
+        }
     }
 
-    private String getCurrentChessMaster() {
-        SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
-        return masterPrefs.getString("selected_master", "tal");
+    /**
+     * Cleanup playback resources
+     */
+    private void cleanupPlayback() {
+        chunkQueue.clear();
+        pendingChunks.clear();
+        isPlayingChunks.set(false);
+        isSpeaking = false;
     }
 
-    private boolean shouldUsePersonality() {
-        return prefs.getBoolean("use_master_personality", true);
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 
+    public void setVoice(String voice) {
+        this.voice = voice;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    /**
+     * Save audio data to file
+     */
     private File saveAudioToFile(byte[] audioData) throws IOException {
         File cacheDir = new File(context.getCacheDir(), "tts_cache");
         if (!cacheDir.exists()) {
@@ -460,6 +526,49 @@ public class OpenAITTSService {
         return audioFile;
     }
 
+    /**
+     * Legacy method support
+     */
+    public void speak(String text) {
+        speak(text, (OnSpeechCompletedListener) null);
+    }
+
+    public void speak(String text, String voice, String model, TTSCallback callback) {
+        this.voice = voice;
+        this.model = model;
+        speakDirect(text, callback);
+    }
+
+    public void speakWithChunking(String text, TTSCallback callback) {
+        speakStreamingText(text, callback);
+    }
+
+    public void setVoicePersonalization(boolean usePersonality) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean("use_master_personality", usePersonality);
+        editor.apply();
+    }
+
+    public void setVoiceOverride(String voiceStyle) {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("voice_style", voiceStyle);
+        editor.apply();
+    }
+
+    public void clearVoiceOverride() {
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("voice_style", "auto");
+        editor.apply();
+    }
+
+    public void setVoicePersonalizationInstructions(String instructions) {
+        // Not used with simplified approach - keeping for compatibility
+    }
+
+    public void stopPlayback() {
+        interrupt();
+    }
+
     public void shutdown() {
         stopPlayback();
         executorService.shutdown();
@@ -467,16 +576,6 @@ public class OpenAITTSService {
 
     public boolean hasApiKey() {
         return apiKey != null && !apiKey.isEmpty();
-    }
-
-    private static class AudioPlaybackTask {
-        final File audioFile;
-        final TTSCallback callback;
-
-        AudioPlaybackTask(File audioFile, TTSCallback callback) {
-            this.audioFile = audioFile;
-            this.callback = callback;
-        }
     }
 
     public interface TTSCallback {

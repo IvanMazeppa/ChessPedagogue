@@ -26,14 +26,6 @@ public class SettingsActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        /*
-        // Set up the action bar
-        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.settings_toolbar);
-        if (toolbar != null) {
-            setSupportActionBar(toolbar);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Settings");
-        } */
 
         // Get references to UI components
         Switch premiumVoiceSwitch = findViewById(R.id.switch_premium_voice);
@@ -45,8 +37,8 @@ public class SettingsActivity extends AppCompatActivity {
         SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
 
         // Set initial state from preferences
-        boolean usePremiumVoice = prefs.getBoolean("use_premium_voice", true);
-        premiumVoiceSwitch.setChecked(usePremiumVoice);
+        //boolean usePremiumVoice = prefs.getBoolean("use_premium_voice", true);
+        //premiumVoiceSwitch.setChecked(usePremiumVoice);
 
         // Set up voice selection
         String voicePersona = prefs.getString("voice_persona", OpenAITTSService.VOICE_GRANDMASTER);

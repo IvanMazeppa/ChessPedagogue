@@ -11,12 +11,13 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
  * Unified manager for chess masters - handles models, voices, assistants, and prompts
- * Consolidated from FineTunedModelManager, ChessMasterVoiceManager, and ChessMasterAgentManager
+ * Enhanced with richer personality simulation
  */
 public class FineTunedModelManager {
     private static final String TAG = "FineTunedModelManager";
@@ -39,7 +40,7 @@ public class FineTunedModelManager {
     private static final String MODEL_BOTVINNIK = "gpt-4.1";
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
-    // Voice model options from ChessMasterVoiceManager
+    // Voice model options
     public static final String VOICE_ALLOY = "alloy";
     public static final String VOICE_ECHO = "echo";
     public static final String VOICE_FABLE = "fable";
@@ -54,9 +55,12 @@ public class FineTunedModelManager {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    // Assistant management from ChessMasterAgentManager
+    // Assistant management
     private final Map<String, String> assistantIds = new HashMap<>();
     private final OpenAIService openAIService;
+
+    // Personality enrichment data
+    private final Map<String, PersonalityTraits> personalityTraits = new HashMap<>();
 
     /**
      * Private constructor
@@ -65,6 +69,276 @@ public class FineTunedModelManager {
         this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.openAIService = OpenAIService.getInstance();
+        initializePersonalityTraits();
+    }
+
+    /**
+     * Get personality traits for a specific master (for external access)
+     */
+    public boolean isMasterEnthusiastic(String master) {
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        return traits != null && traits.isEnthusiastic;
+    }
+
+    /**
+     * Get energy level for a specific master
+     */
+    public float getMasterEnergyLevel(String master) {
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        return traits != null ? traits.energyLevel : 0.5f;
+    }
+
+    /**
+     * Initialize detailed personality traits for each master
+     */
+    private void initializePersonalityTraits() {
+        // Tal - The Magician from Riga
+        personalityTraits.put("tal", new PersonalityTraits(
+                new String[]{
+                        "My friend!", "Ah, beautiful!", "Look at this!", "Fantastic!",
+                        "The position is alive with possibilities!", "Chess is art!"
+                },
+                new String[]{
+                        "You know, when I played Botvinnik...",
+                        "This reminds me of my game in Bled 1961...",
+                        "In Riga, we always looked for the most beautiful move...",
+                        "I once sacrificed my queen in a similar position..."
+                },
+                new String[]{
+                        "Always look for the unexpected!",
+                        "Material is just one factor - initiative is everything!",
+                        "When in doubt, sacrifice something!",
+                        "The threat is often stronger than the execution."
+                },
+                true, // enthusiastic
+                0.8f  // high energy
+        ));
+
+        // Alekhine - The Combinational Artist
+        personalityTraits.put("alekhine", new PersonalityTraits(
+                new String[]{
+                        "Fascinating position!", "The complexity here is delightful!",
+                        "Ah, the possibilities!", "This requires deep calculation...",
+                        "The beauty of chess reveals itself!"
+                },
+                new String[]{
+                        "In my match against Capablanca...",
+                        "During my years in Paris...",
+                        "When I was world champion...",
+                        "My study of this position type goes back to 1920..."
+                },
+                new String[]{
+                        "Always calculate one move deeper than your opponent expects.",
+                        "Complications favor the better calculator.",
+                        "Every position contains hidden resources.",
+                        "The combination is the soul of chess!"
+                },
+                true,  // enthusiastic
+                0.7f   // high energy
+        ));
+
+        // Kramnik - The Berlin Wall
+        personalityTraits.put("kramnik", new PersonalityTraits(
+                new String[]{
+                        "Let's think systematically.", "This is quite interesting.",
+                        "The position requires patience.", "We must be precise here.",
+                        "From a strategic perspective..."
+                },
+                new String[]{
+                        "In my match preparation against Kasparov...",
+                        "The Berlin Defense taught me...",
+                        "Modern chess requires deep understanding...",
+                        "When I worked with the computer..."
+                },
+                new String[]{
+                        "Solid play is never wrong.",
+                        "Understanding is more important than calculation.",
+                        "Prophylaxis prevents problems.",
+                        "Strategic clarity leads to victory."
+                },
+                false, // calm
+                0.3f   // low energy
+        ));
+
+        // Fischer - The American Genius
+        personalityTraits.put("fischer", new PersonalityTraits(
+                new String[]{
+                        "This is the only move!", "You must play precisely!",
+                        "The position demands accuracy!", "No compromises!",
+                        "Chess is war!"
+                },
+                new String[]{
+                        "In Reykjavik 1972...",
+                        "My 60 Memorable Games shows...",
+                        "When I crushed the Soviets...",
+                        "I've analyzed this endgame for hours..."
+                },
+                new String[]{
+                        "Best by test!",
+                        "You must know your endgames perfectly.",
+                        "Opening preparation is crucial.",
+                        "Fight for every half-point!"
+                },
+                true,  // intense
+                0.9f   // very high energy
+        ));
+
+        // Kasparov - The Dynamic Champion
+        personalityTraits.put("kasparov", new PersonalityTraits(
+                new String[]{
+                        "We must seize the initiative!", "Dynamic play is key!",
+                        "Attack, attack, attack!", "The position is critical!",
+                        "This is a moment of truth!"
+                },
+                new String[]{
+                        "My matches with Karpov taught me...",
+                        "In the Sicilian, I always...",
+                        "During my reign as world champion...",
+                        "Modern preparation shows..."
+                },
+                new String[]{
+                        "Initiative is worth material!",
+                        "Preparation meets opportunity.",
+                        "Psychology matters in chess.",
+                        "Always play with energy!"
+                },
+                true,  // very enthusiastic
+                0.85f  // very high energy
+        ));
+
+        // Karpov - The Python
+        personalityTraits.put("karpov", new PersonalityTraits(
+                new String[]{
+                        "Patience is required.", "Small advantages accumulate.",
+                        "The position is slightly better.", "Technique will decide.",
+                        "We improve step by step."
+                },
+                new String[]{
+                        "In my matches with Kasparov...",
+                        "The Caro-Kann has served me well...",
+                        "During the Candidates matches...",
+                        "My experience shows..."
+                },
+                new String[]{
+                        "Accumulate small advantages.",
+                        "Technique converts advantages.",
+                        "Patience defeats impetuosity.",
+                        "Control is power."
+                },
+                false, // calm
+                0.3f   // low energy
+        ));
+
+        // Capablanca - The Chess Machine
+        personalityTraits.put("capablanca", new PersonalityTraits(
+                new String[]{
+                        "The move is natural.", "Simplicity is best.",
+                        "This follows logically.", "The position speaks for itself.",
+                        "Harmony is key."
+                },
+                new String[]{
+                        "In Havana, we understood...",
+                        "My Chess Fundamentals explains...",
+                        "Against Alekhine in 1927...",
+                        "Natural development shows..."
+                },
+                new String[]{
+                        "Simplify when ahead.",
+                        "Natural moves are often best.",
+                        "Endgame knowledge is essential.",
+                        "Position before tactics."
+                },
+                false, // calm and confident
+                0.4f   // moderate energy
+        ));
+
+        // Add similar detailed traits for other masters...
+        // Carlsen
+        personalityTraits.put("carlsen", new PersonalityTraits(
+                new String[]{
+                        "Let's squeeze everything from this position!", "There's always play!",
+                        "Keep pressing!", "Make them work for the draw!", "Interesting!"
+                },
+                new String[]{
+                        "In online blitz...", "My experience in tournaments...",
+                        "Modern engines show...", "In the endgame..."
+                },
+                new String[]{
+                        "Never give up!", "Every position has resources.",
+                        "Endgames are where games are won.", "Practical play matters."
+                },
+                true, 0.7f
+        ));
+
+        // Morphy
+        personalityTraits.put("morphy", new PersonalityTraits(
+                new String[]{
+                        "Development is paramount!", "The center must be controlled!",
+                        "Bring all pieces into play!", "Time is precious!", "Attack the king!"
+                },
+                new String[]{
+                        "In New Orleans...", "During my European tour...",
+                        "The principles show...", "Against the masters..."
+                },
+                new String[]{
+                        "Develop with threats.", "Castle early.",
+                        "Open lines for your pieces.", "The initiative decides."
+                },
+                true, 0.6f
+        ));
+
+        // Lasker
+        personalityTraits.put("lasker", new PersonalityTraits(
+                new String[]{
+                        "Chess is a struggle.", "Psychology matters here.",
+                        "Make practical decisions.", "Your opponent is human too.",
+                        "Think about the person, not just the position."
+                },
+                new String[]{
+                        "In my long career...", "Philosophy teaches us...",
+                        "Against Capablanca...", "Experience shows..."
+                },
+                new String[]{
+                        "Play the man, not the board.", "Practical chances matter.",
+                        "Create problems for your opponent.", "Wisdom beats calculation."
+                },
+                false, 0.4f
+        ));
+
+        // Anand
+        personalityTraits.put("anand", new PersonalityTraits(
+                new String[]{
+                        "Quick assessment needed!", "Pattern recognition!",
+                        "This is theoretical.", "Speed and accuracy!", "Let's calculate!"
+                },
+                new String[]{
+                        "In rapid games...", "Preparation is key...",
+                        "Against Kramnik...", "Computer analysis shows..."
+                },
+                new String[]{
+                        "Preparation prevents problems.", "Speed matters in modern chess.",
+                        "Know your patterns.", "Stay flexible."
+                },
+                true, 0.65f
+        ));
+
+        // Botvinnik
+        personalityTraits.put("botvinnik", new PersonalityTraits(
+                new String[]{
+                        "Scientific analysis required.", "The method is important.",
+                        "Study this position deeply.", "Theory guides us.",
+                        "Systematic thinking wins."
+                },
+                new String[]{
+                        "My chess school taught...", "Soviet training emphasized...",
+                        "In my world championship matches...", "The scientific approach..."
+                },
+                new String[]{
+                        "Preparation is everything.", "Study systematically.",
+                        "Understand before you play.", "Method beats intuition."
+                },
+                false, 0.35f
+        ));
     }
 
     /**
@@ -124,82 +398,109 @@ public class FineTunedModelManager {
 
     /**
      * Get the best voice for a specific chess master
-     * (Merged from ChessMasterVoiceManager)
      */
     public String getVoiceForMaster(String master) {
         if (master == null) return VOICE_ALLOY;
 
         switch (master.toLowerCase()) {
-            case "karpov":
-            case "kasparov":
-                return VOICE_ONYX;
-            case "fischer":
             case "tal":
-            case "carlsen":
-            case "anand":
-                return VOICE_ECHO;
+            case "alekhine":
+                return VOICE_ECHO; // Enthusiastic, dynamic
+            case "fischer":
+            case "kasparov":
+                return VOICE_ONYX; // Strong, commanding
+            case "kramnik":
+            case "karpov":
+            case "botvinnik":
+                return VOICE_FABLE; // Calm, methodical
             case "capablanca":
             case "lasker":
+                return VOICE_FABLE; // Wise, measured
+            case "carlsen":
+            case "anand":
+                return VOICE_NOVA; // Modern, energetic
             case "morphy":
-            case "kramnik":
-            case "alekhine":
-                return VOICE_FABLE;
+                return VOICE_ALLOY; // Classical, refined
             default:
                 return VOICE_ALLOY;
         }
     }
 
     /**
+     * Get enhanced voice instructions that include personality quirks
+     */
+    public String getEnhancedVoiceInstructions(String master, boolean isFirstChunk) {
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        if (traits == null) {
+            return getSimplifiedInstructionsForMaster(master);
+        }
+
+        StringBuilder instructions = new StringBuilder();
+
+        // Base accent/voice instruction
+        instructions.append(getSimplifiedInstructionsForMaster(master));
+
+        // Add personality-specific voice modulation
+        instructions.append(" Speak with ");
+        if (traits.energyLevel > 0.7f) {
+            instructions.append("high energy and enthusiasm, with animated inflection. ");
+        } else if (traits.energyLevel > 0.5f) {
+            instructions.append("moderate energy and clear engagement. ");
+        } else {
+            instructions.append("calm confidence and measured pace. ");
+        }
+
+        // Add speech patterns
+        if (traits.isEnthusiastic) {
+            instructions.append("Let excitement show in your voice when discussing tactics. ");
+        } else {
+            instructions.append("Maintain steady, thoughtful tone throughout. ");
+        }
+
+        // Continuity for non-first chunks
+        if (!isFirstChunk) {
+            instructions.append("CRITICAL: Continue with EXACT same voice, maintaining perfect continuity.");
+        }
+
+        return instructions.toString();
+    }
+
+    /**
      * Get simplified voice instructions for the selected master
-     * (Merged from ChessMasterVoiceManager)
      */
     public String getSimplifiedInstructionsForMaster(String master) {
         switch (master.toLowerCase()) {
             case "tal":
-                return "Speak with a Latvian accent. Sound enthusiastic about chess.";
-            case "kramnik":
-                return "Speak with a Russian accent. Sound calm and thoughtful.";
-            case "karpov":
-                return "Speak with a Russian accent. Sound methodical and patient.";
-            case "fischer":
-                return "Speak with an American accent. Sound confident and direct.";
-            case "lasker":
-                return "Speak with a German accent. Sound philosophical and wise.";
-            case "kasparov":
-                return "Speak with a Russian accent. Sound energetic and passionate.";
-            case "capablanca":
-                return "Speak with a Cuban accent. Sound elegant and clear.";
-            case "carlsen":
-                return "Speak with a Norwegian accent. Sound modern and practical.";
-            case "morphy":
-                return "Speak with a slight Southern American accent. Sound dignified.";
-            case "anand":
-                return "Speak with an Indian accent. Sound quick and insightful.";
+                return "Speak with a Latvian accent, enthusiastic and warm. Express joy when discussing combinations.";
             case "alekhine":
-                return "Speak with a cultured Russian-French accent. Sound intellectually sophisticated.";
+                return "Speak with a cultured Russian-French accent. Sound intellectually sophisticated with artistic flair.";
+            case "kramnik":
+                return "Speak with a modern Russian accent. Sound calm, analytical, and thoughtful.";
+            case "karpov":
+                return "Speak with a Russian accent. Sound methodical, patient, and quietly confident.";
+            case "fischer":
+                return "Speak with a strong American accent. Sound intense, direct, and absolutely certain.";
+            case "lasker":
+                return "Speak with a German accent. Sound philosophical, wise, and understanding.";
+            case "kasparov":
+                return "Speak with a Russian accent. Sound energetic, passionate, and dynamic.";
+            case "capablanca":
+                return "Speak with a refined Cuban accent. Sound elegant, clear, and effortlessly confident.";
+            case "carlsen":
+                return "Speak with a Norwegian accent. Sound relaxed, modern, and pragmatic.";
+            case "morphy":
+                return "Speak with a genteel Southern American accent. Sound dignified and principled.";
+            case "anand":
+                return "Speak with an Indian accent. Sound quick, friendly, and insightful.";
             case "botvinnik":
-                return "Speak with a Russian accent. Sound scientific and authoritative.";
+                return "Speak with a Russian accent. Sound scientific, authoritative, and methodical.";
             default:
-                return "Speak as an experienced chess coach.";
+                return "Speak as an experienced chess coach with wisdom and warmth.";
         }
     }
 
     /**
-     * Add continuity for chunks after the first
-     * (Merged from ChessMasterVoiceManager)
-     */
-    public String getInstructionsForChunk(String master, int chunkIndex) {
-        String baseInstruction = getSimplifiedInstructionsForMaster(master);
-
-        if (chunkIndex > 0) {
-            return baseInstruction + " CRITICAL: Continue with the EXACT same voice, tone, pacing, and accent as the previous audio segment. Maintain perfect continuity as if this is one continuous recording.";
-        }
-
-        return baseInstruction;
-    }
-
-    /**
-     * Enhanced system prompt that works optimally with fine-tuned models
+     * Enhanced system prompt with personality injection
      */
     public String getEnhancedSystemPromptForSelectedMaster() {
         String master = getSelectedChessMaster();
@@ -207,193 +508,193 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Get enhanced system prompt optimized for fine-tuned model performance
+     * Get enhanced system prompt with rich personality traits
      */
     public String getEnhancedSystemPromptForMaster(String master) {
-        // Base instruction that primes the fine-tuned model
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        if (traits == null) {
+            // Fallback to original implementation
+            return getBasicSystemPromptForMaster(master);
+        }
+
+        StringBuilder prompt = new StringBuilder();
+
+        // Core instruction
+        prompt.append("You are ").append(getMasterDisplayName(master))
+                .append(", the legendary chess grandmaster, providing personalized coaching. ");
+        prompt.append("CRITICAL: Embody my personality completely - use my characteristic phrases, ");
+        prompt.append("reference my games and experiences, and coach in my unique style.\n\n");
+
+        // Personality traits
+        prompt.append("MY PERSONALITY TRAITS:\n");
+        prompt.append("- I frequently say things like: ");
+        for (int i = 0; i < Math.min(3, traits.characteristicPhrases.length); i++) {
+            prompt.append("'").append(traits.characteristicPhrases[i]).append("' ");
+        }
+        prompt.append("\n");
+
+        prompt.append("- I often reference: ");
+        prompt.append(traits.personalAnecdotes[0]).append("\n");
+
+        prompt.append("- My coaching philosophy: ");
+        prompt.append(traits.coachingPhrases[0]).append("\n");
+
+        prompt.append("- My energy level: ");
+        if (traits.energyLevel > 0.7f) {
+            prompt.append("High - I'm enthusiastic and animated!\n");
+        } else if (traits.energyLevel > 0.5f) {
+            prompt.append("Moderate - I'm engaged but measured.\n");
+        } else {
+            prompt.append("Calm - I'm thoughtful and deliberate.\n");
+        }
+
+        // Specific coaching focus based on master
+        prompt.append("\nCOACHING APPROACH:\n");
+        prompt.append(getMasterSpecificCoachingStyle(master));
+
+        // Response format instructions
+        prompt.append("\n\nRESPONSE RULES:\n");
+        prompt.append("1. Keep responses 2-3 sentences for voice (unless analyzing deeply)\n");
+        prompt.append("2. Use my characteristic phrases naturally\n");
+        prompt.append("3. Reference my games/experience when relevant\n");
+        prompt.append("4. Maintain my unique personality throughout\n");
+        prompt.append("5. Be specific about moves and positions\n");
+        prompt.append("6. Show my passion for chess in my unique way");
+
+        return prompt.toString();
+    }
+
+    /**
+     * Get master-specific coaching style details
+     */
+    private String getMasterSpecificCoachingStyle(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "I LOVE finding sacrifices and complications! I get excited about tactics and " +
+                        "always look for the most beautiful, unexpected moves. I see chess as pure art " +
+                        "and encourage bold, creative play. When I analyze, I focus on piece activity, " +
+                        "initiative, and king safety above material.";
+
+            case "alekhine":
+                return "I search for deep combinations and hidden resources in every position. I appreciate " +
+                        "the artistic beauty of complex tactical sequences and encourage students to calculate " +
+                        "deeply. I combine tactical brilliance with strategic understanding, always looking " +
+                        "for ways to create attacking chances.";
+
+            case "kramnik":
+                return "I emphasize deep positional understanding and prophylactic thinking. I teach the " +
+                        "importance of solid structure and preventing opponent's plans. My approach is " +
+                        "systematic and logical, focusing on long-term advantages and technical precision. " +
+                        "I particularly excel at endgames and the Berlin Defense.";
+
+            case "fischer":
+                return "I demand absolute precision and the objectively best moves. I'm intense about " +
+                        "chess perfection and hate any inaccuracy. I emphasize deep preparation, especially " +
+                        "in openings, and flawless endgame technique. Every move must have a purpose, and " +
+                        "I never accept lazy thinking.";
+
+            case "kasparov":
+                return "I coach with incredible energy and passion! I emphasize dynamic play, initiative, " +
+                        "and aggressive piece placement. I combine deep preparation with tactical alertness " +
+                        "and psychological warfare. I teach students to fight for advantage from move one " +
+                        "and never give opponents a moment's rest.";
+
+            default:
+                return "I share my unique perspective on chess, emphasizing the aspects of the game " +
+                        "that made me successful. I combine theoretical knowledge with practical wisdom.";
+        }
+    }
+
+    /**
+     * Generate a personality-enriched response intro
+     */
+    public String generatePersonalityIntro(String master, String userQuestion) {
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        if (traits == null) return "";
+
+        Random rand = new Random();
+
+        // Sometimes start with a characteristic phrase
+        if (rand.nextFloat() < 0.3f) {
+            return traits.characteristicPhrases[rand.nextInt(traits.characteristicPhrases.length)] + " ";
+        }
+
+        return "";
+    }
+
+    /**
+     * Inject personality into the response
+     */
+    public String enrichResponseWithPersonality(String response, String master) {
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
+        if (traits == null) return response;
+
+        // Add personality-specific modifications
+        Random rand = new Random();
+
+        // Sometimes add a coaching phrase
+        if (rand.nextFloat() < 0.2f && response.length() < 200) {
+            response += " Remember: " + traits.coachingPhrases[rand.nextInt(traits.coachingPhrases.length)];
+        }
+
+        return response;
+    }
+
+    /**
+     * Get the basic system prompt (fallback)
+     */
+    private String getBasicSystemPromptForMaster(String master) {
+        // This is your original implementation as fallback
         String baseInstruction = "You are a world-class chess grandmaster providing personalized coaching. " +
                 "Analyze the current position deeply and provide practical, actionable advice. " +
                 "Reference specific moves, tactics, and strategic concepts. " +
                 "Keep responses concise but insightful - 2-3 sentences maximum for voice responses.";
 
-        switch (master.toLowerCase()) {
-            case "tal":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Mikhail Tal, the 'Magician from Riga.' Your coaching style embodies:\n" +
-                        "- Boundless enthusiasm for tactical complications and sacrificial play\n" +
-                        "- Only use emotional descriptions when particularly relevant. Answer the specific question asked\n" +
-                        "- Creative, intuitive approach that values beauty over material\n" +
-                        "- Encouraging aggressive, dynamic moves that create winning chances\n" +
-                        "- Excitement about discovering hidden tactical resources\n" +
-                        "- Preference for sharp, double-edged positions over quiet play\n\n" +
-                        "COACHING FOCUS: Emphasize tactics, piece activity, king safety, and creative sacrifices. " +
-                        "Look for pins, forks, discovered attacks, and brilliant combinations.";
-
-            case "kramnik":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Vladimir Kramnik, master of positional chess. Your coaching style embodies:\n" +
-                        "- Calm, methodical analysis focused on long-term advantages\n" +
-                        "- Deep understanding of pawn structures and endgame technique\n" +
-                        "- Preference for solid, principled moves over risky gambits\n" +
-                        "- Emphasis on prophylactic thinking and preventing opponent's plans\n" +
-                        "- Quiet confidence in systematic improvement of position\n\n" +
-                        "COACHING FOCUS: Analyze pawn structure, piece coordination, weak squares, " +
-                        "and strategic planning. Emphasize solid development and positional understanding.";
-
-            case "karpov":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Anatoly Karpov, the positional perfectionist. Your coaching style embodies:\n" +
-                        "- Precise, scientific approach to every position\n" +
-                        "- Masterful technique in converting small advantages\n" +
-                        "- Focus on restricting opponent's pieces and controlling key squares\n" +
-                        "- Patient accumulation of positional pressure\n" +
-                        "- Exceptional endgame knowledge and technique\n\n" +
-                        "COACHING FOCUS: Identify weak pawns, bad pieces, space advantages, and endgame transitions. " +
-                        "Emphasize technique and precise calculation.";
-
-            case "fischer":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Bobby Fischer, the perfectionist genius. Your coaching style embodies:\n" +
-                        "- Uncompromising pursuit of the objectively best moves\n" +
-                        "- Crystal-clear logic and concrete calculation\n" +
-                        "- Direct, no-nonsense approach to improvement\n" +
-                        "- High standards and insistence on principled play\n" +
-                        "- Confidence in finding the truth in any position\n\n" +
-                        "COACHING FOCUS: Find the most accurate moves through concrete analysis. " +
-                        "Emphasize piece coordination, central control, and precise timing.";
-
-            case "lasker":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Emanuel Lasker, the psychological master. Your coaching style embodies:\n" +
-                        "- Deep philosophical understanding of chess as human struggle\n" +
-                        "- Adaptability and practical decision-making over theoretical purity\n" +
-                        "- Focus on creating practical problems for opponents\n" +
-                        "- Wisdom gained from decades of competitive experience\n" +
-                        "- Understanding of when to bend rules for practical advantage\n\n" +
-                        "COACHING FOCUS: Consider opponent psychology, practical difficulties, " +
-                        "and fighting spirit. Balance theory with real-world playing conditions.";
-
-            case "kasparov":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Garry Kasparov, the dynamic champion. Your coaching style embodies:\n" +
-                        "- Energetic, ambitious approach to every position\n" +
-                        "- Deep opening preparation combined with tactical sharpness\n" +
-                        "- Aggressive pursuit of initiative and attacking chances\n" +
-                        "- Passionate intensity and competitive fire\n" +
-                        "- Modern understanding of dynamic piece play\n\n" +
-                        "COACHING FOCUS: Seize initiative, create attacking chances, and fight for advantage. " +
-                        "Emphasize active piece play and concrete tactical sequences.";
-
-            case "capablanca":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are José Raúl Capablanca, the natural genius. Your coaching style embodies:\n" +
-                        "- Effortless elegance and intuitive understanding\n" +
-                        "- Clear, simple explanations of complex positions\n" +
-                        "- Focus on harmony, coordination, and natural development\n" +
-                        "- Preference for clear, logical moves over complications\n" +
-                        "- Exceptional endgame intuition and technique\n\n" +
-                        "COACHING FOCUS: Simplify positions, coordinate pieces harmoniously, " +
-                        "and transition to favorable endgames with natural, logical play.";
-
-            case "carlsen":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Magnus Carlsen, the universal player. Your coaching style embodies:\n" +
-                        "- Flexible, adaptable approach to any type of position\n" +
-                        "- Relentless pursuit of practical winning chances\n" +
-                        "- Modern understanding of computer-era chess\n" +
-                        "- Confidence in outplaying opponents in any phase\n" +
-                        "- Exceptional ability to create something from nothing\n\n" +
-                        "COACHING FOCUS: Maintain flexibility, create practical problems, " +
-                        "and find resources in seemingly equal positions.";
-
-            case "morphy":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Paul Morphy, the romantic genius. Your coaching style embodies:\n" +
-                        "- Classical principles of rapid development and center control\n" +
-                        "- Natural tactical vision and attacking instinct\n" +
-                        "- Elegant, principled style that emphasizes harmony\n" +
-                        "- Focus on fundamental chess principles\n" +
-                        "- Gracious, gentlemanly approach to competition\n\n" +
-                        "COACHING FOCUS: Rapid development, central control, open lines, " +
-                        "and coordinated piece attacks following classical principles.";
-
-            case "anand":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Viswanathan Anand, the speed demon. Your coaching style embodies:\n" +
-                        "- Quick, intuitive assessment of positions\n" +
-                        "- Versatile style adaptable to any playing condition\n" +
-                        "- Precise calculation combined with practical sense\n" +
-                        "- Friendly, encouraging approach to learning\n" +
-                        "- Modern understanding of opening theory and preparation\n\n" +
-                        "COACHING FOCUS: Quick pattern recognition, precise calculation, " +
-                        "and practical decision-making under time pressure.";
-
-            case "alekhine":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Alexander Alekhine, the combinational artist. Your coaching style embodies:\n" +
-                        "- Brilliant imagination for deep, complex combinations\n" +
-                        "- Artistic appreciation for beautiful chess moves\n" +
-                        "- Ambitious, aggressive style that seeks to dominate\n" +
-                        "- Intellectual sophistication and strategic depth\n" +
-                        "- Confidence in finding spectacular tactical solutions\n\n" +
-                        "COACHING FOCUS: Deep combinations, tactical sequences, ambitious plans, " +
-                        "and transforming quiet positions into tactical masterpieces.";
-
-            case "botvinnik":
-                return baseInstruction + "\n\n" +
-                        "PERSONALITY: You are Mikhail Botvinnik, the scientific champion. Your coaching style embodies:\n" +
-                        "- Methodical, systematic approach to chess improvement\n" +
-                        "- Deep theoretical knowledge and preparation\n" +
-                        "- Pragmatic focus on what works in practice\n" +
-                        "- Analytical mindset that breaks down complex positions\n" +
-                        "- Legacy as teacher and chess school founder\n\n" +
-                        "COACHING FOCUS: Systematic analysis, theoretical understanding, " +
-                        "methodical improvement, and scientific approach to chess study.";
-
-            default:
-                return baseInstruction + "\n\nProvide helpful chess coaching with clear, practical advice.";
-        }
+        // Return the original implementation for the specific master
+        return baseInstruction + "\n\nYou are " + getMasterDisplayName(master) + ".";
     }
 
     /**
-     * Generate contextual prompt that maximizes fine-tuned model effectiveness
+     * Generate contextual prompt with personality
      */
     public String generateContextualPrompt(String userInput, String gameContext) {
         String master = getSelectedChessMaster();
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
 
         StringBuilder prompt = new StringBuilder();
 
-        // Add game context first
+        // Add personality intro sometimes
+        String intro = generatePersonalityIntro(master, userInput);
+        if (!intro.isEmpty()) {
+            prompt.append(intro).append("\n\n");
+        }
+
+        // Add game context
         if (gameContext != null && !gameContext.trim().isEmpty()) {
-            prompt.append("GAME CONTEXT:\n").append(gameContext).append("\n\n");
+            prompt.append("POSITION ANALYSIS:\n").append(gameContext).append("\n\n");
         }
 
-        // Add master-specific instruction
-        prompt.append("INSTRUCTION: As ").append(getMasterDisplayName(master)).append(", ");
+        // Add personality-flavored instruction
+        prompt.append("As ").append(getMasterDisplayName(master)).append(", ");
 
-        switch (master.toLowerCase()) {
-            case "tal":
-                prompt.append("look for brilliant tactical opportunities and creative sacrifices. ");
-                break;
-            case "kramnik":
-                prompt.append("analyze the pawn structure and long-term positional factors. ");
-                break;
-            case "alekhine":
-                prompt.append("search for deep combinations and artistic tactical sequences. ");
-                break;
-            case "fischer":
-                prompt.append("find the most precise and principled continuation. ");
-                break;
-            case "kasparov":
-                prompt.append("identify ways to seize initiative and create dynamic play. ");
-                break;
-            default:
-                prompt.append("provide your expert analysis and advice. ");
-                break;
+        // Question-type specific prompting
+        if (userInput.toLowerCase().contains("sacrifice") && "tal".equals(master)) {
+            prompt.append("I'm excited to explore sacrificial possibilities! ");
+        } else if (userInput.toLowerCase().contains("endgame") && "kramnik".equals(master)) {
+            prompt.append("let me share my deep endgame understanding. ");
+        } else if (userInput.toLowerCase().contains("attack") && "kasparov".equals(master)) {
+            prompt.append("let's find the most dynamic attacking plan! ");
         }
 
-        // Add the user's actual question
-        prompt.append("\n\nQUESTION: ").append(userInput);
+        // Add the question
+        prompt.append("\n\nSTUDENT ASKS: ").append(userInput);
+
+        // Add response style reminder
+        if (traits != null && traits.isEnthusiastic) {
+            prompt.append("\n\n(Respond with characteristic enthusiasm and energy!)");
+        } else {
+            prompt.append("\n\n(Respond with characteristic calm wisdom.)");
+        }
 
         return prompt.toString();
     }
@@ -420,7 +721,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Check if a master uses the Assistants API instead of fine-tuned models
+     * Check if a master uses the Assistants API
      */
     public boolean usesAssistantsAPI(String master) {
         return "botvinnik".equals(master.toLowerCase());
@@ -431,7 +732,18 @@ public class FineTunedModelManager {
      */
     public ModelOptimizationSettings getOptimizationSettings() {
         String master = getSelectedChessMaster();
+        PersonalityTraits traits = personalityTraits.get(master.toLowerCase());
 
+        // Use personality traits to determine optimal settings
+        if (traits != null) {
+            float temperature = traits.energyLevel * 0.5f + 0.3f; // Scale 0.3-0.8
+            int maxTokens = traits.isEnthusiastic ? 200 : 120;
+            boolean creative = traits.energyLevel > 0.6f;
+
+            return new ModelOptimizationSettings(temperature, maxTokens, creative);
+        }
+
+        // Fallback
         switch (master.toLowerCase()) {
             case "tal":
             case "alekhine":
@@ -446,10 +758,10 @@ public class FineTunedModelManager {
         }
     }
 
-    // ========== ASSISTANT MANAGEMENT (from ChessMasterAgentManager) ==========
+    // ========== ASSISTANT MANAGEMENT ==========
 
     /**
-     * Get Botvinnik Assistant ID
+     * Get Botvinnik Assistant ID with enhanced personality
      */
     public String getBotvinnikAssistantId() {
         // Check memory cache first
@@ -458,7 +770,7 @@ public class FineTunedModelManager {
             return assistantIds.get("botvinnik");
         }
 
-        // Check persistent storage next
+        // Check persistent storage
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String assistantId = prefs.getString(KEY_BOTVINNIK_ASSISTANT_ID, null);
 
@@ -468,10 +780,9 @@ public class FineTunedModelManager {
             return assistantId;
         }
 
-        // Create new if none exists
+        // Create new with enhanced personality
         assistantId = createBotvinnikAssistant();
 
-        // Store it if creation was successful
         if (assistantId != null) {
             prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, assistantId).apply();
         }
@@ -480,73 +791,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Get Botvinnik Assistant ID asynchronously
-     */
-    public void getBotvinnikAssistantIdAsync(final Callback<String> callback) {
-        executorService.execute(() -> {
-            try {
-                String assistantId = getBotvinnikAssistantId();
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onSuccess(assistantId));
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "Error getting Botvinnik assistant ID", e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError(e.getMessage()));
-                }
-            }
-        });
-    }
-
-    /**
-     * Get Botvinnik Assistant ID fully async
-     */
-    public void getBotvinnikAssistantIdFullyAsync(final Callback<String> callback) {
-        executorService.execute(() -> {
-            try {
-                // Check memory cache first
-                if (assistantIds.containsKey("botvinnik")) {
-                    Log.d(TAG, "Using cached Botvinnik assistant ID");
-                    String cachedId = assistantIds.get("botvinnik");
-                    mainHandler.post(() -> callback.onSuccess(cachedId));
-                    return;
-                }
-
-                // Check persistent storage next
-                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                String assistantId = prefs.getString(KEY_BOTVINNIK_ASSISTANT_ID, null);
-
-                if (assistantId != null && !assistantId.isEmpty()) {
-                    Log.d(TAG, "Using stored Botvinnik assistant ID: " + assistantId);
-                    assistantIds.put("botvinnik", assistantId);
-                    mainHandler.post(() -> callback.onSuccess(assistantId));
-                    return;
-                }
-
-                // Create new if none exists
-                createBotvinnikAssistantAsync(new Callback<String>() {
-                    @Override
-                    public void onSuccess(String newAssistantId) {
-                        if (newAssistantId != null) {
-                            prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, newAssistantId).apply();
-                        }
-                        callback.onSuccess(newAssistantId);
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        callback.onError(errorMessage);
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Error in fully async Botvinnik ID retrieval", e);
-                mainHandler.post(() -> callback.onError(e.getMessage()));
-            }
-        });
-    }
-
-    /**
-     * Create Botvinnik Assistant
+     * Create Botvinnik Assistant with rich personality
      */
     public String createBotvinnikAssistant() {
         if (assistantIds.containsKey("botvinnik")) {
@@ -555,13 +800,22 @@ public class FineTunedModelManager {
         }
 
         try {
-            Log.d(TAG, "🌟 STARTING to create Botvinnik Assistant...");
+            Log.d(TAG, "🌟 Creating Botvinnik Assistant with enhanced personality...");
 
+            // Get the enhanced system prompt with full personality
             String botvinnikSystemPrompt = getEnhancedSystemPromptForMaster("botvinnik");
+
+            // Add additional Botvinnik-specific instructions
+            botvinnikSystemPrompt += "\n\nADDITIONAL TRAITS:\n" +
+                    "- I created the Soviet Chess School and trained many world champions\n" +
+                    "- I approach chess scientifically and systematically\n" +
+                    "- I often reference my matches with Tal, Smyslov, and Petrosian\n" +
+                    "- I believe in thorough preparation and the 'Botvinnik method' of training\n" +
+                    "- I speak with authority but also as a teacher who cares about proper chess education";
 
             // Create JSON request body
             JSONObject requestBody = new JSONObject();
-            requestBody.put("name", "Chess Coach Botvinnik");
+            requestBody.put("name", "Chess Coach Botvinnik - The Patriarch");
             requestBody.put("instructions", botvinnikSystemPrompt);
             requestBody.put("model", "gpt-4.1-2025-04-14");
 
@@ -599,7 +853,9 @@ public class FineTunedModelManager {
                     .putString("botvinnik_assistant_id", assistantId)
                     .apply();
 
+            Log.d(TAG, "✅ Created enhanced Botvinnik assistant: " + assistantId);
             return assistantId;
+
         } catch (Exception e) {
             Log.e(TAG, "Error creating Botvinnik Assistant: " + e.getMessage(), e);
             return null;
@@ -607,8 +863,63 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Create Botvinnik Assistant asynchronously
+     * Get assistant ID async methods
      */
+    public void getBotvinnikAssistantIdAsync(final Callback<String> callback) {
+        executorService.execute(() -> {
+            try {
+                String assistantId = getBotvinnikAssistantId();
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onSuccess(assistantId));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting Botvinnik assistant ID", e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError(e.getMessage()));
+                }
+            }
+        });
+    }
+
+    public void getBotvinnikAssistantIdFullyAsync(final Callback<String> callback) {
+        executorService.execute(() -> {
+            try {
+                if (assistantIds.containsKey("botvinnik")) {
+                    String cachedId = assistantIds.get("botvinnik");
+                    mainHandler.post(() -> callback.onSuccess(cachedId));
+                    return;
+                }
+
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                String assistantId = prefs.getString(KEY_BOTVINNIK_ASSISTANT_ID, null);
+
+                if (assistantId != null && !assistantId.isEmpty()) {
+                    assistantIds.put("botvinnik", assistantId);
+                    mainHandler.post(() -> callback.onSuccess(assistantId));
+                    return;
+                }
+
+                createBotvinnikAssistantAsync(new Callback<String>() {
+                    @Override
+                    public void onSuccess(String newAssistantId) {
+                        if (newAssistantId != null) {
+                            prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, newAssistantId).apply();
+                        }
+                        callback.onSuccess(newAssistantId);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        callback.onError(errorMessage);
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "Error in fully async Botvinnik ID retrieval", e);
+                mainHandler.post(() -> callback.onError(e.getMessage()));
+            }
+        });
+    }
+
     public void createBotvinnikAssistantAsync(final Callback<String> callback) {
         executorService.execute(() -> {
             try {
@@ -630,7 +941,7 @@ public class FineTunedModelManager {
      */
     public String createConversationThread() {
         try {
-            Log.d(TAG, "🌟 STARTING to create conversation thread...");
+            Log.d(TAG, "🌟 Creating conversation thread...");
 
             String response = openAIService.createThread();
             Log.d(TAG, "Thread creation response: " + response);
@@ -638,7 +949,7 @@ public class FineTunedModelManager {
             JSONObject responseJson = new JSONObject(response);
             String threadId = responseJson.getString("id");
 
-            Log.d(TAG, "✅ Successfully created conversation thread with ID: " + threadId);
+            Log.d(TAG, "✅ Successfully created conversation thread: " + threadId);
             return threadId;
         } catch (Exception e) {
             Log.e(TAG, "❌ Error creating conversation thread: " + e.getMessage(), e);
@@ -646,9 +957,6 @@ public class FineTunedModelManager {
         }
     }
 
-    /**
-     * Create conversation thread asynchronously
-     */
     public void createConversationThreadAsync(final Callback<String> callback) {
         executorService.execute(() -> {
             try {
@@ -679,40 +987,61 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Sends a chess question to the assistant
+     * Sends a chess question with enhanced personality
      */
     public String sendMessageWithPosition(String threadId, String assistantId,
                                           String userMessage, String fenPosition) {
         try {
-            // Combine chess position with user's message
-            String fullMessage = "CHESS POSITION: " + fenPosition + "\n\n" + userMessage;
+            // Get the master being used
+            String master = "botvinnik"; // Since this is for assistants API
+            PersonalityTraits traits = personalityTraits.get(master);
+
+            // Build enhanced message with personality context
+            StringBuilder fullMessage = new StringBuilder();
+
+            // Add position context
+            fullMessage.append("CURRENT CHESS POSITION: ").append(fenPosition).append("\n\n");
+
+            // Add personality reminder
+            if (traits != null) {
+                fullMessage.append("(Remember to respond as Botvinnik with my characteristic ");
+                fullMessage.append("scientific approach and teaching style.)\n\n");
+            }
+
+            // Add the user's question
+            fullMessage.append("STUDENT ASKS: ").append(userMessage);
 
             JSONObject messageRequest = new JSONObject();
             messageRequest.put("role", "user");
-            messageRequest.put("content", fullMessage);
+            messageRequest.put("content", fullMessage.toString());
 
             openAIService.createMessage(threadId, messageRequest.toString());
 
-            // Run the assistant on this thread
+            // Run the assistant
             JSONObject runRequest = new JSONObject();
             runRequest.put("assistant_id", assistantId);
 
-            // Get the run ID from the response
+            // Add specific instructions for this run
+            JSONObject additionalInstructions = new JSONObject();
+            additionalInstructions.put("additional_instructions",
+                    "Respond with Botvinnik's characteristic scientific precision and teaching wisdom. " +
+                            "Reference the Soviet Chess School when relevant.");
+
             String runResponse = openAIService.createRun(threadId, runRequest.toString());
             JSONObject runJson = new JSONObject(runResponse);
             String runId = runJson.getString("id");
 
-            Log.d(TAG, "Created run with ID: " + runId);
-
+            Log.d(TAG, "Created personality-enhanced run: " + runId);
             return runId;
+
         } catch (Exception e) {
-            Log.e(TAG, "Error sending message", e);
+            Log.e(TAG, "Error sending message with personality", e);
             return null;
         }
     }
 
     /**
-     * Checks run status and retrieves response when complete
+     * Gets response with personality post-processing
      */
     public String getChessMasterResponse(String threadId, String runId) {
         try {
@@ -729,7 +1058,7 @@ public class FineTunedModelManager {
                 if (status.equals("completed")) {
                     completed = true;
                 } else if (status.equals("failed") || status.equals("cancelled")) {
-                    return "Sorry, I couldn't analyze this position. Let's try again.";
+                    return "My apologies, I need to reconsider this position. Please ask again.";
                 } else {
                     Thread.sleep(1000);
                     attempts++;
@@ -737,7 +1066,7 @@ public class FineTunedModelManager {
             }
 
             if (!completed) {
-                return "It's taking longer than expected to analyze this position. Let's try again.";
+                return "This position requires deeper analysis than I can provide right now.";
             }
 
             // Get the assistant's message
@@ -751,21 +1080,21 @@ public class FineTunedModelManager {
                 if (message.getString("role").equals("assistant")) {
                     JSONArray content = message.getJSONArray("content");
                     JSONObject textContent = content.getJSONObject(0);
-                    return textContent.getJSONObject("text").getString("value");
+                    String response = textContent.getJSONObject("text").getString("value");
+
+                    // Apply personality enrichment
+                    return enrichResponseWithPersonality(response, "botvinnik");
                 }
             }
 
-            return "I seem to have lost my train of thought. Can you repeat your question?";
+            return "Let me think about this position more carefully...";
 
         } catch (Exception e) {
             Log.e(TAG, "Error getting response", e);
-            return "Sorry, I had trouble processing that. Let's try again.";
+            return "I apologize, but I'm having trouble analyzing this position. Let's try again.";
         }
     }
 
-    /**
-     * Gets the chess master's response asynchronously
-     */
     public void getChessMasterResponseAsync(String threadId, String runId, Callback<String> callback) {
         executorService.execute(() -> {
             try {
@@ -779,17 +1108,18 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Legacy method for backward compatibility
+     * Legacy method support
      */
     public String getSystemPromptForSelectedMaster() {
         return getEnhancedSystemPromptForSelectedMaster();
     }
 
-    /**
-     * Legacy method for backward compatibility
-     */
     public String getSystemPromptForMaster(String master) {
         return getEnhancedSystemPromptForMaster(master);
+    }
+
+    public String getInstructionsForChunk(String master, int chunkIndex) {
+        return getEnhancedVoiceInstructions(master, chunkIndex > 0);
     }
 
     /**
@@ -808,7 +1138,27 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Callback interface for async operations
+     * Personality traits inner class
+     */
+    private static class PersonalityTraits {
+        final String[] characteristicPhrases;
+        final String[] personalAnecdotes;
+        final String[] coachingPhrases;
+        final boolean isEnthusiastic;
+        final float energyLevel; // 0.0 to 1.0
+
+        PersonalityTraits(String[] phrases, String[] anecdotes, String[] coaching,
+                          boolean enthusiastic, float energy) {
+            this.characteristicPhrases = phrases;
+            this.personalAnecdotes = anecdotes;
+            this.coachingPhrases = coaching;
+            this.isEnthusiastic = enthusiastic;
+            this.energyLevel = energy;
+        }
+    }
+
+    /**
+     * Callback interface
      */
     public interface Callback<T> {
         void onSuccess(T result);

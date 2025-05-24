@@ -4,7 +4,9 @@ package com.example.chesspedagogue.model;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GameState {
+public class
+
+GameState {
     private String fen;
     private boolean isPlayerTurn;
     private boolean isGameOver;

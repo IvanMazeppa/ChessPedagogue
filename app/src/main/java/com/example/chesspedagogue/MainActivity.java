@@ -45,11 +45,6 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -1574,64 +1569,6 @@ public class MainActivity extends AppCompatActivity {
                         Toast.LENGTH_LONG).show();
             }
         }
-    }
-
-    // Add this to your MainActivity.java
-    private void testAssistantCreation() {
-        new Thread(() -> {
-            try {
-                Log.d("AssistantTest", "🚀🚀🚀 STARTING ASSISTANT TEST 🚀🚀🚀");
-
-                // Make direct OpenAI API calls
-                OkHttpClient client = new OkHttpClient();
-
-                // Get API key
-                String apiKey = ApiKeyConfig.getApiKey(this);
-
-                // Simple request body
-                String requestBody = "{" +
-                        "\"name\": \"Test Assistant\"," +
-                        "\"instructions\": \"You are a helpful chess coach.\"," +
-                        "\"model\": \"gpt-4-turbo\"" +
-                        "}";
-
-                // Create request
-                Request request = new Request.Builder()
-                        .url("https://api.openai.com/v1/assistants")
-                        .post(RequestBody.create(MediaType.parse("application/json"), requestBody))
-                        .addHeader("Authorization", "Bearer " + apiKey)
-                        .addHeader("Content-Type", "application/json")
-                        .addHeader("OpenAI-Beta", "assistants=v2")
-                        .build();
-
-                // Log attempt
-                Log.d("AssistantTest", "📞📞📞 SENDING API REQUEST 📞📞📞");
-
-                // Execute request
-                Response response = client.newCall(request).execute();
-                String responseBody = response.body().string();
-
-                // Log result
-                Log.d("AssistantTest", "🎯🎯🎯 API RESPONSE: " + responseBody + " 🎯🎯🎯");
-
-                // Update UI with result
-                runOnUiThread(() -> {
-                    Toast.makeText(MainActivity.this,
-                            "Assistant creation test complete. Check logs!",
-                            Toast.LENGTH_LONG).show();
-                });
-
-            } catch (Exception e) {
-                Log.e("AssistantTest", "❌❌❌ ERROR: " + e.getMessage(), e);
-
-                // Show error on UI
-                runOnUiThread(() -> {
-                    Toast.makeText(MainActivity.this,
-                            "Assistant test failed: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
-            }
-        }).start();
     }
 
     @Override
