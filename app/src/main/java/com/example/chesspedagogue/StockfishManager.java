@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Manages communication with the Stockfish chess engine using the UCI protocol.
  * Provides methods to send commands and receive responses.
+ * Enhanced with position evaluation capabilities for the evaluation bar.
  */
 public class StockfishManager {
     private static final String TAG = "StockfishManager";
@@ -75,7 +76,6 @@ public class StockfishManager {
             return false;
         }
     }
-
 
     /**
      * Continuously reads output from the engine process.
@@ -208,6 +208,148 @@ public class StockfishManager {
         } catch (IOException e) {
             Log.e(TAG, "Error getting best move", e);
             return null;
+        }
+    }
+
+    /**
+     * NEW METHOD: Gets the current position evaluation
+     * This is the key method for your evaluation bar!
+     *
+     * @param thinkTimeMs Time for engine to analyze (recommended: 500-1000ms)
+     * @return Evaluation result containing score and mate information
+     */
+    public EvaluationResult getCurrentEvaluation(int thinkTimeMs) {
+        try {
+            Log.d(TAG, "Getting evaluation for current position...");
+
+            // Clear output buffer
+            outputBuffer.clear();
+
+            // Send evaluation command
+            sendCommand("go depth 15 movetime " + thinkTimeMs);
+
+            // Wait for analysis to complete
+            long endTime = System.currentTimeMillis() + thinkTimeMs + 1000; // Add buffer time
+            boolean analysisComplete = false;
+
+            while (System.currentTimeMillis() < endTime && !analysisComplete) {
+                for (String line : outputBuffer) {
+                    if (line.startsWith("bestmove")) {
+                        analysisComplete = true;
+                        break;
+                    }
+                }
+
+                if (!analysisComplete) {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
+
+            // Parse the evaluation from the output
+            return parseEvaluationFromOutput();
+
+        } catch (IOException e) {
+            Log.e(TAG, "Error getting evaluation", e);
+            return new EvaluationResult(0.0f, false, 0);
+        }
+    }
+
+    /**
+     * NEW METHOD: Parses evaluation from engine output
+     */
+    private EvaluationResult parseEvaluationFromOutput() {
+        float bestScore = 0.0f;
+        boolean isMate = false;
+        int mateInMoves = 0;
+        int bestDepth = 0;
+
+        // Look through output for the best (deepest) evaluation
+        for (String line : outputBuffer) {
+            if (line.contains("info depth") && line.contains("score")) {
+                try {
+                    // Parse depth
+                    int depth = extractIntValue(line, "depth");
+
+                    // Only use evaluations from deeper searches
+                    if (depth >= bestDepth) {
+                        bestDepth = depth;
+
+                        if (line.contains("score cp")) {
+                            // Centipawn score (normal evaluation)
+                            int centipawns = extractIntValue(line, "score cp");
+                            bestScore = centipawns / 100.0f; // Convert to pawns
+                            isMate = false;
+                            Log.d(TAG, "Found evaluation at depth " + depth + ": " + bestScore + " pawns");
+
+                        } else if (line.contains("score mate")) {
+                            // Mate in N moves
+                            mateInMoves = extractIntValue(line, "score mate");
+                            isMate = true;
+                            bestScore = 0.0f;
+                            Log.d(TAG, "Found mate at depth " + depth + ": M" + mateInMoves);
+                        }
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Error parsing evaluation line: " + line, e);
+                }
+            }
+        }
+
+        return new EvaluationResult(bestScore, isMate, mateInMoves);
+    }
+
+    /**
+     * NEW HELPER METHOD: Extracts integer values from UCI output
+     */
+    private int extractIntValue(String line, String key) {
+        int keyIndex = line.indexOf(key);
+        if (keyIndex == -1) return 0;
+
+        // Find the start of the number
+        int startIndex = keyIndex + key.length();
+        while (startIndex < line.length() && !Character.isDigit(line.charAt(startIndex)) && line.charAt(startIndex) != '-') {
+            startIndex++;
+        }
+
+        // Find the end of the number
+        int endIndex = startIndex;
+        while (endIndex < line.length() && (Character.isDigit(line.charAt(endIndex)) || line.charAt(endIndex) == '-')) {
+            endIndex++;
+        }
+
+        if (startIndex < endIndex) {
+            return Integer.parseInt(line.substring(startIndex, endIndex));
+        }
+
+        return 0;
+    }
+
+    /**
+     * NEW CLASS: Holds evaluation results
+     */
+    public static class EvaluationResult {
+        public final float evaluation;  // In pawns (positive = white advantage)
+        public final boolean isMate;
+        public final int mateInMoves;   // Positive if white mates, negative if black mates
+
+        public EvaluationResult(float evaluation, boolean isMate, int mateInMoves) {
+            this.evaluation = evaluation;
+            this.isMate = isMate;
+            this.mateInMoves = mateInMoves;
+        }
+
+        @Override
+        public String toString() {
+            if (isMate) {
+                return "M" + mateInMoves;
+            } else {
+                return String.format("%.2f", evaluation);
+            }
         }
     }
 
@@ -596,7 +738,6 @@ public class StockfishManager {
             String posCommand = "position fen " + currentFEN + " moves " + move;
             sendCommand(posCommand);
 
-
             // Log the result
             boolean isValid = waitForReady(100);
             Log.d(TAG, "Move " + move + " is " + (isValid ? "legal" : "illegal"));
@@ -610,60 +751,261 @@ public class StockfishManager {
     public List<String> getLegalMovesForPiece(int row, int col) {
         List<String> moves = new ArrayList<>();
         try {
-            // Get current FEN first
-            String currentFen = getCurrentFEN();
-            if (currentFen == null) return moves;
-
-            // Convert board coordinates to algebraic
+            // Convert board coordinates to algebraic notation
             char file = (char) ('a' + col);
             int rank = 8 - row;
-            String square = "" + file + rank;
+            String fromSquare = "" + file + rank;
 
-            Log.d(TAG, "Getting legal moves for piece at " + square);
+            Log.d(TAG, "Getting legal moves for piece at " + fromSquare);
 
-            // We'll use a more efficient approach - get all legal moves from the position
-            // and filter for ones that start from our square
-            outputBuffer.clear();
+            // Get current FEN
+            String currentFen = getCurrentFEN();
+            if (currentFen == null) {
+                Log.w(TAG, "No current FEN available");
+                return moves;
+            }
+
+            // Set the position
             sendCommand("position fen " + currentFen);
+            waitForReady(100);
+
+            // Clear output buffer
+            outputBuffer.clear();
+
+            // Use Stockfish's "go perft 1" command to get all legal moves
             sendCommand("go perft 1");
 
             // Wait for response
-            Thread.sleep(100);
+            Thread.sleep(200);
 
-            // Parse the output to find moves starting from our square
+            // NEW: Better parsing approach
             for (String line : outputBuffer) {
-                if (line.startsWith(square) ||
-                        line.contains(" " + square) ||
-                        line.contains(":" + square)) {
+                // Look for lines that contain move information
+                // Perft output typically shows: "move: count"
+                if (line.contains(":") && line.length() >= 4) {
+                    String[] parts = line.split(":");
+                    if (parts.length >= 1) {
+                        String moveCandidate = parts[0].trim();
+                        // Check if this move starts from our square
+                        if (moveCandidate.length() >= 4 &&
+                                moveCandidate.startsWith(fromSquare)) {
+                            moves.add(moveCandidate);
+                            Log.d(TAG, "Found legal move: " + moveCandidate);
+                        }
+                    }
+                }
 
-                    String[] parts = line.split("\\s+");
-                    for (String part : parts) {
-                        if (part.startsWith(square) && part.length() >= 4) {
-                            moves.add(part);
-                            Log.d(TAG, "Found legal move: " + part);
+                // Also check for simple space-separated format
+                String[] tokens = line.trim().split("\\s+");
+                for (String token : tokens) {
+                    if (token.length() >= 4 &&
+                            token.startsWith(fromSquare) &&
+                            token.matches("[a-h][1-8][a-h][1-8][qrbn]?")) {
+                        if (!moves.contains(token)) {
+                            moves.add(token);
+                            Log.d(TAG, "Found legal move (token): " + token);
                         }
                     }
                 }
             }
 
-            // If that didn't work, fall back to checking specific moves
+            // If we still don't have moves, try a different approach
             if (moves.isEmpty()) {
-                for (int r = 0; r < 8; r++) {
-                    for (int c = 0; c < 8; c++) {
-                        String move = "" + file + rank + (char) ('a' + c) + (8 - r);
-                        if (isLegalMove(move)) {
-                            moves.add(move);
-                            Log.d(TAG, "Found legal move (fallback): " + move);
-                        }
-                    }
+                Log.d(TAG, "Perft parsing failed, trying manual generation for " + fromSquare);
+
+                // Generate candidate moves and test them
+                char piece = getPieceAtSquare(row, col);
+                if (piece != ' ') {
+                    moves = generateCandidateMovesForPiece(piece, fromSquare, currentFen);
                 }
             }
 
+            Log.d(TAG, "Found " + moves.size() + " legal moves for piece at " + fromSquare);
             return moves;
+
         } catch (Exception e) {
-            Log.e(TAG, "Error getting legal moves for piece", e);
+            Log.e(TAG, "Error getting legal moves for piece at " + row + "," + col, e);
             return moves;
         }
+    }
+
+    /**
+     * NEW HELPER METHOD: Generate candidate moves for a specific piece type
+     */
+    private List<String> generateCandidateMovesForPiece(char piece, String fromSquare, String fen) {
+        List<String> candidateMoves = new ArrayList<>();
+
+        char file = fromSquare.charAt(0);
+        int rank = Character.getNumericValue(fromSquare.charAt(1));
+
+        // Only generate reasonable candidate moves based on piece type
+        switch (Character.toLowerCase(piece)) {
+            case 'p': // Pawn
+                generatePawnMoves(candidateMoves, file, rank, Character.isUpperCase(piece));
+                break;
+            case 'r': // Rook
+                generateRookMoves(candidateMoves, file, rank);
+                break;
+            case 'n': // Knight
+                generateKnightMoves(candidateMoves, file, rank);
+                break;
+            case 'b': // Bishop
+                generateBishopMoves(candidateMoves, file, rank);
+                break;
+            case 'q': // Queen
+                generateQueenMoves(candidateMoves, file, rank);
+                break;
+            case 'k': // King
+                generateKingMoves(candidateMoves, file, rank);
+                break;
+        }
+
+        // Test each candidate move to see if it's legal
+        List<String> legalMoves = new ArrayList<>();
+        for (String move : candidateMoves) {
+            if (isLegalMove(move)) {
+                legalMoves.add(move);
+            }
+        }
+
+        return legalMoves;
+    }
+
+    /**
+     * Helper methods for generating candidate moves by piece type
+     */
+    private void generatePawnMoves(List<String> moves, char file, int rank, boolean isWhite) {
+        String from = "" + file + rank;
+
+        // Forward moves
+        if (isWhite && rank < 8) {
+            moves.add(from + file + (rank + 1)); // One forward
+            if (rank == 2) {
+                moves.add(from + file + (rank + 2)); // Two forward from starting position
+            }
+        } else if (!isWhite && rank > 1) {
+            moves.add(from + file + (rank - 1)); // One forward
+            if (rank == 7) {
+                moves.add(from + file + (rank - 2)); // Two forward from starting position
+            }
+        }
+
+        // Captures
+        for (int df = -1; df <= 1; df += 2) { // Left and right
+            char newFile = (char) (file + df);
+            if (newFile >= 'a' && newFile <= 'h') {
+                if (isWhite && rank < 8) {
+                    moves.add(from + newFile + (rank + 1));
+                } else if (!isWhite && rank > 1) {
+                    moves.add(from + newFile + (rank - 1));
+                }
+            }
+        }
+    }
+
+    private void generateRookMoves(List<String> moves, char file, int rank) {
+        String from = "" + file + rank;
+
+        // Horizontal and vertical moves
+        for (int r = 1; r <= 8; r++) {
+            if (r != rank) moves.add(from + file + r);
+        }
+        for (char f = 'a'; f <= 'h'; f++) {
+            if (f != file) moves.add(from + f + rank);
+        }
+    }
+
+    private void generateKnightMoves(List<String> moves, char file, int rank) {
+        String from = "" + file + rank;
+
+        // Knight moves: 2+1 in all combinations
+        int[] dr = {-2, -2, -1, -1, 1, 1, 2, 2};
+        int[] df = {-1, 1, -2, 2, -2, 2, -1, 1};
+
+        for (int i = 0; i < 8; i++) {
+            char newFile = (char) (file + df[i]);
+            int newRank = rank + dr[i];
+
+            if (newFile >= 'a' && newFile <= 'h' && newRank >= 1 && newRank <= 8) {
+                moves.add(from + newFile + newRank);
+            }
+        }
+    }
+
+    private void generateBishopMoves(List<String> moves, char file, int rank) {
+        String from = "" + file + rank;
+
+        // Diagonal moves
+        for (int d = 1; d < 8; d++) {
+            // Four diagonal directions
+            char[] newFiles = {(char)(file + d), (char)(file - d), (char)(file + d), (char)(file - d)};
+            int[] newRanks = {rank + d, rank + d, rank - d, rank - d};
+
+            for (int i = 0; i < 4; i++) {
+                if (newFiles[i] >= 'a' && newFiles[i] <= 'h' &&
+                        newRanks[i] >= 1 && newRanks[i] <= 8) {
+                    moves.add(from + newFiles[i] + newRanks[i]);
+                }
+            }
+        }
+    }
+
+    private void generateQueenMoves(List<String> moves, char file, int rank) {
+        // Queen = Rook + Bishop
+        generateRookMoves(moves, file, rank);
+        generateBishopMoves(moves, file, rank);
+    }
+
+    private void generateKingMoves(List<String> moves, char file, int rank) {
+        String from = "" + file + rank;
+
+        // One square in all directions
+        for (int dr = -1; dr <= 1; dr++) {
+            for (int df = -1; df <= 1; df++) {
+                if (dr == 0 && df == 0) continue; // Skip current position
+
+                char newFile = (char) (file + df);
+                int newRank = rank + dr;
+
+                if (newFile >= 'a' && newFile <= 'h' && newRank >= 1 && newRank <= 8) {
+                    moves.add(from + newFile + newRank);
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper to get the piece at a specific square
+     */
+    private char getPieceAtSquare(int row, int col) {
+        try {
+            String fen = getCurrentFEN();
+            if (fen == null) return ' ';
+
+            String[] parts = fen.split(" ");
+            String boardPart = parts[0];
+            String[] ranks = boardPart.split("/");
+
+            if (row >= 0 && row < ranks.length) {
+                String rank = ranks[row];
+                int currentCol = 0;
+
+                for (char c : rank.toCharArray()) {
+                    if (Character.isDigit(c)) {
+                        currentCol += Character.getNumericValue(c);
+                    } else {
+                        if (currentCol == col) {
+                            return c;
+                        }
+                        currentCol++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting piece at square", e);
+        }
+
+        return ' ';
     }
 
     /**
@@ -691,6 +1033,4 @@ public class StockfishManager {
             return currentFEN;
         }
     }
-
-
 }

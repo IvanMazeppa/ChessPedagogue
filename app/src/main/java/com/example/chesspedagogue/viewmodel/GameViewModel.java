@@ -1,4 +1,4 @@
-// GameViewModel.java
+// GameViewModel.java - COMPLETE UPDATED VERSION
 
 package com.example.chesspedagogue.viewmodel;
 
@@ -12,7 +12,9 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.chesspedagogue.GameStateRepository;
+import com.example.chesspedagogue.GameHistoryManager; // NEW IMPORT
 import com.example.chesspedagogue.MoveHistoryObserver;
+import com.example.chesspedagogue.StockfishManager;
 import com.example.chesspedagogue.model.GameState;
 import com.example.chesspedagogue.repository.GameRepository;
 
@@ -26,6 +28,7 @@ public class GameViewModel extends AndroidViewModel {
     private final MoveHistoryObserver moveHistoryObserver = new MoveHistoryObserver();
     private final GameRepository gameRepository;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     // LiveData objects that the UI will observe
     private final MutableLiveData<GameState> gameStateLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> currentFEN = new MutableLiveData<>();
@@ -37,10 +40,21 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<int[]> _animateMoveEvent = new MutableLiveData<>();
     private final MutableLiveData<int[]> _lastMoveEvent = new MutableLiveData<>();
     private final MutableLiveData<int[]> _kingInCheckEvent = new MutableLiveData<>();
+
     // Add this field to GameViewModel.java class
     private final MutableLiveData<Boolean> _clearSelectionEvent = new MutableLiveData<>();
+
+    // NEW: Evaluation-related LiveData for your evaluation bar! 🎉
+    private final MutableLiveData<Float> currentEvaluation = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isMatePosition = new MutableLiveData<>();
+    private final MutableLiveData<Integer> mateInMoves = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> evaluationLoading = new MutableLiveData<>();
+    private Handler evaluationHandler = new Handler(Looper.getMainLooper());
+    private Runnable pendingEvaluationUpdate;
+
     // Add the missing playerColor field here
     private String playerColor = "white"; // Default to white
+
     public GameViewModel(Application application) {
         super(application);
         // Initialize the repository - this will handle Stockfish and game data
@@ -53,6 +67,15 @@ public class GameViewModel extends AndroidViewModel {
         isGameOver.setValue(false);
         statusMessage.setValue("Game ready! Make your move.");
         moveHistory.setValue(new ArrayList<>());
+
+        // NEW: Initialize evaluation data
+        currentEvaluation.setValue(0.0f);
+        isMatePosition.setValue(false);
+        mateInMoves.setValue(0);
+        evaluationLoading.setValue(false);
+
+        // Get initial evaluation for starting position
+        requestPositionEvaluation();
     }
 
     // Add this method to your GameViewModel class
@@ -160,6 +183,113 @@ public class GameViewModel extends AndroidViewModel {
         return _animateMoveEvent;
     }
 
+    // NEW: Getter methods for evaluation data - this is what your UI will observe! 🎯
+    public LiveData<Float> getCurrentEvaluation() {
+        return currentEvaluation;
+    }
+
+    public LiveData<Boolean> getIsMatePosition() {
+        return isMatePosition;
+    }
+
+    public LiveData<Integer> getMateInMoves() {
+        return mateInMoves;
+    }
+
+    public LiveData<Boolean> getEvaluationLoading() {
+        return evaluationLoading;
+    }
+
+    /**
+     * NEW METHOD: Request evaluation for the current position
+     * This is called automatically after moves, but you can also call it manually
+     */
+    /**
+     * Enhanced evaluation request with debouncing to prevent flicker
+     */
+    public void requestPositionEvaluation() {
+        Log.d(TAG, "🔍 Requesting position evaluation...");
+
+        // Cancel any pending evaluation update
+        if (pendingEvaluationUpdate != null) {
+            evaluationHandler.removeCallbacks(pendingEvaluationUpdate);
+        }
+
+        evaluationLoading.setValue(true);
+
+        // Debounce rapid evaluation requests
+        pendingEvaluationUpdate = () -> {
+            gameRepository.getCurrentEvaluation(new GameRepository.EvaluationCallback() {
+                @Override
+                public void onEvaluationReceived(StockfishManager.EvaluationResult result) {
+                    Log.d(TAG, "✅ Evaluation received: " + result.toString());
+
+                    // Update UI on main thread with small delay for smoothness
+                    mainHandler.postDelayed(() -> {
+                        evaluationLoading.setValue(false);
+
+                        if (result.isMate) {
+                            isMatePosition.setValue(true);
+                            mateInMoves.setValue(result.mateInMoves);
+                            currentEvaluation.setValue(0.0f);
+                        } else {
+                            isMatePosition.setValue(false);
+                            mateInMoves.setValue(0);
+                            currentEvaluation.setValue(result.evaluation);
+                        }
+                    }, 100); // 100ms delay for smooth visual experience
+                }
+
+                @Override
+                public void onEvaluationError(String errorMessage) {
+                    Log.e(TAG, "❌ Evaluation error: " + errorMessage);
+                    mainHandler.post(() -> evaluationLoading.setValue(false));
+                }
+            });
+        };
+
+        // Execute after short delay to debounce rapid calls
+        evaluationHandler.postDelayed(pendingEvaluationUpdate, 200);
+    }
+    /**
+     * NEW METHOD: Get evaluation for a specific FEN position
+     * Useful for analysis mode or reviewing positions
+     */
+    public void requestEvaluationForPosition(String fen) {
+        Log.d(TAG, "🔍 Requesting evaluation for specific position...");
+        evaluationLoading.setValue(true);
+
+        gameRepository.getEvaluationForPosition(fen, new GameRepository.EvaluationCallback() {
+            @Override
+            public void onEvaluationReceived(StockfishManager.EvaluationResult result) {
+                Log.d(TAG, "✅ Position evaluation received: " + result.toString());
+
+                mainHandler.post(() -> {
+                    evaluationLoading.setValue(false);
+
+                    if (result.isMate) {
+                        isMatePosition.setValue(true);
+                        mateInMoves.setValue(result.mateInMoves);
+                        currentEvaluation.setValue(0.0f);
+                    } else {
+                        isMatePosition.setValue(false);
+                        mateInMoves.setValue(0);
+                        currentEvaluation.setValue(result.evaluation);
+                    }
+                });
+            }
+
+            @Override
+            public void onEvaluationError(String errorMessage) {
+                Log.e(TAG, "❌ Position evaluation error: " + errorMessage);
+
+                mainHandler.post(() -> {
+                    evaluationLoading.setValue(false);
+                });
+            }
+        });
+    }
+
     // Public getter methods for the LiveData objects
     public LiveData<GameState> getGameState() {
         return gameStateLiveData;
@@ -189,68 +319,164 @@ public class GameViewModel extends AndroidViewModel {
         return winner;
     }
 
+    // ===== CRITICAL FIX: This method now properly updates both systems =====
+    /**
+     * ENHANCED: Make player move with robust error handling and retry logic
+     */
     public void makePlayerMove(String move) {
+        Log.d(TAG, "🎯 makePlayerMove called with: " + move);
+
         if (!isEngineReady()) {
             statusMessage.setValue("Engine not ready. Please restart the game.");
             return;
         }
 
-        // Validate move first
-        if (gameRepository.isLegalMove(move)) {
-            // Get current move history
-            List<String> history = moveHistory.getValue();
-            if (history == null) {
-                history = new ArrayList<>();
+        // Get current move history
+        List<String> history = moveHistory.getValue();
+        if (history == null) {
+            history = new ArrayList<>();
+        }
+
+        // ENHANCED: Try move validation with retry logic
+        validateAndExecuteMove(move, history, 0);
+    }
+
+    /**
+     * NEW METHOD: Validate and execute move with retry logic
+     */
+    private void validateAndExecuteMove(String move, List<String> history, int retryCount) {
+        final int MAX_RETRIES = 2;
+
+        Log.d(TAG, "🔍 Validating move: " + move + " (attempt " + (retryCount + 1) + ")");
+
+        // First, let's verify the current position
+        String currentPosition = gameRepository.getCurrentFEN();
+        Log.d(TAG, "📋 Current position: " + currentPosition);
+
+        // ENHANCED: Check if move is legal with better error handling
+        try {
+            boolean isLegal = gameRepository.isLegalMove(move);
+            Log.d(TAG, "⚖️ Move " + move + " legality check: " + (isLegal ? "LEGAL" : "ILLEGAL"));
+
+            if (isLegal) {
+                // Move is legal, execute it
+                executeValidatedMove(move, history);
+            } else {
+                // Move appears illegal
+                if (retryCount < MAX_RETRIES) {
+                    Log.w(TAG, "⚠️ Move rejected, retrying... (attempt " + (retryCount + 1) + " of " + MAX_RETRIES + ")");
+
+                    // Wait a moment and retry
+                    mainHandler.postDelayed(() -> {
+                        validateAndExecuteMove(move, history, retryCount + 1);
+                    }, 100); // 100ms delay
+                } else {
+                    // All retries exhausted
+                    Log.e(TAG, "❌ Move " + move + " definitively rejected after " + MAX_RETRIES + " attempts");
+                    handleInvalidMove(move);
+                }
             }
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Exception during move validation: " + e.getMessage(), e);
 
+            if (retryCount < MAX_RETRIES) {
+                Log.w(TAG, "🔄 Retrying due to exception...");
+                mainHandler.postDelayed(() -> {
+                    validateAndExecuteMove(move, history, retryCount + 1);
+                }, 150); // Slightly longer delay for exceptions
+            } else {
+                Log.e(TAG, "❌ Move validation failed permanently due to exceptions");
+                handleInvalidMove(move);
+            }
+        }
+    }
+
+    /**
+     * NEW METHOD: Execute a validated move
+     */
+    private void executeValidatedMove(String move, List<String> history) {
+        Log.d(TAG, "✅ Executing validated move: " + move);
+
+        try {
             // Add the new move to history
-            history.add(move);
+            List<String> newHistory = new ArrayList<>(history);
+            newHistory.add(move);
 
-            // Apply the single move directly - this is much safer
-            boolean success = gameRepository.makeMove(move);  // Create this method if it doesn't exist
+            // Apply the single move directly
+            boolean success = gameRepository.makeMove(move);
 
             if (success) {
                 // Update the FEN string from the repository
                 String newFen = gameRepository.getCurrentFEN();
-                Log.d(TAG, "New position after move: " + newFen);
+                Log.d(TAG, "📍 New position after move: " + newFen);
 
                 if (newFen.equals(currentFEN.getValue())) {
-                    Log.e(TAG, "WARNING: Position did not change after move!");
-                    statusMessage.setValue("Error: Move didn't change board position. Please try again.");
-                    return;
+                    Log.w(TAG, "⚠️ Position did not change after move - trying alternative approach");
+
+                    // Try applying all moves from scratch
+                    boolean altSuccess = gameRepository.applyMoves(newHistory);
+                    if (altSuccess) {
+                        newFen = gameRepository.getCurrentFEN();
+                        Log.d(TAG, "✅ Alternative approach succeeded: " + newFen);
+                    } else {
+                        Log.e(TAG, "❌ Alternative approach also failed");
+                        handleMoveExecutionFailure(move);
+                        return;
+                    }
                 }
 
-                // Update the FEN LiveData
+                // ===== CRITICAL FIX: Update both systems! =====
+                // 1. Update ViewModel's LiveData
                 currentFEN.setValue(newFen);
+                moveHistory.setValue(newHistory);
 
-                // Create a new list to trigger observers
-                List<String> updatedHistory = new ArrayList<>(history);
-                moveHistory.setValue(updatedHistory);
+                // 2. Update GameHistoryManager (THIS WAS MISSING!)
+                GameHistoryManager.getInstance().addMove(move);
 
-                // Notify move history observers
-                moveHistoryObserver.notifyMoveMade(move, newFen, updatedHistory);
+                // 3. Notify move history observers
+                moveHistoryObserver.notifyMoveMade(move, newFen, newHistory);
 
-                // IMPORTANT NEW CODE - Update the central game state repository
-                GameStateRepository.updateState(newFen, updatedHistory, playerColor);
+                // 4. Update the central game state repository
+                GameStateRepository.updateState(newFen, newHistory, playerColor);
 
                 // Trigger the animation
                 triggerMoveAnimation(move);
+
+                // Request evaluation after player move
+                requestPositionEvaluation();
 
                 isPlayerTurn.setValue(false);
                 statusMessage.setValue("You moved " + move + ". Engine thinking...");
 
                 // Request engine to make its move
                 requestEngineMove();
-            } else {
-                statusMessage.setValue("Move failed to execute. Please try again.");
-            }
-        } else {
-            Log.d(TAG, "Illegal move attempted: " + move);
-            statusMessage.setValue("Invalid move. Please try again.");
 
-            // Signal that the selection should be cleared
-            _clearSelectionEvent.setValue(true);
+            } else {
+                Log.e(TAG, "❌ Move execution failed in gameRepository.makeMove()");
+                handleMoveExecutionFailure(move);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Exception during move execution: " + e.getMessage(), e);
+            handleMoveExecutionFailure(move);
         }
+    }
+
+    /**
+     * NEW METHOD: Handle invalid move
+     */
+    private void handleInvalidMove(String move) {
+        Log.w(TAG, "🚫 Handling invalid move: " + move);
+        statusMessage.setValue("Invalid move: " + move + ". Please try again.");
+        _clearSelectionEvent.setValue(true);
+    }
+
+    /**
+     * NEW METHOD: Handle move execution failure
+     */
+    private void handleMoveExecutionFailure(String move) {
+        Log.e(TAG, "💔 Handling move execution failure: " + move);
+        statusMessage.setValue("Move failed to execute: " + move + ". Please try again.");
+        _clearSelectionEvent.setValue(true);
     }
 
     // In GameViewModel.java, after a successful move
@@ -285,9 +511,14 @@ public class GameViewModel extends AndroidViewModel {
         // Reset game
         gameRepository.newGame();
 
+        // ===== CRITICAL FIX: Reset GameHistoryManager too! =====
+        GameHistoryManager.getInstance().clearHistory();
+
         // Apply each move
         for (String move : moves) {
             gameRepository.makeMove(move);
+            // ===== CRITICAL FIX: Add to GameHistoryManager =====
+            GameHistoryManager.getInstance().addMove(move);
         }
 
         // Update LiveData with loaded game state
@@ -302,10 +533,56 @@ public class GameViewModel extends AndroidViewModel {
         isPlayerTurn.setValue(isPlayersTurn);
         statusMessage.setValue("Game loaded. " + (isPlayersTurn ? "Your turn." : "Engine thinking..."));
 
+        // NEW: Get evaluation for loaded position! 🎯
+        requestPositionEvaluation();
+
         // If it's the engine's turn, make it move
         if (!isPlayersTurn) {
             requestEngineMove();
         }
+    }
+
+    /**
+     * NEW METHOD: Initialize game with full configuration from splash screen
+     */
+    public void newGameWithConfiguration(String playerColor, int skillLevel, int engineElo) {
+        Log.d(TAG, "🎮 Starting new game with configuration: " + playerColor + ", skill=" + skillLevel + ", elo=" + engineElo);
+
+        // Update the player color
+        this.playerColor = playerColor;
+
+        // Reset game state for a new game
+        gameRepository.newGame();
+
+        // ===== CRITICAL FIX: Reset GameHistoryManager! =====
+        GameHistoryManager.getInstance().clearHistory();
+
+        // NEW: Configure engine with splash screen settings
+        gameRepository.configureEngine(skillLevel, engineElo);
+
+        currentFEN.setValue(gameRepository.getCurrentFEN());
+        moveHistory.setValue(new ArrayList<>());
+        isGameOver.setValue(false);
+        winner.setValue(null);
+
+        // NEW: Reset evaluation for new game! 🎯
+        currentEvaluation.setValue(0.0f);
+        isMatePosition.setValue(false);
+        mateInMoves.setValue(0);
+
+        // Get evaluation for starting position
+        requestPositionEvaluation();
+
+        if (playerColor.equalsIgnoreCase("white")) {
+            isPlayerTurn.setValue(true);
+            statusMessage.setValue("New game started. You're playing as White. Your move.");
+        } else {
+            isPlayerTurn.setValue(false);
+            statusMessage.setValue("New game started. You're playing as Black. Engine thinking...");
+            requestEngineMove();
+        }
+
+        Log.d(TAG, "✅ Game initialized with " + playerColor + " vs " + engineElo + " Elo engine");
     }
 
     // Fixed implementation for legal moves
@@ -325,7 +602,7 @@ public class GameViewModel extends AndroidViewModel {
         callback.onResult(legalMoves);
     }
 
-    // In GameViewModel.java - find the requestEngineMove method
+    // ===== CRITICAL FIX: Engine moves also update GameHistoryManager =====
     private void requestEngineMove() {
         gameRepository.calculateBestMove(new GameRepository.MoveCallback() {
             @Override
@@ -351,8 +628,14 @@ public class GameViewModel extends AndroidViewModel {
                     List<String> updatedHistory = new ArrayList<>(history);
                     moveHistory.setValue(updatedHistory);
 
+                    // ===== CRITICAL FIX: Update GameHistoryManager for engine moves too! =====
+                    GameHistoryManager.getInstance().addMove(engineMove);
+
                     // IMPORTANT NEW CODE - Update the central game state repository
                     GameStateRepository.updateState(newFen, updatedHistory, playerColor);
+
+                    // NEW: Request evaluation after engine move! 🎯
+                    requestPositionEvaluation();
 
                     isPlayerTurn.setValue(true);
 
@@ -389,10 +672,22 @@ public class GameViewModel extends AndroidViewModel {
 
         // Reset game state for a new game
         gameRepository.newGame();
+
+        // ===== CRITICAL FIX: Reset GameHistoryManager! =====
+        GameHistoryManager.getInstance().clearHistory();
+
         currentFEN.setValue(gameRepository.getCurrentFEN());
         moveHistory.setValue(new ArrayList<>());
         isGameOver.setValue(false);
         winner.setValue(null);
+
+        // NEW: Reset evaluation for new game! 🎯
+        currentEvaluation.setValue(0.0f);
+        isMatePosition.setValue(false);
+        mateInMoves.setValue(0);
+
+        // Get evaluation for starting position
+        requestPositionEvaluation();
 
         if (playerColor.equalsIgnoreCase("white")) {
             isPlayerTurn.setValue(true);

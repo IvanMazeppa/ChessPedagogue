@@ -8,6 +8,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -23,6 +24,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,10 +47,10 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
+
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     // Handler for UI updates
@@ -73,6 +75,17 @@ public class MainActivity extends AppCompatActivity {
     private ChessBoardView chessBoardView;
     private TextView coachMessageText;
 
+    // NEW: Evaluation Bar UI Elements! 🎯
+    private EvaluationBarView evaluationBarView;
+    private ProgressBar evaluationProgressBar;
+
+    // ===== CRITICAL: Move History UI Elements =====
+    private TextView moveHistoryTextView;
+
+    // NEW: Game configuration from splash screen
+    private String configuredPlayerColor = "white";
+    private int configuredSkillLevel = 10;
+    private int configuredEngineElo = 1750;
 
     // SimpleRecordService connection
     private SimpleRecordService recordService;
@@ -90,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
             if (recordService != null) {
                 recordService.refreshVoiceSettings();
             }
-
 
             // Set up the callback to handle responses
             recordService.setCallback(new SimpleRecordService.ServiceCallback() {
@@ -140,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
             recordService = null;
         }
     };
+
     // Game logic
     private GameViewModel gameViewModel;
 
@@ -150,6 +163,7 @@ public class MainActivity extends AppCompatActivity {
             messageText.setText(message);
         }
     }
+
     // In your SimpleRecordService or MainActivity
     public void processAdviceForHighlights(String coachAdvice) {
         // Define highlight colors
@@ -275,22 +289,24 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         preWarmSpeechServices();
+
+        // NEW: Get configuration from splash screen
+        loadGameConfiguration();
+
         // In onCreate or similar initialization method
         ApiKeyConfig.initializeOpenAIClient(this);
 
         // Initialize all UI elements
         initializeViews();
 
-        // Initialize game ViewModel
+        // Initialize game ViewModel with configuration
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
         openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
         com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
-
         Button debugButton = new Button(this);
 
-        //Button coachMatchBtn = findViewById(R.id.btnCoachMatch);
         // Set up click listeners
         setupClickListeners();
 
@@ -300,24 +316,190 @@ public class MainActivity extends AppCompatActivity {
         // Set up the chess board gameplay
         setupChessBoard();
 
-        // Set the player color (white or black)
-        String playerColor = "white";  // You can change this or get from settings
+        // NEW: Set up the evaluation bar! 🎯
+        setupEvaluationBar();
 
-        // Initialize a new game
-        gameViewModel.newGame(playerColor);
+        // ===== CRITICAL: Set up move history observation! =====
+        setupMoveHistoryObserver();
+
+        // NEW: Initialize game with proper configuration
+        initializeGameWithConfiguration();
 
         // Bind to the SimpleRecordService
         bindRecordService();
     }
 
+    /**
+     * ===== CRITICAL NEW METHOD: Set up move history observation =====
+     * This is what was missing - connecting your move history to the UI!
+     */
+    private void setupMoveHistoryObserver() {
+        Log.d(TAG, "🎯 Setting up move history observer");
 
+        // Observe the move history from ViewModel
+        gameViewModel.getMoveHistory().observe(this, moves -> {
+            Log.d(TAG, "📝 Move history changed, updating display: " + (moves != null ? moves.size() : 0) + " moves");
+            updateMoveHistoryDisplay();
+        });
+    }
 
-    // In MainActivity.java
+    /**
+     * ===== ENHANCED: Better move history display method =====
+     */
+    private void updateMoveHistoryDisplay() {
+        if (moveHistoryTextView == null) {
+            Log.w(TAG, "⚠️ moveHistoryTextView is null - trying to find it again");
+            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
+            if (moveHistoryTextView == null) {
+                Log.e(TAG, "❌ Still can't find moveHistoryTextView!");
+                return;
+            }
+        }
+
+        // Get moves from GameHistoryManager
+        List<String> moves = GameHistoryManager.getInstance().getCurrentGameMoves();
+        Log.d(TAG, "📋 Updating move history display with " + moves.size() + " moves");
+
+        if (moves.isEmpty()) {
+            moveHistoryTextView.setText("Game begins...");
+            return;
+        }
+
+        // Create beautiful formatted move history
+        StringBuilder historyBuilder = new StringBuilder();
+
+        for (int i = 0; i < moves.size(); i++) {
+            if (i % 2 == 0) {
+                // White move - start new line with move number
+                int moveNumber = (i / 2) + 1;
+                historyBuilder.append(moveNumber).append(". ").append(moves.get(i));
+
+                // Add space after white's move if there's a black move coming
+                if (i + 1 < moves.size()) {
+                    historyBuilder.append(" ");
+                }
+            } else {
+                // Black move - complete the line
+                historyBuilder.append(moves.get(i));
+
+                // Add newline after black's move (except for the last move)
+                if (i + 1 < moves.size()) {
+                    historyBuilder.append("\n");
+                }
+            }
+        }
+
+        String formattedHistory = historyBuilder.toString();
+        moveHistoryTextView.setText(formattedHistory);
+
+        Log.d(TAG, "✅ Move history display updated: " + formattedHistory);
+    }
+
+    /**
+     * NEW METHOD: Load game configuration from splash screen or SharedPreferences
+     */
+    private void loadGameConfiguration() {
+        // First try to get from intent (coming from splash screen)
+        Intent intent = getIntent();
+        if (intent.hasExtra("PLAYER_COLOR")) {
+            configuredPlayerColor = intent.getStringExtra("PLAYER_COLOR");
+            configuredSkillLevel = intent.getIntExtra("SKILL_LEVEL", 10);
+            configuredEngineElo = intent.getIntExtra("ENGINE_ELO", 1750);
+
+            Log.d(TAG, "📝 Configuration from splash: Color=" + configuredPlayerColor +
+                    ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
+        } else {
+            // Fallback to SharedPreferences
+            SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+            configuredPlayerColor = prefs.getString("PLAYER_COLOR", "white");
+            configuredSkillLevel = prefs.getInt("SKILL_LEVEL", 10);
+            configuredEngineElo = prefs.getInt("ENGINE_ELO", 1750);
+
+            Log.d(TAG, "📝 Configuration from prefs: Color=" + configuredPlayerColor +
+                    ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
+        }
+    }
+
+    /**
+     * NEW METHOD: Initialize game with proper configuration
+     */
+    private void initializeGameWithConfiguration() {
+        Log.d(TAG, "🎮 Initializing game with configuration...");
+
+        // Configure the board orientation based on player color
+        if (chessBoardView != null) {
+            boolean shouldFlipBoard = "black".equals(configuredPlayerColor);
+            chessBoardView.setFlipped(shouldFlipBoard);
+            Log.d(TAG, "🔄 Board flipped: " + shouldFlipBoard + " (player: " + configuredPlayerColor + ")");
+        }
+
+        // Set evaluation bar player color
+        if (evaluationBarView != null) {
+            boolean isPlayerWhite = "white".equals(configuredPlayerColor);
+            evaluationBarView.setPlayerColor(isPlayerWhite);
+            Log.d(TAG, "📊 Evaluation bar configured for: " + configuredPlayerColor);
+        }
+
+        // Initialize the game with proper color and difficulty
+        gameViewModel.newGameWithConfiguration(configuredPlayerColor, configuredSkillLevel, configuredEngineElo);
+
+        // Show welcome message
+        String welcomeMsg = String.format("Game initialized! Playing as %s against %d Elo engine.",
+                configuredPlayerColor, configuredEngineElo);
+        Toast.makeText(this, welcomeMsg, Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * NEW METHOD: Set up the evaluation bar with observers! 🎯
+     * This is where the magic happens - connecting your ViewModel to the UI
+     */
+    private void setupEvaluationBar() {
+        Log.d(TAG, "🎯 Setting up evaluation bar with LiveData observers");
+
+        // Set up observers for evaluation data
+        gameViewModel.getCurrentEvaluation().observe(this, evaluation -> {
+            if (evaluation != null && evaluationBarView != null) {
+                Log.d(TAG, "📊 Updating evaluation bar: " + evaluation + " pawns");
+                evaluationBarView.setEvaluation(evaluation);
+            }
+        });
+
+        gameViewModel.getIsMatePosition().observe(this, isMate -> {
+            if (isMate != null && isMate && evaluationBarView != null) {
+                Integer mateInMoves = gameViewModel.getMateInMoves().getValue();
+                if (mateInMoves != null) {
+                    Log.d(TAG, "♔ Updating evaluation bar: MATE IN " + Math.abs(mateInMoves));
+                    evaluationBarView.setMateEvaluation(mateInMoves);
+                }
+            }
+        });
+
+        gameViewModel.getEvaluationLoading().observe(this, isLoading -> {
+            if (isLoading != null && evaluationProgressBar != null) {
+                evaluationProgressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+                Log.d(TAG, "🔄 Evaluation loading: " + (isLoading ? "Started" : "Completed"));
+            }
+        });
+
+        // Set player color for the evaluation bar
+        String playerColor = gameViewModel.getPlayerColor();
+        boolean isPlayerWhite = "white".equalsIgnoreCase(playerColor);
+        if (evaluationBarView != null) {
+            evaluationBarView.setPlayerColor(isPlayerWhite);
+            Log.d(TAG, "🎨 Set evaluation bar player color: " + (isPlayerWhite ? "White" : "Black"));
+        }
+
+    }
+
+    // In your MainActivity.java
     @Override
     protected void onResume() {
         super.onResume();
         updateVoiceForCurrentMaster();
         updateCoachPortrait();
+
+        // ===== CRITICAL: Refresh move history display on resume =====
+        updateMoveHistoryDisplay();
     }
 
     private void updateCoachPortrait() {
@@ -396,8 +578,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // In your MainActivity.java or wherever you handle the main game loop
-// Make sure to call this when returning from settings or at the start of a conversation:
-// CHANGE TO:
+    // Make sure to call this when returning from settings or at the start of a conversation:
+    // CHANGE TO:
     private void testAssistantsAPI() {
         // Run this on a background thread
         new Thread(() -> {
@@ -460,6 +642,9 @@ public class MainActivity extends AppCompatActivity {
                         moveHistoryPanel.setVisibility(View.VISIBLE);
                         moveHistoryPanel.setAlpha(0f);
                         moveHistoryPanel.animate().alpha(1f).setDuration(300).start();
+
+                        // ===== CRITICAL: Refresh move history when panel becomes visible =====
+                        updateMoveHistoryDisplay();
                     })
                     .start();
         }
@@ -578,6 +763,11 @@ public class MainActivity extends AppCompatActivity {
         gameViewModel.getCurrentFEN().observe(this, fen -> {
             // Update the board view when the FEN changes
             chessBoardView.updateBoardFromFen(fen);
+
+            // NEW: Also update the real FEN for turn checking! 🎯
+            chessBoardView.setRealCurrentFEN(fen);
+
+            Log.d(TAG, "📝 Updated board with new FEN: " + fen);
         });
 
         gameViewModel.getAnimateMoveEvent().observe(this, coords -> {
@@ -614,26 +804,12 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // In MainActivity.java - Add to the setupChessBoard method after setting up other listeners
-        chessBoardView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    // ONLY interrupt if the coach is actively speaking
-                    if (isServiceBound && recordService != null && recordService.isCurrentlySpeaking()) {
-                        // Interrupt only when speaking
-                        recordService.interruptSpeech();
-                        Toast.makeText(MainActivity.this, "Coach advice interrupted", Toast.LENGTH_SHORT).show();
-                        return true;
-                    }
-
-                }
-                // IMPORTANT: Let normal chess moves work when not interrupting
-                return false; // Allow the event to be handled by the chess board
-            }
-        });
-
         chessBoardView.setOnSquareTapListener((row, col) -> {
+
+            Log.d(TAG, "🎯 SQUARE TAPPED: row=" + row + ", col=" + col);
+            Log.d(TAG, "📝 Player color: " + configuredPlayerColor);
+            Log.d(TAG, "🔍 Selected row/col: " + chessBoardView.getSelectedRow() + "/" + chessBoardView.getSelectedCol());
+
             // If we already have a piece selected...
             if (inChallengeMode) {
                 handleChallengeMove(row, col);
@@ -651,37 +827,67 @@ public class MainActivity extends AppCompatActivity {
 
                     // Check if the tapped square has one of our pieces
                     char tappedPiece = chessBoardView.getPieceAt(row, col);
-                    boolean isOurPiece = Character.isUpperCase(tappedPiece) == chessBoardView.isWhiteTurn();
 
-                    if (isOurPiece) {
-                        // Tapped another of our pieces, so select this one instead
-                        chessBoardView.clearSelectionHighlight();
-                        chessBoardView.clearHighlightedSquares();
-                        chessBoardView.setSelectedSquare(row, col);
+                    // FIXED: Only check piece ownership for actual pieces, not empty squares
+                    if (tappedPiece != ' ') {
+                        // NEW: Improved piece ownership logic for player perspective
+                        boolean isPlayerWhite = "white".equals(configuredPlayerColor);
+                        boolean isPieceWhite = Character.isUpperCase(tappedPiece);
+                        boolean isOurPiece = (isPlayerWhite && isPieceWhite) || (!isPlayerWhite && !isPieceWhite);
 
-                        // Show legal moves for newly selected piece
-                        gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
-                                moves -> {
-                                    for (String move : moves) {
-                                        int destRow = 8 - Character.getNumericValue(move.charAt(3));
-                                        int destCol = move.charAt(2) - 'a';
-                                        chessBoardView.addHighlightedSquare(destRow, destCol);
-                                    }
-                                });
-                        return;
+                        if (isOurPiece) {
+                            // Tapped another of our pieces, so select this one instead
+                            chessBoardView.clearSelectionHighlight();
+                            chessBoardView.clearHighlightedSquares();
+                            chessBoardView.setSelectedSquare(row, col);
+
+                            // Show legal moves for newly selected piece
+                            gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
+                                    moves -> {
+                                        for (String move : moves) {
+                                            int destRow = 8 - Character.getNumericValue(move.charAt(3));
+                                            int destCol = move.charAt(2) - 'a';
+                                            chessBoardView.addHighlightedSquare(destRow, destCol);
+                                        }
+                                    });
+                            return;
+                        }
                     }
 
                     // Otherwise, try to make a move from the selected piece to this square
                     String move = algebraicNotation(fromRow, fromCol) + algebraicNotation(row, col);
-                    gameViewModel.makePlayerMove(move);
+
+                    boolean isPlayerWhite = "white".equals(configuredPlayerColor);
+                    boolean isPlayersTurn = (isPlayerWhite && chessBoardView.isWhiteTurn()) ||
+                            (!isPlayerWhite && !chessBoardView.isWhiteTurn());
+
+                    Log.d(TAG, "🎯 ATTEMPTING MOVE: " + move);
+                    Log.d(TAG, "📝 Player color: " + configuredPlayerColor);
+                    Log.d(TAG, "🔄 Is player's turn: " + isPlayersTurn);
+                    Log.d(TAG, "🔄 Is white's turn: " + chessBoardView.isWhiteTurn());
+
+                    if (isPlayersTurn) {
+                        Log.d(TAG, "✅ Turn validation passed, making move: " + move);
+                        gameViewModel.makePlayerMove(move);
+                    } else {
+                        Log.d(TAG, "❌ Turn validation failed - not player's turn!");
+                        Toast.makeText(MainActivity.this, "Wait for your turn!", Toast.LENGTH_SHORT).show();
+                    }
+
                     chessBoardView.clearSelectionHighlight();
                     chessBoardView.clearHighlightedSquares();
                 } else {
-                    // No piece is selected yet, select if it's a piece and our turn
+                    // No piece is selected yet, select if it's our piece and our turn
                     char piece = chessBoardView.getPieceAt(row, col);
-                    boolean isOurPiece = Character.isUpperCase(piece) == chessBoardView.isWhiteTurn();
 
-                    if (piece != ' ' && isOurPiece) {
+                    // NEW: Improved piece ownership and turn logic
+                    boolean isPlayerWhite = "white".equals(configuredPlayerColor);
+                    boolean isPieceWhite = Character.isUpperCase(piece);
+                    boolean isOurPiece = (isPlayerWhite && isPieceWhite) || (!isPlayerWhite && !isPieceWhite);
+                    boolean isPlayersTurn = (isPlayerWhite && chessBoardView.isWhiteTurn()) ||
+                            (!isPlayerWhite && !chessBoardView.isWhiteTurn());
+
+                    if (piece != ' ' && isOurPiece && isPlayersTurn) {
                         chessBoardView.setSelectedSquare(row, col);
                         gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
                                 moves -> {
@@ -694,7 +900,6 @@ public class MainActivity extends AppCompatActivity {
                                 });
                     }
                 }
-
             }
         });
     }
@@ -911,16 +1116,40 @@ public class MainActivity extends AppCompatActivity {
             coachButton = findViewById(R.id.coachButton);
             speakButton = findViewById(R.id.speakButton);
             chessBoardView = findViewById(R.id.chessBoardView);
+
+            // NEW: Initialize evaluation bar UI elements! 🎯
+            evaluationBarView = findViewById(R.id.evaluationBarView);
+            evaluationProgressBar = findViewById(R.id.evaluationProgressBar);
+
+            // ===== CRITICAL: Initialize move history UI element =====
+            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
+
+            if (evaluationBarView == null) {
+                Log.w(TAG, "⚠️ Warning: evaluationBarView not found in layout!");
+            } else {
+                Log.d(TAG, "✅ Successfully found evaluationBarView in layout");
+            }
+
+            if (evaluationProgressBar == null) {
+                Log.w(TAG, "⚠️ Warning: evaluationProgressBar not found in layout!");
+            } else {
+                Log.d(TAG, "✅ Successfully found evaluationProgressBar in layout");
+            }
+
+            if (moveHistoryTextView == null) {
+                Log.w(TAG, "⚠️ Warning: moveHistoryTextView not found in layout!");
+            } else {
+                Log.d(TAG, "✅ Successfully found moveHistoryTextView in layout");
+            }
+
         } catch (Exception e) {
             Log.e(TAG, "Error finding view: " + e.getMessage());
         }
-
     }
 
     // Shows the listening animation
     private void showListeningFeedback() {
         // Show coach message card if not visible
-
 
         // Show microphone indicator - using ID string to avoid R.id issues
         View micIndicator = findViewById(getResources().getIdentifier("micIndicator", "id", getPackageName()));
@@ -1241,41 +1470,17 @@ public class MainActivity extends AppCompatActivity {
                 hideCoachConversation(); // Use our new method!
             });
         }
-    }
 
-    // Add this method to MainActivity:
-    private void updateMoveHistoryDisplay() {
-        TextView moveHistoryText = findViewById(R.id.moveHistoryTextView);
-        if (moveHistoryText != null) {
-            List<String> moves = GameHistoryManager.getInstance().getCurrentGameMoves();
-
-            if (moves.isEmpty()) {
-                moveHistoryText.setText("Game begins...");
-            } else {
-                StringBuilder historyBuilder = new StringBuilder();
-                for (int i = 0; i < moves.size(); i++) {
-                    if (i % 2 == 0) {
-                        // White move
-                        historyBuilder.append((i/2 + 1)).append(". ").append(moves.get(i));
-                        if (i + 1 < moves.size()) {
-                            historyBuilder.append(" ");
-                        }
-                    } else {
-                        // Black move
-                        historyBuilder.append(moves.get(i));
-                        if (i + 1 < moves.size()) {
-                            historyBuilder.append("\n");
-                        }
-                    }
-                }
-                moveHistoryText.setText(historyBuilder.toString());
-            }
+        // NEW: Long-click on evaluation bar to manually refresh evaluation! 🎯
+        if (evaluationBarView != null) {
+            evaluationBarView.setOnLongClickListener(v -> {
+                Log.d(TAG, "🔄 Manual evaluation refresh requested");
+                Toast.makeText(this, "Refreshing position evaluation...", Toast.LENGTH_SHORT).show();
+                gameViewModel.requestPositionEvaluation();
+                return true;
+            });
         }
     }
-
-    // Then call this whenever a move is made
-// Add this to your chess board tap listener after a successful move:
-
 
     // For parsing AI response into a challenge
     private void parseChallengeResponse(String response) {

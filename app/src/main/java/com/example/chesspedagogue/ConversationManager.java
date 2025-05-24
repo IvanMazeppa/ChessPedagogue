@@ -2,6 +2,8 @@ package com.example.chesspedagogue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -14,6 +16,7 @@ import java.util.List;
 /**
  * Unified conversation manager that handles all conversation functionality.
  * Merged from ConversationManager, EnhancedConversationManager, and ConversationStorage.
+ * FIXED: Proper context handling and thread-safe operations
  */
 public class ConversationManager {
     private static final String TAG = "ConversationManager";
@@ -25,22 +28,28 @@ public class ConversationManager {
     private final Context context;
     private final SharedPreferences prefs;
     private final Gson gson;
+    private final Handler mainHandler; // ADDED: For thread-safe operations
 
     private List<Message> conversationHistory = new ArrayList<>();
     private String currentSessionId;
 
-    // For compatibility with old VoiceService constructor
+    // For compatibility with old VoiceService constructor - FIXED
     private SpeechToTextService sttService;
     private ChatService chatService;
     private TextToSpeechService ttsService;
 
     /**
-     * Private constructor for singleton pattern
+     * Private constructor for singleton pattern - FIXED: Proper context handling
      */
     private ConversationManager(Context context) {
+        if (context == null) {
+            throw new IllegalArgumentException("Context cannot be null for ConversationManager");
+        }
+
         this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.gson = new Gson();
+        this.mainHandler = new Handler(Looper.getMainLooper()); // ADDED
         this.currentSessionId = generateSessionId();
 
         // Initialize with system message
@@ -56,10 +65,10 @@ public class ConversationManager {
     }
 
     /**
-     * Constructor for VoiceService compatibility
+     * FIXED: Constructor for VoiceService compatibility - now requires context
      */
-    public ConversationManager(SpeechToTextService sttService, ChatService chatService, TextToSpeechService ttsService) {
-        this((Context)null); // Use the default context-less initialization
+    public ConversationManager(Context context, SpeechToTextService sttService, ChatService chatService, TextToSpeechService ttsService) {
+        this(context); // FIXED: Pass the context instead of null
         this.sttService = sttService;
         this.chatService = chatService;
         this.ttsService = ttsService;
@@ -83,11 +92,13 @@ public class ConversationManager {
         for (int i = 0; i < conversationHistory.size(); i++) {
             if (conversationHistory.get(i).getRole().equals("system")) {
                 conversationHistory.set(i, new Message("system", content));
+                Log.d(TAG, "Updated system message");
                 return;
             }
         }
         // Add new system message
         conversationHistory.add(new Message("system", content));
+        Log.d(TAG, "Added new system message");
     }
 
     /**
@@ -98,23 +109,43 @@ public class ConversationManager {
     }
 
     /**
-     * Add user message
+     * Add user message - THREAD SAFE
      */
     public void addUserMessage(String content) {
-        conversationHistory.add(new Message("user", content));
-        trimHistory();
+        addMessageThreadSafe("user", content);
     }
 
     /**
-     * Add assistant message
+     * Add assistant message - THREAD SAFE
      */
     public void addAssistantMessage(String content) {
-        conversationHistory.add(new Message("assistant", content));
-        trimHistory();
+        addMessageThreadSafe("assistant", content);
     }
 
     /**
-     * Add generic message (from Enhanced)
+     * ADDED: Thread-safe message addition
+     */
+    private void addMessageThreadSafe(String role, String content) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Already on main thread
+            addMessageInternal(role, content);
+        } else {
+            // Post to main thread
+            mainHandler.post(() -> addMessageInternal(role, content));
+        }
+    }
+
+    /**
+     * ADDED: Internal message addition method
+     */
+    private void addMessageInternal(String role, String content) {
+        conversationHistory.add(new Message(role, content));
+        trimHistory();
+        Log.d(TAG, "Added " + role + " message (history size: " + conversationHistory.size() + ")");
+    }
+
+    /**
+     * Add generic message (from Enhanced) - THREAD SAFE
      */
     public void addMessage(String role, String content) {
         if ("system".equals(role)) {
@@ -153,68 +184,155 @@ public class ConversationManager {
         if (!systemMessage.isEmpty()) {
             addSystemMessage(systemMessage);
         }
+
+        Log.d(TAG, "Conversation cleared, system message preserved");
     }
 
     /**
-     * Save current conversation to storage
+     * Save current conversation to storage - THREAD SAFE
      */
     public void saveCurrentConversation() {
-        saveConversation(currentSessionId, conversationHistory);
-        Log.d(TAG, "Saved conversation with " + conversationHistory.size() + " messages");
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Already on main thread
+            saveCurrentConversationInternal();
+        } else {
+            // Post to main thread
+            mainHandler.post(this::saveCurrentConversationInternal);
+        }
     }
 
     /**
-     * Save a conversation to SharedPreferences
+     * ADDED: Internal save method that runs on main thread
+     */
+    private void saveCurrentConversationInternal() {
+        try {
+            saveConversation(currentSessionId, conversationHistory);
+            Log.d(TAG, "✅ Successfully saved conversation with " + conversationHistory.size() + " messages");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error saving current conversation", e);
+        }
+    }
+
+    /**
+     * Save a conversation to SharedPreferences - ENHANCED with error handling
      */
     public void saveConversation(String sessionId, List<Message> conversation) {
-        String json = gson.toJson(conversation);
-        prefs.edit().putString(sessionId, json).apply();
+        try {
+            if (sessionId == null || sessionId.isEmpty()) {
+                Log.e(TAG, "Cannot save conversation: sessionId is null or empty");
+                return;
+            }
 
-        // Update session list
-        updateSessionList(sessionId);
-        Log.d(TAG, "Saved conversation for session: " + sessionId + " with JSON length: " + json.length());
+            if (conversation == null) {
+                Log.e(TAG, "Cannot save conversation: conversation list is null");
+                return;
+            }
+
+            String json = gson.toJson(conversation);
+
+            if (json == null || json.isEmpty()) {
+                Log.e(TAG, "Cannot save conversation: JSON serialization failed");
+                return;
+            }
+
+            // Save to SharedPreferences
+            boolean success = prefs.edit().putString(sessionId, json).commit(); // Using commit() for immediate write
+
+            if (success) {
+                // Update session list
+                updateSessionList(sessionId);
+                Log.d(TAG, "✅ Saved conversation for session: " + sessionId + " with JSON length: " + json.length());
+            } else {
+                Log.e(TAG, "❌ Failed to write conversation to SharedPreferences");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Exception while saving conversation", e);
+        }
     }
 
     /**
-     * Load a conversation from SharedPreferences
+     * Load a conversation from SharedPreferences - ENHANCED with error handling
      */
     public List<Message> loadConversation(String sessionId) {
-        String json = prefs.getString(sessionId, null);
-        if (json == null) {
-            Log.d(TAG, "No saved conversation found for session: " + sessionId);
-            return new ArrayList<>();
-        }
-
         try {
+            if (sessionId == null || sessionId.isEmpty()) {
+                Log.w(TAG, "Cannot load conversation: sessionId is null or empty");
+                return new ArrayList<>();
+            }
+
+            String json = prefs.getString(sessionId, null);
+            if (json == null) {
+                Log.d(TAG, "No saved conversation found for session: " + sessionId);
+                return new ArrayList<>();
+            }
+
             Type type = new TypeToken<ArrayList<Message>>(){}.getType();
             List<Message> result = gson.fromJson(json, type);
-            Log.d(TAG, "Loaded conversation for session: " + sessionId + " with " + result.size() + " messages");
+
+            if (result == null) {
+                Log.w(TAG, "JSON deserialization returned null for session: " + sessionId);
+                return new ArrayList<>();
+            }
+
+            Log.d(TAG, "✅ Loaded conversation for session: " + sessionId + " with " + result.size() + " messages");
             return result;
         } catch (Exception e) {
-            Log.e(TAG, "Error loading conversation", e);
+            Log.e(TAG, "❌ Error loading conversation for session: " + sessionId, e);
             return new ArrayList<>();
         }
     }
 
     /**
-     * Resume a previous conversation by ID
+     * Resume a previous conversation by ID - THREAD SAFE
      */
     public void resumeConversation(String sessionId) {
-        List<Message> savedConversation = loadConversation(sessionId);
-        if (savedConversation != null && !savedConversation.isEmpty()) {
-            conversationHistory.clear();
-            conversationHistory.addAll(savedConversation);
-            currentSessionId = sessionId;
-            Log.d(TAG, "Resumed conversation with " + savedConversation.size() + " messages");
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Already on main thread
+            resumeConversationInternal(sessionId);
         } else {
-            Log.d(TAG, "No saved conversation found for session: " + sessionId);
+            // Post to main thread
+            mainHandler.post(() -> resumeConversationInternal(sessionId));
         }
     }
 
     /**
-     * Start a new conversation
+     * ADDED: Internal resume method
+     */
+    private void resumeConversationInternal(String sessionId) {
+        try {
+            List<Message> savedConversation = loadConversation(sessionId);
+            if (savedConversation != null && !savedConversation.isEmpty()) {
+                conversationHistory.clear();
+                conversationHistory.addAll(savedConversation);
+                currentSessionId = sessionId;
+                Log.d(TAG, "✅ Resumed conversation with " + savedConversation.size() + " messages");
+            } else {
+                Log.d(TAG, "No saved conversation found for session: " + sessionId + ", starting new");
+                startNewConversation();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error resuming conversation", e);
+            startNewConversation();
+        }
+    }
+
+    /**
+     * Start a new conversation - THREAD SAFE
      */
     public void startNewConversation() {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            // Already on main thread
+            startNewConversationInternal();
+        } else {
+            // Post to main thread
+            mainHandler.post(this::startNewConversationInternal);
+        }
+    }
+
+    /**
+     * ADDED: Internal start new conversation method
+     */
+    private void startNewConversationInternal() {
         conversationHistory.clear();
         currentSessionId = generateSessionId();
 
@@ -223,21 +341,27 @@ public class ConversationManager {
                 "Be encouraging, supportive, and share insights about chess strategy in your responses. " +
                 "Keep your answers concise and focused.");
 
-        Log.d(TAG, "Started new conversation with session: " + currentSessionId);
+        Log.d(TAG, "✅ Started new conversation with session: " + currentSessionId);
     }
 
     /**
-     * Get all available session IDs
+     * Get all available session IDs - ENHANCED with error handling
      */
     public List<String> getAllSessionIds() {
-        String sessionsJson = prefs.getString("session_list", "[]");
         try {
+            String sessionsJson = prefs.getString("session_list", "[]");
             Type type = new TypeToken<ArrayList<String>>(){}.getType();
             List<String> sessions = gson.fromJson(sessionsJson, type);
+
+            if (sessions == null) {
+                Log.w(TAG, "Session list deserialization returned null, returning empty list");
+                return new ArrayList<>();
+            }
+
             Log.d(TAG, "Retrieved " + sessions.size() + " session IDs");
             return sessions;
         } catch (Exception e) {
-            Log.e(TAG, "Error getting session list", e);
+            Log.e(TAG, "❌ Error getting session list", e);
             return new ArrayList<>();
         }
     }
@@ -250,37 +374,52 @@ public class ConversationManager {
     }
 
     /**
-     * Delete a saved conversation
+     * Delete a saved conversation - ENHANCED with error handling
      */
     public void deleteConversation(String sessionId) {
-        // Remove from SharedPreferences
-        prefs.edit().remove(sessionId).apply();
+        try {
+            if (sessionId == null || sessionId.isEmpty()) {
+                Log.w(TAG, "Cannot delete conversation: sessionId is null or empty");
+                return;
+            }
 
-        // Update session list
-        List<String> sessions = getAllSessionIds();
-        sessions.remove(sessionId);
-        String json = gson.toJson(sessions);
-        prefs.edit().putString("session_list", json).apply();
+            // Remove from SharedPreferences
+            prefs.edit().remove(sessionId).apply();
 
-        Log.d(TAG, "Deleted conversation: " + sessionId);
+            // Update session list
+            List<String> sessions = getAllSessionIds();
+            sessions.remove(sessionId);
+            String json = gson.toJson(sessions);
+            prefs.edit().putString("session_list", json).apply();
+
+            Log.d(TAG, "✅ Deleted conversation: " + sessionId);
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error deleting conversation: " + sessionId, e);
+        }
     }
 
     /**
      * Delete all saved conversations
      */
     public void deleteAllConversations() {
-        // Get all session IDs
-        List<String> sessions = getAllSessionIds();
+        try {
+            // Get all session IDs
+            List<String> sessions = getAllSessionIds();
 
-        // Remove each conversation
-        for (String sessionId : sessions) {
-            prefs.edit().remove(sessionId).apply();
+            // Remove each conversation
+            SharedPreferences.Editor editor = prefs.edit();
+            for (String sessionId : sessions) {
+                editor.remove(sessionId);
+            }
+
+            // Clear the session list
+            editor.putString("session_list", "[]");
+            editor.apply();
+
+            Log.d(TAG, "✅ Deleted all " + sessions.size() + " conversations");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error deleting all conversations", e);
         }
-
-        // Clear the session list
-        prefs.edit().putString("session_list", "[]").apply();
-
-        Log.d(TAG, "Deleted all " + sessions.size() + " conversations");
     }
 
     /**
@@ -331,15 +470,29 @@ public class ConversationManager {
     }
 
     /**
-     * Update the session list with a new session ID
+     * Update the session list with a new session ID - ENHANCED with error handling
      */
     private void updateSessionList(String sessionId) {
-        List<String> sessions = getAllSessionIds();
-        if (!sessions.contains(sessionId)) {
-            sessions.add(sessionId);
-            String json = gson.toJson(sessions);
-            prefs.edit().putString("session_list", json).apply();
-            Log.d(TAG, "Added session ID to list: " + sessionId);
+        try {
+            if (sessionId == null || sessionId.isEmpty()) {
+                Log.w(TAG, "Cannot update session list: sessionId is null or empty");
+                return;
+            }
+
+            List<String> sessions = getAllSessionIds();
+            if (!sessions.contains(sessionId)) {
+                sessions.add(sessionId);
+                String json = gson.toJson(sessions);
+
+                boolean success = prefs.edit().putString("session_list", json).commit();
+                if (success) {
+                    Log.d(TAG, "✅ Added session ID to list: " + sessionId);
+                } else {
+                    Log.e(TAG, "❌ Failed to update session list");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error updating session list", e);
         }
     }
 
@@ -379,6 +532,21 @@ public class ConversationManager {
                 conversationHistory.size()));
 
         conversationHistory = newHistory;
+        Log.d(TAG, "Trimmed conversation history to " + conversationHistory.size() + " messages");
+    }
+
+    /**
+     * ADDED: Get current session ID for debugging
+     */
+    public String getCurrentSessionId() {
+        return currentSessionId;
+    }
+
+    /**
+     * ADDED: Get conversation history size for debugging
+     */
+    public int getConversationSize() {
+        return conversationHistory.size();
     }
 
     /**

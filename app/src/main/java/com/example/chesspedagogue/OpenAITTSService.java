@@ -32,7 +32,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
- * Consolidated TTS service with proper chunk ordering and simplified voice instructions
+ * Consolidated TTS service with proper chunk ordering and ENHANCED cleanup
+ * FIXED: Proper resource management to prevent silent failures after multiple uses
  */
 public class OpenAITTSService {
     private static final String TAG = "OpenAITTSService";
@@ -66,12 +67,15 @@ public class OpenAITTSService {
     private boolean isSpeaking = false;
     private SharedPreferences prefs;
 
-    // Chunk management
+    // ENHANCED: Chunk management with better cleanup
     private final ConcurrentLinkedQueue<ChunkPlaybackItem> chunkQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isPlayingChunks = new AtomicBoolean(false);
     private final AtomicInteger chunkIdCounter = new AtomicInteger(0);
     private final Map<Integer, ChunkPlaybackItem> pendingChunks = new HashMap<>();
-    private int nextChunkToPlay = 0;
+    private final AtomicInteger nextChunkToPlay = new AtomicInteger(0); // FIXED: Use AtomicInteger
+
+    // ADDED: Track active players for cleanup
+    private final Map<Integer, MediaPlayer> activePlayers = new HashMap<>();
 
     private SpeechCallback speechCallback;
 
@@ -122,7 +126,7 @@ public class OpenAITTSService {
     }
 
     /**
-     * Main speak method with proper chunk ordering
+     * ENHANCED: Main speak method with proper cleanup between sessions
      */
     public void speak(String text, OnSpeechCompletedListener listener) {
         Log.d(TAG, "Speaking text, length: " + (text != null ? text.length() : 0));
@@ -134,12 +138,15 @@ public class OpenAITTSService {
             return;
         }
 
+        // CRITICAL: Clean up any previous session before starting new one
+        cleanupPreviousSession();
+
         isSpeaking = true;
         interruptRequested = false;
 
         // Reset chunk counter for this speech session
         chunkIdCounter.set(0);
-        nextChunkToPlay = 0;
+        nextChunkToPlay.set(0);
         chunkQueue.clear();
         pendingChunks.clear();
 
@@ -147,18 +154,19 @@ public class OpenAITTSService {
         TTSCallback orderingCallback = new TTSCallback() {
             @Override
             public void onSpeechStarted() {
-                Log.d(TAG, "Speech started");
+                Log.d(TAG, "✅ Speech started successfully");
             }
 
             @Override
             public void onSpeechReady(File audioFile) {
-                // This is handled in the chunk management
+                Log.d(TAG, "✅ Audio file ready: " + audioFile.getName());
             }
 
             @Override
             public void onSpeechCompleted() {
-                Log.d(TAG, "All chunks completed");
+                Log.d(TAG, "✅ All chunks completed successfully");
                 mainHandler.post(() -> {
+                    cleanupCurrentSession(); // ADDED: Clean up after completion
                     isSpeaking = false;
                     if (listener != null) {
                         listener.onSpeechCompleted();
@@ -168,8 +176,9 @@ public class OpenAITTSService {
 
             @Override
             public void onError(String errorMessage) {
-                Log.e(TAG, "TTS Error: " + errorMessage);
+                Log.e(TAG, "❌ TTS Error: " + errorMessage);
                 mainHandler.post(() -> {
+                    cleanupCurrentSession(); // ADDED: Clean up after error
                     isSpeaking = false;
                     if (listener != null) {
                         listener.onSpeechCompleted();
@@ -180,6 +189,75 @@ public class OpenAITTSService {
 
         // Generate a single chunk for the entire text
         generateTTSChunk(text, 0, true, orderingCallback);
+    }
+
+    /**
+     * ADDED: Clean up any previous session's resources
+     */
+    private void cleanupPreviousSession() {
+        try {
+            Log.d(TAG, "🧹 Cleaning up previous session...");
+
+            // Stop any active playback
+            if (currentPlayer != null) {
+                try {
+                    if (currentPlayer.isPlaying()) {
+                        currentPlayer.stop();
+                    }
+                    currentPlayer.release();
+                    currentPlayer = null;
+                } catch (Exception e) {
+                    Log.w(TAG, "Error cleaning up current player", e);
+                }
+            }
+
+            // Clean up all active players
+            synchronized (activePlayers) {
+                for (MediaPlayer player : activePlayers.values()) {
+                    try {
+                        if (player.isPlaying()) {
+                            player.stop();
+                        }
+                        player.release();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error releasing active player", e);
+                    }
+                }
+                activePlayers.clear();
+            }
+
+            // Clear all pending work
+            chunkQueue.clear();
+            pendingChunks.clear();
+            isPlayingChunks.set(false);
+
+            Log.d(TAG, "✅ Previous session cleaned up");
+        } catch (Exception e) {
+            Log.e(TAG, "Error during session cleanup", e);
+        }
+    }
+
+    /**
+     * ADDED: Clean up current session's resources
+     */
+    private void cleanupCurrentSession() {
+        try {
+            // Clean up temporary audio files
+            File cacheDir = new File(context.getCacheDir(), "tts_cache");
+            if (cacheDir.exists()) {
+                File[] files = cacheDir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.getName().startsWith("tts_") &&
+                                System.currentTimeMillis() - file.lastModified() > 60000) { // Older than 1 minute
+                            file.delete();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error cleaning up audio files", e);
+        }
     }
 
     /**
@@ -201,7 +279,7 @@ public class OpenAITTSService {
                 String enhancedText = createEnhancedText(text, selectedMaster);
                 payload.put("input", enhancedText);
 
-                Log.d(TAG, "Generating chunk " + chunkId + " with voice: " + voiceToUse);
+                Log.d(TAG, "🎤 Generating chunk " + chunkId + " with voice: " + voiceToUse);
 
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),
@@ -215,6 +293,7 @@ public class OpenAITTSService {
                         .post(body)
                         .build();
 
+                // CRITICAL: Use try-with-resources for proper connection cleanup
                 try (Response response = httpClient.newCall(request).execute()) {
                     if (!response.isSuccessful()) {
                         String error = "TTS API error: " + response.code();
@@ -225,23 +304,37 @@ public class OpenAITTSService {
                         return;
                     }
 
+                    if (response.body() == null) {
+                        Log.e(TAG, "TTS API returned null body");
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError("Empty response from TTS API"));
+                        }
+                        return;
+                    }
+
                     byte[] audioData = response.body().bytes();
                     File audioFile = saveAudioToFile(audioData);
+
+                    Log.d(TAG, "✅ Generated audio file: " + audioFile.getName() + " (" + audioData.length + " bytes)");
+
+                    // ALSO FIND this section in generateTTSChunk method (around line 350)
+                    // REPLACE the chunk creation section with this:
 
                     // Create chunk item and add to pending
                     ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
                             chunkId, audioFile, text, callback, isFinalChunk);
 
-                    // Add to pending chunks
+                    // CRITICAL FIX: Add to pending chunks AND trigger playback
                     synchronized (pendingChunks) {
                         pendingChunks.put(chunkId, chunkItem);
+                        Log.d(TAG, "📦 Added chunk " + chunkId + " to pending, total pending: " + pendingChunks.size());
 
-                        // Check if we can play any chunks now
+                        // IMMEDIATE: Check if we can play any chunks now
                         tryPlayNextChunks();
                     }
                 }
             } catch (Exception e) {
-                Log.e(TAG, "TTS error: " + e.getMessage(), e);
+                Log.e(TAG, "❌ TTS error: " + e.getMessage(), e);
                 if (callback != null) {
                     mainHandler.post(() -> callback.onError("TTS error: " + e.getMessage()));
                 }
@@ -264,24 +357,43 @@ public class OpenAITTSService {
     /**
      * Try to play the next chunks in order
      */
+    // FIND this method in your OpenAITTSService.java (around line 290)
+// REPLACE the tryPlayNextChunks method with this FIXED version:
+
+    /**
+     * FIXED: Try to play the next chunks in order with proper debugging
+     */
     private void tryPlayNextChunks() {
         synchronized (pendingChunks) {
+            Log.d(TAG, "🔄 tryPlayNextChunks - pendingChunks size: " + pendingChunks.size() +
+                    ", nextChunkToPlay: " + nextChunkToPlay.get() +
+                    ", chunkQueue size: " + chunkQueue.size() +
+                    ", isPlayingChunks: " + isPlayingChunks.get());
+
             // Add any ready chunks to the queue
-            while (pendingChunks.containsKey(nextChunkToPlay)) {
-                ChunkPlaybackItem chunk = pendingChunks.remove(nextChunkToPlay);
+            while (pendingChunks.containsKey(nextChunkToPlay.get())) {
+                ChunkPlaybackItem chunk = pendingChunks.remove(nextChunkToPlay.get());
                 chunkQueue.offer(chunk);
-                nextChunkToPlay++;
+                Log.d(TAG, "✅ Added chunk " + nextChunkToPlay.get() + " to playback queue");
+                nextChunkToPlay.incrementAndGet();
             }
 
             // Start playback if not already playing
             if (!isPlayingChunks.get() && !chunkQueue.isEmpty()) {
+                Log.d(TAG, "🎵 Starting playback - queue size: " + chunkQueue.size());
                 playNextChunk();
+            } else if (isPlayingChunks.get()) {
+                Log.d(TAG, "⏳ Already playing chunks, queue size: " + chunkQueue.size());
+            } else if (chunkQueue.isEmpty()) {
+                Log.d(TAG, "📭 Queue is empty, waiting for more chunks");
             }
         }
     }
 
+
+
     /**
-     * Play the next chunk in the queue
+     * ENHANCED: Play the next chunk in the queue with better error handling
      */
     private void playNextChunk() {
         if (interruptRequested) {
@@ -299,13 +411,19 @@ public class OpenAITTSService {
 
         mainHandler.post(() -> {
             try {
-                Log.d(TAG, "Playing chunk " + chunk.chunkId);
+                Log.d(TAG, "▶️ Playing chunk " + chunk.chunkId + " (" + chunk.audioFile.getName() + ")");
 
                 if (chunk.callback != null) {
                     chunk.callback.onSpeechReady(chunk.audioFile);
                 }
 
                 MediaPlayer player = new MediaPlayer();
+
+                // ADDED: Track this player for cleanup
+                synchronized (activePlayers) {
+                    activePlayers.put(chunk.chunkId, player);
+                }
+
                 player.setAudioAttributes(
                         new AudioAttributes.Builder()
                                 .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -316,15 +434,25 @@ public class OpenAITTSService {
                 player.setOnPreparedListener(mp -> {
                     currentPlayer = mp;
                     mp.start();
+                    Log.d(TAG, "▶️ Started playing chunk " + chunk.chunkId);
                     if (chunk.callback != null) {
                         chunk.callback.onSpeechStarted();
                     }
                 });
 
                 player.setOnCompletionListener(mp -> {
-                    Log.d(TAG, "Chunk " + chunk.chunkId + " completed");
-                    mp.release();
-                    currentPlayer = null;
+                    Log.d(TAG, "✅ Chunk " + chunk.chunkId + " completed successfully");
+
+                    // ENHANCED: Proper cleanup
+                    try {
+                        mp.release();
+                        synchronized (activePlayers) {
+                            activePlayers.remove(chunk.chunkId);
+                        }
+                        currentPlayer = null;
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error during player cleanup", e);
+                    }
 
                     // Play next chunk or finish
                     if (chunk.isFinalChunk && chunkQueue.isEmpty()) {
@@ -340,9 +468,18 @@ public class OpenAITTSService {
                 });
 
                 player.setOnErrorListener((mp, what, extra) -> {
-                    Log.e(TAG, "MediaPlayer error: " + what + ", " + extra);
-                    mp.release();
-                    currentPlayer = null;
+                    Log.e(TAG, "❌ MediaPlayer error for chunk " + chunk.chunkId + ": " + what + ", " + extra);
+
+                    // ENHANCED: Proper error cleanup
+                    try {
+                        mp.release();
+                        synchronized (activePlayers) {
+                            activePlayers.remove(chunk.chunkId);
+                        }
+                        currentPlayer = null;
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error during error cleanup", e);
+                    }
 
                     if (chunk.callback != null) {
                         chunk.callback.onError("Playback error: " + what);
@@ -357,7 +494,7 @@ public class OpenAITTSService {
                 player.prepareAsync();
 
             } catch (Exception e) {
-                Log.e(TAG, "Error playing chunk " + chunk.chunkId, e);
+                Log.e(TAG, "❌ Error playing chunk " + chunk.chunkId, e);
                 if (chunk.callback != null) {
                     chunk.callback.onError("Playback error: " + e.getMessage());
                 }
@@ -372,7 +509,7 @@ public class OpenAITTSService {
      * Enhanced streaming TTS with proper chunk ordering
      */
     public void speakStreamingText(String text, TTSCallback callback) {
-        Log.d(TAG, "Speaking streaming text with chunking");
+        Log.d(TAG, "🎤 Speaking streaming text with chunking");
 
         if (text == null || text.isEmpty()) {
             if (callback != null) {
@@ -381,12 +518,15 @@ public class OpenAITTSService {
             return;
         }
 
+        // CRITICAL: Clean up before starting
+        cleanupPreviousSession();
+
         isSpeaking = true;
         interruptRequested = false;
 
         // Reset chunk management
         chunkIdCounter.set(0);
-        nextChunkToPlay = 0;
+        nextChunkToPlay.set(0);
         chunkQueue.clear();
         pendingChunks.clear();
 
@@ -454,10 +594,10 @@ public class OpenAITTSService {
     }
 
     /**
-     * Interrupt current speech
+     * ENHANCED: Interrupt current speech with thorough cleanup
      */
     public void interrupt() {
-        Log.d(TAG, "Interrupting speech");
+        Log.d(TAG, "🛑 Interrupting speech with full cleanup");
         interruptRequested = true;
 
         // Clear all pending chunks
@@ -477,6 +617,21 @@ public class OpenAITTSService {
             }
         }
 
+        // ENHANCED: Stop all active players
+        synchronized (activePlayers) {
+            for (MediaPlayer player : activePlayers.values()) {
+                try {
+                    if (player.isPlaying()) {
+                        player.stop();
+                    }
+                    player.release();
+                } catch (Exception e) {
+                    Log.w(TAG, "Error stopping active player", e);
+                }
+            }
+            activePlayers.clear();
+        }
+
         isSpeaking = false;
         isPlayingChunks.set(false);
 
@@ -493,6 +648,10 @@ public class OpenAITTSService {
         pendingChunks.clear();
         isPlayingChunks.set(false);
         isSpeaking = false;
+
+        synchronized (activePlayers) {
+            activePlayers.clear();
+        }
     }
 
     public void setApiKey(String apiKey) {
@@ -569,8 +728,13 @@ public class OpenAITTSService {
         interrupt();
     }
 
+    /**
+     * ENHANCED: Shutdown with thorough cleanup
+     */
     public void shutdown() {
+        Log.d(TAG, "🛑 Shutting down TTS service");
         stopPlayback();
+        cleanupCurrentSession();
         executorService.shutdown();
     }
 

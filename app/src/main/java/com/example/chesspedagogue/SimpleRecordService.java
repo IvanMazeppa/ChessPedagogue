@@ -18,7 +18,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
 import androidx.core.content.ContextCompat;
@@ -80,7 +79,6 @@ public class SimpleRecordService extends Service {
     private TextView coachThinkingText;
     private ServiceCallback callback;
 
-
     // Auto-stop recording after a period of silence
     private ScheduledExecutorService silenceDetector;
     private long lastSoundTimestamp = 0;
@@ -93,10 +91,9 @@ public class SimpleRecordService extends Service {
     private OpenAITTSService ttsService;
     private volatile boolean servicesWarmed = false;
 
-
-    // Add as class member in SimpleRecordService
+    // FIXED: Properly configured Groq client with connection management
     private static final OkHttpClient groqClient = new OkHttpClient.Builder()
-            .connectTimeout(2, TimeUnit.SECONDS)  // Even faster!
+            .connectTimeout(2, TimeUnit.SECONDS)
             .readTimeout(5, TimeUnit.SECONDS)
             .writeTimeout(2, TimeUnit.SECONDS)
             .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
@@ -118,8 +115,6 @@ public class SimpleRecordService extends Service {
         openAIService = OpenAIService.getInstance();
         apiKey = getApiKeyFromPreferences();
 
-        // Initialize the agent manager
-
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
             Log.d(TAG, "🚀 Initializing services in parallel");
@@ -135,16 +130,23 @@ public class SimpleRecordService extends Service {
             servicesWarmed = true;
         }, executorService);
 
-        // In onCreate() of SimpleRecordService
+        // FIXED: Pre-warm Groq connection properly
         executorService.execute(() -> {
             try {
-                // Pre-warm Groq connection
+                // Pre-warm Groq connection with proper resource management
                 Request warmupRequest = new Request.Builder()
                         .url("https://api.groq.com/openai/v1/models")
                         .header("Authorization", "Bearer " + groqApiKey)
                         .build();
-                groqClient.newCall(warmupRequest).execute();
-                Log.d(TAG, "✅ Groq connection pre-warmed!");
+
+                // CRITICAL: Use try-with-resources to ensure connection is closed
+                try (Response warmupResponse = groqClient.newCall(warmupRequest).execute()) {
+                    if (warmupResponse.isSuccessful()) {
+                        Log.d(TAG, "✅ Groq connection pre-warmed successfully!");
+                    } else {
+                        Log.w(TAG, "Groq pre-warm returned: " + warmupResponse.code());
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, "Groq pre-warm failed: " + e.getMessage());
             }
@@ -160,7 +162,7 @@ public class SimpleRecordService extends Service {
                         Log.d(TAG, "✅ Assistant ready: " + currentAssistantId);
 
                         FineTunedModelManager.getInstance(SimpleRecordService.this).createConversationThreadAsync(new FineTunedModelManager.Callback<String>() {
-                        @Override
+                            @Override
                             public void onSuccess(String threadId) {
                                 currentThreadId = threadId;
                                 Log.d(TAG, "✅ Thread ready: " + currentThreadId);
@@ -185,7 +187,6 @@ public class SimpleRecordService extends Service {
         }).start();
 
         openAIService.setApiKey(apiKey);
-
 
         // Initialize conversation manager
         conversationManager = ConversationManager.getInstance(this);
@@ -252,6 +253,15 @@ public class SimpleRecordService extends Service {
     public void onDestroy() {
         stopRecording();
         executorService.shutdown();
+
+        // CRITICAL: Shutdown the Groq client's connection pool
+        try {
+            groqClient.dispatcher().executorService().shutdown();
+            groqClient.connectionPool().evictAll();
+        } catch (Exception e) {
+            Log.e(TAG, "Error shutting down Groq client", e);
+        }
+
         Log.d(TAG, "SimpleRecordService destroyed");
         super.onDestroy();
     }
@@ -473,8 +483,6 @@ public class SimpleRecordService extends Service {
                         new OpenAIService.StreamingChatCallback() {
                             private long lastChunkTime = System.currentTimeMillis();
 
-                            // In processWithUltraFastStreaming method, update the chunk creation logic:
-
                             @Override
                             public void onPartialResponse(String partialText, boolean isFirst) {
                                 Log.d(TAG, "📝 Partial: " + partialText.substring(0, Math.min(20, partialText.length())) + "...");
@@ -567,7 +575,6 @@ public class SimpleRecordService extends Service {
                                     });
                                 }
                             }
-
                             @Override
                             public void onComplete(String fullResponseText) {
                                 Log.d(TAG, "✅ Complete response received");
@@ -577,13 +584,12 @@ public class SimpleRecordService extends Service {
                                     String remainingText = currentChunk.get().toString().trim();
                                     if (!remainingText.isEmpty()) {
                                         final int finalChunkId = chunkCounter.get();
-                                        final int ttsFinalChunkId = ttsChunkCounter.get(); // Get final TTS chunk ID
+                                        final int ttsFinalChunkId = ttsChunkCounter.get();
 
                                         mainHandler.post(() -> {
                                             Log.d(TAG, "🎤 Speaking final chunk " + finalChunkId);
 
                                             tts.speakChunk(remainingText, ttsFinalChunkId, true, new OpenAITTSService.TTSCallback() {
-
                                                 @Override
                                                 public void onSpeechStarted() {
                                                     Log.d(TAG, "Started speaking final chunk");
@@ -611,22 +617,32 @@ public class SimpleRecordService extends Service {
                                     }
                                 }
 
-                                // Save conversation
+                                // CRITICAL FIX: Save conversation on main thread
                                 String enrichedResponse = modelManager.enrichResponseWithPersonality(
                                         fullResponseText, selectedMaster);
 
-                                conversationManager.addMessage("user", transcribedText);
-                                conversationManager.addMessage("assistant", enrichedResponse);
-                                conversationManager.saveCurrentConversation();
-
+                                // Save conversation using thread-safe methods
                                 mainHandler.post(() -> {
+                                    try {
+                                        Log.d(TAG, "💾 Saving conversation - User: " + transcribedText.substring(0, Math.min(30, transcribedText.length())) + "...");
+                                        Log.d(TAG, "💾 Saving conversation - Assistant: " + enrichedResponse.substring(0, Math.min(30, enrichedResponse.length())) + "...");
+
+                                        conversationManager.addMessage("user", transcribedText);
+                                        conversationManager.addMessage("assistant", enrichedResponse);
+                                        conversationManager.saveCurrentConversation();
+
+                                        Log.d(TAG, "✅ Conversation saved successfully! Session: " + conversationManager.getCurrentSessionId());
+                                        Log.d(TAG, "✅ Conversation size: " + conversationManager.getConversationSize() + " messages");
+                                    } catch (Exception e) {
+                                        Log.e(TAG, "❌ Error saving conversation", e);
+                                    }
+
                                     updateResponseUI(enrichedResponse);
                                     if (callback != null) {
                                         callback.onResponseReceived(enrichedResponse);
                                     }
                                 });
                             }
-
                             @Override
                             public void onError(Exception e) {
                                 Log.e(TAG, "❌ Streaming error: " + e.getMessage());
@@ -693,11 +709,10 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * NEW: Ultra-fast streaming with personality-enhanced responses
+     * FIXED: Ultra-fast Groq transcription with proper resource management
      */
     private String transcribeWithGroq(byte[] pcmData) {
         long groqStart = System.currentTimeMillis();
-        Response response = null;
 
         try {
             Log.d(TAG, "🚀 Starting GROQ transcription - audio size: " + pcmData.length + " bytes");
@@ -722,45 +737,35 @@ public class SimpleRecordService extends Service {
                     .post(requestBody)
                     .build();
 
-            // Execute request
-            response = groqClient.newCall(request).execute();
+            // CRITICAL FIX: Use try-with-resources to ensure proper connection cleanup
+            try (Response response = groqClient.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseBody = response.body().string();
 
-            // Read the body ONCE and store it
-            String responseBody = null;
-            if (response.body() != null) {
-                responseBody = response.body().string();
-            }
+                    try {
+                        JSONObject json = new JSONObject(responseBody);
+                        String transcribedText = json.getString("text");
 
-            // Now process the stored response
-            if (response.isSuccessful() && responseBody != null) {
-                try {
-                    JSONObject json = new JSONObject(responseBody);
-                    String transcribedText = json.getString("text");
+                        long groqTime = System.currentTimeMillis() - groqStart;
+                        Log.d(TAG, "✅ GROQ transcribed in " + groqTime + "ms: " + transcribedText);
 
-                    long groqTime = System.currentTimeMillis() - groqStart;
-                    Log.d(TAG, "✅ GROQ transcribed in " + groqTime + "ms: " + transcribedText);
-
-                    return transcribedText;
-                } catch (Exception e) {
-                    Log.e(TAG, "Error parsing Groq response", e);
+                        return transcribedText;
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error parsing Groq response", e);
+                        return "Error transcribing speech";
+                    }
+                } else {
+                    Log.e(TAG, "Groq API error: " + response.code());
+                    if (response.body() != null) {
+                        Log.e(TAG, "Error details: " + response.body().string());
+                    }
                     return "Error transcribing speech";
                 }
-            } else {
-                Log.e(TAG, "Groq API error: " + response.code());
-                if (responseBody != null) {
-                    Log.e(TAG, "Error details: " + responseBody);
-                }
-                return "Error transcribing speech";
-            }
+            } // Response is automatically closed here by try-with-resources
 
         } catch (Exception e) {
             Log.e(TAG, "Error in Groq transcription", e);
             return "Error transcribing speech";
-        } finally {
-            // ALWAYS close the response
-            if (response != null) {
-                response.close();
-            }
         }
     }
 
@@ -781,12 +786,6 @@ public class SimpleRecordService extends Service {
                 return "I'm having trouble analyzing that position. Could you try rephrasing?";
         }
     }
-
-
-    /**
-     * NEW: Ultra-fast Assistants API processing
-     */
-
 
     /**
      * Build enhanced context quickly
@@ -1037,7 +1036,7 @@ public class SimpleRecordService extends Service {
         }
     }
 
-    // Add this helper method to convert PCM to WAV
+    // Helper method to convert PCM to WAV
     private byte[] convertPcmToWav(byte[] pcmData, int sampleRate, int channels, int bitsPerSample) {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
 
@@ -1096,7 +1095,6 @@ public class SimpleRecordService extends Service {
         String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
 
         // Update the TTS service
-        // We don't need the null check anymore since we're using the singleton
         SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
         String voiceStyle = prefs.getString("voice_style", "auto");
         boolean usePersonality = prefs.getBoolean("use_master_personality", true);

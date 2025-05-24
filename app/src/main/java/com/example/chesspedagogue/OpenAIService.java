@@ -38,6 +38,7 @@ import okhttp3.Response;
 /**
  * Unified OpenAI service that handles all OpenAI API interactions.
  * Consolidated from OpenAIService, OpenAIClient, and UnifiedOpenAIService.
+ * FIXED: Proper ConversationManager constructor usage
  */
 public class OpenAIService {
     private static final String TAG = "OpenAIService";
@@ -264,6 +265,9 @@ public class OpenAIService {
     public void generateStreamingChatResponse(String systemPrompt, String userMessage,
                                               StreamingChatCallback callback) {
         executorService.execute(() -> {
+            Response response = null;
+            BufferedReader reader = null;
+
             try {
                 JSONObject requestJson = new JSONObject();
                 requestJson.put("model", getModelForRequest());
@@ -290,10 +294,10 @@ public class OpenAIService {
                         .post(body)
                         .build();
 
-                Response response = streamingClient.newCall(request).execute();
+                response = streamingClient.newCall(request).execute();
 
                 if (response.isSuccessful() && response.body() != null) {
-                    BufferedReader reader = new BufferedReader(
+                    reader = new BufferedReader(
                             new InputStreamReader(response.body().byteStream()));
 
                     StringBuilder completeResponse = new StringBuilder();
@@ -362,70 +366,50 @@ public class OpenAIService {
                 }
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError(e));
-            }
-        });
-    }
-
-    /**
-     * Transcribe audio
-     */
-    public void transcribeAudio(byte[] audioData, ApiCallback<String> callback) {
-        executorService.execute(() -> {
-            try {
-                RequestBody requestBody = new MultipartBody.Builder()
-                        .setType(MultipartBody.FORM)
-                        .addFormDataPart("file", "audio.wav",
-                                RequestBody.create(MediaType.parse("audio/wav"), audioData))
-                        .addFormDataPart("model", "whisper-1")
-                        .addFormDataPart("language", "en")
-                        .addFormDataPart("prompt", "Chess game analysis")
-                        .build();
-
-                Request request = new Request.Builder()
-                        .url(TRANSCRIBE_URL)
-                        .header("Authorization", getAuthorizationHeader())
-                        .post(requestBody)
-                        .build();
-
-                Response response = client.newCall(request).execute();
-
-                if (response.isSuccessful() && response.body() != null) {
-                    String responseJson = response.body().string();
-                    JSONObject json = new JSONObject(responseJson);
-                    String transcribedText = json.getString("text");
-                    mainHandler.post(() -> callback.onSuccess(transcribedText));
-                } else {
-                    String errorMsg = "Transcription error: " + response.code();
-                    mainHandler.post(() -> callback.onFailure(new IOException(errorMsg)));
+            } finally {
+                // CRITICAL: Always close resources
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error closing reader", e);
+                    }
                 }
-            } catch (Exception e) {
-                mainHandler.post(() -> callback.onFailure(e));
+                if (response != null) {
+                    response.close();
+                }
             }
         });
     }
 
     /**
-     * Simple chat completion
+     * Simple chat completion - FIXED: Proper ConversationManager constructor
      */
     public String getChatCompletion(String systemPrompt, String userMessage) {
-        ConversationManager tempManager = new ConversationManager(null, null, null);
-        tempManager.clear();
+        if (context == null) {
+            Log.e(TAG, "Context not initialized! Call init(context) first.");
+            return "Error: Service not properly initialized.";
+        }
+
+        // FIXED: Use proper constructor with context
+        ConversationManager tempManager = ConversationManager.getInstance(context);
+        tempManager.clear(); // Clear any existing conversation
         tempManager.addSystemMessage(systemPrompt);
         tempManager.addUserMessage(userMessage);
         return getChatCompletionWithHistory(tempManager);
     }
 
     /**
-     * Synchronous version of generateChatResponse for backward compatibility
+     * Synchronous version of generateChatResponse for backward compatibility - FIXED
      */
     public String generateChatResponseSync(String systemPrompt, String userMessage) throws IOException {
-        final String[] result = new String[1];
-        final Exception[] error = new Exception[1];
-        final Object lock = new Object();
+        // FIXED: Use proper constructor with context
+        if (context == null) {
+            throw new IOException("Context not initialized! Call init(context) first.");
+        }
 
-        // Create a temporary conversation manager
-        ConversationManager tempManager = new ConversationManager(null, null, null);
-        tempManager.clear();
+        ConversationManager tempManager = ConversationManager.getInstance(context);
+        tempManager.clear(); // Clear any existing conversation
         tempManager.addSystemMessage(systemPrompt);
         tempManager.addUserMessage(userMessage);
 
@@ -467,8 +451,12 @@ public class OpenAIService {
                     .post(RequestBody.create(MediaType.parse("application/json"), requestBody))
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error creating assistant", e);
             return null;
@@ -482,8 +470,12 @@ public class OpenAIService {
                     .post(RequestBody.create(MediaType.parse("application/json"), "{}"))
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error creating thread", e);
             return null;
@@ -497,8 +489,12 @@ public class OpenAIService {
                     .post(RequestBody.create(MediaType.parse("application/json"), messageBody))
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error creating message", e);
             return null;
@@ -512,8 +508,12 @@ public class OpenAIService {
                     .post(RequestBody.create(MediaType.parse("application/json"), runBody))
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error creating run", e);
             return null;
@@ -527,8 +527,12 @@ public class OpenAIService {
                     .get()
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving run", e);
             return null;
@@ -542,8 +546,12 @@ public class OpenAIService {
                     .get()
                     .build();
 
-            Response response = client.newCall(request).execute();
-            return response.body().string();
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error listing messages", e);
             return null;
@@ -581,6 +589,27 @@ public class OpenAIService {
                 }
             }
         });
+    }
+
+    /**
+     * ADDED: Cleanup method for proper resource management
+     */
+    public void cleanup() {
+        try {
+            if (client != null) {
+                client.dispatcher().executorService().shutdown();
+                client.connectionPool().evictAll();
+            }
+            if (streamingClient != null) {
+                streamingClient.dispatcher().executorService().shutdown();
+                streamingClient.connectionPool().evictAll();
+            }
+            if (executorService != null) {
+                executorService.shutdown();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error during cleanup", e);
+        }
     }
 
     /**

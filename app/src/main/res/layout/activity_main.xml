@@ -41,15 +41,6 @@
                     android:textSize="16sp"
                     android:layout_marginStart="8dp"
                     android:fontFamily="serif" />
-               <!--  <Button
-                    android:id="@+id/btnCoachMatch"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Coach Match: Tal vs Fischer"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp"/> -->
-
-
 
                 <!-- Beautiful Action Buttons with Wood Styling -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -95,15 +86,52 @@
                 android:layout_height="wrap_content"
                 android:visibility="gone" />
 
-            <!-- Chess Board (Keep your beautiful wood board!) -->
-            <com.example.chesspedagogue.ChessBoardView
-                android:id="@+id/chessBoardView"
+            <!-- ✨ PERFECTED: Chess Board with Perfect Space Utilization ✨ -->
+            <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="3" />
+                android:layout_weight="3"
+                android:padding="8dp">
+
+                <!-- 🏁 Chess Board - Perfectly Centered and Sized -->
+                <com.example.chesspedagogue.ChessBoardView
+                    android:id="@+id/chessBoardView"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintStart_toEndOf="@+id/evaluationBarView"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintDimensionRatio="1:1"
+                    app:layout_constraintVertical_bias="0.5"
+                    app:layout_constraintHorizontal_bias="0.5" />
+
+                <!-- 🎯 Evaluation Bar - Perfectly Aligned with Chess Board -->
+                <com.example.chesspedagogue.EvaluationBarView
+                    android:id="@+id/evaluationBarView"
+                    android:layout_width="18dp"
+                    android:layout_height="0dp"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/chessBoardView"
+                    app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
+                    android:layout_marginEnd="2dp"
+                    android:background="@android:color/transparent" />
+
+                <!-- Loading Indicator - Subtle Overlay -->
+                <ProgressBar
+                    android:id="@+id/evaluationProgressBar"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    app:layout_constraintStart_toStartOf="@+id/evaluationBarView"
+                    app:layout_constraintEnd_toEndOf="@+id/evaluationBarView"
+                    app:layout_constraintTop_toTopOf="@+id/evaluationBarView"
+                    app:layout_constraintBottom_toBottomOf="@+id/evaluationBarView"
+                    android:visibility="gone"
+                    style="?android:attr/progressBarStyleSmall" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             <!-- Enhanced Bottom Panel - Smart Coach/Move History Toggle -->
-            <!-- THIS IS WHERE IT BELONGS - INSIDE THE LINEARLAYOUT! -->
             <androidx.cardview.widget.CardView
                 style="@style/WoodCard"
                 android:layout_width="match_parent"

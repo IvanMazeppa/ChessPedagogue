@@ -409,13 +409,58 @@ public class ChessBoardView extends View {
         return "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Starting position
     }
 
+
+
     /**
      * Check if it's white's turn
      */
+    /**
+     * NEW METHOD: Determine whose turn it is based on the current FEN
+     */
+    /**
+     * NEW METHOD: Determine whose turn it is based on the current FEN
+     * This now properly parses the actual game state!
+     */
     public boolean isWhiteTurn() {
-        // In a real implementation, you would check your game logic
-        return true; // For now, default to white's turn
+        // Try to get the real FEN from the game state first
+        String currentFen = getRealCurrentFEN();
+
+        if (currentFen != null && currentFen.length() > 10) {
+            // FEN format: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+            // The character after the board position indicates whose turn: 'w' for white, 'b' for black
+            String[] parts = currentFen.split(" ");
+            if (parts.length > 1) {
+                boolean isWhitesTurn = "w".equals(parts[1]);
+                Log.d("ChessBoardView", "🔄 Current turn from FEN: " + (isWhitesTurn ? "White" : "Black"));
+                return isWhitesTurn;
+            }
+        }
+
+        // Fallback to white's turn if we can't determine
+        Log.w("ChessBoardView", "⚠️ Could not determine turn from FEN, defaulting to white");
+        return true;
     }
+
+    /**
+     * Get the real current FEN from the connected ViewModel
+     */
+    private String getRealCurrentFEN() {
+        // This will be set by MainActivity when the FEN changes
+        return this.realCurrentFEN;
+    }
+
+    // Add this field to store the real FEN
+    private String realCurrentFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+    /**
+     * NEW METHOD: Update the real FEN when the game state changes
+     * This will be called by MainActivity
+     */
+    public void setRealCurrentFEN(String fen) {
+        this.realCurrentFEN = fen;
+        Log.d("ChessBoardView", "📝 Updated real FEN: " + fen);
+    }
+
 
     /**
      * Check if the current player is in check
