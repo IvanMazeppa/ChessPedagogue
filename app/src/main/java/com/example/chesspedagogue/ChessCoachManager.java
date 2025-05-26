@@ -61,7 +61,6 @@ public class ChessCoachManager {
         if ("botvinnik".equals(master)) {
             Log.d(TAG, "Switching to Botvinnik (Assistants API)");
             useAssistantsApi = true;
-            currentAssistantId = FineTunedModelManager.getInstance(context).getBotvinnikAssistantId();
             currentThreadId = FineTunedModelManager.getInstance(context).createConversationThread();
 
         } else {

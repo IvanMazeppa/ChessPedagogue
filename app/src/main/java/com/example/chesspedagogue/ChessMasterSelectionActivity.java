@@ -2,6 +2,7 @@ package com.example.chesspedagogue;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.Toast;
@@ -38,12 +39,61 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             saveMasterSelection();
             finish();
         });
+        setupCardAnimations();
     }
 
     private void saveMasterSelection() {
         // Simply call the method with the selected master
         saveMasterSelection(selectedMaster);
     }
+
+    private void setupCardAnimations() {
+        // Get all card views
+        CardView[] cards = {
+                findViewById(R.id.talCard),
+                findViewById(R.id.kramnikCard),
+                findViewById(R.id.karpovCard),
+                findViewById(R.id.fischerCard),
+                findViewById(R.id.laskerCard),
+                findViewById(R.id.kasparovCard),
+                findViewById(R.id.capablancaCard),
+                findViewById(R.id.carlsenCard),
+                findViewById(R.id.morphyCard),
+                findViewById(R.id.anandCard),
+                findViewById(R.id.botvinnikCard),
+                findViewById(R.id.alekhineCard)
+        };
+
+        // Add beautiful touch animations to each card
+        for (CardView card : cards) {
+            if (card != null) {
+                card.setOnTouchListener((v, event) -> {
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_DOWN:
+                            // Scale down slightly when pressed
+                            v.animate()
+                                    .scaleX(0.95f)
+                                    .scaleY(0.95f)
+                                    .setDuration(100)
+                                    .start();
+                            break;
+                        case MotionEvent.ACTION_UP:
+                        case MotionEvent.ACTION_CANCEL:
+                            // Scale back up with a nice bounce
+                            v.animate()
+                                    .scaleX(1.0f)
+                                    .scaleY(1.0f)
+                                    .setDuration(150)
+                                    .setInterpolator(new android.view.animation.OvershootInterpolator())
+                                    .start();
+                            break;
+                    }
+                    return false; // Let the click event continue
+                });
+            }
+        }
+    }
+
 
     private void initializeRadioButtons() {
         // Find all radio buttons

@@ -259,6 +259,125 @@ public class OpenAIService {
         return "Sorry, I couldn't generate a response.";
     }
 
+    // ADD this method to your OpenAIService.java class
+
+    /**
+     * Get chat completion using a specific model (including fine-tuned models)
+     */
+
+    // REPLACE the getChatCompletionWithModel method in OpenAIService.java with this corrected version:
+
+    /**
+     * Get chat completion using a specific model (including fine-tuned models)
+     * Uses your existing HTTP client structure
+     */
+    public String getChatCompletionWithModel(String modelId, String systemPrompt, String userMessage) {
+        if (!hasApiKey()) {
+            Log.e(TAG, "API key not available");
+            return "API key not configured";
+        }
+
+        try {
+            Log.d(TAG, "🎭 Using fine-tuned model: " + modelId);
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", modelId);  // Use the fine-tuned model
+            requestBody.put("max_tokens", 300);
+            requestBody.put("temperature", 0.8); // Higher temp for Tal's creativity
+
+            JSONArray messages = new JSONArray();
+
+            // Add system message
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", systemPrompt);
+            messages.put(systemMessage);
+
+            // Add user message
+            JSONObject userMsg = new JSONObject();
+            userMsg.put("role", "user");
+            userMsg.put("content", userMessage);
+            messages.put(userMsg);
+
+            requestBody.put("messages", messages);
+
+            // Make API call using your existing makeApiCall method (or similar)
+            String response = makeOpenAIRequest("https://api.openai.com/v1/chat/completions", requestBody.toString());
+
+            if (response != null && !response.trim().isEmpty()) {
+                try {
+                    JSONObject jsonResponse = new JSONObject(response);
+
+                    if (jsonResponse.has("choices")) {
+                        JSONArray choices = jsonResponse.getJSONArray("choices");
+                        if (choices.length() > 0) {
+                            JSONObject firstChoice = choices.getJSONObject(0);
+                            JSONObject message = firstChoice.getJSONObject("message");
+                            String content = message.getString("content");
+
+                            Log.d(TAG, "✅ Tal's voice: " + content.substring(0, Math.min(100, content.length())) + "...");
+                            return content;
+                        }
+                    }
+
+                    Log.e(TAG, "No choices in response");
+                    return "No response generated";
+
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing JSON response", e);
+                    return "Error parsing response";
+                }
+            } else {
+                Log.e(TAG, "Empty or null response from API");
+                return "No response from API";
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error with fine-tuned model", e);
+
+            // Fallback to base model on any error
+            Log.w(TAG, "🔄 Falling back to base model due to error");
+            return getChatCompletion(systemPrompt, userMessage);
+        }
+    }
+
+    /**
+     * Helper method to make OpenAI requests using your existing HTTP infrastructure
+     * You may need to adjust this to match your existing API call method
+     */
+    private String makeOpenAIRequest(String url, String jsonBody) {
+        try {
+            // If you have a different method name for making HTTP requests,
+            // replace this with your existing method
+            // For example, if you have: makeHttpRequest(), callOpenAIAPI(), etc.
+
+            // This is a fallback that should work with most OkHttp setups
+            OkHttpClient client = new OkHttpClient();
+
+            MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+            RequestBody body = RequestBody.create(JSON, jsonBody);
+
+            Request request = new Request.Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .post(body)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error making OpenAI request", e);
+            return null;
+        }
+    }
+
     /**
      * Streaming chat completion for ultra-low latency
      */

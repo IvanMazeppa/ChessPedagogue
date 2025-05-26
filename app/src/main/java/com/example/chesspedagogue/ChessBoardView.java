@@ -71,8 +71,6 @@ public class ChessBoardView extends View {
 
     /* ───────── init ───────── */
     private void init() {
-        // Remove the wood texture loading and use elegant solid colors instead
-
         // Create clean, sophisticated colors that match your wood theme
         lightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         lightPaint.setColor(0xFFF5F5DC); // Elegant ivory/cream color
@@ -89,7 +87,9 @@ public class ChessBoardView extends View {
         selectedPaint.setStrokeWidth(dp * 4);
         selectedPaint.setColor(0xFFFFC107);
         selectedPaint.setShadowLayer(dp * 6, 0, 0, 0x66FFC107);
-        setLayerType(LAYER_TYPE_HARDWARE, selectedPaint);
+
+        // TEMPORARY FIX: Comment out hardware layer to fix inflation issue
+        // setLayerType(LAYER_TYPE_HARDWARE, selectedPaint);
 
         lastMovePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         lastMovePaint.setColor(0x334B69FF);

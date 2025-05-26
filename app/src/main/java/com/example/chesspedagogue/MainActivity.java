@@ -63,17 +63,15 @@ public class MainActivity extends AppCompatActivity {
     private String selectedSquare = null;
     private boolean isSpeaking = false;
 
-    // UI elements
+    // UI elements - FIXED: All changed to FloatingActionButton to match XML
     private FloatingActionButton conversationButton;
     private ChallengeData currentChallenge;
     private boolean inChallengeMode = false;
 
-    private FloatingActionButton gameAnalysisButton;
-    private FloatingActionButton coachMatchBtn;
-    private FloatingActionButton coachButton;
     private FloatingActionButton speakButton;
+    private FloatingActionButton gameAnalysisButton;  // FIXED: Changed from Button to FloatingActionButton
+    private FloatingActionButton coachButton;         // FIXED: Changed from Button to FloatingActionButton
     private ChessBoardView chessBoardView;
-    private TextView coachMessageText;
 
     // NEW: Evaluation Bar UI Elements! 🎯
     private EvaluationBarView evaluationBarView;
@@ -245,45 +243,6 @@ public class MainActivity extends AppCompatActivity {
         return squares;
     }
 
-    private void testDirectTTS() {
-        String testText = "Testing direct TTS. Can you hear me now?";
-        OpenAITTSService tts = OpenAITTSService.getInstance(this);
-
-        // Make sure API key is set
-        String apiKey = ApiKeyConfig.getApiKey(this);
-        Log.d(TAG, "Setting API key for TTS, length: " + (apiKey != null ? apiKey.length() : 0));
-        tts.setApiKey(apiKey);
-
-        tts.speakDirect(testText, new OpenAITTSService.TTSCallback() {
-            @Override
-            public void onSpeechStarted() {
-                Log.d(TAG, "✅ Direct TTS test started!");
-            }
-
-            @Override
-            public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "✅ Direct TTS audio ready: " + audioFile.getAbsolutePath() +
-                        " (size: " + audioFile.length() + " bytes)");
-            }
-
-            @Override
-            public void onSpeechCompleted() {
-                Log.d(TAG, "✅ Direct TTS test completed!");
-                runOnUiThread(() ->
-                        Toast.makeText(MainActivity.this, "TTS test completed!", Toast.LENGTH_SHORT).show()
-                );
-            }
-
-            @Override
-            public void onError(String errorMessage) {
-                Log.e(TAG, "❌ Direct TTS test error: " + errorMessage);
-                runOnUiThread(() ->
-                        Toast.makeText(MainActivity.this, "TTS error: " + errorMessage, Toast.LENGTH_LONG).show()
-                );
-            }
-        });
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -299,6 +258,13 @@ public class MainActivity extends AppCompatActivity {
         // Initialize all UI elements
         initializeViews();
 
+        // ENHANCED: Add null check for chessBoardView before proceeding
+        if (chessBoardView == null) {
+            Log.e(TAG, "❌ CRITICAL: ChessBoardView is null after initializeViews!");
+            Toast.makeText(this, "Error initializing chess board. Please restart the app.", Toast.LENGTH_LONG).show();
+            return;
+        }
+
         // Initialize game ViewModel with configuration
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
@@ -306,9 +272,8 @@ public class MainActivity extends AppCompatActivity {
         com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
         Button debugButton = new Button(this);
-
-        // Set up click listeners
-        setupClickListeners();
+        // Set up click listeners - this is what was missing!
+        setupAllButtonClickListeners();
 
         // Check API key
         checkApiKey();
@@ -327,6 +292,84 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind to the SimpleRecordService
         bindRecordService();
+    }
+
+    /**
+     * Set up all button click listeners - this connects your beautiful UI to your existing methods!
+     */
+    private void setupAllButtonClickListeners() {
+        Log.d(TAG, "🎯 Setting up all button click listeners");
+
+        // Game Analysis Button - connects to your existing openAnalysisScreen() method
+        if (gameAnalysisButton != null) {
+            gameAnalysisButton.setOnClickListener(v -> {
+                Log.d(TAG, "🔍 Game Analysis button clicked");
+                openAnalysisScreen();
+            });
+            Log.d(TAG, "✅ Game Analysis button listener set");
+        } else {
+            Log.w(TAG, "⚠️ gameAnalysisButton is null!");
+        }
+
+        // Coach Button - connects to your existing showCoachAdvice() method
+        if (coachButton != null) {
+            coachButton.setOnClickListener(v -> {
+                Log.d(TAG, "🎓 Coach button clicked");
+                showCoachAdvice();
+                showCoachConversation(); // Also show the coach panel
+            });
+            Log.d(TAG, "✅ Coach button listener set");
+        } else {
+            Log.w(TAG, "⚠️ coachButton is null!");
+        }
+
+        // Speak Button (FAB) - using your existing voice recording logic
+        if (speakButton != null) {
+            speakButton.setOnClickListener(v -> {
+                Log.d(TAG, "🎤 Speak button clicked");
+
+                OpenAITTSService tts = OpenAITTSService.getInstance(this);
+                if (tts != null && tts.isSpeaking()) {
+                    tts.stopSpeech();
+                    tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
+                        @Override
+                        public void onSpeechCompleted(String text) {
+                            // Not used here
+                        }
+
+                        @Override
+                        public void onSpeechInterrupted() {
+                            onSpeechInterrupted(); // Call your existing method
+                        }
+                    });
+                } else {
+                    showMicIndicator(true);
+                    startRecording(); // Use your existing method
+                }
+            });
+            Log.d(TAG, "✅ Speak button listener set");
+        } else {
+            Log.w(TAG, "⚠️ speakButton is null!");
+        }
+
+        // Additional buttons in the coach panel
+        Button askFollowUpButton = findViewById(R.id.askFollowUpButton);
+        if (askFollowUpButton != null) {
+            askFollowUpButton.setOnClickListener(v -> {
+                Log.d(TAG, "🗣️ Ask follow-up button clicked");
+                startVoiceRecording();
+            });
+        }
+
+        Button dismissCoachButton = findViewById(R.id.dismissCoachButton);
+        if (dismissCoachButton != null) {
+            dismissCoachButton.setOnClickListener(v -> {
+                Log.d(TAG, "❌ Dismiss coach button clicked");
+                hideCoachConversation();
+            });
+        }
+
+        Log.d(TAG, "🎉 All button click listeners set up successfully!");
     }
 
     /**
@@ -577,33 +620,6 @@ public class MainActivity extends AppCompatActivity {
         ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
     }
 
-    // In your MainActivity.java or wherever you handle the main game loop
-    // Make sure to call this when returning from settings or at the start of a conversation:
-    // CHANGE TO:
-    private void testAssistantsAPI() {
-        // Run this on a background thread
-        new Thread(() -> {
-            try {
-                // Initialize the Manager
-                FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
-
-                // Get Botvinnik Assistant instead of creating Tal
-                String assistantId = modelManager.getBotvinnikAssistantId();
-                Log.d("ChessTest", "Using Botvinnik assistant: " + assistantId);
-
-                // ... rest of the method with appropriate changes ...
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Assistants API test failed: " + e.getMessage(), e);
-
-                // Show error on UI thread
-                runOnUiThread(() -> {
-                    Toast.makeText(MainActivity.this,
-                            "Test failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
-                });
-            }
-        }).start();
-    }
-
     /**
      * Show the coach conversation panel over the move history
      */
@@ -705,35 +721,6 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void setupSpeakButton() {
-        FloatingActionButton speakButton = findViewById(R.id.speakButton);
-        if (speakButton != null) {
-            speakButton.setOnClickListener(v -> {
-                Log.d(TAG, "Speak button clicked");
-
-                OpenAITTSService tts = OpenAITTSService.getInstance(this);
-                if (tts != null && tts.isSpeaking()) {
-                    tts.stopSpeech();
-                    tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
-                        @Override
-                        public void onSpeechCompleted(String text) {
-                            // Not used here
-                        }
-
-                        @Override
-                        public void onSpeechInterrupted() {
-                            onSpeechInterrupted(); // Call our method
-                        }
-                    });
-                } else {
-                    // Normal recording flow
-                    showMicIndicator(true);
-                    startRecording();
-                }
-            });
-        }
-    }
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present
@@ -759,6 +746,12 @@ public class MainActivity extends AppCompatActivity {
      * Set up the chess board and game observers
      */
     private void setupChessBoard() {
+        // ENHANCED: Add null check at the beginning
+        if (chessBoardView == null) {
+            Log.e(TAG, "❌ setupChessBoard called but chessBoardView is null!");
+            return;
+        }
+
         // Set up observers to watch for changes in the game state
         gameViewModel.getCurrentFEN().observe(this, fen -> {
             // Update the board view when the FEN changes
@@ -1107,45 +1100,6 @@ public class MainActivity extends AppCompatActivity {
         startRecording();
     }
 
-    /**
-     * Initialize all view references
-     */
-    private void initializeViews() {
-        try {
-            gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
-            coachButton = findViewById(R.id.coachButton);
-            speakButton = findViewById(R.id.speakButton);
-            chessBoardView = findViewById(R.id.chessBoardView);
-
-            // NEW: Initialize evaluation bar UI elements! 🎯
-            evaluationBarView = findViewById(R.id.evaluationBarView);
-            evaluationProgressBar = findViewById(R.id.evaluationProgressBar);
-
-            // ===== CRITICAL: Initialize move history UI element =====
-            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
-
-            if (evaluationBarView == null) {
-                Log.w(TAG, "⚠️ Warning: evaluationBarView not found in layout!");
-            } else {
-                Log.d(TAG, "✅ Successfully found evaluationBarView in layout");
-            }
-
-            if (evaluationProgressBar == null) {
-                Log.w(TAG, "⚠️ Warning: evaluationProgressBar not found in layout!");
-            } else {
-                Log.d(TAG, "✅ Successfully found evaluationProgressBar in layout");
-            }
-
-            if (moveHistoryTextView == null) {
-                Log.w(TAG, "⚠️ Warning: moveHistoryTextView not found in layout!");
-            } else {
-                Log.d(TAG, "✅ Successfully found moveHistoryTextView in layout");
-            }
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error finding view: " + e.getMessage());
-        }
-    }
 
     // Shows the listening animation
     private void showListeningFeedback() {
@@ -1388,100 +1342,78 @@ public class MainActivity extends AppCompatActivity {
     /**
      * Set up click listeners for all buttons
      */
-    private void setupClickListeners() {
-        // Set up the speak button (our main voice interaction button)
-        setupSpeakButton();
 
-        // Game Analysis Button - Opens the analysis screen
-        if (gameAnalysisButton != null) {// Update your analysis button click handler:
-            gameAnalysisButton.setOnClickListener(v -> {
-                // Make sure we have current game state
-                String currentFen = chessBoardView.getCurrentFEN();
-                List<String> currentMoves = GameHistoryManager.getInstance().getCurrentGameMoves();
-                testDirectTTS();
+    // Replace your setupSpeakButton method with this:
+    private void setupSpeakButton() {
 
-                Log.d(TAG, "Analysis - FEN: " + currentFen);
-                Log.d(TAG, "Analysis - Moves: " + currentMoves.size() + " moves");
+        FloatingActionButton speakButton = findViewById(R.id.speakButton);
+        if (speakButton != null) {
+            speakButton.setOnClickListener(v -> {
+                Log.d(TAG, "Speak button clicked");
 
-                Intent intent = new Intent(this, GameAnalysisActivity.class);
-                intent.putExtra("FEN", currentFen);
-                intent.putStringArrayListExtra("MOVE_HISTORY", new ArrayList<>(currentMoves));
+                OpenAITTSService tts = OpenAITTSService.getInstance(this);
+                if (tts != null && tts.isSpeaking()) {
+                    tts.stopSpeech();
+                    tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
+                        @Override
+                        public void onSpeechCompleted(String text) {
+                            // Not used here
+                        }
 
-                startActivity(intent);
-            });
-        }
-
-        if (coachMatchBtn != null) {
-            coachMatchBtn.setOnClickListener(v -> {
-                try {
-                    CoachVsCoachSimulator simulator = new CoachVsCoachSimulator(
-                            this,
-                            // You may need to pass the correct instance for GameRepository and ChessCoachManager:
-                            // If using ViewModelProvider, get the instance as you do elsewhere
-                            new GameRepository(this),
-                            ChessCoachManager.getInstance(this),
-                            "tal",
-                            "fischer",
-                            1000, // move think time in ms
-                            200   // move limit (for runaway games)
-                    );
-                    simulator.start();
-                } catch (Exception e) {
-                    Log.e("MainActivity", "Error starting Coach Match: " + e.getMessage(), e);
+                        @Override
+                        public void onSpeechInterrupted() {
+                            onSpeechInterrupted(); // Call our method
+                        }
+                    });
+                } else {
+                    // Normal recording flow
+                    showMicIndicator(true);
+                    startRecording();
                 }
-            });
-        }
-
-
-        // Coach Button - Offers challenges and advice
-        if (coachButton != null) {
-            coachButton.setOnClickListener(v -> {
-                offerChallenge();
-            });
-
-            coachButton.setOnLongClickListener(v -> {
-                if (isServiceBound && recordService != null) {
-                    recordService.interruptSpeech();
-                    Toast.makeText(MainActivity.this, "Conversation reset", Toast.LENGTH_SHORT).show();
-                    recordService.resetConversation();
-                }
-                return true;
-            });
-        }
-
-        // Follow-up Button in Coach Card
-        Button askFollowUpButton = findViewById(R.id.askFollowUpButton);
-        if (askFollowUpButton != null) {
-            askFollowUpButton.setOnClickListener(v -> {
-                showListeningFeedback();
-                startVoiceRecording();
-
-                if (isServiceBound && recordService != null) {
-                    recordService.setIsFollowUpQuestion(true);
-                }
-            });
-        }
-
-
-        // Dismiss Button in Coach Panel
-        Button dismissButton = findViewById(R.id.dismissCoachButton);
-        if (dismissButton != null) {
-            dismissButton.setOnClickListener(v -> {
-                hideCoachConversation(); // Use our new method!
-            });
-        }
-
-        // NEW: Long-click on evaluation bar to manually refresh evaluation! 🎯
-        if (evaluationBarView != null) {
-            evaluationBarView.setOnLongClickListener(v -> {
-                Log.d(TAG, "🔄 Manual evaluation refresh requested");
-                Toast.makeText(this, "Refreshing position evaluation...", Toast.LENGTH_SHORT).show();
-                gameViewModel.requestPositionEvaluation();
-                return true;
             });
         }
     }
 
+    // And update your initializeViews method to use Button instead of FloatingActionButton:
+    private void initializeViews() {
+        try {
+            Log.d(TAG, "🔍 Starting to find views...");
+
+            // Find all views once - no duplicates!
+            // FIXED: All changed to FloatingActionButton to match XML
+            gameAnalysisButton = findViewById(R.id.gameAnalysisButton);
+            Log.d(TAG, "gameAnalysisButton: " + (gameAnalysisButton != null ? "✅ Found" : "❌ NULL"));
+
+            coachButton = findViewById(R.id.coachButton);
+            Log.d(TAG, "coachButton: " + (coachButton != null ? "✅ Found" : "❌ NULL"));
+
+            speakButton = findViewById(R.id.speakButton);
+            Log.d(TAG, "speakButton: " + (speakButton != null ? "✅ Found" : "❌ NULL"));
+
+            // The critical one - let's see what happens here
+            Log.d(TAG, "🎯 Looking for chessBoardView...");
+            chessBoardView = findViewById(R.id.chessBoardView);
+            Log.d(TAG, "chessBoardView: " + (chessBoardView != null ? "✅ Found" : "❌ NULL"));
+
+            if (chessBoardView == null) {
+                Log.e(TAG, "❌ ChessBoardView is NULL! This suggests a layout inflation issue.");
+            }
+
+            // NEW: Initialize evaluation bar UI elements! 🎯
+            evaluationBarView = findViewById(R.id.evaluationBarView);
+            Log.d(TAG, "evaluationBarView: " + (evaluationBarView != null ? "✅ Found" : "❌ NULL"));
+
+            evaluationProgressBar = findViewById(R.id.evaluationProgressBar);
+            Log.d(TAG, "evaluationProgressBar: " + (evaluationProgressBar != null ? "✅ Found" : "❌ NULL"));
+
+            // ===== CRITICAL: Initialize move history UI element =====
+            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
+            Log.d(TAG, "moveHistoryTextView: " + (moveHistoryTextView != null ? "✅ Found" : "❌ NULL"));
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Exception during view finding: " + e.getMessage(), e);
+        }
+    }
     // For parsing AI response into a challenge
     private void parseChallengeResponse(String response) {
         try {
@@ -1530,37 +1462,6 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Couldn't create a good challenge. Let's try again!", Toast.LENGTH_SHORT).show();
             inChallengeMode = false;
         }
-    }
-
-    // Add this to your MainActivity test method or create a simple test button
-    private void testBotvinnikAssistant() {
-        new Thread(() -> {
-            try {
-                Log.d(TAG, "🔍 Testing Botvinnik Assistant creation");
-
-                // Get the assistant manager
-                FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
-
-                // Create Botvinnik assistant
-                String assistantId = modelManager.createBotvinnikAssistant();
-                Log.d(TAG, "✅ Created Botvinnik assistant: " + assistantId);
-
-                if (assistantId != null) {
-                    runOnUiThread(() -> {
-                        Toast.makeText(this,
-                                "Botvinnik assistant created successfully!",
-                                Toast.LENGTH_LONG).show();
-                    });
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error creating Botvinnik: " + e.getMessage());
-                runOnUiThread(() -> {
-                    Toast.makeText(this,
-                            "Error creating Botvinnik: " + e.getMessage(),
-                            Toast.LENGTH_LONG).show();
-                });
-            }
-        }).start();
     }
 
     // Helper for parsing

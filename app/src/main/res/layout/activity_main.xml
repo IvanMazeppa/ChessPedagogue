@@ -32,51 +32,58 @@
                 <!-- Status Text with Beautiful Typography -->
                 <TextView
                     android:id="@+id/statusTextView"
-                    style="@style/WoodBodyText"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="2dp"
                     android:layout_weight="1"
+                    android:fontFamily="serif"
                     android:text="Welcome to Chess Pedagogue!"
                     android:textColor="@color/text_on_light"
-                    android:textSize="16sp"
-                    android:layout_marginStart="8dp"
-                    android:fontFamily="serif" />
+                    android:textSize="16sp" />
 
-                <!-- Beautiful Action Buttons with Wood Styling -->
+                <!-- Beautiful Action Buttons with Regular Button Styling -->
+                <!-- 🌟 RESTORED: Beautiful FloatingActionButtons with Wood Theme -->
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/gameAnalysisButton"
-                    style="@style/WoodFAB"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
-                    android:contentDescription="Analyze Position"
-                    android:src="@android:drawable/ic_menu_search"
-                    app:backgroundTint="@color/gold"
-                    app:tint="@color/brown_dark"
-                    app:fabSize="mini" />
+                    android:contentDescription="Game Analysis"
+                    android:src="@drawable/ic_game_analysis"
+                    app:backgroundTint="@color/chess_light_square"
+                    app:elevation="6dp"
+                    app:fabSize="mini"
+                    app:rippleColor="@color/cream"
+                    app:tint="@color/brown_dark" />
+
+                <!-- FIXED: FloatingActionButton with proper Material Components styling -->
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/coachButton"
-                    style="@style/WoodFAB"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:contentDescription="Ask Coach"
-                    android:src="@android:drawable/ic_dialog_info"
+                    android:layout_marginEnd="2dp"
+                    android:contentDescription="Chess Coach"
+                    android:src="@drawable/ic_chess_puzzle"
                     app:backgroundTint="@color/bronze"
-                    app:tint="@color/cream"
-                    app:fabSize="mini" />
+                    app:elevation="6dp"
+                    app:fabSize="mini"
+                    app:rippleColor="@color/gold"
+                    app:tint="@color/brown_dark" />
 
                 <com.google.android.material.floatingactionbutton.FloatingActionButton
                     android:id="@+id/speakButton"
-                    style="@style/WoodFAB"
+                    style="@style/WoodFAB.Voice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:contentDescription="Speak to Coach"
-                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:src="@drawable/ic_speak_to_coach"
                     app:backgroundTint="@color/warning_amber"
-                    app:tint="@color/brown_dark"
-                    app:fabSize="mini" />
+                    app:elevation="6dp"
+                    app:fabSize="mini"
+                    app:rippleColor="@color/cream"
+                    app:tint="@color/brown_dark" />
+
             </LinearLayout>
 
             <!-- Challenge Container -->
@@ -98,13 +105,14 @@
                     android:id="@+id/chessBoardView"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
-                    app:layout_constraintStart_toEndOf="@+id/evaluationBarView"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
+                    android:layout_marginBottom="32dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintDimensionRatio="1:1"
-                    app:layout_constraintVertical_bias="0.5"
-                    app:layout_constraintHorizontal_bias="0.5" />
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.5"
+                    app:layout_constraintStart_toEndOf="@+id/evaluationBarView"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.5" />
 
                 <!-- 🎯 Evaluation Bar - Perfectly Aligned with Chess Board -->
                 <com.example.chesspedagogue.EvaluationBarView
@@ -133,7 +141,6 @@
 
             <!-- Enhanced Bottom Panel - Smart Coach/Move History Toggle -->
             <androidx.cardview.widget.CardView
-                style="@style/WoodCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="8dp"
@@ -255,7 +262,6 @@
 
                                 <Button
                                     android:id="@+id/askFollowUpButton"
-                                    style="@style/WoodButton"
                                     android:layout_width="wrap_content"
                                     android:layout_height="32dp"
                                     android:layout_marginEnd="6dp"
@@ -267,7 +273,6 @@
 
                                 <Button
                                     android:id="@+id/dismissCoachButton"
-                                    style="@style/WoodButton"
                                     android:layout_width="wrap_content"
                                     android:layout_height="32dp"
                                     android:text="×"
@@ -297,7 +302,6 @@
                                     android:layout_width="24dp"
                                     android:layout_height="24dp"
                                     android:src="@android:drawable/ic_btn_speak_now"
-                                    app:tint="@color/warning_amber"
                                     android:layout_marginEnd="8dp" />
 
                                 <TextView
@@ -321,7 +325,6 @@
 
                             <TextView
                                 android:id="@+id/coachMessageText"
-                                style="@style/WoodBodyText"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:textSize="14sp"

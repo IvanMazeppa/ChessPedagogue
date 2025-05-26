@@ -596,6 +596,10 @@ public class OpenAITTSService {
     /**
      * ENHANCED: Interrupt current speech with thorough cleanup
      */
+
+    /**
+     * ENHANCED: Interrupt current speech with thorough cleanup and better error handling
+     */
     public void interrupt() {
         Log.d(TAG, "🛑 Interrupting speech with full cleanup");
         interruptRequested = true;
@@ -604,29 +608,42 @@ public class OpenAITTSService {
         chunkQueue.clear();
         pendingChunks.clear();
 
-        // Stop current playback
+        // Stop current playback with better error handling
         if (currentPlayer != null) {
             try {
+                // SAFER: Check state before calling isPlaying()
                 if (currentPlayer.isPlaying()) {
                     currentPlayer.stop();
                 }
-                currentPlayer.release();
+            } catch (IllegalStateException e) {
+                // Player might be in an invalid state - just release it
+                Log.w(TAG, "MediaPlayer in invalid state during interrupt, releasing");
+            } finally {
+                try {
+                    currentPlayer.release();
+                } catch (Exception e) {
+                    Log.w(TAG, "Error releasing MediaPlayer during interrupt", e);
+                }
                 currentPlayer = null;
-            } catch (Exception e) {
-                Log.e(TAG, "Error stopping player", e);
             }
         }
 
-        // ENHANCED: Stop all active players
+        // ENHANCED: Stop all active players with better error handling
         synchronized (activePlayers) {
             for (MediaPlayer player : activePlayers.values()) {
                 try {
                     if (player.isPlaying()) {
                         player.stop();
                     }
-                    player.release();
-                } catch (Exception e) {
-                    Log.w(TAG, "Error stopping active player", e);
+                } catch (IllegalStateException e) {
+                    // Player in invalid state, skip to release
+                    Log.w(TAG, "Active player in invalid state, skipping stop");
+                } finally {
+                    try {
+                        player.release();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error releasing active player", e);
+                    }
                 }
             }
             activePlayers.clear();
@@ -638,6 +655,8 @@ public class OpenAITTSService {
         if (speechCallback != null) {
             speechCallback.onSpeechInterrupted();
         }
+
+        Log.d(TAG, "✅ Speech interruption completed safely");
     }
 
     /**

@@ -87,6 +87,9 @@ public class SimpleRecordService extends Service {
     private final ExecutorService executorService = Executors.newFixedThreadPool(8); // More threads
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
+    // NEW: Three-stage response manager
+    private ThreeStageResponseManager threeStageManager;
+
     // NEW: Pre-warming for ultra-fast response
     private OpenAITTSService ttsService;
     private volatile boolean servicesWarmed = false;
@@ -99,6 +102,10 @@ public class SimpleRecordService extends Service {
             .connectionPool(new ConnectionPool(5, 30, TimeUnit.SECONDS))
             .build();
 
+    // NEW: Track current response stage for UI updates
+    private ThreeStageResponseManager.ResponseStage currentStage = null;
+    private String latestResponse = "";
+
     public boolean isCurrentlySpeaking() {
         return OpenAITTSService.getInstance(this) != null && OpenAITTSService.getInstance(this).isSpeaking();
     }
@@ -106,7 +113,7 @@ public class SimpleRecordService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d(TAG, "SimpleRecordService created - starting optimizations");
+        Log.d(TAG, "SimpleRecordService created - starting optimizations with 3-stage system");
 
         // Pre-warm all services for instant response
         preWarmServices();
@@ -114,6 +121,9 @@ public class SimpleRecordService extends Service {
         // Initialize OpenAI service
         openAIService = OpenAIService.getInstance();
         apiKey = getApiKeyFromPreferences();
+
+        // NEW: Initialize 3-stage response manager
+        threeStageManager = ThreeStageResponseManager.getInstance(this);
 
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
@@ -151,40 +161,6 @@ public class SimpleRecordService extends Service {
                 Log.w(TAG, "Groq pre-warm failed: " + e.getMessage());
             }
         });
-
-        // Initialize assistant in background
-        new Thread(() -> {
-            try {
-                FineTunedModelManager.getInstance(this).getBotvinnikAssistantIdFullyAsync(new FineTunedModelManager.Callback<String>() {
-                    @Override
-                    public void onSuccess(String assistantId) {
-                        currentAssistantId = assistantId;
-                        Log.d(TAG, "✅ Assistant ready: " + currentAssistantId);
-
-                        FineTunedModelManager.getInstance(SimpleRecordService.this).createConversationThreadAsync(new FineTunedModelManager.Callback<String>() {
-                            @Override
-                            public void onSuccess(String threadId) {
-                                currentThreadId = threadId;
-                                Log.d(TAG, "✅ Thread ready: " + currentThreadId);
-                            }
-
-                            @Override
-                            public void onError(String errorMessage) {
-                                Log.e(TAG, "Error creating thread: " + errorMessage);
-                            }
-                        });
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        Log.e(TAG, "Error getting assistant ID: " + errorMessage);
-                    }
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error initializing assistant: " + e.getMessage(), e);
-            }
-        }).start();
 
         openAIService.setApiKey(apiKey);
 
@@ -385,17 +361,17 @@ public class SimpleRecordService extends Service {
 
         // Process the recording if file exists and has content
         if (outputFile != null && outputFile.exists() && outputFile.length() > 0) {
-            processRecordingUltraFast();
+            processRecordingWithThreeStages();
         } else {
             Log.d(TAG, "No recording to process");
         }
     }
 
     /**
-     * NEW: Ultra-fast parallel processing pipeline
+     * NEW: Process recording using the 3-stage system
      */
-    private void processRecordingUltraFast() {
-        Log.d(TAG, "⚡ Starting ULTRA-FAST parallel processing pipeline");
+    private void processRecordingWithThreeStages() {
+        Log.d(TAG, "⚡ Starting 3-stage processing pipeline");
 
         if (callback != null) {
             callback.onProcessingStateChanged(true);
@@ -412,27 +388,26 @@ public class SimpleRecordService extends Service {
             return;
         }
 
-        // Start parallel processing
+        // Start processing
         executorService.execute(() -> {
             try {
                 long startTime = System.currentTimeMillis();
 
-                // NEW: Use Groq for ultra-fast transcription!
+                // Transcribe with Groq
                 byte[] pcmData = readFileToBytes(outputFile);
-
                 String transcribedText = transcribeWithGroq(pcmData);
 
                 long transcriptionTime = System.currentTimeMillis() - startTime;
                 Log.d(TAG, "⏱️ GROQ Transcription completed in " + transcriptionTime + "ms");
 
-                // Build context in parallel
+                // Build context
                 String gameContext = buildEnhancedContext();
 
-                // Process with streaming response
-                processWithUltraFastStreaming(transcribedText, gameContext);
+                // Process with 3-stage system
+                processWithThreeStageSystem(transcribedText, gameContext);
 
             } catch (Exception e) {
-                Log.e(TAG, "Error in ultra-fast processing", e);
+                Log.e(TAG, "Error in 3-stage processing", e);
                 mainHandler.post(() -> {
                     updateUIForProcessing(false);
                     String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again.";
@@ -443,228 +418,155 @@ public class SimpleRecordService extends Service {
         });
     }
 
-    private void processWithUltraFastStreaming(String transcribedText, String gameContext) {
+    /**
+     * NEW: Process with the 3-stage system
+     */
+    private void processWithThreeStageSystem(String transcribedText, String gameContext) {
         try {
-            Log.d(TAG, "🚀 Starting ULTRA-FAST streaming response with personality enhancement");
+            Log.d(TAG, "🎭 Starting 3-stage response system");
 
-            String selectedMaster = getSelectedChessMaster();
-            FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
+            // Reset stage tracking
+            currentStage = null;
+            latestResponse = "";
 
-            if ("botvinnik".equals(selectedMaster)) {
-                processWithAssistantsAPIUltraFast(transcribedText, gameContext);
-            } else {
-                String systemPrompt = modelManager.getEnhancedSystemPromptForSelectedMaster();
+            // Use ThreeStageResponseManager
+            threeStageManager.processThreeStageResponse(transcribedText, gameContext,
+                    new ThreeStageResponseManager.ThreeStageCallback() {
 
-                // SMART CONTEXT: Check if the question is about chess positions or general chess topics
-                String enhancedUserMessage;
+                        @Override
+                        public void onStageResponse(ThreeStageResponseManager.ResponseStage stage, String response, boolean isFinal) {
+                            Log.d(TAG, "✨ " + stage.getDisplayName() + " completed: " + response.substring(0, Math.min(50, response.length())) + "...");
 
-                // Check if the question is about the current position
-                boolean isPositionQuestion = checkIfPositionRelated(transcribedText);
+                            currentStage = stage;
+                            latestResponse = response;
 
-                if (isPositionQuestion && gameContext != null && !gameContext.trim().isEmpty()) {
-                    // Include game context for position-specific questions
-                    enhancedUserMessage = modelManager.generateContextualPrompt(
-                            transcribedText, gameContext);
-                } else {
-                    // For general chess questions, don't include position context
-                    enhancedUserMessage = modelManager.generateContextualPrompt(
-                            transcribedText, null);
-                }
+                            // Update UI based on stage
+                            switch (stage) {
+                                case STAGE_1_QUICK:
+                                    // Quick response - show immediately and start speaking
+                                    updateUIForProcessing(false);
+                                    updateResponseUI(response);
+                                    updateStageIndicator("Quick Response");
+                                    break;
 
-                // Track response state
-                StringBuilder fullResponse = new StringBuilder();
-                AtomicReference<StringBuilder> currentChunk = new AtomicReference<>(new StringBuilder());
-                AtomicBoolean firstChunkSent = new AtomicBoolean(false);
-                AtomicInteger chunkCounter = new AtomicInteger(0);
-                OpenAITTSService tts = OpenAITTSService.getInstance(this);
-                AtomicInteger ttsChunkCounter = new AtomicInteger(0);
+                                case STAGE_2_ENHANCED:
+                                    // Enhanced response - update UI with better response
+                                    updateResponseUI(response);
+                                    updateStageIndicator("Enhanced Analysis");
 
-                openAIService.generateStreamingChatResponse(systemPrompt, enhancedUserMessage,
-                        new OpenAIService.StreamingChatCallback() {
-                            private long lastChunkTime = System.currentTimeMillis();
-
-                            @Override
-                            public void onPartialResponse(String partialText, boolean isFirst) {
-                                Log.d(TAG, "📝 Partial: " + partialText.substring(0, Math.min(20, partialText.length())) + "...");
-
-                                fullResponse.append(partialText);
-                                currentChunk.get().append(partialText);
-
-                                // Determine when to speak a chunk
-                                boolean shouldSpeak = false;
-                                String chunkToSpeak = null;
-
-                                // OPTIMIZATION: Increase chunk size for fewer API calls
-                                // Check for natural breaking points
-                                if (currentChunk.get().toString().contains(".") ||
-                                        currentChunk.get().toString().contains("!") ||
-                                        currentChunk.get().toString().contains("?")) {
-                                    // Find the last complete sentence
-                                    String text = currentChunk.get().toString();
-                                    int lastPeriod = Math.max(text.lastIndexOf('.'),
-                                            Math.max(text.lastIndexOf('!'),
-                                                    text.lastIndexOf('?')));
-
-                                    if (lastPeriod > 0) {
-                                        chunkToSpeak = text.substring(0, lastPeriod + 1).trim();
-                                        currentChunk.set(new StringBuilder(text.substring(lastPeriod + 1)));
-                                        shouldSpeak = true;
-                                    }
-                                }
-                                // OPTIMIZATION: Increase minimum chunk size from 80 to 150 characters
-                                else if (currentChunk.get().length() > 150) {
-                                    // Find a good breaking point (comma, space)
-                                    String text = currentChunk.get().toString();
-                                    int breakPoint = text.lastIndexOf(',');
-                                    if (breakPoint < 80) {
-                                        breakPoint = text.lastIndexOf(' ', 120);
-                                    }
-
-                                    if (breakPoint > 40) {
-                                        chunkToSpeak = text.substring(0, breakPoint).trim();
-                                        currentChunk.set(new StringBuilder(text.substring(breakPoint)));
-                                        shouldSpeak = true;
-                                    }
-                                }
-                                // OPTIMIZATION: Increase timeout from 1500ms to 2500ms
-                                else if (System.currentTimeMillis() - lastChunkTime > 2500 && currentChunk.get().length() > 40) {
-                                    chunkToSpeak = currentChunk.get().toString().trim();
-                                    currentChunk.set(new StringBuilder());
-                                    shouldSpeak = true;
-                                }
-
-                                // Then update the speaking section to use this counter:
-                                if (shouldSpeak && chunkToSpeak != null && !chunkToSpeak.isEmpty()) {
-                                    lastChunkTime = System.currentTimeMillis();
-                                    final String textToSpeak = chunkToSpeak;
-                                    final int chunkId = chunkCounter.getAndIncrement();
-                                    final boolean isFirstChunk = !firstChunkSent.getAndSet(true);
-                                    final int ttsChunkId = ttsChunkCounter.getAndIncrement(); // NEW LINE!
-
-                                    mainHandler.post(() -> {
-                                        if (isFirstChunk) {
-                                            updateUIForProcessing(false);
-                                            updateResponseUI(textToSpeak);
-                                        }
-
-                                        Log.d(TAG, "🎤 Speaking chunk " + chunkId + ": " +
-                                                textToSpeak.substring(0, Math.min(30, textToSpeak.length())) + "...");
-
-                                        // Instead of speakDirect, use the streaming method with proper chunk ID
-                                        tts.speakChunk(textToSpeak, ttsChunkId, false, new OpenAITTSService.TTSCallback() {
-                                            @Override
-                                            public void onSpeechStarted() {
-                                                Log.d(TAG, "Started speaking chunk " + chunkId);
-                                            }
-
-                                            @Override
-                                            public void onSpeechReady(File audioFile) {
-                                                // Audio ready
-                                            }
-
+                                    // Interrupt current TTS and speak enhanced response
+                                    if (ttsService != null) {
+                                        ttsService.interrupt();
+                                        ttsService.speak(response, new OnSpeechCompletedListener() {
                                             @Override
                                             public void onSpeechCompleted() {
-                                                Log.d(TAG, "Completed speaking chunk " + chunkId);
-                                            }
-
-                                            @Override
-                                            public void onError(String errorMessage) {
-                                                Log.e(TAG, "Error speaking chunk " + chunkId + ": " + errorMessage);
+                                                Log.d(TAG, "🎵 Stage 2 speech completed");
                                             }
                                         });
-                                    });
-                                }
-                            }
-                            @Override
-                            public void onComplete(String fullResponseText) {
-                                Log.d(TAG, "✅ Complete response received");
+                                    }
+                                    break;
 
-                                // Speak any remaining text
-                                if (currentChunk.get().length() > 0) {
-                                    String remainingText = currentChunk.get().toString().trim();
-                                    if (!remainingText.isEmpty()) {
-                                        final int finalChunkId = chunkCounter.get();
-                                        final int ttsFinalChunkId = ttsChunkCounter.get();
+                                case STAGE_3_DEEP:
+                                    // Deep analysis - final response
+                                    updateResponseUI(response);
+                                    updateStageIndicator("Master Insights");
 
-                                        mainHandler.post(() -> {
-                                            Log.d(TAG, "🎤 Speaking final chunk " + finalChunkId);
-
-                                            tts.speakChunk(remainingText, ttsFinalChunkId, true, new OpenAITTSService.TTSCallback() {
-                                                @Override
-                                                public void onSpeechStarted() {
-                                                    Log.d(TAG, "Started speaking final chunk");
-                                                }
-
-                                                @Override
-                                                public void onSpeechReady(File audioFile) {
-                                                    // Audio ready
-                                                }
-
+                                    // Use the final response for TTS if it's significantly different
+                                    if (isFinal && isSignificantlyDifferent(latestResponse, response)) {
+                                        if (ttsService != null) {
+                                            ttsService.interrupt();
+                                            ttsService.speak(response, new OnSpeechCompletedListener() {
                                                 @Override
                                                 public void onSpeechCompleted() {
-                                                    Log.d(TAG, "✅ All speech completed");
-                                                    if (callback != null) {
-                                                        callback.onResponseCompleted(fullResponseText);
-                                                    }
-                                                }
-
-                                                @Override
-                                                public void onError(String errorMessage) {
-                                                    Log.e(TAG, "Error speaking final chunk: " + errorMessage);
+                                                    Log.d(TAG, "🎵 Final stage speech completed");
                                                 }
                                             });
-                                        });
+                                        }
                                     }
+                                    break;
+                            }
+
+                            // Notify callback
+                            if (callback != null) {
+                                callback.onResponseReceived(response);
+                            }
+                        }
+
+                        @Override
+                        public void onStageError(ThreeStageResponseManager.ResponseStage stage, String error) {
+                            Log.e(TAG, "❌ " + stage.getDisplayName() + " error: " + error);
+
+                            // Don't show errors for later stages if we already have a response
+                            if (stage == ThreeStageResponseManager.ResponseStage.STAGE_1_QUICK || latestResponse.isEmpty()) {
+                                String errorMsg = getPersonalityErrorMessage(getSelectedChessMaster());
+                                updateResponseUI(errorMsg);
+                                if (ttsService != null) {
+                                    ttsService.speak(errorMsg);
                                 }
-
-                                // CRITICAL FIX: Save conversation on main thread
-                                String enrichedResponse = modelManager.enrichResponseWithPersonality(
-                                        fullResponseText, selectedMaster);
-
-                                // Save conversation using thread-safe methods
-                                mainHandler.post(() -> {
-                                    try {
-                                        Log.d(TAG, "💾 Saving conversation - User: " + transcribedText.substring(0, Math.min(30, transcribedText.length())) + "...");
-                                        Log.d(TAG, "💾 Saving conversation - Assistant: " + enrichedResponse.substring(0, Math.min(30, enrichedResponse.length())) + "...");
-
-                                        conversationManager.addMessage("user", transcribedText);
-                                        conversationManager.addMessage("assistant", enrichedResponse);
-                                        conversationManager.saveCurrentConversation();
-
-                                        Log.d(TAG, "✅ Conversation saved successfully! Session: " + conversationManager.getCurrentSessionId());
-                                        Log.d(TAG, "✅ Conversation size: " + conversationManager.getConversationSize() + " messages");
-                                    } catch (Exception e) {
-                                        Log.e(TAG, "❌ Error saving conversation", e);
-                                    }
-
-                                    updateResponseUI(enrichedResponse);
-                                    if (callback != null) {
-                                        callback.onResponseReceived(enrichedResponse);
-                                    }
-                                });
                             }
-                            @Override
-                            public void onError(Exception e) {
-                                Log.e(TAG, "❌ Streaming error: " + e.getMessage());
-                                mainHandler.post(() -> {
-                                    updateUIForProcessing(false);
-                                    String errorMsg = getPersonalityErrorMessage(selectedMaster);
-                                    tts.speak(errorMsg);
-                                    updateResponseUI(errorMsg);
-                                });
+                        }
+
+                        @Override
+                        public void onAllStagesComplete(String finalResponse) {
+                            Log.d(TAG, "🎉 All 3 stages completed successfully!");
+
+                            // Save conversation
+                            String selectedMaster = getSelectedChessMaster();
+                            String enrichedResponse = FineTunedModelManager.getInstance(SimpleRecordService.this)
+                                    .enrichResponseWithPersonality(finalResponse, selectedMaster);
+
+                            // Save to conversation manager
+                            conversationManager.addMessage("user", transcribedText);
+                            conversationManager.addMessage("assistant", enrichedResponse);
+                            conversationManager.saveCurrentConversation();
+
+                            // Clear stage indicator
+                            updateStageIndicator("");
+
+                            // Final callback
+                            if (callback != null) {
+                                callback.onResponseCompleted(finalResponse);
                             }
-                        });
-            }
+                        }
+                    });
 
         } catch (Exception e) {
-            Log.e(TAG, "Error in ultra-fast streaming", e);
+            Log.e(TAG, "Error in 3-stage system", e);
             mainHandler.post(() -> {
                 updateUIForProcessing(false);
                 String errorMsg = getPersonalityErrorMessage(getSelectedChessMaster());
-                OpenAITTSService.getInstance(this).speak(errorMsg);
+                if (ttsService != null) {
+                    ttsService.speak(errorMsg);
+                }
                 updateResponseUI(errorMsg);
             });
         }
+    }
+
+    /**
+     * NEW: Update stage indicator in UI
+     */
+    private void updateStageIndicator(String stageText) {
+        // You can implement this to show which stage is currently active
+        // For now, we'll use the existing status text
+        if (callback != null) {
+            mainHandler.post(() -> {
+                // This could be enhanced to show stage-specific UI
+                Log.d(TAG, "📍 Stage indicator: " + stageText);
+            });
+        }
+    }
+
+    /**
+     * NEW: Check if responses are significantly different
+     */
+    private boolean isSignificantlyDifferent(String response1, String response2) {
+        if (response1 == null || response2 == null) return true;
+        if (response1.equals(response2)) return false;
+
+        // Simple check - if the new response is significantly longer or has different key words
+        return Math.abs(response1.length() - response2.length()) > 100 ||
+                !response1.toLowerCase().contains(response2.toLowerCase().substring(0, Math.min(50, response2.length())));
     }
 
     /**
@@ -822,188 +724,17 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Ultra-fast Assistants API processing with enhanced Botvinnik personality
-     */
-    private void processWithAssistantsAPIUltraFast(String transcribedText, String gameContext) {
-        executorService.execute(() -> {
-            try {
-                Log.d(TAG, "🤖 Starting Botvinnik's scientific analysis via Assistants API");
-
-                // Get current FEN position
-                GameStateInfo gameState = GameStateRepository.getCurrentState();
-                String fenPosition = gameState != null ? gameState.getCurrentFen() :
-                        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-                // Get the enhanced response from Botvinnik
-                String response = processWithEnhancedBotvinnikAssistant(transcribedText, fenPosition, gameContext);
-
-                // Use ultra-fast TTS with Botvinnik's personality
-                mainHandler.post(() -> {
-                    updateUIForProcessing(false);
-                    updateResponseUI(response);
-
-                    // Get Botvinnik's specific voice instructions
-                    FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
-                    String voiceInstructions = modelManager.getEnhancedVoiceInstructions("botvinnik", true);
-
-                    // Set the voice personality
-                    ttsService.setVoicePersonalizationInstructions(voiceInstructions);
-
-                    // Speak with Botvinnik's characteristic measured pace
-                    ttsService.speakStreamingText(response, new OpenAITTSService.TTSCallback() {
-                        @Override
-                        public void onSpeechStarted() {
-                            Log.d(TAG, "🎓 Professor Botvinnik begins his analysis...");
-                        }
-
-                        @Override
-                        public void onSpeechReady(File audioFile) {
-                            // Audio file ready for playback
-                        }
-
-                        @Override
-                        public void onSpeechCompleted() {
-                            Log.d(TAG, "✅ Botvinnik's wisdom delivered successfully");
-                            if (callback != null) {
-                                callback.onResponseCompleted(response);
-                            }
-                        }
-
-                        @Override
-                        public void onError(String errorMessage) {
-                            Log.e(TAG, "TTS error: " + errorMessage);
-                            // Use Botvinnik's personality even in errors
-                            String botvinnikError = "My apologies, there seems to be a technical issue. " +
-                                    "As I always taught my students - preparation prevents such problems.";
-                            updateResponseUI(botvinnikError);
-                        }
-                    });
-
-                    if (callback != null) {
-                        callback.onResponseReceived(response);
-                    }
-                });
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error in Botvinnik's Assistants API processing", e);
-                mainHandler.post(() -> {
-                    updateUIForProcessing(false);
-
-                    // Botvinnik-specific error message
-                    String errorMsg = "It seems my analysis system needs recalibration. " +
-                            "In the Soviet Chess School, we would have backup methods. " +
-                            "Please rephrase your question, and I'll apply a different approach.";
-
-                    // Set Botvinnik's voice for the error message too
-                    FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
-                    String voiceInstructions = modelManager.getEnhancedVoiceInstructions("botvinnik", true);
-                    OpenAITTSService.getInstance(this).setVoicePersonalizationInstructions(voiceInstructions);
-                    OpenAITTSService.getInstance(this).speak(errorMsg);
-
-                    updateResponseUI(errorMsg);
-                });
-            }
-        });
-    }
-
-    /**
-     * Enhanced Botvinnik processing with rich personality
-     */
-    private String processWithEnhancedBotvinnikAssistant(String transcribedText, String fenPosition, String gameContext) {
-        try {
-            FineTunedModelManager modelManager = FineTunedModelManager.getInstance(this);
-
-            // Get or create Botvinnik's assistant
-            String assistantId = modelManager.getBotvinnikAssistantId();
-            if (assistantId == null) {
-                return "I apologize, but my analytical systems are not responding. " +
-                        "This reminds me of the importance of systematic preparation - " +
-                        "something seems to have been overlooked.";
-            }
-
-            // Create or reuse conversation thread
-            if (currentThreadId == null) {
-                currentThreadId = modelManager.createConversationThread();
-                Log.d(TAG, "Created new thread for Botvinnik: " + currentThreadId);
-            }
-
-            if (currentThreadId == null) {
-                return "My analytical framework requires initialization. " +
-                        "In the Soviet Chess School, we always had our systems ready. " +
-                        "Please give me a moment and try again.";
-            }
-
-            // Build Botvinnik's characteristic analytical message
-            StringBuilder enhancedMessage = new StringBuilder();
-
-            // Add Botvinnik's personality context
-            enhancedMessage.append("Professor Botvinnik analyzing the position with systematic precision.\n\n");
-
-            // Add the game context with Botvinnik's analytical style
-            enhancedMessage.append("POSITION FOR SCIENTIFIC ANALYSIS:\n");
-            enhancedMessage.append("FEN: ").append(fenPosition).append("\n");
-
-            if (gameContext != null && !gameContext.trim().isEmpty()) {
-                enhancedMessage.append("\nGAME CONTEXT:\n").append(gameContext).append("\n");
-            }
-
-            // Add Botvinnik's methodical approach reminder
-            enhancedMessage.append("\n(Apply the Botvinnik method: systematic evaluation of material, ");
-            enhancedMessage.append("pawn structure, piece activity, king safety, and concrete variations.)\n\n");
-
-            // Add the student's question
-            enhancedMessage.append("STUDENT'S QUESTION: ").append(transcribedText);
-
-            // Add personality reminder for the response
-            enhancedMessage.append("\n\n(Respond as Botvinnik would: scientifically precise, ");
-            enhancedMessage.append("referencing chess principles, Soviet training methods, ");
-            enhancedMessage.append("and personal experiences from world championship matches.)");
-
-            // Send to Assistants API with Botvinnik's personality
-            String runId = modelManager.sendMessageWithPosition(
-                    currentThreadId, assistantId, enhancedMessage.toString(), fenPosition);
-
-            if (runId == null) {
-                return "My calculation engine has encountered an anomaly. " +
-                        "This never happened during my matches with Tal! " +
-                        "Let's recalibrate and try again.";
-            }
-
-            // Get Botvinnik's response
-            String response = modelManager.getChessMasterResponse(currentThreadId, runId);
-
-            // Add to conversation history with Botvinnik's context
-            conversationManager.addMessage("user", transcribedText);
-            conversationManager.addMessage("assistant", "[Botvinnik] " + response);
-            conversationManager.saveCurrentConversation();
-
-            // Apply final Botvinnik personality touches if needed
-            if (!response.contains("Soviet") && !response.contains("systematic") &&
-                    !response.contains("method") && !response.contains("students")) {
-                // If the response lacks Botvinnik's characteristic elements, add a subtle touch
-                response += " This analysis follows the systematic approach I've always advocated.";
-            }
-
-            return response;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error in enhanced Botvinnik processing", e);
-
-            // Return a very Botvinnik-like error message
-            return "My dear student, even the most rigorous systems can encounter difficulties. " +
-                    "As I taught Kasparov and Kramnik - when facing the unexpected, " +
-                    "return to fundamental principles. Please restate your question, " +
-                    "and I'll apply a different analytical framework.";
-        }
-    }
-
-    /**
      * Resets the current conversation and starts a new one
      */
     public void resetConversation() {
         OpenAITTSService tts = OpenAITTSService.getInstance(this);
         if (tts != null) {
             tts.interrupt();
+        }
+
+        // NEW: Interrupt current 3-stage processing
+        if (threeStageManager != null) {
+            threeStageManager.interruptCurrentResponse();
         }
 
         // Clear ALL conversation history
@@ -1033,6 +764,11 @@ public class SimpleRecordService extends Service {
         if (OpenAITTSService.getInstance(this) != null) {
             OpenAITTSService.getInstance(this).interrupt();
             Log.d(TAG, "Speech interrupted by user tap");
+        }
+
+        // NEW: Also interrupt 3-stage processing
+        if (threeStageManager != null) {
+            threeStageManager.interruptCurrentResponse();
         }
     }
 
