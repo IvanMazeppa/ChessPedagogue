@@ -33,6 +33,7 @@ public class PersonalityEngine {
 
     private static PersonalityEngine instance;
 
+    private static Map<String, String[]> MASTER_NAME_CACHE = new HashMap<>();
     private final Context context;
     private final Handler mainHandler;
     private final ExecutorService executorService;
@@ -45,6 +46,11 @@ public class PersonalityEngine {
     private float personalityWeight = DEFAULT_PERSONALITY_WEIGHT;
     private String currentMaster = "tal";
     private boolean enablePersonalityPlay = true;
+
+    static {
+        MASTER_NAME_CACHE.put("tal", new String[]{"Mikhail Tal", "tal", "Tal"});
+        MASTER_NAME_CACHE.put("fischer", new String[]{"Bobby Fischer", "fischer", "Fischer"});
+    }
 
     /**
      * Move candidate with both engine and personality scoring
@@ -239,40 +245,30 @@ public class PersonalityEngine {
         return result.subList(0, Math.min(STOCKFISH_CANDIDATES, result.size()));
     }
 
-    /**
-     * 🚀 THE HEART OF THE INNOVATION: Instant local database lookups!
-     * This replaces slow API calls with lightning-fast local queries!
-     */
-    // In PersonalityEngine.java, modify the findSimilarPositionsLocally method
     private void findSimilarPositionsLocally(String currentFen, List<PersonalityMove> engineCandidates,
                                              PersonalityMoveCallback callback) {
 
-        Log.d(TAG, "⚡ INSTANT local database lookup for " + currentMaster + "...");
+        Log.d(TAG, "⚡ OPTIMIZED local database lookup for " + currentMaster + "...");
 
         try {
-            // 🔧 FIX: Try multiple name variations for better matching
-            String[] masterVariations = {
-                    currentMaster.toLowerCase(),                    // "tal"
-                    capitalizeFirst(currentMaster),                 // "Tal"
-                    getFullMasterName(currentMaster.toLowerCase()), // "Mikhail Tal"
-                    currentMaster.toLowerCase().replace(" ", "")    // Handle any spacing issues
-            };
+            // Get cached name variations (most likely first)
+            String[] masterVariations = MASTER_NAME_CACHE.getOrDefault(currentMaster.toLowerCase(),
+                    new String[]{currentMaster});
 
             List<GameDatabaseHelper.HistoricalPosition> historicalPositions = new ArrayList<>();
 
-            // Try each name variation until we find data
+            // Try most successful name first
             for (String nameVariation : masterVariations) {
                 List<GameDatabaseHelper.HistoricalPosition> results =
                         databaseHelper.findSimilarPositions(currentFen, nameVariation, MAX_SIMILAR_POSITIONS);
 
-                Log.d(TAG, "🔍 Trying name '" + nameVariation + "': found " + results.size() + " positions");
-
                 if (!results.isEmpty()) {
                     historicalPositions = results;
-                    Log.d(TAG, "✅ SUCCESS with name variation: '" + nameVariation + "'");
-                    break;
+                    Log.d(TAG, "✅ OPTIMIZED SUCCESS with: '" + nameVariation + "' (" + results.size() + " positions)");
+                    break; // Stop on first success
                 }
             }
+
 
             Log.d(TAG, "✅ FINAL lookup result: Found " + historicalPositions.size() + " similar positions");
 

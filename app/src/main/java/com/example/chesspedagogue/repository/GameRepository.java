@@ -7,12 +7,14 @@ import android.util.Log;
 import android.content.Context;
 
 import com.example.chesspedagogue.ChessMasterRatings;
+import com.example.chesspedagogue.GameHistoryManager;
 import com.example.chesspedagogue.PersonalityEngine;
 import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.StockfishManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -789,42 +791,237 @@ public class GameRepository {
     }
 
     /**
-     * ENHANCED: Thread-safe single move with state verification
+     * BULLETPROOF: Single move execution with comprehensive error handling
+     * This fixes the state synchronization issue Benjamin is experiencing
      */
     public boolean makeMove(String move) {
         engineLock.lock();
         try {
-            Log.d(TAG, "🎯 Making single move: " + move);
-            Log.d(TAG, "📋 Current position before move: " + cachedFEN);
+            Log.d(TAG, "🎯 BULLETPROOF makeMove starting: " + move);
 
-            // Apply the move directly to current position
-            stockfishManager.sendCommand("position fen " + cachedFEN + " moves " + move);
+            // Step 1: Get current game history from the authoritative source
+            List<String> currentHistory = GameHistoryManager.getInstance().getCurrentGameMoves();
+            Log.d(TAG, "📋 Current game history has " + currentHistory.size() + " moves");
 
-            // Wait for engine to process
-            boolean success = stockfishManager.waitForReady(100);
+            // Step 2: Create new history with the additional move
+            List<String> newHistory = new ArrayList<>(currentHistory);
+            newHistory.add(move);
+            Log.d(TAG, "🔄 New history will have " + newHistory.size() + " moves");
 
-            // Update cached FEN if successful and verify change
+            // Step 3: Apply the complete game from start with error recovery
+            boolean success = applyCompleteGame(newHistory);
+
             if (success) {
-                String previousFEN = cachedFEN;
-                cachedFEN = stockfishManager.getCurrentFEN();
+                // Step 4: Verify the move was actually applied
+                String newFEN = stockfishManager.getCurrentFEN();
 
-                if (!cachedFEN.equals(previousFEN)) {
-                    Log.d(TAG, "✅ Move applied successfully!");
-                    Log.d(TAG, "📍 New position: " + cachedFEN);
+                if (newFEN != null && !newFEN.equals(cachedFEN)) {
+                    // Success! Update our state
+                    cachedFEN = newFEN;
+                    lastMoveCount = newHistory.size();
+
+                    Log.d(TAG, "✅ BULLETPROOF makeMove SUCCESS!");
+                    Log.d(TAG, "📍 New position: " + newFEN);
+                    Log.d(TAG, "📊 Total moves: " + lastMoveCount);
+
+                    return true;
                 } else {
-                    Log.w(TAG, "⚠️ Position didn't change after move - this might be an issue");
-                    success = false;
+                    Log.e(TAG, "❌ Position verification failed after move");
+                    return false;
                 }
             } else {
-                Log.e(TAG, "❌ Failed to apply move: " + move);
+                Log.e(TAG, "❌ Failed to apply complete game with new move");
+                return false;
             }
 
-            return success;
-        } catch (IOException e) {
-            Log.e(TAG, "Error making move", e);
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Exception in BULLETPROOF makeMove", e);
             return false;
         } finally {
             engineLock.unlock();
+        }
+    }
+
+    /**
+     * BULLETPROOF: Apply complete game from start with multiple recovery attempts
+     */
+    private boolean applyCompleteGame(List<String> moves) {
+        Log.d(TAG, "🔄 BULLETPROOF applying " + moves.size() + " moves from start");
+
+        // Attempt 1: Standard application
+        if (attemptGameApplication(moves, "STANDARD")) {
+            return true;
+        }
+
+        Log.w(TAG, "⚠️ Standard application failed, trying recovery method 1...");
+
+        // Attempt 2: With engine reset
+        if (attemptGameApplicationWithReset(moves)) {
+            return true;
+        }
+
+        Log.w(TAG, "⚠️ Recovery method 1 failed, trying recovery method 2...");
+
+        // Attempt 3: Move-by-move with verification
+        if (attemptMoveByMoveApplication(moves)) {
+            return true;
+        }
+
+        Log.e(TAG, "❌ All recovery attempts failed!");
+        return false;
+    }
+
+    /**
+     * Attempt 1: Standard game application
+     */
+    private boolean attemptGameApplication(List<String> moves, String method) {
+        try {
+            Log.d(TAG, "🎯 Attempting " + method + " application...");
+
+            // Ensure engine is ready
+            if (!stockfishManager.waitForReady(1000)) {
+                Log.e(TAG, "❌ Engine not ready for " + method + " application");
+                return false;
+            }
+
+            // Build and send command
+            StringBuilder command = new StringBuilder("position startpos");
+            if (!moves.isEmpty()) {
+                command.append(" moves");
+                for (String move : moves) {
+                    command.append(" ").append(move);
+                }
+            }
+
+            Log.d(TAG, "📤 " + method + " command: " + command.toString());
+            stockfishManager.sendCommand(command.toString());
+
+            // Wait for processing with generous timeout
+            boolean ready = stockfishManager.waitForReady(2000);
+
+            if (ready) {
+                Log.d(TAG, "✅ " + method + " application succeeded");
+                return true;
+            } else {
+                Log.w(TAG, "⚠️ " + method + " application - engine not ready after command");
+                return false;
+            }
+
+        } catch (IOException e) {
+            Log.e(TAG, "❌ IOException in " + method + " application: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Attempt 2: Game application with engine reset
+     */
+    private boolean attemptGameApplicationWithReset(List<String> moves) {
+        try {
+            Log.d(TAG, "🔄 Attempting application with engine reset...");
+
+            // Reset engine state
+            stockfishManager.sendCommand("ucinewgame");
+            Thread.sleep(100); // Brief pause for reset
+
+            stockfishManager.sendCommand("isready");
+            if (!stockfishManager.waitForReady(2000)) {
+                Log.e(TAG, "❌ Engine not ready after reset");
+                return false;
+            }
+
+            // Now try standard application
+            return attemptGameApplication(moves, "RESET");
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in reset application: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Attempt 3: Move-by-move application with verification
+     */
+    private boolean attemptMoveByMoveApplication(List<String> moves) {
+        try {
+            Log.d(TAG, "🐌 Attempting move-by-move application...");
+
+            // Start fresh
+            stockfishManager.sendCommand("position startpos");
+            if (!stockfishManager.waitForReady(1000)) {
+                Log.e(TAG, "❌ Engine not ready for move-by-move");
+                return false;
+            }
+
+            // Apply moves one by one
+            for (int i = 0; i < moves.size(); i++) {
+                List<String> partialMoves = moves.subList(0, i + 1);
+
+                StringBuilder command = new StringBuilder("position startpos moves");
+                for (String move : partialMoves) {
+                    command.append(" ").append(move);
+                }
+
+                Log.d(TAG, "📤 Move " + (i + 1) + ": " + command.toString());
+                stockfishManager.sendCommand(command.toString());
+
+                if (!stockfishManager.waitForReady(1000)) {
+                    Log.e(TAG, "❌ Engine not ready after move " + (i + 1) + ": " + moves.get(i));
+                    return false;
+                }
+            }
+
+            Log.d(TAG, "✅ Move-by-move application succeeded");
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in move-by-move application: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * NEW: Attempt to recover from move execution failure
+     */
+    private boolean attemptMoveRecovery(String move, String originalPosition) {
+        Log.d(TAG, "🔄 Attempting move recovery for: " + move);
+
+        try {
+            // Reset to starting position and rebuild game state
+            stockfishManager.sendCommand("position startpos");
+            stockfishManager.waitForReady(500);
+
+            // Get current game history and apply all moves including the new one
+            List<String> currentMoves = GameHistoryManager.getInstance().getCurrentGameMoves();
+            List<String> allMoves = new ArrayList<>(currentMoves);
+            allMoves.add(move);
+
+            // Apply all moves from the beginning
+            StringBuilder moveCommand = new StringBuilder("position startpos moves");
+            for (String historyMove : allMoves) {
+                moveCommand.append(" ").append(historyMove);
+            }
+
+            Log.d(TAG, "🔄 Recovery command: " + moveCommand.toString());
+            stockfishManager.sendCommand(moveCommand.toString());
+
+            boolean success = stockfishManager.waitForReady(1000);
+
+            if (success) {
+                String newPosition = stockfishManager.getCurrentFEN();
+                if (newPosition != null && !newPosition.equals(originalPosition)) {
+                    cachedFEN = newPosition;
+                    Log.d(TAG, "✅ Move recovery successful!");
+                    return true;
+                }
+            }
+
+            Log.e(TAG, "❌ Move recovery failed");
+            return false;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error during move recovery", e);
+            return false;
         }
     }
 

@@ -1,8 +1,8 @@
-// GameViewModel.java - COMPLETE UPDATED VERSION
-
+// GameViewModel.java - COMPLETE FIXED VERSION
 package com.example.chesspedagogue.viewmodel;
 
 import android.app.Application;
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -11,9 +11,10 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.chesspedagogue.EvaluationTracker;
 import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.GameStateRepository;
-import com.example.chesspedagogue.GameHistoryManager; // NEW IMPORT
+import com.example.chesspedagogue.GameHistoryManager;
 import com.example.chesspedagogue.MoveHistoryObserver;
 import com.example.chesspedagogue.StockfishManager;
 import com.example.chesspedagogue.model.GameState;
@@ -21,14 +22,20 @@ import com.example.chesspedagogue.repository.GameRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class GameViewModel extends AndroidViewModel {
 
     private static final String TAG = "GameViewModel";
+
+    // FIXED: Add missing executor service and handler
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+
     // Add these fields to your GameViewModel class
     private final MoveHistoryObserver moveHistoryObserver = new MoveHistoryObserver();
     private final GameRepository gameRepository;
-    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     // LiveData objects that the UI will observe
     private final MutableLiveData<GameState> gameStateLiveData = new MutableLiveData<>();
@@ -59,6 +66,20 @@ public class GameViewModel extends AndroidViewModel {
 
     private Handler evaluationHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingEvaluationUpdate;
+
+    // Add these fields after your existing ones
+    private final MutableLiveData<EvaluationTracker.EvaluationSwing> _lastEvaluationSwing = new MutableLiveData<>();
+    private final MutableLiveData<String> _moveExplanation = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> _isHistoricalMove = new MutableLiveData<>();
+    private final MutableLiveData<String> _masterQuote = new MutableLiveData<>();
+
+
+    private long lastEvaluationRequest = 0;
+    private static final long EVALUATION_DEBOUNCE_MS = 500;
+
+    // Auto-commentary state tracking
+    private EvaluationTracker evaluationTracker;
+    private boolean autoCommentaryEnabled = true;
 
     // Add the missing playerColor field here
     private String playerColor = "white"; // Default to white
@@ -146,6 +167,57 @@ public class GameViewModel extends AndroidViewModel {
         } catch (Exception e) {
             Log.e(TAG, "❌ Error checking game end conditions", e);
         }
+    }
+
+    /**
+     * MISSING METHOD 3: Update game state
+     */
+    private void updateGameState() {
+        Log.d(TAG, "🔄 Updating game state...");
+
+        // Update FEN
+        String newFen = gameRepository.getCurrentFEN();
+        currentFEN.setValue(newFen);
+
+        // Check for game end conditions
+        checkGameEndConditions();
+
+        // Request evaluation for new position
+        requestPositionEvaluation();
+    }
+
+    /**
+     * MISSING METHOD 4: Track move evaluation for auto-commentary
+     */
+    private void trackMoveEvaluation(String move, String previousFen) {
+        // Get current evaluation after the move
+        gameRepository.getCurrentEvaluation(new GameRepository.EvaluationCallback() {
+            @Override
+            public void onEvaluationReceived(StockfishManager.EvaluationResult result) {
+                if (evaluationTracker != null) {
+                    String currentFen = getCurrentFEN().getValue();
+                    EvaluationTracker.EvaluationSwing swing = evaluationTracker.trackEvaluation(
+                            result, currentFen, move);
+
+                    if (swing != null) {
+                        mainHandler.post(() -> {
+                            _lastEvaluationSwing.setValue(swing);
+
+                            // Store explanation and historical context if available
+                            if (swing.isSignificant()) {
+                                _moveExplanation.setValue(swing.quality.comment);
+                                _isHistoricalMove.setValue(swing.quality == EvaluationTracker.MoveQuality.BRILLIANT);
+                            }
+                        });
+                    }
+                }
+            }
+
+            @Override
+            public void onEvaluationError(String errorMessage) {
+                Log.w(TAG, "Could not get evaluation for move tracking: " + errorMessage);
+            }
+        });
     }
 
     // Add this method to your GameViewModel class
@@ -279,8 +351,14 @@ public class GameViewModel extends AndroidViewModel {
      */
     public void requestPositionEvaluation() {
         Log.d(TAG, "🔍 Requesting position evaluation...");
-
-        // Cancel any pending evaluation update
+        long now = System.currentTimeMillis();
+        if (now - lastEvaluationRequest < EVALUATION_DEBOUNCE_MS) {
+            Log.d(TAG, "🔄 Skipping evaluation - too soon since last request");
+            return;
+        }
+        lastEvaluationRequest = now;
+        // Can
+        // cel any pending evaluation update
         if (pendingEvaluationUpdate != null) {
             evaluationHandler.removeCallbacks(pendingEvaluationUpdate);
         }
@@ -321,6 +399,7 @@ public class GameViewModel extends AndroidViewModel {
         // Execute after short delay to debounce rapid calls
         evaluationHandler.postDelayed(pendingEvaluationUpdate, 200);
     }
+
     /**
      * NEW METHOD: Get evaluation for a specific FEN position
      * Useful for analysis mode or reviewing positions
@@ -387,6 +466,23 @@ public class GameViewModel extends AndroidViewModel {
 
     public LiveData<String> getWinner() {
         return winner;
+    }
+
+    // Add these getter methods after your existing ones
+    public LiveData<EvaluationTracker.EvaluationSwing> getLastEvaluationSwing() {
+        return _lastEvaluationSwing;
+    }
+
+    public LiveData<String> getLastMoveExplanation() {
+        return _moveExplanation;
+    }
+
+    public LiveData<Boolean> getIsHistoricalMove() {
+        return _isHistoricalMove;
+    }
+
+    public LiveData<String> getMasterQuote() {
+        return _masterQuote;
     }
 
     // ===== CRITICAL FIX: This method now properly updates both systems =====
@@ -462,7 +558,7 @@ public class GameViewModel extends AndroidViewModel {
     }
 
     /**
-     * NEW METHOD: Execute a validated move
+     * OPTIMIZED: Execute validated move with batched UI updates
      */
     private void executeValidatedMove(String move, List<String> history) {
         Log.d(TAG, "✅ Executing validated move: " + move);
@@ -476,50 +572,46 @@ public class GameViewModel extends AndroidViewModel {
             boolean success = gameRepository.makeMove(move);
 
             if (success) {
-                // Update the FEN string from the repository
+                // Get new state
                 String newFen = gameRepository.getCurrentFEN();
                 Log.d(TAG, "📍 New position after move: " + newFen);
 
-                if (newFen.equals(currentFEN.getValue())) {
-                    Log.w(TAG, "⚠️ Position did not change after move - trying alternative approach");
+                // OPTIMIZATION: Batch all UI updates in a single post
+                mainHandler.post(() -> {
+                    // Update all LiveData atomically
+                    currentFEN.setValue(newFen);
+                    moveHistory.setValue(newHistory);
 
-                    // Try applying all moves from scratch
-                    boolean altSuccess = gameRepository.applyMoves(newHistory);
-                    if (altSuccess) {
-                        newFen = gameRepository.getCurrentFEN();
-                        Log.d(TAG, "✅ Alternative approach succeeded: " + newFen);
-                    } else {
-                        Log.e(TAG, "❌ Alternative approach also failed");
-                        handleMoveExecutionFailure(move);
-                        return;
+                    // Update GameHistoryManager
+                    GameHistoryManager.getInstance().addMove(move);
+
+                    // Notify observers
+                    moveHistoryObserver.notifyMoveMade(move, newFen, newHistory);
+
+                    // Update central repository
+                    GameStateRepository.updateState(newFen, newHistory, playerColor);
+
+                    // Trigger animation AFTER other updates
+                    triggerMoveAnimation(move);
+
+                    // Update turn state
+                    isPlayerTurn.setValue(false);
+                    statusMessage.setValue("You moved " + move + ". Engine thinking...");
+                });
+
+                // OPTIMIZATION: Delay evaluation request to avoid congestion
+                mainHandler.postDelayed(() -> {
+                    // Request evaluation after UI settles
+                    requestPositionEvaluation();
+
+                    // NEW: Track evaluation for auto-commentary AFTER evaluation completes
+                    if (autoCommentaryEnabled && evaluationTracker != null) {
+                        trackMoveEvaluation(move, currentFEN.getValue());
                     }
-                }
 
-                // ===== CRITICAL FIX: Update both systems! =====
-                // 1. Update ViewModel's LiveData
-                currentFEN.setValue(newFen);
-                moveHistory.setValue(newHistory);
-
-                // 2. Update GameHistoryManager (THIS WAS MISSING!)
-                GameHistoryManager.getInstance().addMove(move);
-
-                // 3. Notify move history observers
-                moveHistoryObserver.notifyMoveMade(move, newFen, newHistory);
-
-                // 4. Update the central game state repository
-                GameStateRepository.updateState(newFen, newHistory, playerColor);
-
-                // Trigger the animation
-                triggerMoveAnimation(move);
-
-                // Request evaluation after player move
-                requestPositionEvaluation();
-
-                isPlayerTurn.setValue(false);
-                statusMessage.setValue("You moved " + move + ". Engine thinking...");
-
-                // Request engine to make its move - THIS IS WHERE PERSONALITY MAGIC HAPPENS!
-                requestEngineMove();
+                    // Request engine move
+                    requestEngineMove();
+                }, 100); // Small delay to let UI settle
 
             } else {
                 Log.e(TAG, "❌ Move execution failed in gameRepository.makeMove()");
@@ -714,7 +806,7 @@ public class GameViewModel extends AndroidViewModel {
             statusMessage.setValue("🔄 Tal is thinking deeply... switching to faster mode");
             requestStandardEngineMove();
         };
-        timeoutHandler.postDelayed(timeoutRunnable, 30000); // 30 second timeout for database search
+        timeoutHandler.postDelayed(timeoutRunnable, 10000); // 30 second timeout for database search
 
         gameRepository.calculatePersonalityMove(new GameRepository.MoveCallback() {
             @Override
@@ -998,37 +1090,38 @@ public class GameViewModel extends AndroidViewModel {
         statusMessage.setValue(String.format("🎭 Now playing like %s!", masterName));
     }
 
-    public void newGame(String playerColor) {
-        // Update the player color
-        this.playerColor = playerColor;
+    /**
+     * ENHANCED: Start new game with evaluation tracking reset
+     */
+    public void newGame() {
+        Log.d(TAG, "Starting new game");
 
-        // Reset game state for a new game
-        gameRepository.newGame();
+        executorService.execute(() -> {
+            gameRepository.newGame();
 
-        // ===== CRITICAL FIX: Reset GameHistoryManager! =====
-        GameHistoryManager.getInstance().clearHistory();
+            // Reset evaluation tracking
+            if (evaluationTracker != null) {
+                evaluationTracker.resetTracking();
+            }
 
-        currentFEN.setValue(gameRepository.getCurrentFEN());
-        moveHistory.setValue(new ArrayList<>());
-        isGameOver.setValue(false);
-        winner.setValue(null);
+            mainHandler.post(() -> {
+                moveHistory.setValue(new ArrayList<>());
+                currentFEN.setValue("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+                currentEvaluation.setValue(0.0f);
+                isMatePosition.setValue(false);
+                mateInMoves.setValue(0);
+                isPlayerTurn.setValue(true);
+                isGameOver.setValue(false);
 
-        // NEW: Reset evaluation for new game! 🎯
-        currentEvaluation.setValue(0.0f);
-        isMatePosition.setValue(false);
-        mateInMoves.setValue(0);
+                // Reset commentary-related LiveData
+                _lastEvaluationSwing.setValue(null);
+                _moveExplanation.setValue(null);
+                _isHistoricalMove.setValue(false);
+                _masterQuote.setValue(null);
 
-        // Get evaluation for starting position
-        requestPositionEvaluation();
-
-        if (playerColor.equalsIgnoreCase("white")) {
-            isPlayerTurn.setValue(true);
-            statusMessage.setValue("New game started. You're playing as White. Your move.");
-        } else {
-            isPlayerTurn.setValue(false);
-            statusMessage.setValue("New game started. You're playing as Black. Engine thinking...");
-            requestEngineMove();
-        }
+                Log.d(TAG, "New game initialized with evaluation tracking reset");
+            });
+        });
     }
 
     public void triggerMoveAnimation(String moveUci) {
@@ -1063,18 +1156,51 @@ public class GameViewModel extends AndroidViewModel {
         statusMessage.setValue(String.format("🎭 New game: You vs %s! Revolutionary AI gameplay activated.", masterName));
     }
 
+    /**
+     * NEW: Configure automatic commentary system
+     */
+    public void configureAutoCommentary(boolean enabled) {
+        this.autoCommentaryEnabled = enabled;
+
+        if (enabled && evaluationTracker == null) {
+            // Initialize evaluation tracker
+            Context context = getApplication().getApplicationContext();
+            evaluationTracker = EvaluationTracker.getInstance(context);
+
+            // Set up swing listener for additional processing
+            evaluationTracker.setEvaluationSwingListener(new EvaluationTracker.EvaluationSwingListener() {
+                @Override
+                public void onEvaluationSwingDetected(EvaluationTracker.EvaluationSwing swing) {
+                    // Additional processing if needed
+                    Log.d(TAG, "Evaluation swing detected: " + swing);
+                }
+
+                @Override
+                public void onSignificantSwingDetected(EvaluationTracker.EvaluationSwing swing, String autoCommentary) {
+                    // Update LiveData with the automatic commentary
+                    mainHandler.post(() -> {
+                        _masterQuote.setValue(autoCommentary);
+                    });
+                }
+            });
+
+            Log.d(TAG, "✅ Auto-commentary system enabled");
+        } else if (!enabled && evaluationTracker != null) {
+            evaluationTracker.setTrackingEnabled(false);
+            Log.d(TAG, "❌ Auto-commentary system disabled");
+        }
+    }
+
     // Add these getter methods for the UI to observe personality state
     public LiveData<Boolean> getPersonalityEngineEnabled() { return personalityEngineEnabled; }
     public LiveData<String> getPersonalityMaster() { return personalityMaster; }
     public LiveData<Float> getPersonalityWeight() { return personalityWeight; }
-    public LiveData<String> getLastMoveExplanation() { return lastMoveExplanation; }
-    public LiveData<String> getMasterQuote() { return masterQuote; }
-    public LiveData<Boolean> getIsHistoricalMove() { return isHistoricalMove; }
 
     @Override
     protected void onCleared() {
         // Clean up resources when ViewModel is destroyed
         gameRepository.cleanup();
+        executorService.shutdown();
         super.onCleared();
     }
 

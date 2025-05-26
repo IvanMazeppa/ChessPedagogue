@@ -36,6 +36,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.Observer;
 
 import com.example.chesspedagogue.repository.GameRepository;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
@@ -91,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
     // SimpleRecordService connection
     private SimpleRecordService recordService;
     private boolean isServiceBound = false;
+
+    // Add this field to MainActivity
+    private long lastMoveHistoryUpdate = 0;
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
@@ -317,6 +321,12 @@ public class MainActivity extends AppCompatActivity {
         setupPersonalityEngineButton();
         setupPersonalityObservers();
 
+        // Add this line after setupPersonalityObservers();
+        setupAutoCommentaryObservers();
+
+// Enable auto-commentary by default
+        gameViewModel.configureAutoCommentary(true);
+
         // Check API key
         checkApiKey();
 
@@ -510,6 +520,45 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * NEW: Set up automatic commentary observers
+     */
+    private void setupAutoCommentaryObservers() {
+        Log.d(TAG, "🎙️ Setting up automatic commentary observers");
+
+        // Observe evaluation swings for UI feedback
+        gameViewModel.getLastEvaluationSwing().observe(this, swing -> {
+            if (swing != null && swing.isSignificant()) {
+                Log.d(TAG, "🎯 Significant evaluation swing detected: " + swing);
+                showEvaluationSwingFeedback(swing);
+            }
+        });
+
+        // Observe move explanations
+        gameViewModel.getLastMoveExplanation().observe(this, explanation -> {
+            if (explanation != null && !explanation.isEmpty()) {
+                Log.d(TAG, "💭 Move explanation: " + explanation);
+                // You could display this in a toast or status bar if desired
+            }
+        });
+
+        // Observe historical moves for special effects
+        gameViewModel.getIsHistoricalMove().observe(this, isHistorical -> {
+            if (Boolean.TRUE.equals(isHistorical)) {
+                Log.d(TAG, "🏛️ HISTORICAL MOVE DETECTED!");
+                showHistoricalMoveEffect(); // This method already exists
+            }
+        });
+
+        // Observe master quotes (automatic commentary)
+        gameViewModel.getMasterQuote().observe(this, quote -> {
+            if (quote != null && !quote.isEmpty()) {
+                Log.d(TAG, "🎭 Auto-commentary received: " + quote.substring(0, Math.min(50, quote.length())));
+                displayAutoCommentary(quote);
+            }
+        });
+    }
+
     // Add this method to MainActivity.java
     private void initializeChessMasterDatabase() {
         Log.d("MainActivity", "🚀 Initializing chess master database...");
@@ -685,6 +734,73 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
+     * NEW: Display automatic commentary in the coach panel
+     */
+    private void displayAutoCommentary(String commentary) {
+        // Update the coach message text with the automatic commentary
+        updateCoachMessageText(commentary);
+
+        // Briefly show the coach panel if it's not visible
+        showCoachConversation();
+
+        // Auto-hide after 5 seconds (optional)
+        Handler autoHideHandler = new Handler();
+        autoHideHandler.postDelayed(() -> {
+            hideCoachConversation();
+        }, 5000);
+    }
+
+    /**
+     * NEW: Show visual feedback for evaluation swings
+     */
+    private void showEvaluationSwingFeedback(EvaluationTracker.EvaluationSwing swing) {
+        String message = "";
+        int color = Color.BLUE;
+
+        switch (swing.quality) {
+            case BRILLIANT:
+                message = "Brilliant move! ⭐";
+                color = Color.parseColor("#FFD700"); // Gold
+                break;
+            case EXCELLENT:
+                message = "Excellent!";
+                color = Color.GREEN;
+                break;
+            case BLUNDER:
+                message = "Blunder detected";
+                color = Color.RED;
+                break;
+            case MISTAKE:
+                message = "Mistake";
+                color = Color.parseColor("#FF8C00"); // Dark orange
+                break;
+            case INACCURACY:
+                message = "Inaccuracy";
+                color = Color.parseColor("#FFA500"); // Orange
+                break;
+            default:
+                return; // Don't show feedback for normal moves
+        }
+
+        // Show brief toast with evaluation change
+        String fullMessage = String.format("%s (%.1f → %.1f)",
+                message,
+                swing.previousEval.getEffectiveEvaluation(),
+                swing.currentEval.getEffectiveEvaluation());
+
+        Toast.makeText(this, fullMessage, Toast.LENGTH_SHORT).show();
+
+        // Optional: Highlight the evaluation bar briefly with the appropriate color
+        if (evaluationBarView != null) {
+            // Create a brief flash effect with the swing color
+            ObjectAnimator colorFlash = ObjectAnimator.ofInt(evaluationBarView, "backgroundColor",
+                    Color.TRANSPARENT, color, Color.TRANSPARENT);
+            colorFlash.setDuration(800);
+            colorFlash.start();
+        }
+    }
+
+    /**
      * 🎭 Show exciting message when personality is activated
      */
     private void showPersonalityActivationMessage(String masterName) {
@@ -729,18 +845,21 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+
     /**
-     * ===== ENHANCED: Better move history display method =====
+     * OPTIMIZED: Move history display with reduced updates
      */
     private void updateMoveHistoryDisplay() {
-        if (moveHistoryTextView == null) {
-            Log.w(TAG, "⚠️ moveHistoryTextView is null - trying to find it again");
-            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
-            if (moveHistoryTextView == null) {
-                Log.e(TAG, "❌ Still can't find moveHistoryTextView!");
-                return;
-            }
+        // OPTIMIZATION: Skip update if we're not visible
+        if (moveHistoryTextView == null || moveHistoryTextView.getVisibility() != View.VISIBLE) {
+            return;
         }
+
+        // OPTIMIZATION: Debounce rapid updates
+        if (System.currentTimeMillis() - lastMoveHistoryUpdate < 100) {
+            return;
+        }
+        lastMoveHistoryUpdate = System.currentTimeMillis();
 
         // Get moves from GameHistoryManager
         List<String> moves = GameHistoryManager.getInstance().getCurrentGameMoves();
@@ -751,8 +870,8 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Create beautiful formatted move history
-        StringBuilder historyBuilder = new StringBuilder();
+        // OPTIMIZATION: Build string more efficiently
+        StringBuilder historyBuilder = new StringBuilder(moves.size() * 10);
 
         for (int i = 0; i < moves.size(); i++) {
             if (i % 2 == 0) {
@@ -775,11 +894,10 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        String formattedHistory = historyBuilder.toString();
-        moveHistoryTextView.setText(formattedHistory);
-
-        Log.d(TAG, "✅ Move history display updated: " + formattedHistory);
+        moveHistoryTextView.setText(historyBuilder.toString());
+        Log.d(TAG, "✅ Move history display updated efficiently");
     }
+
 
     /**
      * NEW METHOD: Load game configuration from splash screen or SharedPreferences
@@ -1758,8 +1876,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Set up click listeners for all buttons
+     * NEW: Toggle automatic commentary on/off
      */
+    private void toggleAutoCommentary() {
+        // Get current state (you could store this in SharedPreferences)
+        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        boolean currentlyEnabled = prefs.getBoolean("auto_commentary_enabled", true);
+
+        // Toggle the state
+        boolean newState = !currentlyEnabled;
+        prefs.edit().putBoolean("auto_commentary_enabled", newState).apply();
+
+        // Update the ViewModel
+        gameViewModel.configureAutoCommentary(newState);
+
+        // Show feedback
+        String message = newState ? "Auto-commentary enabled" : "Auto-commentary disabled";
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+        Log.d(TAG, "🎙️ Auto-commentary toggled: " + (newState ? "ON" : "OFF"));
+    }
     /**
      * Set up click listeners for all buttons
      */
