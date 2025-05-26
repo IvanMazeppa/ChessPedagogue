@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.GameStateRepository;
 import com.example.chesspedagogue.GameHistoryManager; // NEW IMPORT
 import com.example.chesspedagogue.MoveHistoryObserver;
@@ -49,6 +50,13 @@ public class GameViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> isMatePosition = new MutableLiveData<>();
     private final MutableLiveData<Integer> mateInMoves = new MutableLiveData<>();
     private final MutableLiveData<Boolean> evaluationLoading = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> personalityEngineEnabled = new MutableLiveData<>();
+    private final MutableLiveData<String> personalityMaster = new MutableLiveData<>();
+    private final MutableLiveData<Float> personalityWeight = new MutableLiveData<>();
+    private final MutableLiveData<String> lastMoveExplanation = new MutableLiveData<>();
+    private final MutableLiveData<String> masterQuote = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isHistoricalMove = new MutableLiveData<>();
+
     private Handler evaluationHandler = new Handler(Looper.getMainLooper());
     private Runnable pendingEvaluationUpdate;
 
@@ -59,6 +67,7 @@ public class GameViewModel extends AndroidViewModel {
         super(application);
         // Initialize the repository - this will handle Stockfish and game data
         gameRepository = new GameRepository(application);
+        initializePersonalityLiveData();
 
         // Set initial values
         gameStateLiveData.setValue(new GameState());
@@ -76,6 +85,67 @@ public class GameViewModel extends AndroidViewModel {
 
         // Get initial evaluation for starting position
         requestPositionEvaluation();
+    }
+
+    /**
+     * MISSING METHOD 1: Initialize personality-related LiveData
+     * FIXED: Default to vanilla Stockfish, personality is OPTIONAL
+     */
+    private void initializePersonalityLiveData() {
+        Log.d(TAG, "🎭 Initializing personality LiveData...");
+
+        personalityEngineEnabled.setValue(false); // FIXED: Default to vanilla Stockfish
+        personalityMaster.setValue("tal"); // Default to Tal when enabled
+        personalityWeight.setValue(0.3f); // Balanced personality influence
+        lastMoveExplanation.setValue("");
+        masterQuote.setValue("");
+        isHistoricalMove.setValue(false);
+
+        Log.d(TAG, "✅ Personality LiveData initialized - Default: Vanilla Stockfish");
+    }
+
+    /**
+     * MISSING METHOD 2: Check for game end conditions
+     */
+    private void checkGameEndConditions() {
+        Log.d(TAG, "🔍 Checking game end conditions...");
+
+        try {
+            // Check for checkmate
+            if (gameRepository.isCheckmate()) {
+                isGameOver.setValue(true);
+                // Determine winner based on whose turn it is
+                // If it's white's turn and checkmate, then black wins (white is mated)
+                String currentFen = gameRepository.getCurrentFEN();
+                boolean isWhiteTurn = currentFen != null && currentFen.contains(" w ");
+
+                String winnerStr;
+                if (isWhiteTurn) {
+                    // White to move but in checkmate = Black wins
+                    winnerStr = "black".equals(playerColor) ? "You" : "Engine";
+                } else {
+                    // Black to move but in checkmate = White wins
+                    winnerStr = "white".equals(playerColor) ? "You" : "Engine";
+                }
+
+                winner.setValue(winnerStr);
+                statusMessage.setValue("Checkmate! " + winnerStr + " wins!");
+                Log.d(TAG, "♔ Checkmate detected - Winner: " + winnerStr);
+
+            } else if (gameRepository.isStalemate()) {
+                isGameOver.setValue(true);
+                winner.setValue("Draw");
+                statusMessage.setValue("Stalemate! Game drawn.");
+                Log.d(TAG, "🤝 Stalemate detected");
+
+            } else {
+                // Game continues
+                Log.d(TAG, "✅ Game continues - no end condition detected");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error checking game end conditions", e);
+        }
     }
 
     // Add this method to your GameViewModel class
@@ -448,7 +518,7 @@ public class GameViewModel extends AndroidViewModel {
                 isPlayerTurn.setValue(false);
                 statusMessage.setValue("You moved " + move + ". Engine thinking...");
 
-                // Request engine to make its move
+                // Request engine to make its move - THIS IS WHERE PERSONALITY MAGIC HAPPENS!
                 requestEngineMove();
 
             } else {
@@ -602,8 +672,144 @@ public class GameViewModel extends AndroidViewModel {
         callback.onResult(legalMoves);
     }
 
-    // ===== CRITICAL FIX: Engine moves also update GameHistoryManager =====
+    // ===== CRITICAL FIX: Engine moves now use PERSONALITY ENGINE! =====
+    /**
+     * REVOLUTIONARY: Request engine move - now uses personality when enabled! 🎭
+     * FIXED: Proper fallback handling to prevent engine from stopping
+     */
     private void requestEngineMove() {
+        // Check if personality engine is enabled
+        if (Boolean.TRUE.equals(personalityEngineEnabled.getValue())) {
+            Log.d(TAG, "🎭 Using PERSONALITY ENGINE for move calculation!");
+            requestPersonalityEngineMove();
+        } else {
+            Log.d(TAG, "🤖 Using VANILLA STOCKFISH for move calculation");
+            requestStandardEngineMove();
+        }
+    }
+
+    /**
+     * ENHANCED: Request engine move using personality guidance!
+     * FIXED: Better error handling and proper fallback to prevent engine stopping
+     */
+    private void requestPersonalityEngineMove() {
+        if (!Boolean.TRUE.equals(personalityEngineEnabled.getValue())) {
+            // Fall back to regular engine
+            Log.d(TAG, "🔄 Personality disabled, falling back to standard engine");
+            requestStandardEngineMove();
+            return;
+        }
+
+        Log.d(TAG, "🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!");
+
+        // Show exciting progress message
+        String masterName = FineTunedModelManager.getInstance(getApplication())
+                .getMasterDisplayName(personalityMaster.getValue());
+        statusMessage.setValue(String.format("🎭 %s is searching his game archive...", masterName));
+
+        // Set a longer timeout for personality engine (AI database search takes time)
+        Handler timeoutHandler = new Handler(Looper.getMainLooper());
+        Runnable timeoutRunnable = () -> {
+            Log.w(TAG, "⏰ Personality engine timeout (30s), falling back to standard engine");
+            statusMessage.setValue("🔄 Tal is thinking deeply... switching to faster mode");
+            requestStandardEngineMove();
+        };
+        timeoutHandler.postDelayed(timeoutRunnable, 30000); // 30 second timeout for database search
+
+        gameRepository.calculatePersonalityMove(new GameRepository.MoveCallback() {
+            @Override
+            public void onMoveCalculated(String engineMove) {
+                // Cancel timeout since we got a result
+                timeoutHandler.removeCallbacks(timeoutRunnable);
+
+                Log.d(TAG, "🎯 PERSONALITY MOVE CALCULATED: " + engineMove);
+
+                if (engineMove == null || engineMove.trim().isEmpty()) {
+                    Log.w(TAG, "⚠️ Personality engine returned empty move, using standard engine");
+                    requestStandardEngineMove();
+                    return;
+                }
+
+                // Get current move history
+                List<String> history = moveHistory.getValue();
+                if (history == null) {
+                    history = new ArrayList<>();
+                }
+
+                // Add the engine's move to history
+                history.add(engineMove);
+
+                // Apply ALL moves to keep state in sync
+                boolean success = gameRepository.applyMoves(history);
+
+                if (success) {
+                    // Update LiveData with new state
+                    String newFen = gameRepository.getCurrentFEN();
+                    currentFEN.setValue(newFen);
+
+                    // Create a defensive copy to trigger LiveData
+                    List<String> updatedHistory = new ArrayList<>(history);
+                    moveHistory.setValue(updatedHistory);
+
+                    // Update GameHistoryManager for engine moves
+                    GameHistoryManager.getInstance().addMove(engineMove);
+
+                    // Update the central game state repository
+                    GameStateRepository.updateState(newFen, updatedHistory, playerColor);
+
+                    // Request evaluation after engine move
+                    requestPositionEvaluation();
+
+                    // Get the personality context for this move
+                    GameRepository.PersonalityMoveContext context = gameRepository.getLastPersonalityContext();
+                    if (context != null) {
+                        updatePersonalityContext(context, engineMove); // Pass the actual move
+                    }
+
+                    isPlayerTurn.setValue(true);
+
+                    // Create amazing status message
+                    String masterName = FineTunedModelManager.getInstance(getApplication())
+                            .getMasterDisplayName(personalityMaster.getValue());
+
+                    if (context != null && context.isHistoricalMatch) {
+                        statusMessage.setValue(String.format("🎯 %s played %s - a historical move! Your turn.",
+                                masterName, engineMove));
+                        isHistoricalMove.setValue(true);
+                    } else {
+                        statusMessage.setValue(String.format("🎭 %s played %s. Your turn.",
+                                masterName, engineMove));
+                        isHistoricalMove.setValue(false);
+                    }
+
+                    // Check for game end conditions
+                    checkGameEndConditions();
+
+                } else {
+                    // Handle error - fall back to standard engine
+                    Log.e(TAG, "❌ Failed to apply personality move, using standard engine");
+                    requestStandardEngineMove();
+                }
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                // Cancel timeout
+                timeoutHandler.removeCallbacks(timeoutRunnable);
+
+                Log.e(TAG, "❌ Personality engine error: " + errorMessage);
+                Log.d(TAG, "🔄 Falling back to standard engine due to error");
+
+                // Always fall back to standard engine on error
+                requestStandardEngineMove();
+            }
+        });
+    }
+
+    /**
+     * Standard engine move calculation (fallback)
+     */
+    private void requestStandardEngineMove() {
         gameRepository.calculateBestMove(new GameRepository.MoveCallback() {
             @Override
             public void onMoveCalculated(String engineMove) {
@@ -639,19 +845,10 @@ public class GameViewModel extends AndroidViewModel {
 
                     isPlayerTurn.setValue(true);
 
-                    // Check for checkmate, stalemate, etc.
-                    if (gameRepository.isCheckmate()) {
-                        isGameOver.setValue(true);
-                        String winnerStr = isPlayerTurn.getValue() ? "Engine" : "You";
-                        winner.setValue(winnerStr);
-                        statusMessage.setValue("Checkmate! " + winnerStr + " wins!");
-                    } else if (gameRepository.isStalemate()) {
-                        isGameOver.setValue(true);
-                        winner.setValue("Draw");
-                        statusMessage.setValue("Stalemate! Game over.");
-                    } else {
-                        statusMessage.setValue("Engine moved " + engineMove + ". Your turn.");
-                    }
+                    // Check for game end conditions
+                    checkGameEndConditions();
+
+                    statusMessage.setValue("Engine moved " + engineMove + ". Your turn.");
                 } else {
                     // Handle error
                     statusMessage.setValue("Engine move failed to apply. Please restart the game.");
@@ -664,6 +861,141 @@ public class GameViewModel extends AndroidViewModel {
                 statusMessage.setValue("Engine error: " + errorMessage);
             }
         });
+    }
+
+    /**
+     * Update UI with personality context from the last move
+     * FIXED: Use actual move instead of stale data
+     */
+    private void updatePersonalityContext(GameRepository.PersonalityMoveContext context, String actualMove) {
+        Log.d(TAG, "🎭 Updating personality context for move: " + actualMove);
+
+        // Update LiveData with rich personality information
+        lastMoveExplanation.setValue(context.analysis);
+        masterQuote.setValue(context.masterQuote);
+        isHistoricalMove.setValue(context.isHistoricalMatch);
+
+        // Create detailed move analysis for voice synthesis using the ACTUAL move
+        StringBuilder detailedAnalysis = new StringBuilder();
+
+        if (context.isHistoricalMatch) {
+            detailedAnalysis.append("This is a historical move! ");
+            detailedAnalysis.append("I played ").append(actualMove).append(" ");
+            detailedAnalysis.append(context.historicalContext);
+        } else {
+            detailedAnalysis.append("I chose ").append(actualMove).append(" ");
+            detailedAnalysis.append(String.format("with engine evaluation: %.2f", context.engineScore));
+            if (context.personalityBonus > 0) {
+                detailedAnalysis.append(String.format(", personality bonus: +%.2f", context.personalityBonus));
+            }
+            detailedAnalysis.append(". ").append(context.analysis);
+        }
+
+        // Store for potential voice synthesis
+        lastMoveExplanation.setValue(detailedAnalysis.toString());
+
+        Log.d(TAG, "✨ Personality context updated for move " + actualMove + " - This is revolutionary!");
+    }
+
+    /**
+     * DEPRECATED: Keep for backward compatibility but prefer the version with actualMove
+     */
+    private void updatePersonalityContext(GameRepository.PersonalityMoveContext context) {
+        // Fallback to original method if no move provided
+        updatePersonalityContext(context, context != null ? context.move : "unknown");
+    }
+
+    /**
+     * Get historical move suggestion for current position
+     */
+    public void getHistoricalMoveSuggestion(Callback<String> callback) {
+        String master = personalityMaster.getValue();
+        if (master == null) master = "tal";
+
+        gameRepository.getHistoricalMoveSuggestion(master, new GameRepository.Callback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                if (callback != null) {
+                    callback.onResult(result);
+                }
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                Log.e(TAG, "Historical suggestion error: " + errorMessage);
+                if (callback != null) {
+                    callback.onResult(null);
+                }
+            }
+        });
+    }
+
+    /**
+     * 🎭 PERSONALITY ENGINE CONFIGURATION METHODS
+     */
+    public void configurePersonalityEngine(String master, float weight, boolean enabled) {
+        Log.d(TAG, String.format("🎭 CONFIGURING PERSONALITY ENGINE: %s (weight=%.2f, enabled=%s)",
+                master, weight, enabled));
+
+        // Update LiveData
+        personalityMaster.setValue(master);
+        personalityWeight.setValue(weight);
+        personalityEngineEnabled.setValue(enabled);
+
+        // Configure the repository
+        gameRepository.configurePersonalityEngine(master, weight, enabled);
+
+        // Update status message to show the magic happening
+        String masterName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(master);
+        if (enabled) {
+            statusMessage.setValue(String.format("🎭 Playing like %s! (Personality: %.0f%%)",
+                    masterName, weight * 100));
+        } else {
+            statusMessage.setValue("🤖 Pure engine mode");
+        }
+    }
+
+    /**
+     * Toggle between personality engine and pure engine mode
+     */
+    public void togglePersonalityEngine() {
+        boolean currentState = Boolean.TRUE.equals(personalityEngineEnabled.getValue());
+        boolean newState = !currentState;
+
+        String master = personalityMaster.getValue();
+        float weight = personalityWeight.getValue() != null ? personalityWeight.getValue() : 0.3f;
+
+        configurePersonalityEngine(master != null ? master : "tal", weight, newState);
+
+        String mode = newState ? "🎭 Personality mode" : "🤖 Pure engine mode";
+        statusMessage.setValue(mode + " activated!");
+    }
+
+    /**
+     * Adjust personality influence (0.0 = pure engine, 1.0 = maximum personality)
+     */
+    public void adjustPersonalityWeight(float weight) {
+        float clampedWeight = Math.max(0.0f, Math.min(1.0f, weight));
+
+        String master = personalityMaster.getValue();
+        boolean enabled = Boolean.TRUE.equals(personalityEngineEnabled.getValue());
+
+        configurePersonalityEngine(master != null ? master : "tal", clampedWeight, enabled);
+
+        statusMessage.setValue(String.format("🎚️ Personality influence: %.0f%%", clampedWeight * 100));
+    }
+
+    /**
+     * Switch to a different chess master personality
+     */
+    public void switchPersonalityMaster(String newMaster) {
+        float weight = personalityWeight.getValue() != null ? personalityWeight.getValue() : 0.3f;
+        boolean enabled = Boolean.TRUE.equals(personalityEngineEnabled.getValue());
+
+        configurePersonalityEngine(newMaster, weight, enabled);
+
+        String masterName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(newMaster);
+        statusMessage.setValue(String.format("🎭 Now playing like %s!", masterName));
     }
 
     public void newGame(String playerColor) {
@@ -712,6 +1044,32 @@ public class GameViewModel extends AndroidViewModel {
         // Also trigger last move highlight
         _lastMoveEvent.setValue(new int[]{fromRow, fromCol, toRow, toCol});
     }
+
+    /**
+     * Enhanced game initialization that includes personality setup
+     */
+    public void newGameWithPersonality(String playerColor, int skillLevel, int engineElo,
+                                       String masterPersonality, float personalityWeight) {
+        Log.d(TAG, String.format("🎮 Starting new game with PERSONALITY: %s playing like %s (%.0f%% influence)",
+                playerColor, masterPersonality, personalityWeight * 100));
+
+        // Standard game initialization
+        newGameWithConfiguration(playerColor, skillLevel, engineElo);
+
+        // Configure personality engine
+        configurePersonalityEngine(masterPersonality, personalityWeight, true);
+
+        String masterName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(masterPersonality);
+        statusMessage.setValue(String.format("🎭 New game: You vs %s! Revolutionary AI gameplay activated.", masterName));
+    }
+
+    // Add these getter methods for the UI to observe personality state
+    public LiveData<Boolean> getPersonalityEngineEnabled() { return personalityEngineEnabled; }
+    public LiveData<String> getPersonalityMaster() { return personalityMaster; }
+    public LiveData<Float> getPersonalityWeight() { return personalityWeight; }
+    public LiveData<String> getLastMoveExplanation() { return lastMoveExplanation; }
+    public LiveData<String> getMasterQuote() { return masterQuote; }
+    public LiveData<Boolean> getIsHistoricalMove() { return isHistoricalMove; }
 
     @Override
     protected void onCleared() {

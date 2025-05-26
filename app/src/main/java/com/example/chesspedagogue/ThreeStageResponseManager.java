@@ -646,12 +646,17 @@ public class ThreeStageResponseManager {
      * SMART: Determine if Stage 3 offers enough additional value to interrupt
      */
     private boolean isStage3SignificantlyBetter(String stage3Text) {
-        // Only interrupt for Stage 3 if it has substantial new insights
-        return stage3Text.length() > 200 &&
+        // ENHANCED: More generous criteria for Fischer's deep analysis
+        return stage3Text.length() > 150 &&
                 (stage3Text.toLowerCase().contains("game") ||
                         stage3Text.toLowerCase().contains("remember") ||
                         stage3Text.toLowerCase().contains("facing") ||
-                        stage3Text.toLowerCase().contains("tournament"));
+                        stage3Text.toLowerCase().contains("tournament") ||
+                        stage3Text.toLowerCase().contains("preparation") ||  // Fischer-specific!
+                        stage3Text.toLowerCase().contains("precision") ||   // Fischer-specific!
+                        stage3Text.toLowerCase().contains("analysis") ||
+                        stage3Text.toLowerCase().contains("database") ||
+                        stage3Text.toLowerCase().contains("archive"));
     }
 
     /**

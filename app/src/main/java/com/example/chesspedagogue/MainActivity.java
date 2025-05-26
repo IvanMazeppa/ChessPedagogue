@@ -188,6 +188,39 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Test the revolutionary personality engine! 🎭
+     */
+    private void testPersonalityEngine() {
+        // Configure for Tal with 30% personality influence
+        gameViewModel.configurePersonalityEngine("tal", 0.3f, true);
+
+        // Observe personality state
+        gameViewModel.getPersonalityEngineEnabled().observe(this, enabled -> {
+            Log.d(TAG, "🎭 Personality engine enabled: " + enabled);
+        });
+
+        gameViewModel.getLastMoveExplanation().observe(this, explanation -> {
+            if (explanation != null && !explanation.isEmpty()) {
+                Log.d(TAG, "🎯 Move explanation: " + explanation);
+                // You could display this in UI or use for voice synthesis
+            }
+        });
+
+        gameViewModel.getMasterQuote().observe(this, quote -> {
+            if (quote != null && !quote.isEmpty()) {
+                Log.d(TAG, "💬 Master quote: " + quote);
+            }
+        });
+
+        gameViewModel.getIsHistoricalMove().observe(this, isHistorical -> {
+            if (Boolean.TRUE.equals(isHistorical)) {
+                Log.d(TAG, "🏛️ HISTORICAL MOVE DETECTED! The engine played like Tal!");
+                // You could show special UI indication here
+            }
+        });
+    }
+
     private List<String> extractChessSquares(String text) {
         List<String> squares = new ArrayList<>();
 
@@ -274,6 +307,9 @@ public class MainActivity extends AppCompatActivity {
         Button debugButton = new Button(this);
         // Set up click listeners - this is what was missing!
         setupAllButtonClickListeners();
+        // Add these lines in your onCreate() method after setupAllButtonClickListeners();
+        setupPersonalityEngineButton();
+        setupPersonalityObservers();
 
         // Check API key
         checkApiKey();
@@ -370,6 +406,188 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "🎉 All button click listeners set up successfully!");
+    }
+
+    /**
+     * 🎭 PERSONALITY ENGINE TOGGLE - The Magic Button!
+     * Add this method to your MainActivity.java class
+     */
+    private void setupPersonalityEngineButton() {
+        // We'll add this as a long-press action on the coach button
+        // Or you can add a new button - your choice!
+
+        if (speakButton != null) {
+            // Add long-press listener for personality toggle
+            speakButton.setOnLongClickListener(v -> {
+                Log.d(TAG, "🎭 Personality engine toggle requested!");
+                togglePersonalityEngine();
+                return true; // Consume the long press
+            });
+        }
+    }
+
+    /**
+     * 🎭 Enhanced personality observers with progress feedback
+     * Add this to your MainActivity.java (replace existing setupPersonalityObservers)
+     */
+    private void setupPersonalityObservers() {
+        // Observe personality engine state
+        gameViewModel.getPersonalityEngineEnabled().observe(this, enabled -> {
+            if (enabled != null) {
+                Log.d(TAG, "🎭 Personality engine state: " + (enabled ? "ENABLED" : "DISABLED"));
+
+                // Update speak button appearance based on personality state
+                if (speakButton != null) {
+                    if (enabled) {
+                        // Golden glow when personality is active
+                        speakButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                                getResources().getColor(R.color.purple_700)));
+                        // You could add a subtle animation here too
+                    } else {
+                        // Normal appearance for vanilla Stockfish
+                        speakButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(
+                                getResources().getColor(R.color.bronze)));
+                    }
+                }
+            }
+        });
+
+        // Show progress when status changes
+        gameViewModel.getStatusMessage().observe(this, message -> {
+            if (message != null && message.contains("searching") && message.contains("archive")) {
+                // Show progress for personality search
+                Toast.makeText(this, "🔍 Searching chess history...", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Celebrate historical moves!
+        gameViewModel.getIsHistoricalMove().observe(this, isHistorical -> {
+            if (Boolean.TRUE.equals(isHistorical)) {
+                showHistoricalMoveEffect();
+            }
+        });
+    }
+
+    /**
+     * 🎭 Updated toggle for speak button
+     * Add this to replace your existing toggle method
+     */
+    private void togglePersonalityEngine() {
+        Boolean currentState = gameViewModel.getPersonalityEngineEnabled().getValue();
+        boolean isEnabled = currentState != null && currentState;
+
+        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+
+        if (isEnabled) {
+            // Turn OFF personality engine
+            gameViewModel.configurePersonalityEngine(selectedMaster, 0.3f, false);
+            Toast.makeText(this, "🤖 Fast Stockfish mode", Toast.LENGTH_SHORT).show();
+            Log.d(TAG, "✅ Switched to vanilla Stockfish mode");
+
+        } else {
+            // Turn ON personality engine
+            gameViewModel.configurePersonalityEngine(selectedMaster, 0.3f, true);
+            String masterName = FineTunedModelManager.getInstance(this).getMasterDisplayName(selectedMaster);
+
+            Toast.makeText(this, "🎭 " + masterName + " mode activated! Moves may take longer as we search game history.", Toast.LENGTH_LONG).show();
+            showPersonalityActivationMessage(masterName);
+            Log.d(TAG, "✅ Switched to " + masterName + " personality mode");
+        }
+    }
+
+    /**
+     * 🚀 Add this to your MainActivity for instant personality toggle
+     */
+    private void setupSpeakButtonAdvanced() {
+        if (speakButton != null) {
+            // Single tap = normal voice function
+            speakButton.setOnClickListener(v -> startVoiceRecording());
+
+            // Long press = toggle personality engine
+            speakButton.setOnLongClickListener(v -> {
+                Log.d(TAG, "🎭 Personality engine toggle requested!");
+                togglePersonalityEngine();
+                return true;
+            });
+
+            // Double tap = quick personality mode (faster, cached responses)
+            speakButton.setOnClickListener(new View.OnClickListener() {
+                private static final long DOUBLE_CLICK_TIME_DELTA = 300;
+                private long lastClickTime = 0;
+
+                @Override
+                public void onClick(View v) {
+                    long clickTime = System.currentTimeMillis();
+                    if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
+                        // Double tap detected
+                        quickPersonalityToggle();
+                    } else {
+                        // Single tap - delay slightly to detect double tap
+                        Handler handler = new Handler();
+                        handler.postDelayed(() -> {
+                            if (System.currentTimeMillis() - clickTime >= DOUBLE_CLICK_TIME_DELTA) {
+                                startVoiceRecording();
+                            }
+                        }, DOUBLE_CLICK_TIME_DELTA);
+                    }
+                    lastClickTime = clickTime;
+                }
+            });
+        }
+    }
+
+    private void quickPersonalityToggle() {
+        // This could enable a faster personality mode with cached responses
+        Toast.makeText(this, "🚀 Quick personality mode - coming soon!", Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * 🎯 Enhanced historical move effect
+     */
+    private void showHistoricalMoveEffect() {
+        // Flash the evaluation bar with gold color
+        if (evaluationBarView != null) {
+            // Create a brief golden flash effect
+            ObjectAnimator flashAnimator = ObjectAnimator.ofFloat(evaluationBarView, "alpha", 1.0f, 0.3f, 1.0f);
+            flashAnimator.setDuration(800);
+            flashAnimator.start();
+        }
+
+        // Show exciting toast message
+        Toast.makeText(this, "🎯 Historical move! Pure chess legend!", Toast.LENGTH_LONG).show();
+
+        // You could also make the board briefly glow or add particle effects here
+    }
+
+    /**
+     * 🎭 Show exciting message when personality is activated
+     */
+    private void showPersonalityActivationMessage(String masterName) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🎭 Revolutionary Chess AI Activated!")
+                .setMessage("You're now playing against " + masterName + "! " +
+                        "The engine will play moves based on " + masterName + "'s actual games and style. " +
+                        "Watch for historical moves marked with 🎯!")
+                .setPositiveButton("Let's Play!", (dialog, id) -> dialog.dismiss())
+                .show();
+    }
+
+    /**
+     * 📊 Update UI to show current engine mode
+     */
+    private void updateEngineStatusDisplay() {
+        Boolean personalityEnabled = gameViewModel.getPersonalityEngineEnabled().getValue();
+        TextView statusTextView = findViewById(R.id.statusTextView);
+
+        if (statusTextView != null) {
+            if (Boolean.TRUE.equals(personalityEnabled)) {
+                String masterName = FineTunedModelManager.getInstance(this).getMasterDisplayName(
+                        FineTunedModelManager.getInstance(this).getSelectedChessMaster());
+                statusTextView.setText("🎭 Playing like " + masterName);
+            } else {
+                statusTextView.setText("🤖 Pure Stockfish Engine");
+            }
+        }
     }
 
     /**

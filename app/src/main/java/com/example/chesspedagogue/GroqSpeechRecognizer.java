@@ -40,7 +40,7 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
     // Groq API endpoint
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
     private static final String GROQ_MODEL = "distil-whisper-large-v3-en";
-    private static final String GROQ_API_KEY = "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";
+    private static final String GROQ_API_KEY = "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";
 
     private final Context context;
     private final ExecutorService executorService;

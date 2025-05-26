@@ -23,20 +23,28 @@ import java.util.concurrent.Executors;
  * ENHANCED Unified manager for chess masters - dramatically improved personality system
  * Now focuses on natural conversation flow and authentic personality expression
  * Enhanced by Ben's improved training methodology
+ * 🆕 NEW: Added Bobby Fischer with multi-stage assistant integration!
  */
 public class FineTunedModelManager {
     private static final String TAG = "EnhancedFineTunedModelManager";
     private static final String PREFS_NAME = "ChessFineTunedModels";
     private static final String KEY_SELECTED_MASTER = "selected_master";
     private static final String KEY_TAL_ASSISTANT_ID = "tal_assistant_id";
+    private static final String KEY_FISCHER_ASSISTANT_ID = "fischer_assistant_id";
+
+    // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
     private static final String TAL_VECTOR_STORE_ID = "vs_682f419a57288191aa3cd922b27acb5f"; // Your vector store
 
+    // 🚀 FISCHER CONFIGURATION - NEW!
+    private static final String FISCHER_ASSISTANT_ID = "asst_2j5uMiqmEKRUNqHCtXdsaoY3"; // Your Fischer assistant
+    private static final String FISCHER_VECTOR_STORE_ID = "vs_6834a715ef788191bd9ef4caa5676436"; // Your Fischer vector store
+
     // Model constants - updated for enhanced models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
+    private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4"; // 🆕 UPDATED!
     private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_FISCHER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
@@ -116,10 +124,8 @@ public class FineTunedModelManager {
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.openAIService = OpenAIService.getInstance();
         initializeEnhancedPersonalities();
-        Log.d(TAG, "✨ Enhanced personality system initialized!");
+        Log.d(TAG, "✨ Enhanced personality system initialized with Fischer!");
     }
-
-
 
     /**
      * Initialize enhanced personality profiles based on historical data and chess analysis
@@ -142,6 +148,27 @@ public class FineTunedModelManager {
                         "Trust your tactical instincts",
                         "Make the position come alive",
                         "Chess is art, not just calculation"
+                }
+        ));
+
+        // 🆕 Fischer - The Perfectionist: Intense, Demanding, Precise - ENHANCED!
+        personalityProfiles.put("fischer", new EnhancedPersonalityProfile(
+                "Bobby Fischer",
+                new String[]{"intense", "perfectionist", "demanding", "precise", "uncompromising", "rude", "paranoid"},
+                "direct_intense", // No-nonsense, demanding perfection
+                "very_high", // Maximum intensity
+                "Only the objectively best moves are acceptable - chess demands absolute truth",
+                "Strong American accent, intense and absolutely certain of every word",
+                0.2f, // Very low creativity, maximum precision
+                1.0f, // Maximum confidence - Fischer was supremely confident
+                true, // Extremely technical and analytical
+                false, // Very serious, no time for jokes
+                new String[]{
+                        "Play the objectively best moves - nothing else is acceptable",
+                        "Preparation is everything - know every variation",
+                        "Never accept second-best - demand perfection",
+                        "Chess is a science that demands absolute precision",
+                        "Weak moves are unforgivable - calculate everything"
                 }
         ));
 
@@ -182,26 +209,6 @@ public class FineTunedModelManager {
                         "Prophylactic thinking prevents problems",
                         "Solid play is never wrong",
                         "Modern chess requires computer-age precision"
-                }
-        ));
-
-        // Fischer - The Perfectionist: Intense, Demanding, Precise
-        personalityProfiles.put("fischer", new EnhancedPersonalityProfile(
-                "Bobby Fischer",
-                new String[]{"intense", "perfectionist", "demanding", "precise"},
-                "direct_intense", // No-nonsense, demanding perfection
-                "very_high",
-                "Only the objectively best moves are acceptable",
-                "Strong American accent, intense and absolutely certain",
-                0.3f, // Lower creativity, higher precision
-                1.0f, // Maximum confidence
-                true, // Extremely technical
-                false, // Very serious
-                new String[]{
-                        "Play the objectively best moves",
-                        "Preparation is everything",
-                        "Never accept second-best",
-                        "Chess demands absolute precision"
                 }
         ));
 
@@ -385,14 +392,14 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Get the model ID for a specific master
+     * Get the model ID for a specific master - 🆕 UPDATED WITH FISCHER!
      */
     public String getModelIdForMaster(String master) {
         switch (master.toLowerCase()) {
             case "tal": return MODEL_TAL;
+            case "fischer": return MODEL_FISCHER; // 🆕 UPDATED MODEL!
             case "kramnik": return MODEL_KRAMNIK;
             case "karpov": return MODEL_KARPOV;
-            case "fischer": return MODEL_FISCHER;
             case "lasker": return MODEL_LASKER;
             case "kasparov": return MODEL_KASPAROV;
             case "capablanca": return MODEL_CAPABLANCA;
@@ -400,13 +407,12 @@ public class FineTunedModelManager {
             case "morphy": return MODEL_MORPHY;
             case "anand": return MODEL_ANAND;
             case "alekhine": return MODEL_ALEKHINE;
-            //case "botvinnik": return MODEL_BOTVINNIK;
             default: return DEFAULT_MODEL;
         }
     }
 
     /**
-     * Get enhanced voice selection based on personality
+     * Enhanced voice selection based on personality
      */
     public String getVoiceForMaster(String master) {
         if (master == null) return VOICE_ALLOY;
@@ -417,6 +423,10 @@ public class FineTunedModelManager {
         // More sophisticated voice matching
         switch (profile.energyLevel) {
             case "very_high":
+                // 🆕 Special case for Fischer - he needs the most intense voice
+                if ("fischer".equals(master.toLowerCase())) {
+                    return VOICE_ONYX; // Deep, authoritative voice for Fischer's intensity
+                }
                 return profile.usesHumor ? VOICE_NOVA : VOICE_ONYX;
             case "high":
             case "moderate_high":
@@ -444,10 +454,21 @@ public class FineTunedModelManager {
         // Base personality instruction
         instructions.append(profile.voicePersonality).append(" ");
 
+        // 🆕 Special Fischer instructions for maximum intensity
+        if ("fischer".equals(master.toLowerCase())) {
+            instructions.append("Speak with absolute conviction and unwavering intensity. ");
+            instructions.append("Every word should convey supreme confidence and demand perfection. ");
+            instructions.append("Use a direct, commanding tone that tolerates no weakness. ");
+        }
+
         // Energy and pace based on energy level
         switch (profile.energyLevel) {
             case "very_high":
-                instructions.append("Speak with high energy and animated enthusiasm. Vary your pace for emphasis. ");
+                if ("fischer".equals(master.toLowerCase())) {
+                    instructions.append("Speak with passionate intensity and absolute certainty. Demand excellence in every syllable. ");
+                } else {
+                    instructions.append("Speak with high energy and animated enthusiasm. Vary your pace for emphasis. ");
+                }
                 break;
             case "high":
             case "moderate_high":
@@ -503,7 +524,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Create sophisticated system prompt based on enhanced personality
+     * Create sophisticated system prompt based on enhanced personality - 🆕 ENHANCED FOR FISCHER!
      */
     public String getEnhancedSystemPromptForMaster(String master) {
         EnhancedPersonalityProfile profile = personalityProfiles.get(master.toLowerCase());
@@ -516,6 +537,12 @@ public class FineTunedModelManager {
         // Core identity
         prompt.append("You are ").append(profile.displayName)
                 .append(", the legendary chess grandmaster.\n\n");
+
+        // 🆕 Special Fischer introduction for maximum impact
+        if ("fischer".equals(master.toLowerCase())) {
+            prompt.append("You are the greatest chess player who ever lived - uncompromising, brilliant, and absolutely certain of your chess knowledge. ");
+            prompt.append("You demand nothing less than perfection and have zero tolerance for weak play or sloppy thinking.\n\n");
+        }
 
         // Personality essence
         prompt.append("PERSONALITY: ");
@@ -555,6 +582,14 @@ public class FineTunedModelManager {
             prompt.append("- Include technical details when relevant\n");
         } else {
             prompt.append("- Focus on intuitive understanding over pure technique\n");
+        }
+
+        // 🆕 Special Fischer guidelines for authentic personality
+        if ("fischer".equals(master.toLowerCase())) {
+            prompt.append("- Never accept mediocrity - always demand the highest standards\n");
+            prompt.append("- Be direct and uncompromising about chess truth\n");
+            prompt.append("- Reference your World Championship and preparation methods\n");
+            prompt.append("- Show your legendary perfectionism and intensity\n");
         }
 
         prompt.append("\nRespond with the authentic voice and wisdom of ").append(profile.displayName).append(".");
@@ -728,7 +763,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Check if a master uses the Assistants API
+     * Check if a master uses the Assistants API - 🆕 UPDATED WITH FISCHER!
      */
     public boolean usesAssistantsAPI(String master) {
         return true;
@@ -789,7 +824,7 @@ public class FineTunedModelManager {
             case "karpov":
                 return new ModelOptimizationSettings(0.3f, 200, false);
             case "fischer":
-                return new ModelOptimizationSettings(0.2f, 180, false);
+                return new ModelOptimizationSettings(0.1f, 180, false); // 🆕 Ultra-precise for Fischer
             default:
                 return new ModelOptimizationSettings(0.5f, 220, false);
         }
@@ -823,7 +858,6 @@ public class FineTunedModelManager {
     }
 
     // ========== ASSISTANT MANAGEMENT (Enhanced) ==========
-
 
     // ========== ASYNC METHODS ==========
 
@@ -920,6 +954,17 @@ public class FineTunedModelManager {
                 }
                 break;
 
+            case "fischer": // 🆕 FISCHER-SPECIFIC ENRICHMENTS!
+                // Fischer's perfectionism and intensity
+                if (response.contains("best") || response.contains("accurate")) {
+                    enriched.append(" Only the objectively best moves are acceptable - anything else is a mistake.");
+                } else if (response.contains("preparation") || response.contains("study")) {
+                    enriched.append(" Thorough preparation separates the champions from the pretenders.");
+                } else if (response.contains("weak") || response.contains("error")) {
+                    enriched.append(" Weak moves are unforgivable at the highest level.");
+                }
+                break;
+
             case "alekhine":
                 // Alekhine's sophistication and depth
                 if (response.contains("calculate") || response.contains("analysis")) {
@@ -935,15 +980,6 @@ public class FineTunedModelManager {
                     enriched.append(" Solid understanding is the foundation of all chess improvement.");
                 } else if (response.contains("endgame") || response.contains("technique")) {
                     enriched.append(" Good technique transforms small advantages into victories.");
-                }
-                break;
-
-            case "fischer":
-                // Fischer's perfectionism and intensity
-                if (response.contains("best") || response.contains("accurate")) {
-                    enriched.append(" Only the objectively best moves are acceptable at the highest level.");
-                } else if (response.contains("preparation") || response.contains("study")) {
-                    enriched.append(" Thorough preparation is essential for serious chess improvement.");
                 }
                 break;
 
@@ -1017,22 +1053,27 @@ public class FineTunedModelManager {
         // Create simplified voice instruction
         StringBuilder instruction = new StringBuilder();
 
-        switch (profile.energyLevel) {
-            case "very_high":
-                instruction.append("Speak with enthusiasm and energy");
-                break;
-            case "high":
-            case "moderate_high":
-                instruction.append("Speak with engaged confidence");
-                break;
-            case "moderate":
-                instruction.append("Speak with steady authority");
-                break;
-            case "low_moderate":
-                instruction.append("Speak with calm thoughtfulness");
-                break;
-            default:
-                instruction.append("Speak with chess wisdom");
+        // 🆕 Special case for Fischer's intensity
+        if ("fischer".equals(master.toLowerCase())) {
+            instruction.append("Speak with absolute conviction and demanding intensity");
+        } else {
+            switch (profile.energyLevel) {
+                case "very_high":
+                    instruction.append("Speak with enthusiasm and energy");
+                    break;
+                case "high":
+                case "moderate_high":
+                    instruction.append("Speak with engaged confidence");
+                    break;
+                case "moderate":
+                    instruction.append("Speak with steady authority");
+                    break;
+                case "low_moderate":
+                    instruction.append("Speak with calm thoughtfulness");
+                    break;
+                default:
+                    instruction.append("Speak with chess wisdom");
+            }
         }
 
         // Add communication style hint
@@ -1097,10 +1138,18 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Get assistant ID for any master (supports multiple assistants)
+     * ENHANCED: Get assistant ID for any master (supports multiple assistants) - 🆕 UPDATED WITH FISCHER!
      */
     public String getAssistantIdForMaster(String master) {
-        return getTalAssistantId();
+        switch (master.toLowerCase()) {
+            case "tal":
+                return getTalAssistantId();
+            case "fischer": // 🆕 NEW FISCHER SUPPORT!
+                return getFischerAssistantId();
+            default:
+                // Default to Tal for other masters
+                return getTalAssistantId();
+        }
     }
 
     /**
@@ -1118,11 +1167,26 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Check if master should use Assistants API (now includes Tal)
+     * 🆕 NEW: Get Fischer Assistant ID with vector store support!
+     */
+    public String getFischerAssistantId() {
+        // Use your pre-configured Fischer assistant
+        Log.d(TAG, "🚀 Using configured Fischer assistant: " + FISCHER_ASSISTANT_ID);
+        assistantIds.put("fischer", FISCHER_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_FISCHER_ASSISTANT_ID, FISCHER_ASSISTANT_ID).apply();
+
+        return FISCHER_ASSISTANT_ID;
+    }
+
+    /**
+     * ENHANCED: Check if master should use Assistants API (now includes Fischer!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
         switch (master.toLowerCase()) {
             case "tal":
+            case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
             case "botvinnik":
                 return true;
             default:
@@ -1132,19 +1196,26 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Get appropriate assistant ID with fallback
+     * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH FISCHER!
      */
     public String getAssistantIdForDeepAnalysis(String master) {
-        String assistantId = getTalAssistantId();
-        if (assistantId == null) {
-            Log.w(TAG, "Tal assistant not available");
+        switch (master.toLowerCase()) {
+            case "tal":
+                return getTalAssistantId();
+            case "fischer": // 🆕 FISCHER GETS HIS OWN ASSISTANT!
+                return getFischerAssistantId();
+            default:
+                // Default to Tal assistant for other masters
+                String assistantId = getTalAssistantId();
+                if (assistantId == null) {
+                    Log.w(TAG, "No assistant available for " + master);
+                }
+                return assistantId;
         }
-
-        return assistantId;
     }
 
     /**
-     * ENHANCED: Create message that FORCES vector store usage with cleaner output format
+     * ENHANCED: Create message that FORCES vector store usage with cleaner output format - 🆕 UPDATED FOR FISCHER!
      */
     public String createEnhancedAssistantMessage(String userInput, String gameContext, String master) {
         StringBuilder message = new StringBuilder();
@@ -1162,13 +1233,22 @@ public class FineTunedModelManager {
             message.append("CURRENT CHESS POSITION:\n").append(gameContext).append("\n\n");
         }
 
-        // OPTIMIZED: Focus on finding ONE perfect example instead of exhaustive search
-        message.append("FOCUSED DATABASE SEARCH: Search your chess games database to find your ONE BEST ");
-        message.append("memory that relates to this position or question. Instead of comprehensive research, ");
-        message.append("find the single most illuminating example from your personal experience that will ");
-        message.append("help this student understand the position deeply.\n\n");
+        // 🆕 Master-specific database search instructions
+        if ("fischer".equals(master.toLowerCase())) {
+            // Fischer-specific search strategy for precision and perfection
+            message.append("FISCHER DATABASE SEARCH: Search my chess games database for the ONE PERFECT ");
+            message.append("example from my career that demonstrates the objectively correct approach to this position. ");
+            message.append("Find the game where I showed the highest level of precision and preparation for similar positions. ");
+            message.append("I demand only the most accurate and well-prepared examples from my games.\n\n");
+        } else {
+            // General search strategy for other masters
+            message.append("FOCUSED DATABASE SEARCH: Search your chess games database to find your ONE BEST ");
+            message.append("memory that relates to this position or question. Instead of comprehensive research, ");
+            message.append("find the single most illuminating example from your personal experience that will ");
+            message.append("help this student understand the position deeply.\n\n");
+        }
 
-        // STREAMLINED: Simplified JSON format focused on quality over quantity
+        // STREAMLINED: Master-specific JSON format
         message.append("RESPONSE FORMAT: Provide your focused analysis in clean JSON format:\n");
         message.append("{\n");
         message.append("  \"immediate_assessment\": \"Your first impression of this position\",\n");
@@ -1176,28 +1256,50 @@ public class FineTunedModelManager {
         message.append("  \"specific_example\": \"Concrete details: opponent, year, key moves, and what made it memorable\",\n");
         message.append("  \"key_insight\": \"The main strategic or tactical lesson from your experience\",\n");
         message.append("  \"practical_advice\": \"Your recommendation based on this memory\",\n");
-        message.append("  \"personality_note\": \"A characteristic comment in your unique voice\"\n");
+
+        // 🆕 Master-specific personality note
+        if ("fischer".equals(master.toLowerCase())) {
+            message.append("  \"personality_note\": \"A characteristic Fischer comment demanding perfection and precision\"\n");
+        } else {
+            message.append("  \"personality_note\": \"A characteristic comment in your unique voice\"\n");
+        }
         message.append("}\n\n");
 
         // IMPORTANT: Citation cleaning instruction remains
         message.append("CRITICAL: In your JSON response, do NOT include any citation markers like 【4:0†source】 ");
         message.append("in the text content. Speak naturally as if recalling a personal memory, not citing a database.\n\n");
 
-        // FOCUSED: Single, targeted search requirement
-        message.append("SEARCH STRATEGY: Find the ONE game or position from your archive that best matches ");
-        message.append("this situation. Look for your most memorable experience with:\n");
-        message.append("- Similar pawn structures OR tactical themes OR strategic concepts\n");
-        message.append("- A game that taught you something important about positions like this\n");
-        message.append("- An opponent or tournament situation that created a lasting impression\n\n");
+        // 🆕 Master-specific search requirements
+        if ("fischer".equals(master.toLowerCase())) {
+            message.append("FISCHER SEARCH STRATEGY: Find the ONE game from my archive that best demonstrates ");
+            message.append("my legendary preparation and precision for this type of position. Look for:\n");
+            message.append("- Games where I showed perfect preparation\n");
+            message.append("- Positions where I demonstrated absolute accuracy\n");
+            message.append("- Examples of my uncompromising pursuit of the truth\n");
+            message.append("- Moments that showcase my demand for perfection\n\n");
+        } else {
+            // FOCUSED: Single, targeted search requirement for other masters
+            message.append("SEARCH STRATEGY: Find the ONE game or position from your archive that best matches ");
+            message.append("this situation. Look for your most memorable experience with:\n");
+            message.append("- Similar pawn structures OR tactical themes OR strategic concepts\n");
+            message.append("- A game that taught you something important about positions like this\n");
+            message.append("- An opponent or tournament situation that created a lasting impression\n\n");
+        }
 
         // Add the user's question
         message.append("STUDENT'S QUESTION: ").append(userInput).append("\n\n");
 
-        // ENHANCED: Focus on personal storytelling rather than comprehensive analysis
-        message.append("Remember: Share your BEST personal memory related to this position - the game ");
-        message.append("that first comes to mind when you see this setup. Speak as Mikhail Tal recalling ");
-        message.append("a vivid, specific moment from your career that will help this student understand ");
-        message.append("chess at a deeper level. Quality and personal connection over exhaustive research.");
+        // ENHANCED: Master-specific closing instruction
+        if ("fischer".equals(master.toLowerCase())) {
+            message.append("Remember: Share your MOST PRECISE and WELL-PREPARED example from your career. ");
+            message.append("Show the level of accuracy and perfection that made you World Champion. ");
+            message.append("Speak as Bobby Fischer recalling a moment where you demonstrated absolute chess truth.");
+        } else {
+            message.append("Remember: Share your BEST personal memory related to this position - the game ");
+            message.append("that first comes to mind when you see this setup. Speak as ").append(profile != null ? profile.displayName : master);
+            message.append(" recalling a vivid, specific moment from your career that will help this student understand ");
+            message.append("chess at a deeper level. Quality and personal connection over exhaustive research.");
+        }
 
         return message.toString();
     }
@@ -1355,7 +1457,7 @@ public class FineTunedModelManager {
                                         Log.d(TAG, "Raw response preview: " + rawResponse.substring(0, Math.min(300, rawResponse.length())) + "...");
 
                                         // Process the JSON response to create readable text
-                                        String processedResponse = processAssistantJsonResponse(rawResponse, "tal");
+                                        String processedResponse = processAssistantJsonResponse(rawResponse, getSelectedChessMaster());
 
                                         Log.d(TAG, "✅ Processed response length: " + processedResponse.length());
                                         return processedResponse;
@@ -1587,8 +1689,6 @@ public class FineTunedModelManager {
         }
     }
 
-
-
     /**
      * SMART DEBUGGING: Enhanced Assistant API call with complete visibility
      */
@@ -1696,7 +1796,6 @@ public class FineTunedModelManager {
         }
     }
 
-
     private String createEmergencySystemPrompt(String master) {
         String masterName = getMasterDisplayName(master);
         return String.format(
@@ -1723,6 +1822,14 @@ public class FineTunedModelManager {
 
     private String getFinalFallbackMessage(String master) {
         String masterName = getMasterDisplayName(master);
+
+        // 🆕 Special Fischer fallback message for authenticity
+        if ("fischer".equals(master.toLowerCase())) {
+            return "I'm having technical difficulties accessing my complete chess analysis, which is unacceptable. " +
+                    "But let me give you the most accurate assessment I can from memory - " +
+                    "this position demands precise calculation and nothing less than the objectively best moves.";
+        }
+
         return String.format(
                 "As %s, I'm having some technical difficulties accessing my full chess library right now. " +
                         "But let me share what I can from memory - this position deserves careful analysis, " +
@@ -1741,7 +1848,7 @@ public class FineTunedModelManager {
             // Get appropriate assistant ID
             String assistantId = getAssistantIdForDeepAnalysis(master);
             if (assistantId == null) {
-                throw new Exception("No assistant available");
+                throw new Exception("No assistant available for " + master);
             }
 
             // Create or get thread
@@ -1780,5 +1887,340 @@ public class FineTunedModelManager {
     public interface Callback<T> {
         void onSuccess(T result);
         void onError(String errorMessage);
+    }
+
+    // ========== REVOLUTIONARY VECTOR STORE INTEGRATION ==========
+    // Add these methods to the END of your existing FineTunedModelManager class
+
+    /**
+     * Vector search result from chess games database
+     */
+    public static class VectorSearchResult {
+        public final String content;
+        public final String metadata;
+        public final float similarity;
+
+        public VectorSearchResult(String content, String metadata, float similarity) {
+            this.content = content;
+            this.metadata = metadata;
+            this.similarity = similarity;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("VectorResult(similarity=%.3f, content=%s)",
+                    similarity, content.substring(0, Math.min(50, content.length())) + "...");
+        }
+    }
+
+    /**
+     * Callback for vector store searches
+     */
+    public interface VectorSearchCallback {
+        void onSearchResults(List<VectorSearchResult> results);
+        void onSearchError(String error);
+    }
+
+    /**
+     * CORE INNOVATION: Search the vector store for positions similar to current FEN
+     * This is what makes your engine play like chess legends! 🎯
+     */
+    public void searchVectorStoreForPositions(String query, int maxResults, VectorSearchCallback callback) {
+        Log.d(TAG, "🔍 Searching vector store for similar positions: " + query);
+
+        executorService.execute(() -> {
+            try {
+                // Create a thread for this search
+                String threadId = createConversationThread();
+                if (threadId == null) {
+                    mainHandler.post(() -> callback.onSearchError("Failed to create search thread"));
+                    return;
+                }
+
+                // Create the search message with specific instructions for chess position matching
+                String searchMessage = createVectorSearchMessage(query, maxResults);
+
+                // 🆕 ENHANCED: Use appropriate assistant based on current master
+                String currentMaster = getSelectedChessMaster();
+                String assistantId = getAssistantIdForDeepAnalysis(currentMaster);
+
+                String runId = sendEnhancedMessageToAssistant(threadId, assistantId, searchMessage, null, currentMaster);
+
+                if (runId == null) {
+                    mainHandler.post(() -> callback.onSearchError("Failed to initiate vector search"));
+                    return;
+                }
+
+                // Get the search results
+                String searchResponse = getChessMasterResponse(threadId, runId);
+
+                // Parse the response to extract similar positions
+                List<VectorSearchResult> results = parseVectorSearchResults(searchResponse);
+
+                Log.d(TAG, "✅ Vector search completed: " + results.size() + " results");
+                mainHandler.post(() -> callback.onSearchResults(results));
+
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Vector search error", e);
+                mainHandler.post(() -> callback.onSearchError("Vector search failed: " + e.getMessage()));
+            }
+        });
+    }
+
+    /**
+     * Create optimized search message for finding similar chess positions
+     */
+    private String createVectorSearchMessage(String query, int maxResults) {
+        StringBuilder message = new StringBuilder();
+
+        message.append("VECTOR STORE SEARCH REQUEST:\n\n");
+        message.append("Search your chess games database for positions similar to: ").append(query).append("\n\n");
+
+        message.append("SEARCH CRITERIA:\n");
+        message.append("- Find chess positions with similar tactical or strategic themes\n");
+        message.append("- Look for games where you faced similar pawn structures\n");
+        message.append("- Match positions with comparable piece activity\n");
+        message.append("- Find moments with similar evaluation or complexity\n\n");
+
+        message.append("RESPONSE FORMAT:\n");
+        message.append("Return EXACTLY the top ").append(maxResults).append(" most relevant results in this JSON format:\n");
+        message.append("{\n");
+        message.append("  \"search_results\": [\n");
+        message.append("    {\n");
+        message.append("      \"similarity_score\": 0.95,\n");
+        message.append("      \"opponent\": \"Opponent Name\",\n");
+        message.append("      \"year\": \"1962\",\n");
+        message.append("      \"tournament\": \"Tournament Name\",\n");
+        message.append("      \"move_played\": \"e4e5\",\n");
+        message.append("      \"fen_position\": \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR\",\n");
+        message.append("      \"annotation\": \"Key moment description\",\n");
+        message.append("      \"tags\": [\"attack\", \"sacrifice\"]\n");
+        message.append("    }\n");
+        message.append("  ]\n");
+        message.append("}\n\n");
+
+        message.append("IMPORTANT: Do NOT include citation markers like 【4:0†source】 in your JSON response. ");
+        message.append("Return clean, parseable JSON only.\n\n");
+
+        message.append("SEARCH QUERY: ").append(query);
+
+        return message.toString();
+    }
+
+    /**
+     * Parse vector search results from assistant response
+     */
+    private List<VectorSearchResult> parseVectorSearchResults(String response) {
+        List<VectorSearchResult> results = new ArrayList<>();
+
+        try {
+            if (response == null || response.trim().isEmpty()) {
+                Log.w(TAG, "Empty vector search response");
+                return results;
+            }
+
+            // Clean the response (remove citations and markdown)
+            String cleanResponse = cleanDatabaseCitations(response);
+
+            // Try to find JSON in the response
+            String jsonContent = extractJsonFromResponse(cleanResponse);
+            if (jsonContent == null) {
+                Log.w(TAG, "No JSON found in vector search response");
+                return results;
+            }
+
+            JSONObject responseJson = new JSONObject(jsonContent);
+            JSONArray searchResults = responseJson.optJSONArray("search_results");
+
+            if (searchResults == null) {
+                Log.w(TAG, "No search_results array found in response");
+                return results;
+            }
+
+            for (int i = 0; i < searchResults.length(); i++) {
+                try {
+                    JSONObject result = searchResults.getJSONObject(i);
+
+                    // Extract similarity score
+                    float similarity = (float) result.optDouble("similarity_score", 0.0);
+
+                    // Create content string
+                    String content = String.format("Move: %s in %s vs %s (%s) - %s",
+                            result.optString("move_played", ""),
+                            getMasterDisplayName(getSelectedChessMaster()), // Use current master name
+                            result.optString("opponent", ""),
+                            result.optString("year", ""),
+                            result.optString("annotation", ""));
+
+                    // Create metadata JSON
+                    String metadata = result.toString();
+
+                    results.add(new VectorSearchResult(content, metadata, similarity));
+
+                } catch (Exception e) {
+                    Log.w(TAG, "Error parsing search result " + i, e);
+                }
+            }
+
+            Log.d(TAG, "🎯 Parsed " + results.size() + " vector search results");
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing vector search results", e);
+        }
+
+        return results;
+    }
+
+    /**
+     * Extract JSON content from assistant response
+     */
+    private String extractJsonFromResponse(String response) {
+        try {
+            // Look for JSON object markers
+            int startIndex = response.indexOf("{");
+            int endIndex = response.lastIndexOf("}");
+
+            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+                return response.substring(startIndex, endIndex + 1);
+            }
+
+            // Try to find JSON array markers
+            startIndex = response.indexOf("[");
+            endIndex = response.lastIndexOf("]");
+
+            if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+                return "{\"search_results\":" + response.substring(startIndex, endIndex + 1) + "}";
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error extracting JSON from response", e);
+        }
+
+        return null;
+    }
+
+    /**
+     * ENHANCED: Get best historical move for current position
+     * This method specifically looks for exact or near-exact position matches
+     */
+    public void getHistoricalMoveForPosition(String fen, String master, Callback<String> callback) {
+        Log.d(TAG, "🏛️ Looking for historical move for position: " + fen.substring(0, Math.min(20, fen.length())));
+
+        String searchQuery = "exact chess position " + fen + " move played tactical decision";
+
+        searchVectorStoreForPositions(searchQuery, 3, new VectorSearchCallback() {
+            @Override
+            public void onSearchResults(List<VectorSearchResult> results) {
+                String bestMove = null;
+                String context = "";
+
+                // Look for the highest similarity result with a clear move
+                for (VectorSearchResult result : results) {
+                    try {
+                        JSONObject metadata = new JSONObject(result.metadata);
+                        String move = metadata.optString("move_played", "");
+
+                        if (!move.isEmpty() && result.similarity > 0.7f) { // High similarity threshold
+                            bestMove = move;
+                            context = String.format("Historical match: %s vs %s (%s) - %s",
+                                    master,
+                                    metadata.optString("opponent", ""),
+                                    metadata.optString("year", ""),
+                                    metadata.optString("annotation", ""));
+                            break;
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error processing historical result", e);
+                    }
+                }
+
+                final String finalMove = bestMove;
+                final String finalContext = context;
+
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onSuccess(finalMove != null ? finalMove + "|" + finalContext : null);
+                    }
+                });
+            }
+
+            @Override
+            public void onSearchError(String error) {
+                Log.e(TAG, "Historical move search failed: " + error);
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onError("Failed to find historical move: " + error);
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * ENHANCED: Get tactical insights for current position from vector store
+     */
+    public void getTacticalInsightsForPosition(String fen, String master, Callback<String> callback) {
+        Log.d(TAG, "⚔️ Getting tactical insights for position");
+
+        String searchQuery = "tactical themes position " + fen + " attack sacrifice combination";
+
+        searchVectorStoreForPositions(searchQuery, 5, new VectorSearchCallback() {
+            @Override
+            public void onSearchResults(List<VectorSearchResult> results) {
+                StringBuilder insights = new StringBuilder();
+
+                Map<String, Integer> tacticalThemes = new HashMap<>();
+
+                // Analyze tactical themes from similar positions
+                for (VectorSearchResult result : results) {
+                    try {
+                        JSONObject metadata = new JSONObject(result.metadata);
+                        JSONArray tags = metadata.optJSONArray("tags");
+
+                        if (tags != null) {
+                            for (int i = 0; i < tags.length(); i++) {
+                                String tag = tags.getString(i);
+                                tacticalThemes.put(tag, tacticalThemes.getOrDefault(tag, 0) + 1);
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Error processing tactical insight", e);
+                    }
+                }
+
+                // Build insights based on most common themes
+                if (!tacticalThemes.isEmpty()) {
+                    insights.append("Based on similar positions from my games, ");
+
+                    List<Map.Entry<String, Integer>> sortedThemes = new ArrayList<>(tacticalThemes.entrySet());
+                    sortedThemes.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+                    for (int i = 0; i < Math.min(3, sortedThemes.size()); i++) {
+                        String theme = sortedThemes.get(i).getKey();
+                        if (i > 0) insights.append(", ");
+                        insights.append(theme);
+                    }
+
+                    insights.append(" themes are key here.");
+                }
+
+                final String finalInsights = insights.toString();
+
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onSuccess(finalInsights.isEmpty() ? null : finalInsights);
+                    }
+                });
+            }
+
+            @Override
+            public void onSearchError(String error) {
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onError("Failed to get tactical insights: " + error);
+                    }
+                });
+            }
+        });
     }
 }

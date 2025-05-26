@@ -1,4 +1,4 @@
-// GameRepository.java in com.example.chesspedagogue.repository
+// GameRepository.java - FIXED VERSION WITH PERSONALITY ENGINE
 package com.example.chesspedagogue.repository;
 
 import android.os.Handler;
@@ -6,6 +6,9 @@ import android.os.Looper;
 import android.util.Log;
 import android.content.Context;
 
+import com.example.chesspedagogue.ChessMasterRatings;
+import com.example.chesspedagogue.PersonalityEngine;
+import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.StockfishManager;
 
 import java.io.File;
@@ -31,6 +34,9 @@ public class GameRepository {
     private final Handler mainHandler;
     private final Context context;
 
+    // FIXED: Personality Engine fields
+    private PersonalityEngine personalityEngine;
+    private boolean usePersonalityEngine = false;
     private int lastMoveCount = 0;
 
     public GameRepository(Context context) {
@@ -38,22 +44,27 @@ public class GameRepository {
         stockfishManager = new StockfishManager();
         executorService = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
-        initializeEngine();
 
-        // Initialize Stockfish on a background thread
-        executorService.execute(() -> {
-            try {
-                // To include the engine path (using your existing initialization code):
-                File engineFile = new File(context.getApplicationInfo().nativeLibraryDir, "libstockfish.so");
-                stockfishManager.startEngine(engineFile.getAbsolutePath());
-                stockfishManager.newGame();
-            } catch (Exception e) {
-                Log.e(TAG, "Error initializing Stockfish", e);
-            }
-        });
+        // FIXED: Initialize engine first, then personality engine
+        initializeEngine();
+        initializePersonalityEngine();
     }
 
-    // NEW METHOD - more robust initialization
+    /**
+     * FIXED: Initialize the PersonalityEngine after Stockfish is ready
+     */
+    private void initializePersonalityEngine() {
+        try {
+            personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
+            Log.d(TAG, "🎭 PersonalityEngine initialized successfully!");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize PersonalityEngine", e);
+        }
+    }
+
+    /**
+     * NEW METHOD - more robust initialization
+     */
     private void initializeEngine() {
         try {
             // Do the basic initialization on the main thread to avoid race conditions
@@ -79,7 +90,270 @@ public class GameRepository {
     }
 
     /**
-     * ENHANCED: Thread-safe move legality checking
+     * REVOLUTIONARY: Calculate best move using personality-guided engine!
+     * This is Ben's breakthrough innovation - an engine that plays like chess legends! 🚀
+     */
+    public void calculatePersonalityMove(MoveCallback callback) {
+        if (!usePersonalityEngine || personalityEngine == null) {
+            // Fall back to regular engine calculation
+            calculateBestMove(callback);
+            return;
+        }
+
+        Log.d(TAG, "🎭 CALCULATING PERSONALITY MOVE - This is revolutionary!");
+
+        executorService.execute(() -> {
+            engineLock.lock();
+            try {
+                String currentFen = getCurrentFEN();
+                Log.d(TAG, "🎯 Getting personality move for position: " + currentFen.substring(0, Math.min(30, currentFen.length())));
+
+                personalityEngine.selectPersonalityMove(currentFen, new PersonalityEngine.PersonalityMoveCallback() {
+                    @Override
+                    public void onPersonalityMoveSelected(PersonalityEngine.PersonalityMove selectedMove,
+                                                          List<PersonalityEngine.PersonalityMove> allCandidates) {
+
+                        Log.d(TAG, "🎭 PERSONALITY MOVE SELECTED: " + selectedMove);
+
+                        // Log all candidates for debugging
+                        Log.d(TAG, "🎯 Move candidates considered:");
+                        for (int i = 0; i < Math.min(5, allCandidates.size()); i++) {
+                            PersonalityEngine.PersonalityMove candidate = allCandidates.get(i);
+                            Log.d(TAG, String.format("  %d. %s", i+1, candidate.toString()));
+                        }
+
+                        mainHandler.post(() -> {
+                            if (selectedMove != null && selectedMove.move != null) {
+                                callback.onMoveCalculated(selectedMove.move);
+
+                                // Store the personality context for later explanation
+                                storePersonalityContext(selectedMove);
+                            } else {
+                                Log.e(TAG, "❌ Personality engine returned null move");
+                                callback.onError("Personality engine failed to select move");
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onPersonalityAnalysisComplete(String analysis, String masterQuote) {
+                        Log.d(TAG, "🎭 Personality Analysis: " + analysis);
+                        Log.d(TAG, "💬 Master Quote: " + masterQuote);
+
+                        // You could store these for UI display or voice synthesis
+                        storePersonalityAnalysis(analysis, masterQuote);
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        Log.e(TAG, "❌ PersonalityEngine error: " + errorMessage);
+                        mainHandler.post(() -> {
+                            // Fall back to regular engine move
+                            Log.d(TAG, "🔄 Falling back to regular engine calculation");
+                            calculateBestMove(callback);
+                        });
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in personality move calculation", e);
+                mainHandler.post(() -> callback.onError("Personality engine error: " + e.getMessage()));
+            } finally {
+                engineLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * Store personality context for later use (explanations, UI display, etc.)
+     */
+    private void storePersonalityContext(PersonalityEngine.PersonalityMove move) {
+        // Store in SharedPreferences or memory for UI access
+        try {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("personality_context", Context.MODE_PRIVATE);
+            android.content.SharedPreferences.Editor editor = prefs.edit();
+
+            editor.putString("last_move", move.move);
+            editor.putFloat("engine_score", move.engineScore);
+            editor.putFloat("personality_bonus", move.personalityBonus);
+            editor.putString("historical_context", move.historicalContext);
+            editor.putBoolean("is_historical_match", move.isHistoricalMatch);
+
+            editor.apply();
+
+            Log.d(TAG, "💾 Stored personality context for UI access");
+        } catch (Exception e) {
+            Log.e(TAG, "Error storing personality context", e);
+        }
+    }
+
+    /**
+     * Store personality analysis for UI/voice synthesis
+     */
+    private void storePersonalityAnalysis(String analysis, String masterQuote) {
+        try {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("personality_context", Context.MODE_PRIVATE);
+            android.content.SharedPreferences.Editor editor = prefs.edit();
+
+            editor.putString("move_analysis", analysis);
+            editor.putString("master_quote", masterQuote);
+            editor.putLong("analysis_timestamp", System.currentTimeMillis());
+
+            editor.apply();
+
+            Log.d(TAG, "💾 Stored personality analysis");
+        } catch (Exception e) {
+            Log.e(TAG, "Error storing personality analysis", e);
+        }
+    }
+
+    /**
+     * Configure the personality engine settings
+     */
+    public void configurePersonalityEngine(String master, float personalityWeight, boolean enabled) {
+        if (personalityEngine == null) {
+            initializePersonalityEngine();
+        }
+
+        if (personalityEngine != null) {
+            personalityEngine.setCurrentMaster(master);
+            personalityEngine.setPersonalityWeight(personalityWeight);
+            personalityEngine.setPersonalityPlayEnabled(enabled);
+
+            this.usePersonalityEngine = enabled;
+
+            Log.d(TAG, String.format("🎭 Personality engine configured: master=%s, weight=%.2f, enabled=%s",
+                    master, personalityWeight, enabled));
+        } else {
+            Log.e(TAG, "❌ Cannot configure personality engine - initialization failed");
+        }
+    }
+
+    /**
+     * Get the last personality move context for UI display
+     */
+    public PersonalityMoveContext getLastPersonalityContext() {
+        try {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("personality_context", Context.MODE_PRIVATE);
+
+            String move = prefs.getString("last_move", "");
+            if (move.isEmpty()) return null;
+
+            return new PersonalityMoveContext(
+                    move,
+                    prefs.getFloat("engine_score", 0.0f),
+                    prefs.getFloat("personality_bonus", 0.0f),
+                    prefs.getString("historical_context", ""),
+                    prefs.getBoolean("is_historical_match", false),
+                    prefs.getString("move_analysis", ""),
+                    prefs.getString("master_quote", "")
+            );
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error retrieving personality context", e);
+            return null;
+        }
+    }
+
+    /**
+     * Check if personality engine is available and configured
+     */
+    public boolean isPersonalityEngineAvailable() {
+        return personalityEngine != null && usePersonalityEngine;
+    }
+
+    /**
+     * Get historical move suggestion for current position
+     */
+    public void getHistoricalMoveSuggestion(String master, Callback<String> callback) {
+        if (personalityEngine == null) {
+            if (callback != null) {
+                callback.onError("Personality engine not available");
+            }
+            return;
+        }
+
+        executorService.execute(() -> {
+            engineLock.lock();
+            try {
+                String currentFen = getCurrentFEN();
+
+                // Use the FineTunedModelManager to search for historical moves
+                FineTunedModelManager modelManager = FineTunedModelManager.getInstance(context);
+                modelManager.getHistoricalMoveForPosition(currentFen, master, new FineTunedModelManager.Callback<String>() {
+                    @Override
+                    public void onSuccess(String result) {
+                        mainHandler.post(() -> {
+                            if (callback != null) {
+                                callback.onSuccess(result);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        mainHandler.post(() -> {
+                            if (callback != null) {
+                                callback.onError(errorMessage);
+                            }
+                        });
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting historical move suggestion", e);
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onError("Failed to get historical suggestion: " + e.getMessage());
+                    }
+                });
+            } finally {
+                engineLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * Data class to hold personality move context
+     */
+    public static class PersonalityMoveContext {
+        public final String move;
+        public final float engineScore;
+        public final float personalityBonus;
+        public final String historicalContext;
+        public final boolean isHistoricalMatch;
+        public final String analysis;
+        public final String masterQuote;
+
+        public PersonalityMoveContext(String move, float engineScore, float personalityBonus,
+                                      String historicalContext, boolean isHistoricalMatch,
+                                      String analysis, String masterQuote) {
+            this.move = move;
+            this.engineScore = engineScore;
+            this.personalityBonus = personalityBonus;
+            this.historicalContext = historicalContext;
+            this.isHistoricalMatch = isHistoricalMatch;
+            this.analysis = analysis;
+            this.masterQuote = masterQuote;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("PersonalityMove{%s, engine=%.2f, personality=+%.2f, historical=%s}",
+                    move, engineScore, personalityBonus, isHistoricalMatch);
+        }
+    }
+
+    // Add this to your existing cleanup() method
+    public void cleanupPersonalityEngine() {
+        if (personalityEngine != null) {
+            // PersonalityEngine cleanup if needed
+            Log.d(TAG, "🧹 Personality engine cleanup completed");
+        }
+    }
+
+    /**
+     * ENHANCED: Thread safety with proper locking
      */
     public boolean isLegalMove(String move) {
         engineLock.lock();
@@ -200,6 +474,14 @@ public class GameRepository {
     }
 
     /**
+     * Callback interface for general use
+     */
+    public interface Callback<T> {
+        void onSuccess(T result);
+        void onError(String errorMessage);
+    }
+
+    /**
      * ENHANCED: Thread-safe evaluation with proper sequencing
      */
     public void getCurrentEvaluation(EvaluationCallback callback) {
@@ -272,22 +554,108 @@ public class GameRepository {
         }
     }
 
+    // Updated methods for GameRepository.java - ACCURATE ELO IMPLEMENTATION
+
     /**
-     * ENHANCED: Thread-safe best move calculation
+     * FIXED: Configure engine with ACCURATE ELO ratings
+     * This replaces your existing configureEngine method
+     */
+    public void configureEngine(int skillLevel, int engineElo) {
+        executorService.execute(() -> {
+            engineLock.lock();
+            try {
+                Log.d(TAG, "🔧 Configuring engine with ACCURATE ELO: " + engineElo);
+
+                // FIXED: Use proper ELO to Stockfish mapping
+                ChessMasterRatings.StockfishConfig config = ChessMasterRatings.getStockfishConfigForElo(engineElo);
+
+                Log.d(TAG, "📊 Stockfish config: " + config.toString());
+
+                // Set the calculated skill level (not the slider value!)
+                boolean skillSet = stockfishManager.setSkillLevel(config.skillLevel);
+                Log.d(TAG, "Skill level " + config.skillLevel + " set: " + skillSet);
+
+                // For high-level play, disable skill limiting and use time control
+                if (engineElo >= 2400) {
+                    try {
+                        // Disable skill level limitation for strong players
+                        stockfishManager.sendCommand("setoption name UCI_LimitStrength value false");
+                        stockfishManager.waitForReady(100);
+
+                        // Use depth and time for strength instead
+                        stockfishManager.sendCommand("setoption name Depth value " + Math.min(20, 10 + (engineElo - 2400) / 50));
+                        stockfishManager.waitForReady(100);
+
+                        Log.d(TAG, "🚀 High-strength mode enabled for " + engineElo + " ELO");
+
+                    } catch (IOException e) {
+                        Log.w(TAG, "Could not set high-strength options: " + e.getMessage());
+                    }
+                } else {
+                    try {
+                        // Enable UCI_LimitStrength for accurate ELO targeting
+                        stockfishManager.sendCommand("setoption name UCI_LimitStrength value true");
+                        stockfishManager.waitForReady(100);
+
+                        stockfishManager.sendCommand("setoption name UCI_Elo value " + config.targetElo);
+                        stockfishManager.waitForReady(100);
+
+                        Log.d(TAG, "🎯 ELO limiting enabled: " + config.targetElo);
+
+                    } catch (IOException e) {
+                        Log.w(TAG, "Could not set ELO limiting: " + e.getMessage());
+                    }
+                }
+
+                // Add variety while maintaining strength
+                try {
+                    // Contempt factor for personality
+                    int contempt = (int) (Math.random() * 10 - 5); // -5 to +5
+                    stockfishManager.sendCommand("setoption name Contempt value " + contempt);
+                    stockfishManager.waitForReady(100);
+
+                    Log.d(TAG, "✅ Engine configuration complete! Target: " + engineElo + " ELO");
+
+                } catch (IOException e) {
+                    Log.w(TAG, "Could not set variety options: " + e.getMessage());
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error configuring engine", e);
+            } finally {
+                engineLock.unlock();
+            }
+        });
+    }
+
+    /**
+     * NEW: Configure engine for specific chess master with historical rating
+     */
+    public void configureEngineForMaster(String master) {
+        int peakRating = ChessMasterRatings.getPeakRating(master);
+        Log.d(TAG, "🎭 Configuring engine for " + master + " at peak rating: " + peakRating);
+
+        configureEngine(0, peakRating); // Skill level irrelevant, use accurate ELO
+    }
+
+    /**
+     * ENHANCED: Better move calculation with accurate strength
      */
     public void calculateBestMove(MoveCallback callback) {
-        // Execute this on a background thread with proper locking
         executorService.execute(() -> {
             engineLock.lock();
             try {
                 Log.d(TAG, "🤔 Calculating best move...");
 
-                // Let Stockfish think for a moment
-                String bestMove = stockfishManager.getBestMove(1000); // 1 second think time
+                // Get the current engine configuration for appropriate think time
+                String currentFen = getCurrentFEN();
 
-                Log.d(TAG, "🎯 Engine calculated best move: " + bestMove);
+                // Determine think time based on position complexity and engine strength
+                int thinkTime = calculateThinkTime(currentFen);
 
-                // Return the result on the main thread
+                String bestMove = stockfishManager.getBestMove(thinkTime);
+                Log.d(TAG, "🎯 Engine calculated best move: " + bestMove + " (think time: " + thinkTime + "ms)");
+
                 mainHandler.post(() -> {
                     if (bestMove != null && !bestMove.isEmpty()) {
                         callback.onMoveCalculated(bestMove);
@@ -300,34 +668,58 @@ public class GameRepository {
                 mainHandler.post(() -> callback.onError("Engine error: " + e.getMessage()));
             } finally {
                 engineLock.unlock();
-                Log.d(TAG, "🔓 Best move calculation lock released");
             }
         });
     }
 
-    // In GameRepository:
-    public void makeEngineMove(MoveCallback callback) {
-        executorService.submit(() -> {
-            engineLock.lock();
-            try {
-                // Engine operations on background thread
-                String engineMove = stockfishManager.getBestMove(1000);
+    /**
+     * NEW: Calculate appropriate think time based on position and engine strength
+     */
+    private int calculateThinkTime(String fen) {
+        // Base think time
+        int baseTime = 1000; // 1 second
 
-                // Return to main thread for callback
-                mainHandler.post(() -> {
-                    if (engineMove != null && !engineMove.isEmpty()) {
-                        callback.onMoveCalculated(engineMove);
-                    } else {
-                        callback.onError("Engine failed to generate move");
-                    }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "Engine error", e);
-                mainHandler.post(() -> callback.onError("Engine error: " + e.getMessage()));
-            } finally {
-                engineLock.unlock();
+        // Adjust based on position complexity
+        int pieceCount = countPieces(fen);
+        if (pieceCount < 10) {
+            baseTime += 500; // More time in endgames
+        } else if (pieceCount > 25) {
+            baseTime += 300; // More time in complex positions
+        }
+
+        // Adjust based on configured strength (stored in SharedPreferences)
+        try {
+            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            int configuredElo = prefs.getInt("ENGINE_ELO", 1750);
+
+            if (configuredElo >= 2600) {
+                baseTime += 1000; // Grandmaster level gets more time
+            } else if (configuredElo >= 2200) {
+                baseTime += 500;  // Master level
             }
-        });
+        } catch (Exception e) {
+            Log.w(TAG, "Could not get configured ELO for think time");
+        }
+
+        return Math.min(baseTime, 3000); // Cap at 3 seconds for responsiveness
+    }
+
+    /**
+     * Helper: Count pieces on the board
+     */
+    private int countPieces(String fen) {
+        if (fen == null) return 32;
+
+        String boardPart = fen.split(" ")[0];
+        int count = 0;
+
+        for (char c : boardPart.toCharArray()) {
+            if (Character.isLetter(c)) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -397,51 +789,6 @@ public class GameRepository {
     }
 
     /**
-     * NEW METHOD: Configure engine with skill level and Elo rating
-     * This method applies the settings from the splash screen
-     */
-    public void configureEngine(int skillLevel, int engineElo) {
-        executorService.execute(() -> {
-            engineLock.lock();
-            try {
-                Log.d(TAG, "🔧 Configuring engine: skillLevel=" + skillLevel + ", elo=" + engineElo);
-
-                // Set skill level (0-20)
-                boolean skillSet = stockfishManager.setSkillLevel(skillLevel);
-                Log.d(TAG, "Skill level " + skillLevel + " set: " + skillSet);
-
-                // Set engine strength by Elo rating
-                boolean eloSet = stockfishManager.setEngineStrength(engineElo);
-                Log.d(TAG, "Engine Elo " + engineElo + " set: " + eloSet);
-
-                // Add some randomness to make the engine less predictable
-                try {
-                    // MultiPV makes the engine consider multiple lines
-                    stockfishManager.sendCommand("setoption name MultiPV value 3");
-                    stockfishManager.waitForReady(100);
-
-                    // Add some randomness by using a contempt factor
-                    int contempt = (int) (Math.random() * 20 - 10); // Random between -10 and +10
-                    stockfishManager.sendCommand("setoption name Contempt value " + contempt);
-                    stockfishManager.waitForReady(100);
-
-                    Log.d(TAG, "✅ Engine variety settings applied: MultiPV=3, Contempt=" + contempt);
-
-                } catch (IOException e) {
-                    Log.w(TAG, "Could not set variety options: " + e.getMessage());
-                }
-
-                Log.d(TAG, "✅ Engine configuration complete!");
-
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error configuring engine", e);
-            } finally {
-                engineLock.unlock();
-            }
-        });
-    }
-
-    /**
      * ENHANCED: Thread-safe single move with state verification
      */
     public boolean makeMove(String move) {
@@ -507,6 +854,9 @@ public class GameRepository {
 
         // Stop the engine processing flag
         isEngineProcessing.set(false);
+
+        // Cleanup personality engine
+        cleanupPersonalityEngine();
 
         // Shutdown executor service
         if (executorService != null && !executorService.isShutdown()) {
