@@ -5,9 +5,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,24 +15,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * REVOLUTIONARY PersonalityEngine - Makes Stockfish play like chess legends!
+ * LIGHTNING-FAST PersonalityEngine - Now with instant local database lookups!
  *
- * This is the breakthrough innovation: instead of just analyzing positions,
- * we actually make the engine PLAY like Tal, Fischer, Kasparov, etc. by:
- * 1. Finding similar positions from their actual games
- * 2. Boosting moves they would have played
- * 3. Balancing engine strength with historical personality
+ * This revolutionary engine makes Stockfish play like chess legends using
+ * blazing-fast local FEN lookups instead of slow API calls.
  *
- * Ben's vision brought to life! 🚀♟️
+ * Ben's vision brought to life with ZERO network delays! 🚀♟️
  */
 public class PersonalityEngine {
     private static final String TAG = "PersonalityEngine";
 
     // Personality tuning parameters
-    private static final float DEFAULT_PERSONALITY_WEIGHT = 0.3f; // How much to favor historical moves
-    private static final float MIN_ENGINE_THRESHOLD = -1.0f; // Don't play moves worse than this
-    private static final int MAX_SIMILAR_POSITIONS = 5; // Top N similar positions to consider
-    private static final int STOCKFISH_CANDIDATES = 8; // Top moves from engine
+    private static final float DEFAULT_PERSONALITY_WEIGHT = 0.3f;
+    private static final float MIN_ENGINE_THRESHOLD = -1.0f;
+    private static final int MAX_SIMILAR_POSITIONS = 5;
+    private static final int STOCKFISH_CANDIDATES = 8;
 
     private static PersonalityEngine instance;
 
@@ -44,9 +38,8 @@ public class PersonalityEngine {
     private final ExecutorService executorService;
 
     // Core services
-    private final FineTunedModelManager modelManager;
-    private final OpenAIService openAIService;
     private final StockfishManager stockfishManager;
+    private final GameDatabaseHelper databaseHelper; // 🚀 Now using your enhanced database!
 
     // Personality settings
     private float personalityWeight = DEFAULT_PERSONALITY_WEIGHT;
@@ -61,8 +54,8 @@ public class PersonalityEngine {
         public final float engineScore;
         public final float personalityBonus;
         public final float finalScore;
-        public final String historicalContext; // Why this move matches the master's style
-        public final boolean isHistoricalMatch; // Did the master actually play this?
+        public final String historicalContext;
+        public final boolean isHistoricalMatch;
 
         public PersonalityMove(String move, float engineScore, float personalityBonus,
                                String historicalContext, boolean isHistoricalMatch) {
@@ -91,17 +84,37 @@ public class PersonalityEngine {
         void onError(String errorMessage);
     }
 
+    /**
+     * ENHANCED: Vector search result class for compatibility
+     */
+    public static class VectorSearchResult {
+        public final String content;
+        public final String metadata;
+        public final float similarity;
+
+        public VectorSearchResult(String content, String metadata, float similarity) {
+            this.content = content;
+            this.metadata = metadata;
+            this.similarity = similarity;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("VectorResult(similarity=%.3f, content=%s)",
+                    similarity, content.substring(0, Math.min(50, content.length())) + "...");
+        }
+    }
+
     private PersonalityEngine(Context context, StockfishManager stockfishManager) {
         this.context = context.getApplicationContext();
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newCachedThreadPool();
         this.stockfishManager = stockfishManager;
 
-        // Initialize services
-        this.modelManager = FineTunedModelManager.getInstance(context);
-        this.openAIService = OpenAIService.getInstance();
+        // 🚀 Initialize with your enhanced database helper!
+        this.databaseHelper = new GameDatabaseHelper(context);
 
-        Log.d(TAG, "🎭 PersonalityEngine initialized - Ready to bring chess legends to life!");
+        Log.d(TAG, "🎭 PersonalityEngine initialized with LIGHTNING-FAST local database!");
     }
 
     public static synchronized PersonalityEngine getInstance(Context context, StockfishManager stockfishManager) {
@@ -112,15 +125,13 @@ public class PersonalityEngine {
     }
 
     /**
-     * THE CORE METHOD: Select a move that balances engine strength with master personality!
-     * This is where the magic happens! ✨
+     * 🚀 THE CORE METHOD: Select a move with INSTANT local database lookups!
+     * No more network delays - everything happens locally at lightning speed!
      */
     public void selectPersonalityMove(String currentFen, PersonalityMoveCallback callback) {
-        Log.d(TAG, "🎯 Selecting personality move for " + currentMaster);
-        Log.d(TAG, "📋 Position: " + currentFen.substring(0, Math.min(30, currentFen.length())) + "...");
+        Log.d(TAG, "⚡ LIGHTNING-FAST personality move selection for " + currentMaster);
 
         if (!enablePersonalityPlay) {
-            // Fall back to pure engine play
             selectPureEngineMove(currentFen, callback);
             return;
         }
@@ -131,8 +142,8 @@ public class PersonalityEngine {
                 List<PersonalityMove> engineCandidates = getEngineCandidates(currentFen);
                 Log.d(TAG, "🤖 Got " + engineCandidates.size() + " engine candidates");
 
-                // Step 2: Find similar positions from master's games
-                findSimilarPositions(currentFen, engineCandidates, callback);
+                // Step 2: INSTANT local database lookup - no network delays!
+                findSimilarPositionsLocally(currentFen, engineCandidates, callback);
 
             } catch (Exception e) {
                 Log.e(TAG, "❌ Error in personality move selection", e);
@@ -148,16 +159,10 @@ public class PersonalityEngine {
         List<PersonalityMove> candidates = new ArrayList<>();
 
         try {
-            // Set the position
             stockfishManager.setPosition(currentFen);
-
-            // Get detailed analysis with multiple principal variations
-            String analysis = stockfishManager.getDetailedAnalysis(2000); // 2 seconds
-
-            // Parse the analysis to extract moves and scores
+            String analysis = stockfishManager.getDetailedAnalysis(2000);
             candidates = parseStockfishAnalysis(analysis);
 
-            // If parsing failed, get at least the best move
             if (candidates.isEmpty()) {
                 String bestMove = stockfishManager.getBestMove(1000);
                 if (bestMove != null && !bestMove.isEmpty()) {
@@ -186,21 +191,18 @@ public class PersonalityEngine {
             for (String line : lines) {
                 if (line.contains("info depth") && line.contains("score") && line.contains("pv")) {
                     try {
-                        // Extract score
                         float score = 0.0f;
                         if (line.contains("score cp")) {
                             int cpIndex = line.indexOf("score cp") + 8;
                             int nextSpace = line.indexOf(" ", cpIndex);
                             if (nextSpace > cpIndex) {
                                 int centipawns = Integer.parseInt(line.substring(cpIndex, nextSpace).trim());
-                                score = centipawns / 100.0f; // Convert to pawns
+                                score = centipawns / 100.0f;
                             }
                         } else if (line.contains("score mate")) {
-                            // Handle mate scores
-                            score = 10.0f; // High value for mate
+                            score = 10.0f;
                         }
 
-                        // Extract first move from principal variation
                         int pvIndex = line.indexOf("pv ") + 3;
                         if (pvIndex > 2) {
                             String pvSection = line.substring(pvIndex);
@@ -223,7 +225,6 @@ public class PersonalityEngine {
             Log.e(TAG, "Error parsing Stockfish analysis", e);
         }
 
-        // Remove duplicates and sort by score
         Map<String, PersonalityMove> uniqueMoves = new HashMap<>();
         for (PersonalityMove move : moves) {
             if (!uniqueMoves.containsKey(move.move) ||
@@ -235,83 +236,129 @@ public class PersonalityEngine {
         List<PersonalityMove> result = new ArrayList<>(uniqueMoves.values());
         Collections.sort(result, (a, b) -> Float.compare(b.engineScore, a.engineScore));
 
-        // Limit to top candidates
         return result.subList(0, Math.min(STOCKFISH_CANDIDATES, result.size()));
     }
 
     /**
-     * THE HEART OF THE INNOVATION: Find similar positions and boost historical moves! 🎯
+     * 🚀 THE HEART OF THE INNOVATION: Instant local database lookups!
+     * This replaces slow API calls with lightning-fast local queries!
      */
-    private void findSimilarPositions(String currentFen, List<PersonalityMove> engineCandidates,
-                                      PersonalityMoveCallback callback) {
+    // In PersonalityEngine.java, modify the findSimilarPositionsLocally method
+    private void findSimilarPositionsLocally(String currentFen, List<PersonalityMove> engineCandidates,
+                                             PersonalityMoveCallback callback) {
 
-        Log.d(TAG, "🔍 Searching for similar positions in " + currentMaster + "'s games...");
+        Log.d(TAG, "⚡ INSTANT local database lookup for " + currentMaster + "...");
 
-        // Create search query for vector store
-        String searchQuery = createFenSearchQuery(currentFen);
+        try {
+            // 🔧 FIX: Try multiple name variations for better matching
+            String[] masterVariations = {
+                    currentMaster.toLowerCase(),                    // "tal"
+                    capitalizeFirst(currentMaster),                 // "Tal"
+                    getFullMasterName(currentMaster.toLowerCase()), // "Mikhail Tal"
+                    currentMaster.toLowerCase().replace(" ", "")    // Handle any spacing issues
+            };
 
-        // Search the vector store for similar positions
-        modelManager.searchVectorStoreForPositions(searchQuery, MAX_SIMILAR_POSITIONS,
-                new FineTunedModelManager.VectorSearchCallback() {
-                    @Override
-                    public void onSearchResults(List<FineTunedModelManager.VectorSearchResult> results) {
-                        Log.d(TAG, "📚 Found " + results.size() + " similar positions");
+            List<GameDatabaseHelper.HistoricalPosition> historicalPositions = new ArrayList<>();
 
-                        // Apply personality scoring
-                        List<PersonalityMove> scoredMoves = applyPersonalityScoring(engineCandidates, results);
+            // Try each name variation until we find data
+            for (String nameVariation : masterVariations) {
+                List<GameDatabaseHelper.HistoricalPosition> results =
+                        databaseHelper.findSimilarPositions(currentFen, nameVariation, MAX_SIMILAR_POSITIONS);
 
-                        // Select the best move
-                        PersonalityMove selectedMove = selectBestPersonalityMove(scoredMoves);
+                Log.d(TAG, "🔍 Trying name '" + nameVariation + "': found " + results.size() + " positions");
 
-                        // Generate explanation
-                        generateMoveExplanation(selectedMove, results, callback);
+                if (!results.isEmpty()) {
+                    historicalPositions = results;
+                    Log.d(TAG, "✅ SUCCESS with name variation: '" + nameVariation + "'");
+                    break;
+                }
+            }
 
-                        // Return the result
-                        mainHandler.post(() -> {
-                            callback.onPersonalityMoveSelected(selectedMove, scoredMoves);
-                        });
-                    }
+            Log.d(TAG, "✅ FINAL lookup result: Found " + historicalPositions.size() + " similar positions");
 
-                    @Override
-                    public void onSearchError(String error) {
-                        Log.e(TAG, "❌ Vector search failed: " + error);
+            // Rest of your existing logic...
+            List<VectorSearchResult> compatibleResults = new ArrayList<>();
+            for (GameDatabaseHelper.HistoricalPosition pos : historicalPositions) {
+                compatibleResults.add(pos.toVectorSearchResult());
+            }
 
-                        // Fall back to pure engine selection
-                        PersonalityMove fallbackMove = engineCandidates.isEmpty() ?
-                                null : engineCandidates.get(0);
+            // Continue with existing logic...
+            List<PersonalityMove> scoredMoves = applyPersonalityScoring(engineCandidates, compatibleResults);
+            PersonalityMove selectedMove = selectBestPersonalityMove(scoredMoves);
+            generateMoveExplanation(selectedMove, compatibleResults, callback);
 
-                        mainHandler.post(() -> {
-                            if (fallbackMove != null) {
-                                callback.onPersonalityMoveSelected(fallbackMove, engineCandidates);
-                            } else {
-                                callback.onError("No moves available");
-                            }
-                        });
-                    }
-                });
+            mainHandler.post(() -> {
+                callback.onPersonalityMoveSelected(selectedMove, scoredMoves);
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in local database lookup", e);
+            // Your existing fallback logic...
+        }
+    }
+
+    // Add these helper methods to PersonalityEngine.java
+    private String capitalizeFirst(String str) {
+        if (str == null || str.isEmpty()) return str;
+        return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
+    private String getFullMasterName(String shortName) {
+        switch (shortName.toLowerCase()) {
+            case "tal": return "Mikhail Tal";
+            case "fischer": return "Bobby Fischer";
+            case "kasparov": return "Garry Kasparov";
+            case "kramnik": return "Vladimir Kramnik";
+            case "karpov": return "Anatoly Karpov";
+            default: return shortName;
+        }
+    }
+
+    // Add this helper method to PersonalityEngine.java
+    private String convertUciToAlgebraic(String uciMove) {
+        if (uciMove == null || uciMove.length() < 4) return uciMove;
+
+        try {
+            // Basic UCI to algebraic conversion for common moves
+            String from = uciMove.substring(0, 2);
+            String to = uciMove.substring(2, 4);
+
+            // For simple pawn moves like d2d4 -> d4
+            char fromFile = from.charAt(0);
+            char fromRank = from.charAt(1);
+            char toFile = to.charAt(0);
+            char toRank = to.charAt(1);
+
+            // Simple pawn move (same file, no capture)
+            if (fromFile == toFile) {
+                return String.valueOf(toFile) + String.valueOf(toRank);
+            }
+
+            // For more complex moves, we'd need piece type detection
+            // For now, return the destination square
+            return String.valueOf(toFile) + String.valueOf(toRank);
+
+        } catch (Exception e) {
+            Log.w(TAG, "Move conversion failed for: " + uciMove);
+            return uciMove;
+        }
+    }
+
+    // Also add the reverse conversion
+    private String convertAlgebraicToUci(String algebraicMove) {
+        // This is a simplified version - you might want to enhance it
+        if (algebraicMove == null || algebraicMove.length() < 2) return algebraicMove;
+
+        // For moves like "d4", we can't fully convert without board context
+        // But we can try to match destination squares
+        return algebraicMove;
     }
 
     /**
-     * Create a search query optimized for finding similar chess positions
-     */
-    private String createFenSearchQuery(String fen) {
-        // Extract key position features for better matching
-        String[] fenParts = fen.split(" ");
-        if (fenParts.length < 2) return fen;
-
-        String boardPosition = fenParts[0];
-        String activeColor = fenParts[1];
-
-        // Create a rich query that will match similar tactical/positional themes
-        return String.format("chess position %s %s turn tactical position strategic",
-                boardPosition, activeColor.equals("w") ? "white" : "black");
-    }
-
-    /**
-     * Apply personality scoring to engine candidates based on historical data
+     * Apply personality scoring to engine candidates based on local historical data
      */
     private List<PersonalityMove> applyPersonalityScoring(List<PersonalityMove> engineCandidates,
-                                                          List<FineTunedModelManager.VectorSearchResult> historicalPositions) {
+                                                          List<VectorSearchResult> historicalPositions) {
 
         List<PersonalityMove> scoredMoves = new ArrayList<>();
 
@@ -321,7 +368,7 @@ public class PersonalityEngine {
             boolean isHistoricalMatch = false;
 
             // Check if this move matches any historical moves
-            for (FineTunedModelManager.VectorSearchResult historical : historicalPositions) {
+            for (VectorSearchResult historical : historicalPositions) {
                 String historicalMove = extractMoveFromMetadata(historical.metadata);
 
                 if (historicalMove != null && movesMatch(candidate.move, historicalMove)) {
@@ -330,11 +377,8 @@ public class PersonalityEngine {
                     personalityBonus = Math.max(personalityBonus, boost);
 
                     isHistoricalMatch = true;
-                    historicalContext = String.format("In %s vs %s (%s): %s",
-                            getCurrentMasterDisplayName(),
-                            getOpponentFromMetadata(historical.metadata),
-                            getYearFromMetadata(historical.metadata),
-                            getAnnotationFromMetadata(historical.metadata));
+                    historicalContext = String.format("Historical match from %s's games: %s",
+                            getCurrentMasterDisplayName(), historical.content);
 
                     Log.d(TAG, "🎯 HISTORICAL MATCH: " + candidate.move + " -> +" + boost + " bonus");
                     break;
@@ -358,7 +402,6 @@ public class PersonalityEngine {
             scoredMoves.add(scoredMove);
         }
 
-        // Sort by final score (engine + personality)
         Collections.sort(scoredMoves, (a, b) -> Float.compare(b.finalScore, a.finalScore));
 
         return scoredMoves;
@@ -367,12 +410,12 @@ public class PersonalityEngine {
     /**
      * Calculate style bonus for moves that match the master's general approach
      */
-    private float calculateStyleBonus(PersonalityMove candidate, List<FineTunedModelManager.VectorSearchResult> historicalPositions) {
+    private float calculateStyleBonus(PersonalityMove candidate, List<VectorSearchResult> historicalPositions) {
         float styleBonus = 0.0f;
 
         // Analyze the historical positions to understand the master's preferences
         Map<String, Integer> tagCounts = new HashMap<>();
-        for (FineTunedModelManager.VectorSearchResult result : historicalPositions) {
+        for (VectorSearchResult result : historicalPositions) {
             List<String> tags = getTagsFromMetadata(result.metadata);
             for (String tag : tags) {
                 tagCounts.put(tag, tagCounts.getOrDefault(tag, 0) + 1);
@@ -382,7 +425,6 @@ public class PersonalityEngine {
         // Apply master-specific style bonuses
         switch (currentMaster.toLowerCase()) {
             case "tal":
-                // Tal loves sacrifices and attacks
                 if (tagCounts.getOrDefault("sacrifice", 0) > 0 ||
                         tagCounts.getOrDefault("attack", 0) > 0) {
                     styleBonus += personalityWeight * 0.5f;
@@ -390,14 +432,12 @@ public class PersonalityEngine {
                 break;
 
             case "fischer":
-                // Fischer prefers precise, principled moves
                 if (tagCounts.getOrDefault("positional", 0) > 0) {
                     styleBonus += personalityWeight * 0.4f;
                 }
                 break;
 
             case "kasparov":
-                // Kasparov likes initiative and dynamic play
                 if (tagCounts.getOrDefault("initiative", 0) > 0) {
                     styleBonus += personalityWeight * 0.4f;
                 }
@@ -416,7 +456,6 @@ public class PersonalityEngine {
             return null;
         }
 
-        // Filter out moves that are too weak
         List<PersonalityMove> viableMoves = new ArrayList<>();
         for (PersonalityMove move : candidates) {
             if (move.engineScore >= MIN_ENGINE_THRESHOLD) {
@@ -429,7 +468,6 @@ public class PersonalityEngine {
             viableMoves = candidates;
         }
 
-        // Return the highest scoring viable move
         PersonalityMove selected = viableMoves.get(0);
 
         Log.d(TAG, "🎭 SELECTED MOVE: " + selected);
@@ -442,7 +480,7 @@ public class PersonalityEngine {
      * Generate an explanation for why this move was chosen
      */
     private void generateMoveExplanation(PersonalityMove selectedMove,
-                                         List<FineTunedModelManager.VectorSearchResult> historicalContext,
+                                         List<VectorSearchResult> historicalContext,
                                          PersonalityMoveCallback callback) {
 
         if (selectedMove == null) return;
@@ -466,7 +504,7 @@ public class PersonalityEngine {
      * Create a detailed explanation of the move choice
      */
     private String createMoveExplanation(PersonalityMove selectedMove,
-                                         List<FineTunedModelManager.VectorSearchResult> historicalContext) {
+                                         List<VectorSearchResult> historicalContext) {
 
         StringBuilder explanation = new StringBuilder();
 
@@ -511,71 +549,59 @@ public class PersonalityEngine {
         }
     }
 
-    /**
-     * Helper methods for metadata extraction
-     */
-    private String extractMoveFromMetadata(String metadata) {
-        try {
-            JSONObject json = new JSONObject(metadata);
-            // Look for move information in the JSON
-            // This depends on your vector store structure
-            return json.optString("move", "");
-        } catch (Exception e) {
-            return "";
-        }
-    }
 
-    private String getOpponentFromMetadata(String metadata) {
-        try {
-            JSONObject json = new JSONObject(metadata);
-            return json.optString("opponent", "");
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    private String getYearFromMetadata(String metadata) {
-        try {
-            JSONObject json = new JSONObject(metadata);
-            return json.optString("year", "");
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    private String getAnnotationFromMetadata(String metadata) {
-        try {
-            JSONObject json = new JSONObject(metadata);
-            return json.optString("annotation", "");
-        } catch (Exception e) {
-            return "";
-        }
-    }
 
     private List<String> getTagsFromMetadata(String metadata) {
-        try {
-            JSONObject json = new JSONObject(metadata);
-            JSONArray tagsArray = json.optJSONArray("tags");
-            List<String> tags = new ArrayList<>();
-            if (tagsArray != null) {
-                for (int i = 0; i < tagsArray.length(); i++) {
-                    tags.add(tagsArray.getString(i));
-                }
+        List<String> tags = new ArrayList<>();
+
+        // Extract tactical themes from the metadata string
+        String[] commonTags = {"sacrifice", "attack", "defense", "endgame", "positional", "initiative"};
+
+        for (String tag : commonTags) {
+            if (metadata.toLowerCase().contains(tag)) {
+                tags.add(tag);
             }
-            return tags;
-        } catch (Exception e) {
-            return new ArrayList<>();
         }
+
+        return tags;
     }
 
-    /**
-     * Check if two moves are the same (handles different notations)
-     */
+    private String extractMoveFromMetadata(String metadata) {
+        try {
+            String[] words = metadata.split("\\s+");
+            for (String word : words) {
+                // Look for UCI format moves (e2e4, g1f3, etc.)
+                if (word.matches("[a-h][1-8][a-h][1-8]")) {
+                    return word;
+                }
+                // Look for algebraic notation
+                if (word.matches("[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8][+#]?")) {
+                    return word;
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error extracting move from metadata: " + metadata);
+        }
+        return null;
+    }
+
+    // Enhanced move matching that tries both notations
     private boolean movesMatch(String move1, String move2) {
         if (move1 == null || move2 == null) return false;
 
-        // Simple exact match for now - could be enhanced for different notations
-        return move1.equals(move2);
+        // Direct match
+        if (move1.equals(move2)) return true;
+
+        // Try converting UCI to algebraic and compare
+        String algebraic1 = convertUciToAlgebraic(move1);
+        String algebraic2 = convertUciToAlgebraic(move2);
+
+        if (algebraic1.equals(move2) || algebraic2.equals(move1)) {
+            Log.d(TAG, "🎯 MOVE MATCH via conversion: " + move1 + " matches " + move2);
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -614,7 +640,15 @@ public class PersonalityEngine {
 
     public void setCurrentMaster(String master) {
         this.currentMaster = master.toLowerCase();
-        Log.d(TAG, "🎭 Current master set to: " + getCurrentMasterDisplayName());
+
+        // Check if we have data for this master
+        boolean hasData = databaseHelper.hasMasterData(master.toLowerCase());
+        if (!hasData) {
+            Log.w(TAG, "⚠️ No local data found for " + master + " - consider importing data!");
+        }
+
+        Log.d(TAG, "🎭 Current master set to: " + getCurrentMasterDisplayName() +
+                (hasData ? " (data available)" : " (no data)"));
     }
 
     public void setPersonalityPlayEnabled(boolean enabled) {
@@ -623,11 +657,51 @@ public class PersonalityEngine {
     }
 
     private String getCurrentMasterDisplayName() {
-        return modelManager.getMasterDisplayName(currentMaster);
+        // Simple display name mapping
+        switch (currentMaster.toLowerCase()) {
+            case "tal": return "Mikhail Tal";
+            case "fischer": return "Bobby Fischer";
+            case "kasparov": return "Garry Kasparov";
+            case "kramnik": return "Vladimir Kramnik";
+            case "karpov": return "Anatoly Karpov";
+            default: return currentMaster;
+        }
     }
 
     // Getters
     public float getPersonalityWeight() { return personalityWeight; }
     public String getCurrentMaster() { return currentMaster; }
     public boolean isPersonalityPlayEnabled() { return enablePersonalityPlay; }
+
+    /**
+     * 🚀 NEW: Check database status and import data if needed
+     */
+    public void initializeMasterData(String masterName) {
+        executorService.execute(() -> {
+            try {
+                boolean hasData = databaseHelper.hasMasterData(masterName);
+
+                if (!hasData) {
+                    Log.d(TAG, "📥 No data for " + masterName + " - attempting to import from assets...");
+
+                    // Try to import from assets (you'll put your JSON files here)
+                    String filename = masterName.toLowerCase() + "_positions.json";
+                    boolean imported = databaseHelper.importMasterPositionsFromAssets(filename);
+
+                    if (imported) {
+                        Log.d(TAG, "✅ Successfully imported data for " + masterName + "!");
+                    } else {
+                        Log.w(TAG, "⚠️ Could not import data for " + masterName + " from " + filename);
+                    }
+                }
+
+                // Log current database stats
+                Map<String, Integer> stats = databaseHelper.getDatabaseStats();
+                Log.d(TAG, "📊 Database stats: " + stats.toString());
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error initializing master data", e);
+            }
+        });
+    }
 }

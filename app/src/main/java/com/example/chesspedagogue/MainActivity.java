@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
@@ -42,6 +44,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
@@ -304,6 +307,9 @@ public class MainActivity extends AppCompatActivity {
         openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
         com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
+        initializeChessMasterDatabase();
+        testPersonalityEngine();
+
         Button debugButton = new Button(this);
         // Set up click listeners - this is what was missing!
         setupAllButtonClickListeners();
@@ -328,6 +334,42 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind to the SimpleRecordService
         bindRecordService();
+    }
+
+    // Add this method to MainActivity.java
+    private void testPersonalityEngineSpeed() {
+        Log.d("MainActivity", "⚡ Testing PersonalityEngine speed...");
+
+        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+
+        // Test with starting position
+        String testFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        long startTime = System.currentTimeMillis();
+
+        List<GameDatabaseHelper.HistoricalPosition> results =
+                dbHelper.findSimilarPositions(testFen, "tal", 5);
+
+        long endTime = System.currentTimeMillis();
+
+        Log.d("MainActivity", "⚡ LIGHTNING TEST RESULTS:");
+        Log.d("MainActivity", "   Time taken: " + (endTime - startTime) + "ms");
+        Log.d("MainActivity", "   Positions found: " + results.size());
+
+        for (int i = 0; i < Math.min(3, results.size()); i++) {
+            GameDatabaseHelper.HistoricalPosition pos = results.get(i);
+            Log.d("MainActivity", "   " + (i+1) + ". " + pos.toString());
+        }
+
+        // Test the personality engine too
+        if (gameViewModel != null) {
+            Log.d("MainActivity", "🎭 Testing personality engine configuration...");
+            gameViewModel.configurePersonalityEngine("tal", 0.3f, true);
+
+            // Check if it worked
+            Boolean enabled = gameViewModel.getPersonalityEngineEnabled().getValue();
+            Log.d("MainActivity", "   Personality engine enabled: " + enabled);
+        }
     }
 
     /**
@@ -466,6 +508,89 @@ public class MainActivity extends AppCompatActivity {
                 showHistoricalMoveEffect();
             }
         });
+    }
+
+    // Add this method to MainActivity.java
+    private void initializeChessMasterDatabase() {
+        Log.d("MainActivity", "🚀 Initializing chess master database...");
+
+        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+
+        // Check if we already have data (avoid re-importing on every startup)
+        if (!dbHelper.hasMasterData("tal")) {
+            Log.d("MainActivity", "📥 First run - importing comprehensive chess data...");
+
+            // Show a progress indicator to the user
+            // You could add a progress dialog here if you want
+
+            new Thread(() -> {
+                try {
+                    // Import all your master data files
+                    String[] masters = {"tal", "fischer", "kasparov"}; // Add more as you create them
+
+                    for (String master : masters) {
+                        String filename = master + "_positions.json";
+                        Log.d("MainActivity", "📥 Importing " + filename + "...");
+
+                        boolean success = dbHelper.importMasterPositionsFromAssets(filename);
+
+                        if (success) {
+                            Log.d("MainActivity", "✅ Successfully imported " + master + " data!");
+                        } else {
+                            Log.w("MainActivity", "⚠️ Could not import " + filename);
+                        }
+                    }
+
+                    // Log final database stats
+                    Map<String, Integer> stats = dbHelper.getDatabaseStats();
+                    Log.d("MainActivity", "🎉 Database ready! Stats: " + stats.toString());
+
+                    // Update UI on main thread
+                    runOnUiThread(() -> {
+                        // You could show a toast or update status here
+                        Log.d("MainActivity", "🎯 Chess master personalities loaded and ready!");
+                    });
+
+                } catch (Exception e) {
+                    Log.e("MainActivity", "❌ Error during database initialization", e);
+                }
+            }).start();
+
+        } else {
+            Log.d("MainActivity", "✅ Chess master database already initialized!");
+
+            // Log current stats
+            Map<String, Integer> stats = dbHelper.getDatabaseStats();
+            Log.d("MainActivity", "📊 Current database stats: " + stats.toString());
+        }
+    }
+
+    // Add this to MainActivity.onCreate() - one-time database setup
+    private void initializePersonalityDatabase() {
+        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+
+        // Check if we need to import data
+        if (!dbHelper.hasMasterData("tal")) {
+            Log.d("MainActivity", "🚀 First run - importing chess master data...");
+
+            // Import all your master data files
+            String[] masters = {"tal", "fischer", "kasparov", "kramnik", "karpov"};
+
+            for (String master : masters) {
+                String filename = master + "_positions.json";
+                boolean success = dbHelper.importMasterPositionsFromAssets(filename);
+
+                if (success) {
+                    Log.d("MainActivity", "✅ Imported data for " + master);
+                } else {
+                    Log.w("MainActivity", "⚠️ Could not import " + filename);
+                }
+            }
+
+            // Log database stats
+            Map<String, Integer> stats = dbHelper.getDatabaseStats();
+            Log.d("MainActivity", "📊 Database ready! Stats: " + stats.toString());
+        }
     }
 
     /**
@@ -1113,6 +1238,84 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    // Add this comprehensive debugging method to MainActivity.java
+    private void deepDatabaseDebugging() {
+        Log.d("MainActivity", "🔬 DEEP DATABASE ANALYSIS STARTING...");
+
+        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+
+        // First, let's see what's actually in the database
+        Map<String, Integer> stats = dbHelper.getDatabaseStats();
+        Log.d("MainActivity", "📊 Overall stats: " + stats.toString());
+
+        // Test multiple name variations
+        String[] nameVariations = {
+                "tal",
+                "Tal",
+                "mikhail tal",
+                "Mikhail Tal",
+                "MIKHAIL TAL"
+        };
+
+        for (String name : nameVariations) {
+            boolean hasData = dbHelper.hasMasterData(name);
+            Log.d("MainActivity", "🎭 Name '" + name + "' has data: " + hasData);
+        }
+
+        // Test the exact starting position
+        String startingFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        for (String name : nameVariations) {
+            List<GameDatabaseHelper.HistoricalPosition> results =
+                    dbHelper.findSimilarPositions(startingFEN, name, 3);
+            Log.d("MainActivity", "🎯 Starting position results for '" + name + "': " + results.size());
+
+            if (results.size() > 0) {
+                Log.d("MainActivity", "   ✅ FOUND RESULTS! First result: " + results.get(0).toString());
+            }
+        }
+
+        // Let's also check what the database actually contains by doing a raw query
+        testRawDatabaseQuery(dbHelper);
+    }
+
+    // Add this helper method too
+    private void testRawDatabaseQuery(GameDatabaseHelper dbHelper) {
+        Log.d("MainActivity", "📋 TESTING RAW DATABASE CONTENTS...");
+
+        try {
+            // This is a bit of a hack, but let's see what's actually in there
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
+
+            // Check if the table exists and has data
+            Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM master_positions", null);
+            if (cursor.moveToFirst()) {
+                int totalRows = cursor.getInt(0);
+                Log.d("MainActivity", "📊 Total rows in master_positions table: " + totalRows);
+            }
+            cursor.close();
+
+            // Get some sample data to see the actual format
+            Cursor sampleCursor = db.rawQuery("SELECT master_name, fen, annotation FROM master_positions LIMIT 5", null);
+
+            Log.d("MainActivity", "📋 Sample database contents:");
+            while (sampleCursor.moveToNext()) {
+                String masterName = sampleCursor.getString(0);
+                String fen = sampleCursor.getString(1);
+                String annotation = sampleCursor.getString(2);
+
+                Log.d("MainActivity", "   📝 Master: '" + masterName + "'");
+                Log.d("MainActivity", "   📝 FEN: " + fen.substring(0, Math.min(30, fen.length())) + "...");
+                Log.d("MainActivity", "   📝 Annotation: " + annotation.substring(0, Math.min(50, annotation.length())) + "...");
+                Log.d("MainActivity", "   ---");
+            }
+            sampleCursor.close();
+
+        } catch (Exception e) {
+            Log.e("MainActivity", "❌ Raw database query failed: " + e.getMessage());
+        }
     }
 
     // Show microphone indicator
