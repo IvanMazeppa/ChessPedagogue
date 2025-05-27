@@ -282,6 +282,12 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                     }
 
                     @Override
+                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+                        Log.d(TAG, "🎉 CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
+                        // You could show this in the UI if you wanted!
+                    }
+
+                    @Override
                     public void onError(String error) {
                         Log.e(TAG, "Opening dialogue error: " + error);
                     }
@@ -314,6 +320,12 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                     }
 
                     @Override
+                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+                        Log.d(TAG, "🎉 CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
+                        // This is where the magic happens - one master responding to another!
+                    }
+
+                    @Override
                     public void onError(String error) {
                         Log.e(TAG, "Move dialogue error: " + error);
                         // Fallback to simple dialogue
@@ -342,6 +354,12 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                             aiDialogue.setValue(formattedDialogue);
                             Log.d(TAG, "✅ End game dialogue generated");
                         });
+                    }
+
+                    @Override
+                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+                        Log.d(TAG, "🎉 FINAL CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
+                        // Even end-game conversations!
                     }
 
                     @Override

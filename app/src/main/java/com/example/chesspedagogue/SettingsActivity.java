@@ -31,8 +31,6 @@ public class SettingsActivity extends AppCompatActivity {
         Switch premiumVoiceSwitch = findViewById(R.id.switch_premium_voice);
         RadioGroup voiceGroup = findViewById(R.id.radio_group_voice);
         RadioGroup modelGroup = findViewById(R.id.radio_group_model);
-        Button testButton = findViewById(R.id.button_test_voice);
-
         // Load saved preferences
         SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
 
@@ -119,32 +117,6 @@ public class SettingsActivity extends AppCompatActivity {
             editor.apply();
 
             ChessCoachManager.getInstance(this).setUseOpenAIVoice(isChecked);
-        });
-
-        // Test button
-        testButton.setOnClickListener(v -> {
-            String testPhrase = "Hello, I'm your chess coach. Let me help you improve your game.";
-            ChessCoachManager coach = ChessCoachManager.getInstance(this);
-            coach.testVoice(testPhrase, new ChessCoachManager.ChessCoachCallback() {
-                @Override
-                public void onResponseReceived(String response) {
-                    // Not used for voice test
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    Toast.makeText(SettingsActivity.this,
-                            "Voice test failed: " + errorMessage,
-                            Toast.LENGTH_SHORT).show();
-                }
-
-                @Override
-                public void onSpeechCompleted() {
-                    Toast.makeText(SettingsActivity.this,
-                            "Voice test complete!",
-                            Toast.LENGTH_SHORT).show();
-                }
-            });
         });
 
         // Set up model quality selection (if your layout has this)

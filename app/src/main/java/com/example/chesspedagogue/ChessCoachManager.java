@@ -272,17 +272,6 @@ public class ChessCoachManager {
         }
     }
 
-    /**
-     * For compatibility with existing code - get the string representation of player color
-     */
-    public String getPlayerColor() {
-        return "white"; // Default value for compatibility
-    }
-
-    public void testVoice(String testPhrase, ChessCoachCallback chessCoachCallback) {
-
-    }
-
     // Callback interface for responses
     public interface ChessCoachCallback {
         void onResponseReceived(String response);

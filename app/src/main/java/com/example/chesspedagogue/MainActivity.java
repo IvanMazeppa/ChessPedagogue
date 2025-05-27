@@ -195,39 +195,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Test the revolutionary personality engine! 🎭
-     */
-    private void testPersonalityEngine() {
-        // Configure for Tal with 30% personality influence
-        gameViewModel.configurePersonalityEngine("tal", 0.3f, true);
-
-        // Observe personality state
-        gameViewModel.getPersonalityEngineEnabled().observe(this, enabled -> {
-            Log.d(TAG, "🎭 Personality engine enabled: " + enabled);
-        });
-
-        gameViewModel.getLastMoveExplanation().observe(this, explanation -> {
-            if (explanation != null && !explanation.isEmpty()) {
-                Log.d(TAG, "🎯 Move explanation: " + explanation);
-                // You could display this in UI or use for voice synthesis
-            }
-        });
-
-        gameViewModel.getMasterQuote().observe(this, quote -> {
-            if (quote != null && !quote.isEmpty()) {
-                Log.d(TAG, "💬 Master quote: " + quote);
-            }
-        });
-
-        gameViewModel.getIsHistoricalMove().observe(this, isHistorical -> {
-            if (Boolean.TRUE.equals(isHistorical)) {
-                Log.d(TAG, "🏛️ HISTORICAL MOVE DETECTED! The engine played like Tal!");
-                // You could show special UI indication here
-            }
-        });
-    }
-
     private List<String> extractChessSquares(String text) {
         List<String> squares = new ArrayList<>();
 
@@ -312,7 +279,6 @@ public class MainActivity extends AppCompatActivity {
         com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
         initializeChessMasterDatabase();
-        testPersonalityEngine();
 
         Button debugButton = new Button(this);
         // Set up click listeners - this is what was missing!
@@ -344,42 +310,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Bind to the SimpleRecordService
         bindRecordService();
-    }
-
-    // Add this method to MainActivity.java
-    private void testPersonalityEngineSpeed() {
-        Log.d("MainActivity", "⚡ Testing PersonalityEngine speed...");
-
-        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
-
-        // Test with starting position
-        String testFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
-        long startTime = System.currentTimeMillis();
-
-        List<GameDatabaseHelper.HistoricalPosition> results =
-                dbHelper.findSimilarPositions(testFen, "tal", 5);
-
-        long endTime = System.currentTimeMillis();
-
-        Log.d("MainActivity", "⚡ LIGHTNING TEST RESULTS:");
-        Log.d("MainActivity", "   Time taken: " + (endTime - startTime) + "ms");
-        Log.d("MainActivity", "   Positions found: " + results.size());
-
-        for (int i = 0; i < Math.min(3, results.size()); i++) {
-            GameDatabaseHelper.HistoricalPosition pos = results.get(i);
-            Log.d("MainActivity", "   " + (i+1) + ". " + pos.toString());
-        }
-
-        // Test the personality engine too
-        if (gameViewModel != null) {
-            Log.d("MainActivity", "🎭 Testing personality engine configuration...");
-            gameViewModel.configurePersonalityEngine("tal", 0.3f, true);
-
-            // Check if it worked
-            Boolean enabled = gameViewModel.getPersonalityEngineEnabled().getValue();
-            Log.d("MainActivity", "   Personality engine enabled: " + enabled);
-        }
     }
 
     /**
@@ -670,52 +600,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 🚀 Add this to your MainActivity for instant personality toggle
-     */
-    private void setupSpeakButtonAdvanced() {
-        if (speakButton != null) {
-            // Single tap = normal voice function
-            speakButton.setOnClickListener(v -> startVoiceRecording());
-
-            // Long press = toggle personality engine
-            speakButton.setOnLongClickListener(v -> {
-                Log.d(TAG, "🎭 Personality engine toggle requested!");
-                togglePersonalityEngine();
-                return true;
-            });
-
-            // Double tap = quick personality mode (faster, cached responses)
-            speakButton.setOnClickListener(new View.OnClickListener() {
-                private static final long DOUBLE_CLICK_TIME_DELTA = 300;
-                private long lastClickTime = 0;
-
-                @Override
-                public void onClick(View v) {
-                    long clickTime = System.currentTimeMillis();
-                    if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
-                        // Double tap detected
-                        quickPersonalityToggle();
-                    } else {
-                        // Single tap - delay slightly to detect double tap
-                        Handler handler = new Handler();
-                        handler.postDelayed(() -> {
-                            if (System.currentTimeMillis() - clickTime >= DOUBLE_CLICK_TIME_DELTA) {
-                                startVoiceRecording();
-                            }
-                        }, DOUBLE_CLICK_TIME_DELTA);
-                    }
-                    lastClickTime = clickTime;
-                }
-            });
-        }
-    }
-
-    private void quickPersonalityToggle() {
-        // This could enable a faster personality mode with cached responses
-        Toast.makeText(this, "🚀 Quick personality mode - coming soon!", Toast.LENGTH_SHORT).show();
-    }
-
-    /**
      * 🎯 Enhanced historical move effect
      */
     private void showHistoricalMoveEffect() {
@@ -811,24 +695,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 📊 Update UI to show current engine mode
-     */
-    private void updateEngineStatusDisplay() {
-        Boolean personalityEnabled = gameViewModel.getPersonalityEngineEnabled().getValue();
-        TextView statusTextView = findViewById(R.id.statusTextView);
-
-        if (statusTextView != null) {
-            if (Boolean.TRUE.equals(personalityEnabled)) {
-                String masterName = FineTunedModelManager.getInstance(this).getMasterDisplayName(
-                        FineTunedModelManager.getInstance(this).getSelectedChessMaster());
-                statusTextView.setText("🎭 Playing like " + masterName);
-            } else {
-                statusTextView.setText("🤖 Pure Stockfish Engine");
-            }
-        }
-    }
-
-    /**
      * ===== CRITICAL NEW METHOD: Set up move history observation =====
      * This is what was missing - connecting your move history to the UI!
      */
@@ -867,7 +733,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // OPTIMIZATION: Build string more efficiently
         StringBuilder historyBuilder = new StringBuilder(moves.size() * 10);
 
         for (int i = 0; i < moves.size(); i++) {

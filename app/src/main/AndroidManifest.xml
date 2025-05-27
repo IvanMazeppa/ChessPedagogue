@@ -12,12 +12,12 @@
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/ic_android_icon_main"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@drawable/ic_android_icon_main_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ChessPedagogue"
-        tools:targetApi="31">
+        tools:targetApi="33">
 
         <!-- SplashActivity will be the launch activity -->
         <activity
@@ -84,6 +84,11 @@
             android:name=".ChessMasterSelectionActivity"
             android:exported="false"
             android:theme="@style/Theme.ChessPedagogue.NoActionBar" />
+        <activity
+            android:name=".SpectatorGameActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ChessPedagogue"
+            android:label="Spectator Mode"/>
 
     </application>
 
