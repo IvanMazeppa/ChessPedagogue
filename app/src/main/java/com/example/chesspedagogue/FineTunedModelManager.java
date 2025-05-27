@@ -441,7 +441,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED voice instructions - much more sophisticated
+     * ENHANCED voice instructions - dramatically improved for gpt-4o-mini-tts accent support
      */
     public String getEnhancedVoiceInstructions(String master, boolean isFirstChunk) {
         EnhancedPersonalityProfile profile = personalityProfiles.get(master.toLowerCase());
@@ -451,68 +451,152 @@ public class FineTunedModelManager {
 
         StringBuilder instructions = new StringBuilder();
 
-        // Base personality instruction
-        instructions.append(profile.voicePersonality).append(" ");
+        // ENHANCED: Specific accent and pronunciation instructions for gpt-4o-mini-tts
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Speak with a warm Latvian-Russian accent. ");
+                instructions.append("Roll your 'r' sounds softly and pronounce vowels with Slavic warmth. ");
+                instructions.append("Use passionate, enthusiastic delivery that shows genuine love for chess. ");
+                instructions.append("Let your excitement bubble through when discussing tactics and sacrifices. ");
+                break;
 
-        // 🆕 Special Fischer instructions for maximum intensity
-        if ("fischer".equals(master.toLowerCase())) {
-            instructions.append("Speak with absolute conviction and unwavering intensity. ");
-            instructions.append("Every word should convey supreme confidence and demand perfection. ");
-            instructions.append("Use a direct, commanding tone that tolerates no weakness. ");
+            case "fischer":
+                instructions.append("Speak with a strong, confident American accent from New York. ");
+                instructions.append("Use sharp, precise pronunciation with unwavering conviction. ");
+                instructions.append("Emphasize every word with absolute certainty and authority. ");
+                instructions.append("Sound intensely demanding and uncompromising about chess excellence. ");
+                instructions.append("Never show doubt - every statement should sound like absolute truth. ");
+                break;
+
+            case "kasparov":
+                instructions.append("Speak with a dynamic Russian accent from Azerbaijan. ");
+                instructions.append("Roll 'r' sounds distinctly and use strong consonant emphasis. ");
+                instructions.append("Show fierce competitive energy and passionate intensity. ");
+                instructions.append("Sound like you're ready to battle on every chess move. ");
+                break;
+
+            case "karpov":
+                instructions.append("Speak with a refined, diplomatic Russian accent. ");
+                instructions.append("Use elegant pronunciation with thoughtful, measured pauses. ");
+                instructions.append("Sound patient, wise, and quietly confident. ");
+                instructions.append("Maintain sophisticated, chess-master level composure. ");
+                break;
+
+            case "kramnik":
+                instructions.append("Speak with a modern Russian accent with technical precision. ");
+                instructions.append("Use methodical, analytical delivery with scientific clarity. ");
+                instructions.append("Sound systematic and thoroughly prepared. ");
+                instructions.append("Emphasize logical flow and computer-age precision. ");
+                break;
+
+            case "capablanca":
+                instructions.append("Speak with an elegant Cuban Spanish accent. ");
+                instructions.append("Soften consonants with Latin warmth and natural grace. ");
+                instructions.append("Sound effortlessly confident and naturally gifted. ");
+                instructions.append("Use refined pronunciation that shows cultural sophistication. ");
+                break;
+
+            case "alekhine":
+                instructions.append("Speak with a sophisticated Russian-French accent. ");
+                instructions.append("Use cultured, intellectual pronunciation with artistic refinement. ");
+                instructions.append("Sound deeply sophisticated and culturally refined. ");
+                instructions.append("Emphasize the artistic and combinational aspects of chess. ");
+                break;
+
+            case "carlsen":
+                instructions.append("Speak with a clear Norwegian accent with modern confidence. ");
+                instructions.append("Use Nordic pronunciation patterns with contemporary clarity. ");
+                instructions.append("Sound naturally assured and pragmatically confident. ");
+                instructions.append("Maintain a modern, relaxed but supremely competent delivery. ");
+                break;
+
+            case "morphy":
+                instructions.append("Speak with a refined 19th-century Southern American accent. ");
+                instructions.append("Use formal, courteous pronunciation of the antebellum era. ");
+                instructions.append("Sound dignified, gentlemanly, and naturally gifted. ");
+                instructions.append("Maintain the noble bearing of a chess genius from New Orleans. ");
+                break;
+
+            case "lasker":
+                instructions.append("Speak with a thoughtful German accent with philosophical depth. ");
+                instructions.append("Emphasize Germanic consonants and use contemplative pauses. ");
+                instructions.append("Sound deeply philosophical and scientifically minded. ");
+                instructions.append("Show the wisdom of both a chess master and a mathematician. ");
+                break;
+
+            case "anand":
+                instructions.append("Speak with a clear, educated Indian accent with international polish. ");
+                instructions.append("Maintain precise English with subtle Indian musical inflection. ");
+                instructions.append("Sound friendly, quick-thinking, and globally sophisticated. ");
+                instructions.append("Use warm, approachable delivery that shows international experience. ");
+                break;
+
+            case "botvinnik":
+                instructions.append("Speak with an authoritative Soviet Russian accent. ");
+                instructions.append("Use systematic, scientific pronunciation with methodical precision. ");
+                instructions.append("Sound like a chess scientist and research pioneer. ");
+                instructions.append("Emphasize the systematic, school-like approach to chess mastery. ");
+                break;
+
+            default:
+                instructions.append("Speak with natural confidence and chess master authority. ");
+                break;
         }
 
-        // Energy and pace based on energy level
+        // Energy and emotion based on profile
         switch (profile.energyLevel) {
             case "very_high":
-                if ("fischer".equals(master.toLowerCase())) {
-                    instructions.append("Speak with passionate intensity and absolute certainty. Demand excellence in every syllable. ");
-                } else {
-                    instructions.append("Speak with high energy and animated enthusiasm. Vary your pace for emphasis. ");
-                }
+                instructions.append("Show maximum energy and passionate enthusiasm. ");
                 break;
             case "high":
             case "moderate_high":
-                instructions.append("Speak with clear engagement and moderate energy. Show enthusiasm for chess concepts. ");
+                instructions.append("Use energetic, engaging delivery with clear enthusiasm. ");
                 break;
             case "moderate":
-                instructions.append("Speak with steady confidence and measured pace. ");
+                instructions.append("Maintain steady confidence with measured authority. ");
                 break;
             case "low_moderate":
-                instructions.append("Speak calmly with thoughtful pauses. Emphasize deliberate thinking. ");
+                instructions.append("Use calm, thoughtful delivery with deliberate pacing. ");
                 break;
         }
 
-        // Communication style specifics
+        // Personality-specific communication style
         switch (profile.communicationStyle) {
             case "enthusiastic_conversational":
-                instructions.append("Sound genuinely excited about chess. Use a warm, conversational tone. ");
-                break;
-            case "intellectual_engaging":
-                instructions.append("Sound sophisticated and intellectually engaged. Pause for thought. ");
-                break;
-            case "calm_analytical":
-                instructions.append("Maintain steady, analytical tone. Sound methodical and precise. ");
+                instructions.append("Sound genuinely excited and conversational about chess. ");
                 break;
             case "direct_intense":
-                instructions.append("Be direct and focused. Sound absolutely certain and demanding. ");
+                instructions.append("Be absolutely direct and intensely focused on perfection. ");
                 break;
             case "dynamic_passionate":
-                instructions.append("Show passion and drive. Build energy when discussing tactics. ");
+                instructions.append("Show dynamic passion and competitive fire. ");
+                break;
+            case "calm_patient":
+                instructions.append("Maintain calm patience with wise authority. ");
                 break;
             case "elegant_confident":
-                instructions.append("Sound effortlessly confident and refined. Natural authority. ");
+                instructions.append("Sound elegantly refined and effortlessly confident. ");
                 break;
-            case "wise_philosophical":
-                instructions.append("Speak with wisdom and thoughtful reflection. Sound experienced. ");
+            case "scientific_systematic":
+                instructions.append("Use systematic, methodical delivery with scientific precision. ");
                 break;
         }
 
-        // Continuity instruction
+        // Continuity instruction for multi-chunk speech
         if (!isFirstChunk) {
-            instructions.append("CRITICAL: Continue with EXACT same voice and energy, maintaining perfect continuity. ");
+            instructions.append("CRITICAL: Continue with EXACT same accent, energy, and personality. ");
+            instructions.append("Maintain perfect continuity from the previous segment. ");
         }
 
-        return instructions.toString();
+        String result = instructions.toString().trim();
+
+        // Enhanced logging for debugging
+        Log.d(TAG, "🎭 Enhanced voice instructions for " + master + " (" + result.length() + " chars):");
+        Log.d(TAG, "   Energy: " + profile.energyLevel);
+        Log.d(TAG, "   Style: " + profile.communicationStyle);
+        Log.d(TAG, "   Instructions: " + result.substring(0, Math.min(100, result.length())) + "...");
+
+        return result;
     }
 
     /**
@@ -1041,51 +1125,6 @@ public class FineTunedModelManager {
         return enriched.toString();
     }
 
-    /**
-     * ENHANCED: Get simplified voice instructions for quick responses
-     */
-    public String getSimplifiedInstructionsForMaster(String master) {
-        EnhancedPersonalityProfile profile = personalityProfiles.get(master.toLowerCase());
-        if (profile == null) {
-            return "Speak as an experienced chess coach with warmth and wisdom";
-        }
-
-        // Create simplified voice instruction
-        StringBuilder instruction = new StringBuilder();
-
-        // 🆕 Special case for Fischer's intensity
-        if ("fischer".equals(master.toLowerCase())) {
-            instruction.append("Speak with absolute conviction and demanding intensity");
-        } else {
-            switch (profile.energyLevel) {
-                case "very_high":
-                    instruction.append("Speak with enthusiasm and energy");
-                    break;
-                case "high":
-                case "moderate_high":
-                    instruction.append("Speak with engaged confidence");
-                    break;
-                case "moderate":
-                    instruction.append("Speak with steady authority");
-                    break;
-                case "low_moderate":
-                    instruction.append("Speak with calm thoughtfulness");
-                    break;
-                default:
-                    instruction.append("Speak with chess wisdom");
-            }
-        }
-
-        // Add communication style hint
-        if (profile.usesHumor) {
-            instruction.append(" and warmth");
-        }
-        if (profile.prefersTechnical) {
-            instruction.append(" and precision");
-        }
-
-        return instruction.toString();
-    }
 
     /**
      * ENHANCED: Send message with position context for Assistants API

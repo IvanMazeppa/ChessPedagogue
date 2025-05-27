@@ -19,14 +19,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * 🎭 DEBUGGED ViewModel for Spectator Game Mode
- * Now with detailed logging to fix the move progression issue!
+ * 🎭 ENHANCED ViewModel for Spectator Game Mode with Natural Conversations
+ * Now with flowing dialogue between chess masters!
  */
 public class SpectatorGameViewModel extends AndroidViewModel {
     private static final String TAG = "SpectatorGameViewModel";
 
+    // Conversation management - ENHANCED
     private boolean isDialoguePlaying = false;
     private final Queue<Runnable> pendingDialogue = new LinkedList<>();
+    private String currentConversationSpeaker = "";
+    private long lastDialogueTime = 0;
+    private static final long MIN_DIALOGUE_INTERVAL = 3000; // 3 seconds between utterances
 
     private final GameRepository gameRepository;
     private final ExecutorService executorService;
@@ -44,13 +48,17 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private final MutableLiveData<Boolean> isThinking = new MutableLiveData<>();
     private final MutableLiveData<int[]> lastMove = new MutableLiveData<>();
 
+    // ENHANCED: Conversation tracking
+    private final MutableLiveData<String> conversationSpeaker = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> conversationActive = new MutableLiveData<>();
+
     // Game control with better state tracking
     private boolean isPaused = false;
     private int gameSpeed = 3000;
     private String whitePlayer;
     private String blackPlayer;
-    private int moveCount = 0;  // NEW: Track move count for debugging
-    private boolean gameInProgress = false;  // NEW: Better game state tracking
+    private int moveCount = 0;
+    private boolean gameInProgress = false;
 
     public SpectatorGameViewModel(Application application) {
         super(application);
@@ -64,7 +72,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         // Initialize state
         resetGameState();
 
-        Log.d(TAG, "✅ DEBUGGED SpectatorGameViewModel initialized");
+        Log.d(TAG, "✅ ENHANCED SpectatorGameViewModel initialized with conversation support!");
     }
 
     private void resetGameState() {
@@ -74,6 +82,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         currentPlayer.setValue("white");
         gameStatus.setValue("ready");
         isThinking.setValue(false);
+        conversationActive.setValue(false);
         moveCount = 0;
         gameInProgress = false;
 
@@ -81,7 +90,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     public void startSpectatorGame(String whitePlayer, String blackPlayer) {
-        Log.d(TAG, "🎭 STARTING SPECTATOR GAME: " + whitePlayer + " vs " + blackPlayer);
+        Log.d(TAG, "🎭 STARTING ENHANCED SPECTATOR GAME: " + whitePlayer + " vs " + blackPlayer);
 
         this.whitePlayer = whitePlayer;
         this.blackPlayer = blackPlayer;
@@ -104,27 +113,26 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         // Set up game manager callbacks FIRST
         setupGameManagerCallbacks();
 
-        // CRITICAL FIX: Set game state to in_progress AFTER everything is set up
+        // Set game state to in_progress AFTER everything is set up
         this.gameInProgress = true;
         gameStatus.setValue("in_progress");
 
-        // Generate opening dialogue
-        generateOpeningDialogue();
+        // ENHANCED: Generate opening dialogue with conversation support
+        generateEnhancedOpeningDialogue();
 
-        Log.d(TAG, "✅ Spectator game initialized - GAME IS NOW IN PROGRESS and ready for moves!");
+        Log.d(TAG, "✅ Enhanced spectator game initialized with conversation system!");
     }
 
     private void setupGameManagerCallbacks() {
-        Log.d(TAG, "🔧 Setting up game manager callbacks");
+        Log.d(TAG, "🔧 Setting up enhanced game manager callbacks");
 
         gameManager.setGameCallback(new AIvsAIGameManager.GameCallback() {
             @Override
             public void onMoveCalculated(String move, String newFen, List<String> history) {
                 Log.d(TAG, "🎯 MOVE CALLBACK: move=" + move + ", moveCount=" + (moveCount + 1) + ", historySize=" + history.size());
-                Log.d(TAG, "📋 New FEN: " + newFen);
 
                 mainHandler.post(() -> {
-                    // CRITICAL: Update move count FIRST
+                    // Update move count FIRST
                     moveCount++;
 
                     // Update game state
@@ -144,10 +152,10 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                     // Get evaluation
                     requestEvaluation(newFen);
 
-                    // Generate dialogue (selective)
-                    generateSelectiveDialogue(move, history);
+                    // ENHANCED: Generate dialogue with conversation potential
+                    generateEnhancedMoveDialogue(move, history);
 
-                    // CRITICAL: Schedule next move with proper state checking
+                    // Schedule next move with proper state checking
                     scheduleNextMoveWithStateCheck();
                 });
             }
@@ -158,7 +166,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                 mainHandler.post(() -> {
                     gameInProgress = false;
                     gameStatus.setValue(result);
-                    generateEndGameDialogue(result);
+                    generateEnhancedEndGameDialogue(result);
                 });
             }
 
@@ -180,7 +188,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             }
         });
 
-        Log.d(TAG, "✅ Game manager callbacks set up");
+        Log.d(TAG, "✅ Enhanced game manager callbacks set up");
     }
 
     public void requestNextMove() {
@@ -212,8 +220,6 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         String activePlayer = isWhiteTurn ? whitePlayer : blackPlayer;
 
         Log.d(TAG, "🎯 Move " + (moveCount + 1) + ": " + activePlayer + "'s turn");
-        Log.d(TAG, "📋 Current FEN: " + currentFen);
-        Log.d(TAG, "📜 Move history: " + history);
 
         // Request move from game manager
         gameManager.requestMove(currentFen, history, activePlayer);
@@ -263,112 +269,170 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     /**
-     * Generate opening dialogue between AI masters
+     * 🎬 ENHANCED: Generate opening dialogue with conversation support
      */
-    private void generateOpeningDialogue() {
-        Log.d(TAG, "💬 Generating opening dialogue");
+    private void generateEnhancedOpeningDialogue() {
+        Log.d(TAG, "🎬 Generating enhanced opening dialogue with conversation potential");
 
         dialogueManager.generateOpeningDialogue(whitePlayer, blackPlayer,
-                new AIDialogueManager.DialogueCallback() {
-                    @Override
-                    public void onDialogueGenerated(String speaker, String dialogue) {
-                        mainHandler.post(() -> {
-                            String speakerName = FineTunedModelManager.getInstance(getApplication())
-                                    .getMasterDisplayName(speaker);
-                            String formattedDialogue = speakerName + ": \"" + dialogue + "\"";
-                            aiDialogue.setValue(formattedDialogue);
-                            Log.d(TAG, "✅ Opening dialogue: " + formattedDialogue);
-                        });
-                    }
-
-                    @Override
-                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
-                        Log.d(TAG, "🎉 CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
-                        // You could show this in the UI if you wanted!
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        Log.e(TAG, "Opening dialogue error: " + error);
-                    }
-                }
-        );
+                new EnhancedDialogueCallback("opening"));
     }
 
     /**
-     * Generate dialogue about moves (much simpler than commentary)
+     * 🎯 ENHANCED: Generate move dialogue with better frequency control
      */
-    private void generateMoveDialogue(String move, List<String> history) {
-        Log.d(TAG, "💬 Generating move dialogue for: " + move + " (move " + history.size() + ")");
+    private void generateEnhancedMoveDialogue(String move, List<String> history) {
+        Log.d(TAG, "🎯 Checking if move " + history.size() + " should generate enhanced dialogue");
 
+        // More selective dialogue generation to prevent queuing issues
+        if (history.size() <= 6) {
+            // Opening moves - but not every single one
+            if (history.size() % 2 == 0) { // Every other move in opening
+                Log.d(TAG, "🎬 Opening move - generating selective dialogue");
+                scheduleEnhancedDialogue(() -> generateMoveDialogueWithConversation(move, history));
+            }
+        } else if (history.size() % 12 == 0) { // Every 12th move instead of 8th
+            Log.d(TAG, "🎬 Periodic dialogue (every 12 moves) with conversation potential");
+            scheduleEnhancedDialogue(() -> generateMoveDialogueWithConversation(move, history));
+        } else if (isInterestingMove(move)) { // Add logic for interesting moves
+            Log.d(TAG, "🎬 Interesting move detected - generating dialogue");
+            scheduleEnhancedDialogue(() -> generateMoveDialogueWithConversation(move, history));
+        } else {
+            Log.d(TAG, "🤫 Quiet move - no dialogue");
+        }
+    }
+
+    /**
+     * 🎯 NEW: Detect if a move is worth commenting on
+     */
+    private boolean isInterestingMove(String move) {
+        // Simple heuristics for interesting moves
+        if (move == null || move.length() < 4) return false;
+
+        // Castling is always interesting
+        if (move.equals("e1g1") || move.equals("e1c1") || move.equals("e8g8") || move.equals("e8c8")) {
+            return true;
+        }
+
+        // Captures (if we can detect them - this is simplified)
+        // You could enhance this with proper move parsing
+
+        return false; // Default to not interesting
+    }
+
+    /**
+     * 🎬 Generate move dialogue with conversation potential
+     */
+    private void generateMoveDialogueWithConversation(String move, List<String> history) {
         // Determine which player made the move
         boolean wasWhiteMove = history.size() % 2 == 1;
         String playerWhoMoved = wasWhiteMove ? whitePlayer : blackPlayer;
 
         dialogueManager.generateMoveDialogue(
                 move, playerWhoMoved, whitePlayer, blackPlayer, history.size(),
-                new AIDialogueManager.DialogueCallback() {
-                    @Override
-                    public void onDialogueGenerated(String speaker, String dialogue) {
-                        mainHandler.post(() -> {
-                            String speakerName = FineTunedModelManager.getInstance(getApplication())
-                                    .getMasterDisplayName(speaker);
-                            String formattedDialogue = speakerName + ": \"" + dialogue + "\"";
-                            aiDialogue.setValue(formattedDialogue);
-                            Log.d(TAG, "✅ Move dialogue: " + formattedDialogue);
-                        });
-                    }
-
-                    @Override
-                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
-                        Log.d(TAG, "🎉 CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
-                        // This is where the magic happens - one master responding to another!
-                    }
-
-                    @Override
-                    public void onError(String error) {
-                        Log.e(TAG, "Move dialogue error: " + error);
-                        // Fallback to simple dialogue
-                        String fallbackDialogue = "The game continues with interesting moves!";
-                        aiDialogue.setValue(fallbackDialogue);
-                    }
-                }
-        );
+                new EnhancedDialogueCallback("move_" + history.size()));
     }
 
     /**
-     * Generate end game dialogue
+     * 🏁 ENHANCED: Generate end game dialogue with conversation
      */
-    private void generateEndGameDialogue(String result) {
-        Log.d(TAG, "🏁 Generating end game dialogue for: " + result);
+    private void generateEnhancedEndGameDialogue(String result) {
+        Log.d(TAG, "🏁 Generating enhanced end game dialogue for: " + result);
 
         dialogueManager.generateEndGameDialogue(
                 result, whitePlayer, blackPlayer,
-                new AIDialogueManager.DialogueCallback() {
-                    @Override
-                    public void onDialogueGenerated(String speaker, String dialogue) {
-                        mainHandler.post(() -> {
-                            String speakerName = FineTunedModelManager.getInstance(getApplication())
-                                    .getMasterDisplayName(speaker);
-                            String formattedDialogue = speakerName + ": \"" + dialogue + "\"";
-                            aiDialogue.setValue(formattedDialogue);
-                            Log.d(TAG, "✅ End game dialogue generated");
-                        });
-                    }
+                new EnhancedDialogueCallback("endgame"));
+    }
 
-                    @Override
-                    public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
-                        Log.d(TAG, "🎉 FINAL CONVERSATION! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
-                        // Even end-game conversations!
-                    }
+    /**
+     * 🎭 ENHANCED: Dialogue callback that supports conversations
+     */
+    private class EnhancedDialogueCallback implements AIDialogueManager.DialogueCallback {
+        private final String context;
 
-                    @Override
-                    public void onError(String error) {
-                        Log.e(TAG, "End game dialogue error: " + error);
-                        aiDialogue.setValue("What an incredible game between these masters!");
-                    }
+        public EnhancedDialogueCallback(String context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onDialogueGenerated(String speaker, String dialogue) {
+            Log.d(TAG, "🎭 Enhanced dialogue from " + speaker + ": " + dialogue);
+
+            // Update the UI with the dialogue
+            String speakerName = FineTunedModelManager.getInstance(getApplication())
+                    .getMasterDisplayName(speaker);
+            String formattedDialogue = speakerName + ": \"" + dialogue + "\"";
+
+            aiDialogue.setValue(formattedDialogue);
+            conversationSpeaker.setValue(speakerName);
+
+            // Update conversation state
+            currentConversationSpeaker = speaker;
+            lastDialogueTime = System.currentTimeMillis();
+
+            Log.d(TAG, "✅ Enhanced dialogue displayed: " + formattedDialogue);
+        }
+
+        @Override
+        public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+            Log.d(TAG, "🎉 CONVERSATION STARTED! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
+
+            // Update conversation state
+            conversationActive.setValue(true);
+
+            // You could show a special UI indicator here
+            String responderName = FineTunedModelManager.getInstance(getApplication())
+                    .getMasterDisplayName(respondingSpeaker);
+
+            Log.d(TAG, "💬 " + responderName + " is responding to the conversation...");
+        }
+
+        @Override
+        public void onConversationComplete(String finalSpeaker, String finalStatement) {
+            Log.d(TAG, "🎭 CONVERSATION COMPLETED with " + finalSpeaker + ": " + finalStatement);
+
+            // Update conversation state
+            conversationActive.setValue(false);
+
+            Log.d(TAG, "✅ Conversation has ended naturally");
+        }
+
+        @Override
+        public void onError(String error) {
+            Log.e(TAG, "❌ Enhanced dialogue error (" + context + "): " + error);
+
+            // Fallback dialogue
+            String fallbackDialogue = "The chess masters continue their fascinating game!";
+            aiDialogue.setValue(fallbackDialogue);
+            conversationActive.setValue(false);
+        }
+    }
+
+    /**
+     * 🎬 ENHANCED: Schedule dialogue with improved timing for conversations
+     */
+    private void scheduleEnhancedDialogue(Runnable dialogueAction) {
+        long currentTime = System.currentTimeMillis();
+        long timeSinceLastDialogue = currentTime - lastDialogueTime;
+
+        if (timeSinceLastDialogue < MIN_DIALOGUE_INTERVAL) {
+            // Queue the dialogue for later
+            pendingDialogue.offer(dialogueAction);
+            Log.d(TAG, "⏸️ Enhanced dialogue queued - waiting for proper timing");
+
+            // Schedule it for when the interval has passed
+            long delay = MIN_DIALOGUE_INTERVAL - timeSinceLastDialogue;
+            mainHandler.postDelayed(() -> {
+                Runnable nextDialogue = pendingDialogue.poll();
+                if (nextDialogue != null) {
+                    nextDialogue.run();
                 }
-        );
+            }, delay);
+
+        } else {
+            // Execute immediately
+            dialogueAction.run();
+        }
     }
 
     /**
@@ -397,62 +461,6 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             Log.e(TAG, "Error parsing move for animation: " + move, e);
         }
     }
-
-    /**
-     * FIXED: Generate dialogue with proper timing to prevent cutting off
-     */
-    private void generateSelectiveDialogue(String move, List<String> history) {
-        Log.d(TAG, "🎭 Checking if move " + history.size() + " should generate dialogue");
-
-        // Generate dialogue for:
-        // 1. First few moves (opening)
-        // 2. Every 10th move (periodic check-ins)
-        // 3. End game (handled separately)
-
-        if (history.size() <= 6) {
-            Log.d(TAG, "💬 Opening move - generating dialogue with timing");
-            scheduleDialogueWithTiming(() -> generateMoveDialogue(move, history));
-        } else if (history.size() % 10 == 0) {
-            Log.d(TAG, "💬 Periodic dialogue (every 10 moves)");
-            scheduleDialogueWithTiming(() -> generateMoveDialogue(move, history));
-        } else {
-            Log.d(TAG, "🤫 Quiet move - no dialogue");
-        }
-    }
-
-    /**
-     * NEW: Schedule dialogue with proper timing to prevent overlap
-     */
-    private void scheduleDialogueWithTiming(Runnable dialogueAction) {
-        if (isDialoguePlaying) {
-            // Queue the dialogue for later
-            pendingDialogue.offer(dialogueAction);
-            Log.d(TAG, "⏸️ Dialogue queued - waiting for current speaker to finish");
-        } else {
-            // Start dialogue immediately
-            isDialoguePlaying = true;
-            dialogueAction.run();
-
-            // Schedule cleanup and check for pending dialogue
-            mainHandler.postDelayed(() -> {
-                isDialoguePlaying = false;
-
-                // Process any queued dialogue
-                Runnable nextDialogue = pendingDialogue.poll();
-                if (nextDialogue != null) {
-                    Log.d(TAG, "🎤 Starting queued dialogue");
-                    isDialoguePlaying = true;
-                    nextDialogue.run();
-
-                    // Schedule another cleanup
-                    mainHandler.postDelayed(() -> {
-                        isDialoguePlaying = false;
-                    }, 8000); // Give 8 seconds for speech
-                }
-            }, 8000); // Assume 8 seconds for typical dialogue
-        }
-    }
-
 
     // Control methods
     public void pauseGame() {
@@ -486,6 +494,10 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     public LiveData<Boolean> isThinking() { return isThinking; }
     public LiveData<int[]> getLastMove() { return lastMove; }
 
+    // ENHANCED: New getters for conversation state
+    public LiveData<String> getConversationSpeaker() { return conversationSpeaker; }
+    public LiveData<Boolean> isConversationActive() { return conversationActive; }
+
     public void cleanup() {
         gameInProgress = false;
 
@@ -498,7 +510,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
         }
-        Log.d(TAG, "🧹 DEBUGGED SpectatorGameViewModel cleaned up");
+        Log.d(TAG, "🧹 ENHANCED SpectatorGameViewModel cleaned up");
     }
 
     @Override

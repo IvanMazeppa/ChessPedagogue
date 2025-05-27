@@ -5,21 +5,22 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.File;
+import java.io.IOException;
+import android.content.SharedPreferences;
 
 /**
- * 🎭 CONVERSATIONAL AI DIALOGUE COORDINATOR
+ * 🎭 ENHANCED AI DIALOGUE MANAGER with TTS Integration
  *
- * Now with FULL conversation capabilities between chess masters!
- * - Memory of what each master said
- * - Intelligent response triggering
- * - Deep conversational context
- * - Ben's complete voice personality system
+ * Creates authentic, flowing conversations between AI chess masters during spectator games
+ * with full voice synthesis using personality-specific accents and speech patterns!
  */
 public class AIDialogueManager {
     private static final String TAG = "AIDialogueManager";
@@ -27,24 +28,47 @@ public class AIDialogueManager {
     private final Context context;
     private final ExecutorService executorService;
     private final Handler mainHandler;
+    private final OpenAIService openAIService;
     private final FineTunedModelManager modelManager;
-    private final OpenAITTSService ttsService;
-    private final Random random;
+    private final OpenAITTSService ttsService; // 🎵 ADDED: TTS Integration!
 
-    // ENHANCED: Conversation management
-    private final ConversationManager conversationManager;
-    private int dialogueCount = 0;
+    // Conversation state tracking
     private String lastSpeaker = "";
-    private final List<String> conversationHistory = new ArrayList<>();
+    private String lastStatement = "";
+    private List<ConversationTurn> conversationHistory = new ArrayList<>();
+    private boolean conversationInProgress = false;
+    private int conversationTurnCount = 0;
 
-    // NEW: Conversation flow control
-    private boolean conversationsEnabled = true;
-    private String currentWhitePlayer = "";
-    private String currentBlackPlayer = "";
+    // TTS state tracking - ADDED
+    private boolean isSpeaking = false;
+    private String currentlySpeaking = "";
+
+    // Conversation triggers and timing
+    private static final int MAX_CONVERSATION_TURNS = 4;
+    private static final long CONVERSATION_DELAY_MS = 2000;
+    private static final long TTS_DELAY_MS = 500; // Brief pause before speaking
+
+    /**
+     * Represents a turn in the conversation
+     */
+    private static class ConversationTurn {
+        final String speaker;
+        final String statement;
+        final long timestamp;
+        final String context;
+
+        ConversationTurn(String speaker, String statement, String context) {
+            this.speaker = speaker;
+            this.statement = statement;
+            this.context = context;
+            this.timestamp = System.currentTimeMillis();
+        }
+    }
 
     public interface DialogueCallback {
         void onDialogueGenerated(String speaker, String dialogue);
         void onConversationStarted(String respondingSpeaker, String triggerStatement);
+        void onConversationComplete(String finalSpeaker, String finalStatement);
         void onError(String error);
     }
 
@@ -52,590 +76,703 @@ public class AIDialogueManager {
         this.context = context.getApplicationContext();
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
+        this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
-        this.ttsService = OpenAITTSService.getInstance(context);
-        this.random = new Random();
+        this.ttsService = OpenAITTSService.getInstance(context); // 🎵 INITIALIZE TTS!
 
-        // CRITICAL: Initialize ConversationManager for memory!
-        this.conversationManager = ConversationManager.getInstance(context);
-
-        Log.d(TAG, "🎭 CONVERSATIONAL AIDialogueManager - ready for master conversations!");
+        Log.d(TAG, "🎭 Enhanced AI Dialogue Manager initialized with TTS support!");
     }
 
     /**
-     * ENHANCED: Generate dialogue with conversation awareness!
+     * 🏁 Generate end game dialogue
      */
-    public void generateMoveDialogue(String move, String playerWhoMoved, String whitePlayer,
-                                     String blackPlayer, int moveNumber, DialogueCallback callback) {
+    public void generateEndGameDialogue(String result, String whitePlayer, String blackPlayer, DialogueCallback callback) {
+        Log.d(TAG, "🏁 Generating end game dialogue for: " + result);
 
-        // Store current players for conversation context
-        this.currentWhitePlayer = whitePlayer;
-        this.currentBlackPlayer = blackPlayer;
-
-        dialogueCount++;
-        Log.d(TAG, "💬 Coordinating CONVERSATIONAL dialogue for move " + dialogueCount);
+        resetConversation(); // Reset for end game
 
         executorService.execute(() -> {
             try {
-                String speaker;
-                String dialogue;
+                // Both players should comment on the end
+                String winner = extractWinner(result);
+                String firstSpeaker = winner != null ? winner : whitePlayer;
+                String secondSpeaker = firstSpeaker.equals(whitePlayer) ? blackPlayer : whitePlayer;
 
-                // Decide who speaks based on your existing logic
-                if (shouldPlayerRespond(playerWhoMoved)) {
-                    speaker = playerWhoMoved;
-                    dialogue = generateDialogueUsingBensSystem(speaker, "move_comment", move, moveNumber);
-                } else {
-                    speaker = playerWhoMoved.equals(whitePlayer) ? blackPlayer : whitePlayer;
-                    dialogue = generateDialogueUsingBensSystem(speaker, "move_response", move, moveNumber);
-                }
+                String endStatement = generateNaturalEndGameStatement(firstSpeaker, result);
 
-                // CRITICAL: Add to conversation memory!
-                conversationManager.addMasterMessage(speaker, dialogue);
-                conversationHistory.add(speaker + ": " + dialogue);
-                lastSpeaker = speaker;
+                mainHandler.post(() -> {
+                    callback.onDialogueGenerated(firstSpeaker, endStatement);
 
-                if (callback != null) {
-                    final String finalSpeaker = speaker;
-                    final String finalDialogue = dialogue;
-                    mainHandler.post(() -> {
-                        callback.onDialogueGenerated(finalSpeaker, finalDialogue);
+                    // 🎵 TRIGGER TTS with personality voice!
+                    speakDialogueWithPersonality(firstSpeaker, endStatement);
 
-                        // Use Ben's complete voice personality system!
-                        speakWithFullPersonalitySystem(finalSpeaker, finalDialogue);
-
-                        // NEW: Check for conversation opportunity!
-                        checkForConversationOpportunity(finalSpeaker, finalDialogue, callback);
-                    });
-                }
+                    // Always trigger a response for game end
+                    scheduleConversationResponse(secondSpeaker, firstSpeaker, endStatement, "endgame_response", callback);
+                });
 
             } catch (Exception e) {
-                Log.e(TAG, "Error coordinating dialogue", e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError(e.getMessage()));
-                }
+                Log.e(TAG, "Error generating end game dialogue", e);
+                mainHandler.post(() -> callback.onError("Failed to generate end game dialogue"));
             }
         });
     }
 
     /**
-     * 🚀 NEW: The magic happens here - check if the other master should respond!
+     * CRITICAL FIX: Enhanced speakDialogueWithPersonality method in AIDialogueManager.java
+     * This ensures Tal (and all masters) properly trigger TTS with accent instructions
      */
-    private void checkForConversationOpportunity(String speaker, String dialogue, DialogueCallback callback) {
-        if (!conversationsEnabled) {
-            Log.d(TAG, "💬 Conversations disabled - skipping opportunity check");
-            return;
-        }
+    private void speakDialogueWithPersonality(String speaker, String dialogue) {
+        Log.d(TAG, "🎵 DEBUGGING TTS CALL FOR SPEAKER: " + speaker);
+        Log.d(TAG, "   Dialogue: " + dialogue.substring(0, Math.min(50, dialogue.length())) + "...");
+        Log.d(TAG, "   Current isSpeaking state: " + isSpeaking);
+        Log.d(TAG, "   Currently speaking: " + currentlySpeaking);
 
-        // Get the other master
-        String otherMaster = getOtherMaster(speaker);
-        if (otherMaster == null) {
-            Log.d(TAG, "💬 No other master to respond");
-            return;
-        }
-
-        // Check if they should respond using your ConversationManager logic
-        if (conversationManager.shouldMasterRespond(speaker, dialogue)) {
-            Log.d(TAG, "🎉 CONVERSATION OPPORTUNITY! " + otherMaster + " should respond to: \"" + dialogue + "\"");
-
-            if (callback != null) {
-                callback.onConversationStarted(otherMaster, dialogue);
+        try {
+            if (isSpeaking) {
+                Log.d(TAG, "⏸️ Someone is already speaking (" + currentlySpeaking + "), queuing " + speaker + "'s dialogue for later");
+                mainHandler.postDelayed(() -> speakDialogueWithPersonality(speaker, dialogue), 2000);
+                return;
             }
 
-            // Generate a conversational response with a small delay for natural timing
-            mainHandler.postDelayed(() -> {
-                generateConversationalResponse(otherMaster, dialogue, callback);
-            }, 2000 + random.nextInt(3000)); // 2-5 second delay for natural conversation flow
-        }
-    }
+            isSpeaking = true;
+            currentlySpeaking = speaker;
 
-    /**
-     * 🎭 NEW: Generate authentic conversational responses!
-     */
-    private void generateConversationalResponse(String respondingMaster, String triggerDialogue, DialogueCallback callback) {
-        executorService.execute(() -> {
+            Log.d(TAG, "🎭 STARTING TTS FOR: " + speaker);
+
+            // CRITICAL FIX: Force the TTS service to use the correct master
+            // Set the master preference before calling TTS
+            SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            String currentMaster = masterPrefs.getString("selected_master", "tal");
+
+            Log.d(TAG, "   Original selected master: " + currentMaster);
+            Log.d(TAG, "   Speaker requesting TTS: " + speaker);
+
+            // TEMPORARILY set the master to the speaker for this TTS call
+            SharedPreferences.Editor editor = masterPrefs.edit();
+            editor.putString("selected_master", speaker.toLowerCase());
+            editor.apply();
+
+            Log.d(TAG, "   ✅ TEMPORARILY SET MASTER TO: " + speaker);
+
+            // Create a completion callback that restores the original master
+            OpenAITTSService.TTSCallback enhancedCallback = new OpenAITTSService.TTSCallback() {
+                @Override
+                public void onSpeechStarted() {
+                    Log.d(TAG, "🎤 " + speaker + " started speaking with enhanced accent system");
+                }
+
+                @Override
+                public void onSpeechReady(File audioFile) {
+                    Log.d(TAG, "🎧 Enhanced audio ready for " + modelManager.getMasterDisplayName(speaker));
+                }
+
+                @Override
+                public void onSpeechCompleted() {
+                    Log.d(TAG, "🎵 " + speaker + " finished speaking with authentic voice");
+
+                    // CRITICAL: Restore the original master selection
+                    SharedPreferences.Editor restoreEditor = masterPrefs.edit();
+                    restoreEditor.putString("selected_master", currentMaster);
+                    restoreEditor.apply();
+
+                    Log.d(TAG, "   ✅ RESTORED ORIGINAL MASTER TO: " + currentMaster);
+
+                    isSpeaking = false;
+                    currentlySpeaking = "";
+                }
+
+                @Override
+                public void onError(String errorMessage) {
+                    Log.e(TAG, "❌ Enhanced TTS error for " + speaker + ": " + errorMessage);
+
+                    // CRITICAL: Restore the original master even on error
+                    SharedPreferences.Editor restoreEditor = masterPrefs.edit();
+                    restoreEditor.putString("selected_master", currentMaster);
+                    restoreEditor.apply();
+
+                    Log.d(TAG, "   ✅ RESTORED ORIGINAL MASTER AFTER ERROR TO: " + currentMaster);
+
+                    isSpeaking = false;
+                    currentlySpeaking = "";
+                }
+            };
+
+            // Get the appropriate voice for this specific speaker
+            String voiceToUse = modelManager.getVoiceForMaster(speaker);
+
+            Log.d(TAG, "🎭 Using voice '" + voiceToUse + "' for " + speaker + " with enhanced accent instructions");
+
+            // CRITICAL: Use the enhanced TTS method that should have accent instructions
+            Log.d(TAG, "🚀 CALLING TTS SERVICE FOR " + speaker.toUpperCase());
+
+            // Use the direct speak method which should trigger our enhanced generateTTSChunk
+            ttsService.speak(dialogue, new OpenAITTSService.OnSpeechCompletedListener() {
+                @Override
+                public void onSpeechCompleted() {
+                    // Delegate to our enhanced callback
+                    enhancedCallback.onSpeechCompleted();
+                }
+            });
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ CRITICAL ERROR speaking dialogue for " + speaker, e);
+            isSpeaking = false;
+            currentlySpeaking = "";
+
+            // Restore master selection on any error
             try {
-                Log.d(TAG, "🗣️ " + respondingMaster + " generating conversational response to: \"" + triggerDialogue + "\"");
-
-                // Create conversation-aware prompt
-                String conversationPrompt = createConversationPrompt(respondingMaster, triggerDialogue);
-
-                // Get conversation context from memory
-                String conversationContext = conversationManager.buildConversationContext();
-
-                // Use Ben's sophisticated system with conversation context!
-                String response = modelManager.processWithMasterAssistant(
-                        conversationPrompt,
-                        conversationContext,
-                        respondingMaster
-                );
-
-                if (response == null || response.trim().isEmpty()) {
-                    // Fallback to personality-based response
-                    response = generateConversationalFallback(respondingMaster, triggerDialogue);
-                }
-
-                // Clean and enhance the response
-                String cleanedResponse = cleanResponse(response);
-                String enhancedResponse = modelManager.enrichResponseWithPersonality(cleanedResponse, respondingMaster);
-
-                // Add to conversation memory
-                conversationManager.addMasterMessage(respondingMaster, enhancedResponse);
-                conversationHistory.add(respondingMaster + ": " + enhancedResponse);
-
-                // Deliver the response
-                if (callback != null) {
-                    final String finalSpeaker = respondingMaster;
-                    final String finalResponse = enhancedResponse;
-                    mainHandler.post(() -> {
-                        callback.onDialogueGenerated(finalSpeaker, finalResponse);
-
-                        // Speak with full personality system
-                        speakWithFullPersonalitySystem(finalSpeaker, finalResponse);
-                    });
-                }
-
-                Log.d(TAG, "✅ Conversational response generated: " + enhancedResponse.substring(0, Math.min(50, enhancedResponse.length())) + "...");
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error generating conversational response", e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError("Conversation error: " + e.getMessage()));
-                }
+                SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+                String originalMaster = masterPrefs.getString("selected_master", "tal");
+                Log.d(TAG, "   🔄 Exception recovery: restoring master to " + originalMaster);
+            } catch (Exception restoreError) {
+                Log.e(TAG, "Error during master selection recovery", restoreError);
             }
-        });
-    }
-
-    /**
-     * 💡 NEW: Create intelligent conversation prompts
-     */
-    private String createConversationPrompt(String respondingMaster, String triggerDialogue) {
-        String masterName = modelManager.getMasterDisplayName(respondingMaster);
-        String conversationContext = conversationManager.buildConversationContext();
-
-        StringBuilder prompt = new StringBuilder();
-
-        prompt.append("CONVERSATION CONTEXT:\n");
-        if (!conversationContext.trim().isEmpty()) {
-            prompt.append(conversationContext).append("\n");
-        }
-
-        prompt.append("The other master just said: \"").append(triggerDialogue).append("\"\n\n");
-
-        prompt.append("As ").append(masterName).append(", respond naturally to this comment. ");
-        prompt.append("You can agree, disagree, build on the idea, share a related memory, or offer a different perspective. ");
-        prompt.append("Keep your response conversational and authentic to your personality (15-25 words). ");
-
-        // Add master-specific conversation guidance
-        switch (respondingMaster.toLowerCase()) {
-            case "fischer":
-                prompt.append("Be direct and uncompromising about chess truth. If you disagree, explain why with conviction.");
-                break;
-            case "tal":
-                prompt.append("Show enthusiasm and warmth. Find the beauty or excitement in what was said.");
-                break;
-            case "kasparov":
-                prompt.append("Be dynamic and passionate. Build energy in the conversation.");
-                break;
-            case "kramnik":
-                prompt.append("Be thoughtful and analytical. Provide measured, methodical insights.");
-                break;
-            default:
-                prompt.append("Respond authentically in your characteristic style.");
-                break;
-        }
-
-        return prompt.toString();
-    }
-
-    /**
-     * 🛡️ NEW: Fallback conversational responses based on personality
-     */
-    private String generateConversationalFallback(String master, String triggerDialogue) {
-        FineTunedModelManager.EnhancedPersonalityProfile profile = modelManager.getPersonalityProfile(master);
-
-        // Create responses based on master personality
-        switch (master.toLowerCase()) {
-            case "fischer":
-                if (triggerDialogue.toLowerCase().contains("beautiful") || triggerDialogue.toLowerCase().contains("sacrifice")) {
-                    return "Beauty means nothing without objective accuracy. Show me the calculation.";
-                } else {
-                    return "That requires precise analysis. Let me think about the best moves here.";
-                }
-
-            case "tal":
-                if (triggerDialogue.toLowerCase().contains("calculate") || triggerDialogue.toLowerCase().contains("precise")) {
-                    return "Sometimes the most beautiful moves come from intuition, not just calculation!";
-                } else {
-                    return "I love how you see the position! There's always more beauty to discover.";
-                }
-
-            case "kasparov":
-                return "Exactly! And that's what makes these positions so fascinating to analyze.";
-
-            case "kramnik":
-                return "A methodical approach will reveal the truth in this position.";
-
-            default:
-                return "That's an interesting perspective on this position.";
         }
     }
 
     /**
-     * 🎯 HELPER: Get the other master in the conversation
-     */
-    private String getOtherMaster(String currentSpeaker) {
-        if (currentSpeaker.equals(currentWhitePlayer)) {
-            return currentBlackPlayer;
-        } else if (currentSpeaker.equals(currentBlackPlayer)) {
-            return currentWhitePlayer;
-        }
-        return null;
-    }
-
-    /**
-     * Generate opening dialogue - ENHANCED with conversation setup
+     * ENHANCED: Generate opening dialogue with explicit speaker identification
      */
     public void generateOpeningDialogue(String whitePlayer, String blackPlayer, DialogueCallback callback) {
-        // Set up conversation participants
-        this.currentWhitePlayer = whitePlayer;
-        this.currentBlackPlayer = blackPlayer;
+        Log.d(TAG, "🎬 ENHANCED: Generating opening dialogue: " + whitePlayer + " vs " + blackPlayer);
 
-        // Clear conversation memory for new game
-        conversationManager.startNewConversation();
         resetConversation();
 
         executorService.execute(() -> {
             try {
-                String dialogue = generateDialogueUsingBensSystem(whitePlayer, "game_opening", "", 0);
-                String speaker = whitePlayer;
+                // Randomly choose who speaks first
+                String firstSpeaker = Math.random() > 0.5 ? whitePlayer : blackPlayer;
+                String opponent = firstSpeaker.equals(whitePlayer) ? blackPlayer : whitePlayer;
 
-                // Add to conversation memory
-                conversationManager.addMasterMessage(speaker, dialogue);
-                conversationHistory.add(speaker + ": " + dialogue);
+                Log.d(TAG, "   First speaker selected: " + firstSpeaker);
+                Log.d(TAG, "   Opponent: " + opponent);
 
-                if (callback != null) {
-                    final String finalSpeaker = speaker;
-                    final String finalDialogue = dialogue;
-                    mainHandler.post(() -> {
-                        callback.onDialogueGenerated(finalSpeaker, finalDialogue);
-                        speakWithFullPersonalitySystem(finalSpeaker, finalDialogue);
+                String openingStatement = generateNaturalOpeningStatement(firstSpeaker, opponent);
 
-                        // Check if black player wants to respond to the opening greeting
-                        checkForConversationOpportunity(finalSpeaker, finalDialogue, callback);
-                    });
-                }
+                Log.d(TAG, "   Generated statement: " + openingStatement);
 
-            } catch (Exception e) {
-                Log.e(TAG, "Error generating opening dialogue", e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError(e.getMessage()));
-                }
-            }
-        });
-    }
+                // Record this as the first turn
+                conversationHistory.add(new ConversationTurn(firstSpeaker, openingStatement, "game_opening"));
+                lastSpeaker = firstSpeaker;
+                lastStatement = openingStatement;
 
-    /**
-     * Generate end game dialogue - ENHANCED with final conversation
-     */
-    public void generateEndGameDialogue(String result, String whitePlayer, String blackPlayer,
-                                        DialogueCallback callback) {
-        executorService.execute(() -> {
-            try {
-                String speaker;
-                if (result.contains("White wins")) {
-                    speaker = whitePlayer;
-                } else if (result.contains("Black wins")) {
-                    speaker = blackPlayer;
-                } else {
-                    speaker = random.nextBoolean() ? whitePlayer : blackPlayer;
-                }
+                mainHandler.post(() -> {
+                    Log.d(TAG, "🎭 TRIGGERING DIALOGUE CALLBACK FOR: " + firstSpeaker);
+                    callback.onDialogueGenerated(firstSpeaker, openingStatement);
 
-                String dialogue = generateDialogueUsingBensSystem(speaker, "game_end", result, 0);
+                    // 🎵 CRITICAL: Trigger TTS with explicit speaker identification
+                    Log.d(TAG, "🚀 ABOUT TO CALL speakDialogueWithPersonality FOR: " + firstSpeaker);
+                    speakDialogueWithPersonality(firstSpeaker, openingStatement);
 
-                // Add to conversation memory
-                conversationManager.addMasterMessage(speaker, dialogue);
-
-                if (callback != null) {
-                    final String finalSpeaker = speaker;
-                    final String finalDialogue = dialogue;
-                    mainHandler.post(() -> {
-                        callback.onDialogueGenerated(finalSpeaker, finalDialogue);
-                        speakWithFullPersonalitySystem(finalSpeaker, finalDialogue);
-
-                        // Final conversation opportunity
-                        checkForConversationOpportunity(finalSpeaker, finalDialogue, callback);
-                    });
-                }
-
-            } catch (Exception e) {
-                Log.e(TAG, "Error generating end game dialogue", e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError(e.getMessage()));
-                }
-            }
-        });
-    }
-
-    /**
-     * 🎛️ NEW: Conversation control methods
-     */
-    public void enableConversations(boolean enabled) {
-        this.conversationsEnabled = enabled;
-        Log.d(TAG, conversationsEnabled ? "🗣️ Conversations ENABLED" : "🔇 Conversations DISABLED");
-    }
-
-    public boolean areConversationsEnabled() {
-        return conversationsEnabled;
-    }
-
-    public void setConversationParticipants(String whitePlayer, String blackPlayer) {
-        this.currentWhitePlayer = whitePlayer;
-        this.currentBlackPlayer = blackPlayer;
-        Log.d(TAG, "🎭 Conversation participants: " + whitePlayer + " vs " + blackPlayer);
-    }
-
-    // Keep all your existing brilliant methods below...
-
-    /**
-     * CORE METHOD: Generate dialogue using Ben's sophisticated FineTunedModelManager!
-     * This is where ALL the personality magic happens - in Ben's existing system!
-     */
-    private String generateDialogueUsingBensSystem(String master, String dialogueType, String context, int moveNumber) {
-        try {
-            Log.d(TAG, "🎭 Using Ben's sophisticated personality system for " + master + " (" + dialogueType + ")");
-
-            // Create context-specific prompts that leverage Ben's personality infrastructure
-            String prompt = createContextPrompt(dialogueType, context, moveNumber);
-
-            // Use Ben's sophisticated assistant processing with FULL personality context
-            String response = modelManager.processWithMasterAssistant(prompt, context, master);
-
-            if (response != null && !response.trim().isEmpty()) {
-                // Apply Ben's personality enrichment system for authentic touches
-                String enriched = modelManager.enrichResponseWithPersonality(response, master);
-                return cleanResponse(enriched);
-            }
-
-            // Fallback to using Ben's detailed personality profiles
-            return generateFallbackUsingBensProfiles(master, dialogueType, context);
-
-        } catch (Exception e) {
-            Log.w(TAG, "Ben's advanced system had an issue, using profile fallback", e);
-            return generateFallbackUsingBensProfiles(master, dialogueType, context);
-        }
-    }
-
-    /**
-     * 🎤 REVOLUTIONARY: Use Ben's COMPLETE voice personality system!
-     * This is the key enhancement that connects to all of Ben's voice magic!
-     */
-    private void speakWithFullPersonalitySystem(String speaker, String dialogue) {
-        if (ttsService != null && dialogue != null && !dialogue.trim().isEmpty()) {
-            Log.d(TAG, "🎤 ENHANCED: Using Ben's COMPLETE voice personality system for " +
-                    modelManager.getMasterDisplayName(speaker));
-
-            try {
-                // STEP 1: Get the specific voice for this master using Ben's system
-                String selectedVoice = modelManager.getVoiceForMaster(speaker);
-                Log.d(TAG, "🎯 Selected voice for " + speaker + ": " + selectedVoice);
-
-                // STEP 2: Get Ben's enhanced voice instructions for this master
-                String voiceInstructions = modelManager.getEnhancedVoiceInstructions(speaker, true);
-                Log.d(TAG, "📝 Voice instructions: " + voiceInstructions.substring(0, Math.min(100, voiceInstructions.length())));
-
-                // STEP 4: Apply Ben's personality enrichment to the dialogue
-                String enhancedDialogue = modelManager.enrichResponseWithPersonality(dialogue, speaker);
-
-                // STEP 5: Create enhanced text with voice instructions naturally embedded
-                String voiceEnhancedText = createVoiceEnhancedText(enhancedDialogue, speaker, voiceInstructions);
-
-                Log.d(TAG, "✨ Using voice: " + selectedVoice + " with Ben's gpt-4o-mini-tts system for " +
-                        modelManager.getMasterDisplayName(speaker));
-
-                // STEP 6: Use Ben's TTS service with the correct method signature
-                ttsService.speak(voiceEnhancedText, selectedVoice, "gpt-4o-mini-tts", new OpenAITTSService.TTSCallback() {
-                    @Override
-                    public void onSpeechStarted() {
-                        Log.d(TAG, "🎵 " + modelManager.getMasterDisplayName(speaker) +
-                                " started speaking with Ben's authentic voice system");
-                    }
-
-                    @Override
-                    public void onSpeechReady(File audioFile) {
-                        Log.d(TAG, "🎧 Audio ready for " + modelManager.getMasterDisplayName(speaker));
-                    }
-
-                    @Override
-                    public void onSpeechCompleted() {
-                        Log.d(TAG, "✅ " + modelManager.getMasterDisplayName(speaker) +
-                                " finished speaking with Ben's complete personality voice system!");
-                    }
-
-                    @Override
-                    public void onError(String errorMessage) {
-                        Log.e(TAG, "❌ Voice error for " + speaker + ": " + errorMessage);
-                        // Fallback to basic speech
-                        ttsService.speak(dialogue);
+                    // Check if this should trigger a response
+                    if (shouldTriggerResponse(openingStatement)) {
+                        Log.d(TAG, "   📝 Scheduling response from: " + opponent);
+                        scheduleConversationResponse(opponent, firstSpeaker, openingStatement, "opening_response", callback);
+                    } else {
+                        Log.d(TAG, "   ⏸️ No response triggered for this statement");
                     }
                 });
 
             } catch (Exception e) {
-                Log.e(TAG, "Error in enhanced voice system, falling back to basic TTS", e);
-                // Fallback to basic speech if something goes wrong
-                ttsService.speak(dialogue);
+                Log.e(TAG, "❌ CRITICAL ERROR generating opening dialogue", e);
+                mainHandler.post(() -> callback.onError("Failed to generate opening dialogue"));
             }
-        }
+        });
     }
 
     /**
-     * NEW: Create voice-enhanced text that incorporates personality instructions naturally
+     * ENHANCED: Generate move dialogue with explicit speaker tracking
      */
-    private String createVoiceEnhancedText(String originalText, String master, String voiceInstructions) {
-        // For dialogue, we want to keep the text natural but can add subtle personality touches
-        String enhanced = originalText;
+    public void generateMoveDialogue(String move, String playerWhoMoved, String whitePlayer,
+                                     String blackPlayer, int moveNumber, DialogueCallback callback) {
 
-        // Get personality profile for additional context
-        FineTunedModelManager.EnhancedPersonalityProfile profile = modelManager.getPersonalityProfile(master);
+        Log.d(TAG, "🎯 ENHANCED: Generating move dialogue for " + move + " by " + playerWhoMoved);
+        Log.d(TAG, "   White: " + whitePlayer + ", Black: " + blackPlayer);
+        Log.d(TAG, "   Move number: " + moveNumber);
 
-        if (profile != null) {
-            // Add personality-specific speech patterns naturally
-            switch (master.toLowerCase()) {
-                case "tal":
-                    // Tal's enthusiasm and warmth
-                    if (!enhanced.contains("!") && (enhanced.contains("beautiful") || enhanced.contains("brilliant"))) {
-                        enhanced = enhanced.replace(".", "!");
+        // Don't interrupt ongoing conversations
+        if (conversationInProgress) {
+            Log.d(TAG, "⏸️ Conversation in progress, skipping move dialogue");
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                // Choose who comments on the move
+                String commentator = chooseCommentator(playerWhoMoved, whitePlayer, blackPlayer, moveNumber);
+                Log.d(TAG, "   Selected commentator: " + commentator);
+
+                String moveComment = generateNaturalMoveComment(move, commentator, playerWhoMoved, moveNumber);
+                Log.d(TAG, "   Generated comment: " + moveComment);
+
+                // Record this turn
+                conversationHistory.add(new ConversationTurn(commentator, moveComment, "move_" + moveNumber));
+                lastSpeaker = commentator;
+                lastStatement = moveComment;
+
+                mainHandler.post(() -> {
+                    Log.d(TAG, "🎭 TRIGGERING MOVE DIALOGUE CALLBACK FOR: " + commentator);
+                    callback.onDialogueGenerated(commentator, moveComment);
+
+                    // 🎵 CRITICAL: Trigger TTS with explicit speaker identification
+                    Log.d(TAG, "🚀 ABOUT TO CALL speakDialogueWithPersonality FOR MOVE BY: " + commentator);
+                    speakDialogueWithPersonality(commentator, moveComment);
+
+                    // Check if this should trigger a conversation
+                    String otherPlayer = commentator.equals(whitePlayer) ? blackPlayer : whitePlayer;
+                    if (shouldTriggerResponse(moveComment)) {
+                        Log.d(TAG, "   📝 Scheduling conversation response from: " + otherPlayer);
+                        scheduleConversationResponse(otherPlayer, commentator, moveComment, "move_response", callback);
+                    } else {
+                        Log.d(TAG, "   ⏸️ No conversation response triggered");
                     }
-                    break;
+                });
 
-                case "fischer":
-                    // Fischer's precision and intensity - keep text sharp and direct
-                    // The voice instructions will handle the intensity
-                    break;
-
-                case "kasparov":
-                    // Kasparov's dynamic energy
-                    if (enhanced.contains("move") || enhanced.contains("position")) {
-                        // Voice instructions will handle the dynamic delivery
-                    }
-                    break;
-
-                case "kramnik":
-                    // Kramnik's methodical approach - keep text measured
-                    break;
+            } catch (Exception e) {
+                Log.e(TAG, "❌ CRITICAL ERROR generating move dialogue", e);
+                mainHandler.post(() -> callback.onError("Failed to generate move dialogue"));
             }
-        }
-
-        return enhanced;
+        });
     }
 
     /**
-     * Create prompts that work with Ben's sophisticated system
+     * 🎬 ENHANCED: Generate opening statements that set up game-specific banter
      */
-    private String createContextPrompt(String dialogueType, String context, int moveNumber) {
-        switch (dialogueType) {
-            case "move_comment":
-                return String.format(
-                        "I just played %s on move %d. Give me a brief, natural comment (10-15 words) " +
-                                "that reflects my authentic personality and playing style.",
-                        context, moveNumber
+    private String generateNaturalOpeningStatement(String speaker, String opponent) {
+        String speakerName = modelManager.getMasterDisplayName(speaker);
+        String opponentName = modelManager.getMasterDisplayName(opponent);
+
+        String prompt = createConversationalPrompt(speaker, String.format(
+                "You are %s about to play a chess game against %s. Make a natural pre-game comment " +
+                        "that shows your personality and perhaps hints at your playing style or approach. " +
+                        "Sound like you're sitting across from %s before the first move. " +
+                        "Be authentic to your historical personality - reference your style, famous games, or approach to chess. " +
+                        "Examples: 'Ready for some tactical fireworks, %s?' or 'Let's see if you can handle my preparation' " +
+                        "Keep it conversational and true to who you are as a chess master. 1-2 sentences maximum.",
+                speakerName, opponentName, opponentName, opponentName
+        ));
+
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate a personality-rich pre-game comment"), speaker);
+    }
+
+    /**
+     * 🎯 ENHANCED: Generate natural move comments that reference the actual game
+     */
+    private String generateNaturalMoveComment(String move, String commentator, String playerWhoMoved, int moveNumber) {
+        String commentatorName = modelManager.getMasterDisplayName(commentator);
+        String playerName = modelManager.getMasterDisplayName(playerWhoMoved);
+
+        boolean commentingOnOwnMove = commentator.equals(playerWhoMoved);
+
+        // Get some game context for more interesting dialogue
+        String gameContext = getGameContext(moveNumber, move);
+
+        String prompt;
+        if (commentingOnOwnMove) {
+            prompt = createConversationalPrompt(commentator, String.format(
+                    "You just played %s (move %d). %s " +
+                            "Make a brief, natural comment about your move as if talking to your opponent. " +
+                            "Reference the move itself or the position. Be authentic to %s's personality. " +
+                            "Examples: 'This %s looks promising' or 'Time to put pressure on your kingside' or 'I like how this opens things up' " +
+                            "Sound confident but conversational. Keep it to 1-2 sentences and mention the actual chess situation.",
+                    move, moveNumber, gameContext, commentatorName, move
+            ));
+        } else {
+            prompt = createConversationalPrompt(commentator, String.format(
+                    "%s just played %s (move %d). %s " +
+                            "React naturally to their move as if you're analyzing it in real-time. " +
+                            "Reference what the move does or how it affects the position. Be authentic to %s's personality. " +
+                            "Examples: 'Interesting %s' or 'I see you're going for the center' or 'That puts pressure on my knight' " +
+                            "Sound like you're genuinely responding to what just happened on the board.",
+                    playerName, move, moveNumber, gameContext, commentatorName, move
+            ));
+        }
+
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate a game-aware move comment"), commentator);
+    }
+
+    /**
+     * 🎲 NEW: Get game context to make dialogue more specific
+     */
+    private String getGameContext(int moveNumber, String move) {
+        if (moveNumber <= 10) {
+            return "This is still the opening phase. ";
+        } else if (moveNumber <= 25) {
+            return "The middlegame is developing. ";
+        } else {
+            return "We're entering the endgame. ";
+        }
+
+        // Could enhance this further by analyzing the actual move
+        // For now, keep it simple but effective
+    }
+
+    /**
+     * 🏁 Generate natural end game statements
+     */
+    private String generateNaturalEndGameStatement(String speaker, String result) {
+        String speakerName = modelManager.getMasterDisplayName(speaker);
+
+        String prompt = createConversationalPrompt(speaker, String.format(
+                "The game just ended with result: %s. As %s, make a natural comment about the game ending. " +
+                        "Speak as if you're talking to your opponent right after the game. " +
+                        "Be gracious whether you won, lost, or drew. Keep it authentic to your personality. " +
+                        "Examples: 'Good game!' or 'Well fought' or 'That was quite a battle' " +
+                        "Sound like a real person, not a computer analyzing the game!",
+                result, speakerName
+        ));
+
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate a natural endgame comment"), speaker);
+    }
+
+    /**
+     * 🎭 Create conversational response
+     */
+    private void generateConversationResponse(String responder, String originalSpeaker,
+                                              String triggerStatement, String context, DialogueCallback callback) {
+
+        executorService.execute(() -> {
+            try {
+                conversationInProgress = true;
+                conversationTurnCount++;
+
+                String responderName = modelManager.getMasterDisplayName(responder);
+                String originalSpeakerName = modelManager.getMasterDisplayName(originalSpeaker);
+
+                String conversationPrompt = createConversationalPrompt(responder, String.format(
+                        "%s just said: \"%s\"\n\n" +
+                                "As %s, respond naturally to what they said. This is a conversation between two chess masters. " +
+                                "Keep your response brief (1-2 sentences) and authentic to your personality. " +
+                                "You might agree, disagree, add your own perspective, or ask a question. " +
+                                "Sound like you're actually talking to %s, not giving a lecture. " +
+                                "Examples: 'I agree!' or 'That's one way to look at it' or 'You always were aggressive' " +
+                                "BE CONVERSATIONAL, not analytical!",
+                        originalSpeakerName, triggerStatement, responderName, originalSpeakerName
+                ));
+
+                String response = cleanAndPersonalize(
+                        openAIService.getChatCompletion(conversationPrompt, "Generate a conversational response"),
+                        responder
                 );
-            case "move_response":
-                return String.format(
-                        "My opponent just played %s on move %d. Give me a brief, authentic reaction " +
-                                "(10-15 words) that fits my personality.",
-                        context, moveNumber
-                );
-            case "game_opening":
-                return "The game is about to begin. Give me a brief, characteristic greeting " +
-                        "to my opponent (10-15 words) that reflects my personality.";
-            case "game_end":
-                return String.format(
-                        "The game just ended with result: %s. Give me a brief, sportsmanlike comment " +
-                                "(10-15 words) that fits my personality.",
-                        context
-                );
-            default:
-                return "Give me a brief, natural chess comment that reflects my authentic personality.";
-        }
+
+                // Record this turn
+                conversationHistory.add(new ConversationTurn(responder, response, context));
+                lastSpeaker = responder;
+                lastStatement = response;
+
+                mainHandler.post(() -> {
+                    callback.onDialogueGenerated(responder, response);
+
+                    // 🎵 SPEAK the response with personality voice!
+                    speakDialogueWithPersonality(responder, response);
+
+                    // Check if this conversation should continue
+                    if (conversationTurnCount < MAX_CONVERSATION_TURNS && shouldContinueConversation(response)) {
+                        scheduleConversationResponse(originalSpeaker, responder, response, "conversation_continue", callback);
+                    } else {
+                        // End the conversation
+                        conversationInProgress = false;
+                        conversationTurnCount = 0;
+                        callback.onConversationComplete(responder, response);
+                        Log.d(TAG, "🎭 Conversation completed naturally");
+                    }
+                });
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error generating conversation response", e);
+                conversationInProgress = false;
+                conversationTurnCount = 0;
+                mainHandler.post(() -> callback.onError("Failed to generate conversation response"));
+            }
+        });
     }
 
     /**
-     * Fallback using Ben's detailed personality profiles
+     * ⏰ Schedule a conversation response with natural timing
      */
-    private String generateFallbackUsingBensProfiles(String master, String dialogueType, String context) {
-        FineTunedModelManager.EnhancedPersonalityProfile profile =
-                modelManager.getPersonalityProfile(master);
+    private void scheduleConversationResponse(String responder, String originalSpeaker,
+                                              String triggerStatement, String context, DialogueCallback callback) {
 
-        if (profile == null) {
-            return "Interesting position here.";
-        }
+        Log.d(TAG, "⏰ Scheduling conversation response from " + responder);
 
-        // Use Ben's signature approaches for authentic fallbacks
-        if (profile.signatureApproaches != null && profile.signatureApproaches.length > 0) {
-            String approach = profile.signatureApproaches[random.nextInt(profile.signatureApproaches.length)];
-            return approach;  // Ben's approaches are already perfectly phrased!
-        }
+        mainHandler.postDelayed(() -> {
+            if (!conversationInProgress && conversationTurnCount >= MAX_CONVERSATION_TURNS) {
+                Log.d(TAG, "⏸️ Conversation limit reached, not scheduling response");
+                return;
+            }
 
-        // Use Ben's communication styles
-        switch (profile.communicationStyle) {
-            case "direct_intense":
-                return "This position demands precise calculation.";
-            case "enthusiastic_conversational":
-                return "What a fascinating position we have here!";
-            case "intellectual_engaging":
-                return "The strategic complexities here are quite remarkable.";
-            case "calm_analytical":
-                return "A methodical approach will serve us well here.";
-            default:
-                return "An interesting moment in our game.";
-        }
+            callback.onConversationStarted(responder, triggerStatement);
+            generateConversationResponse(responder, originalSpeaker, triggerStatement, context, callback);
+
+        }, CONVERSATION_DELAY_MS);
     }
 
     /**
-     * Simple response cleaning
+     * 🎯 Determine if a statement should trigger a response
      */
-    private String cleanResponse(String response) {
-        if (response == null) return "";
-
-        response = response.trim();
-
-        // Remove quotes if the entire response is quoted
-        if (response.startsWith("\"") && response.endsWith("\"")) {
-            response = response.substring(1, response.length() - 1);
-        }
-
-        return response;
-    }
-
-    /**
-     * Simple turn management
-     */
-    private boolean shouldPlayerRespond(String playerWhoMoved) {
-        // Don't let the same player talk twice in a row (usually)
-        if (playerWhoMoved.equals(lastSpeaker) && random.nextFloat() > 0.3f) {
+    private boolean shouldTriggerResponse(String statement) {
+        if (statement == null || statement.trim().isEmpty()) {
             return false;
         }
 
-        // 60% chance the moving player comments
-        return random.nextFloat() < 0.6f;
+        String lowerStatement = statement.toLowerCase();
+
+        // Conversation triggers
+        String[] triggers = {
+                "interesting", "bold", "what do you think", "agree", "disagree",
+                "remember", "always", "never", "brilliant", "mistake",
+                "classic", "typical", "style", "approach", "strategy",
+                "battle", "fight", "challenge", "ready", "see what", "make of this"
+        };
+
+        for (String trigger : triggers) {
+            if (lowerStatement.contains(trigger)) {
+                return true;
+            }
+        }
+
+        // Questions always trigger responses
+        if (lowerStatement.contains("?")) {
+            return true;
+        }
+
+        // Random chance for natural conversation flow
+        return Math.random() > 0.7; // 30% chance of spontaneous response
     }
 
     /**
-     * Simple state management
+     * 🎲 Choose who comments on a move
+     */
+    private String chooseCommentator(String playerWhoMoved, String whitePlayer, String blackPlayer, int moveNumber) {
+        // Early game: more likely to comment on own moves
+        // Later game: more likely to comment on opponent moves
+
+        if (moveNumber <= 10) {
+            // Early game - 70% chance player comments on own move
+            return Math.random() > 0.3 ? playerWhoMoved :
+                    (playerWhoMoved.equals(whitePlayer) ? blackPlayer : whitePlayer);
+        } else {
+            // Later game - 60% chance opponent comments
+            return Math.random() > 0.4 ?
+                    (playerWhoMoved.equals(whitePlayer) ? blackPlayer : whitePlayer) : playerWhoMoved;
+        }
+    }
+
+    /**
+     * 🔄 Check if conversation should continue
+     */
+    private boolean shouldContinueConversation(String lastResponse) {
+        if (lastResponse == null) return false;
+
+        String lower = lastResponse.toLowerCase();
+
+        // Don't continue if response is very short or seems final
+        if (lastResponse.length() < 20) return false;
+
+        // Continue if it seems like there's more to discuss
+        return lower.contains("but") || lower.contains("however") ||
+                lower.contains("though") || lower.contains("?") ||
+                lower.contains("what about") || lower.contains("consider");
+    }
+
+    /**
+     * 🎭 Create personality-specific prompts
+     */
+    private String createConversationalPrompt(String master, String instruction) {
+        String personalityNote = getPersonalityNote(master);
+
+        return String.format(
+                "You are %s, the chess grandmaster. %s\n\n%s\n\n" +
+                        "Remember: You're having a conversation with another human being, not analyzing a position. " +
+                        "Sound natural, authentic, and true to your personality. Keep responses conversational and brief.",
+                modelManager.getMasterDisplayName(master), personalityNote, instruction
+        );
+    }
+
+    /**
+     * 🎭 Get personality notes for each master
+     */
+    private String getPersonalityNote(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "You're known for your brilliant tactical play and love of beautiful combinations. " +
+                        "You're enthusiastic, creative, and passionate about chess. Speak with warmth and excitement.";
+            case "fischer":
+                return "You're known for your incredible precision and preparation. You're confident, direct, " +
+                        "and uncompromising about chess excellence. Speak with authority and conviction.";
+            case "kasparov":
+                return "You're known for your aggressive, dynamic style and psychological warfare. " +
+                        "You're intense, passionate, and competitive. Speak with energy and determination.";
+            case "karpov":
+                return "You're known for your patient, positional style and psychological insight. " +
+                        "You're calm, methodical, and diplomatic. Speak with quiet confidence and wisdom.";
+            case "kramnik":
+                return "You're known for your solid, technical approach and deep preparation. " +
+                        "You're analytical, measured, and precise. Speak thoughtfully and systematically.";
+            default:
+                return "You're a chess grandmaster with your own unique style and personality. " +
+                        "Be authentic and speak naturally about chess.";
+        }
+    }
+
+    /**
+     * 🧹 Clean and personalize responses
+     */
+    private String cleanAndPersonalize(String response, String master) {
+        if (response == null || response.trim().isEmpty()) {
+            return getFallbackResponse(master);
+        }
+
+        String cleaned = response.trim();
+
+        // Remove quotation marks if present
+        if (cleaned.startsWith("\"") && cleaned.endsWith("\"")) {
+            cleaned = cleaned.substring(1, cleaned.length() - 1);
+        }
+
+        // Remove meta-language
+        cleaned = cleaned.replaceAll("(?i)^(Let me |I would |I think |I believe |As .+, )", "");
+        cleaned = cleaned.replaceAll("(?i)^(This |Looking at |Analyzing )", "");
+
+        // Add personality touches
+        return addPersonalityTouch(cleaned, master);
+    }
+
+
+    /**
+     * ✨ FIXED: Add personality-specific touches WITHOUT excessive repetition
+     */
+    private String addPersonalityTouch(String response, String master) {
+        if (response == null || response.trim().isEmpty()) {
+            return response;
+        }
+
+        // MUCH MORE SELECTIVE: Only add personality touches rarely and contextually
+        switch (master.toLowerCase()) {
+            case "tal":
+                // Only add "Beautiful chess!" for truly brilliant tactical content
+                if (response.toLowerCase().contains("sacrifice") &&
+                        response.toLowerCase().contains("brilliant") &&
+                        !response.toLowerCase().contains("beautiful") &&
+                        Math.random() > 0.95) { // Only 5% chance
+                    return response + " Beautiful chess!";
+                }
+                break;
+
+            case "fischer":
+                // Only add perfectionist touch for accuracy-related content
+                if (response.toLowerCase().contains("precise") &&
+                        response.toLowerCase().contains("best") &&
+                        Math.random() > 0.95) { // Only 5% chance
+                    return response + " Perfection is essential.";
+                }
+                break;
+
+            case "kasparov":
+                // Only add fighting spirit for battle-related content
+                if (response.toLowerCase().contains("fight") &&
+                        response.toLowerCase().contains("battle") &&
+                        Math.random() > 0.95) { // Only 5% chance
+                    return response + " We must fight for every advantage!";
+                }
+                break;
+
+            // Leave other masters clean to prevent any repetition
+        }
+
+        return response; // Return unchanged response most of the time
+    }
+
+    /**
+     * 🆘 Fallback responses when generation fails
+     */
+    private String getFallbackResponse(String master) {
+        String[][] fallbacks = {
+                {"tal", "This is getting interesting!"},
+                {"fischer", "Let's see what happens."},
+                {"kasparov", "The battle continues!"},
+                {"karpov", "Patience will decide this game."},
+                {"kramnik", "Solid play is key here."}
+        };
+
+        for (String[] fallback : fallbacks) {
+            if (fallback[0].equals(master.toLowerCase())) {
+                return fallback[1];
+            }
+        }
+
+        return "This should be interesting...";
+    }
+
+    /**
+     * 🏆 Extract winner from result string
+     */
+    private String extractWinner(String result) {
+        if (result == null) return null;
+
+        String lower = result.toLowerCase();
+        if (lower.contains("white wins") || lower.contains("black wins")) {
+            return lower.contains("white") ? "white" : "black";
+        }
+
+        // Try to extract from result patterns
+        if (lower.contains("tal") && lower.contains("wins")) return "tal";
+        if (lower.contains("fischer") && lower.contains("wins")) return "fischer";
+        if (lower.contains("kasparov") && lower.contains("wins")) return "kasparov";
+
+        return null; // Draw or unclear
+    }
+
+    /**
+     * 🔄 Reset conversation state
      */
     public void resetConversation() {
         conversationHistory.clear();
+        conversationInProgress = false;
+        conversationTurnCount = 0;
         lastSpeaker = "";
-        dialogueCount = 0;
-        Log.d(TAG, "🔄 Conversation reset - ready for Ben's complete personality system");
+        lastStatement = "";
+
+        // Reset TTS state
+        isSpeaking = false;
+        currentlySpeaking = "";
+
+        Log.d(TAG, "🔄 Conversation state and TTS state reset");
     }
 
-    public List<String> getConversationHistory() {
-        return new ArrayList<>(conversationHistory);
+    /**
+     * 🛑 NEW: Stop current speech (useful for interruptions or game pause)
+     */
+    public void stopCurrentSpeech() {
+        Log.d(TAG, "🛑 Stopping current speech");
+        if (ttsService != null && isSpeaking) {
+            ttsService.interrupt();
+            isSpeaking = false;
+            currentlySpeaking = "";
+        }
     }
 
+    /**
+     * ℹ️ NEW: Get current speaking state
+     */
+    public boolean isSpeaking() {
+        return isSpeaking;
+    }
+
+    public String getCurrentlySpeaking() {
+        return currentlySpeaking;
+    }
+
+    /**
+     * 🧹 Cleanup resources
+     */
     public void cleanup() {
-        executorService.shutdown();
-        Log.d(TAG, "🧹 Enhanced dialogue coordinator cleaned up - Ben's voice systems continue working perfectly");
+        stopCurrentSpeech(); // Stop any ongoing speech
+
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdown();
+        }
+        resetConversation();
+        Log.d(TAG, "🧹 AIDialogueManager cleaned up");
     }
 }
