@@ -263,109 +263,44 @@ public class OpenAITTSService {
     }
 
     /**
-     * Generate TTS for a chunk with simplified voice instructions
+     * 🎭 ENHANCED: Create voice instructions with more focus on energy/emotion than specific accents
      */
-    private void generateTTSChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
-        executorService.execute(() -> {
-            try {
-                String voiceToUse = getVoiceForCurrentMaster();
-                String selectedMaster = getCurrentChessMaster();
+    private String createNaturalVoiceInstructions(String master) {
+        try {
+            // Focus more on energy and emotion since accents might not work reliably
+            switch (master.toLowerCase()) {
+                case "tal":
+                    return "Speak with passionate enthusiasm and high energy. Sound warm, creative, and genuinely excited about chess. Use an animated, expressive delivery.";
 
-                // Build the TTS request with SIMPLIFIED approach
-                JSONObject payload = new JSONObject();
-                payload.put("model", "gpt-4o-mini-tts");  // Using the new model
-                payload.put("voice", voiceToUse);
-                payload.put("speed", 1.0);
+                case "fischer":
+                    return "Speak with intense conviction and absolute certainty. Sound demanding, precise, and uncompromising. Use a direct, authoritative tone with no hesitation.";
 
-                // SIMPLIFIED: Combine the instruction with the text itself
-                String enhancedText = createEnhancedText(text, selectedMaster);
-                payload.put("input", enhancedText);
+                case "kasparov":
+                    return "Speak with dynamic passion and fierce determination. Sound energetic, competitive, and compelling with strong conviction.";
 
-                Log.d(TAG, "🎤 Generating chunk " + chunkId + " with voice: " + voiceToUse);
+                case "karpov":
+                    return "Speak with calm confidence and measured wisdom. Sound diplomatic, patient, and quietly authoritative.";
 
-                RequestBody body = RequestBody.create(
-                        MediaType.parse("application/json"),
-                        payload.toString()
-                );
+                case "kramnik":
+                    return "Speak with analytical precision and systematic clarity. Sound methodical, technical, and thoughtfully measured.";
 
-                Request request = new Request.Builder()
-                        .url(TTS_URL)
-                        .header("Authorization", "Bearer " + apiKey)
-                        .header("Content-Type", "application/json")
-                        .post(body)
-                        .build();
+                case "capablanca":
+                    return "Speak with elegant confidence and natural authority. Sound effortlessly refined and gracefully assured.";
 
-                // CRITICAL: Use try-with-resources for proper connection cleanup
-                try (Response response = httpClient.newCall(request).execute()) {
-                    if (!response.isSuccessful()) {
-                        String error = "TTS API error: " + response.code();
-                        Log.e(TAG, error);
-                        if (callback != null) {
-                            mainHandler.post(() -> callback.onError(error));
-                        }
-                        return;
-                    }
+                case "carlsen":
+                    return "Speak with modern confidence and relaxed authority. Sound pragmatic, adaptable, and naturally assured.";
 
-                    if (response.body() == null) {
-                        Log.e(TAG, "TTS API returned null body");
-                        if (callback != null) {
-                            mainHandler.post(() -> callback.onError("Empty response from TTS API"));
-                        }
-                        return;
-                    }
+                case "alekhine":
+                    return "Speak with sophisticated intelligence and cultured authority. Sound intellectually engaging and refined.";
 
-                    byte[] audioData = response.body().bytes();
-                    File audioFile = saveAudioToFile(audioData);
-
-                    Log.d(TAG, "✅ Generated audio file: " + audioFile.getName() + " (" + audioData.length + " bytes)");
-
-                    // ALSO FIND this section in generateTTSChunk method (around line 350)
-                    // REPLACE the chunk creation section with this:
-
-                    // Create chunk item and add to pending
-                    ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
-                            chunkId, audioFile, text, callback, isFinalChunk);
-
-// CRITICAL FIX: Reset counter if this is the first chunk of a new speech
-                    synchronized (pendingChunks) {
-                        if (chunkId == 0) {
-                            nextChunkToPlay.set(0);  // ← RESET HERE for new speech
-                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
-                        }
-
-                        pendingChunks.put(chunkId, chunkItem);
-                        Log.d(TAG, "📦 Added chunk " + chunkId + " to pending, total pending: " + pendingChunks.size());
-
-                        // IMMEDIATE: Check if we can play any chunks now
-                        tryPlayNextChunks();
-                    }
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "❌ TTS error: " + e.getMessage(), e);
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onError("TTS error: " + e.getMessage()));
-                }
+                default:
+                    return "Speak with the wisdom and authority of an experienced chess master.";
             }
-        });
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating voice instructions for " + master, e);
+            return "Speak with natural confidence and chess master authority.";
+        }
     }
-
-    /**
-     * Creates enhanced text with simple voice instructions embedded naturally
-     */
-    private String createEnhancedText(String originalText, String master) {
-        // Get simple voice instruction from FineTunedModelManager
-        String voiceInstruction = FineTunedModelManager.getInstance(context)
-                .getSimplifiedInstructionsForMaster(master);
-
-        // For gpt-4o-mini-tts, embed the instruction naturally at the beginning
-        return "[" + voiceInstruction + "] " + originalText;
-    }
-
-    /**
-     * Try to play the next chunks in order
-     */
-    // FIND this method in your OpenAITTSService.java (around line 290)
-// REPLACE the tryPlayNextChunks method with this FIXED version:
 
     /**
      * FIXED: Try to play the next chunks in order with proper debugging
@@ -557,26 +492,387 @@ public class OpenAITTSService {
     }
 
     /**
-     * Get voice for current chess master
+     * NEW: Fallback method without instructions if the enhanced version fails
+     */
+    private void generateTTSChunkFallback(String text, int chunkId, boolean isFinalChunk,
+                                          TTSCallback callback, String voiceToUse) {
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "🔄 Using fallback TTS without instructions");
+
+                JSONObject payload = new JSONObject();
+                payload.put("model", "gpt-4o-mini-tts");
+                payload.put("voice", voiceToUse);
+                payload.put("speed", 1.0);
+                payload.put("input", text);
+                // NO instructions parameter for fallback
+
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),
+                        payload.toString()
+                );
+
+                Request request = new Request.Builder()
+                        .url(TTS_URL)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Content-Type", "application/json")
+                        .post(body)
+                        .build();
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        byte[] audioData = response.body().bytes();
+                        File audioFile = saveAudioToFile(audioData);
+
+                        ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
+                                chunkId, audioFile, text, callback, isFinalChunk);
+
+                        synchronized (pendingChunks) {
+                            pendingChunks.put(chunkId, chunkItem);
+                            tryPlayNextChunks();
+                        }
+
+                        Log.d(TAG, "✅ Fallback TTS successful");
+                    } else {
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError("Fallback TTS failed"));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Fallback TTS error", e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError("Fallback TTS error: " + e.getMessage()));
+                }
+            }
+        });
+    }
+
+    /**
+     * DEBUGGING VERSION: Enhanced TTS chunk generation with extensive logging for Tal
+     * Add this method to OpenAITTSService.java to replace the existing generateTTSChunk method
+     */
+    private void generateTTSChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
+        executorService.execute(() -> {
+            try {
+                String voiceToUse = getVoiceForCurrentMaster();
+                String selectedMaster = getCurrentChessMaster();
+
+                // CRITICAL DEBUG: Log everything for Tal specifically
+                Log.d(TAG, "🔍 DEBUG TTS GENERATION:");
+                Log.d(TAG, "   Master: " + selectedMaster);
+                Log.d(TAG, "   Voice: " + voiceToUse);
+                Log.d(TAG, "   Text: " + text.substring(0, Math.min(50, text.length())) + "...");
+                Log.d(TAG, "   Chunk ID: " + chunkId);
+
+                // FORCE Tal to use enhanced instructions
+                boolean isTal = "tal".equalsIgnoreCase(selectedMaster);
+                Log.d(TAG, "   Is Tal: " + isTal);
+
+                String modelToUse = "gpt-4o-mini-tts";
+
+                // Create enhanced instructions with special Tal handling
+                String enhancedInstructions = null;
+                if (isTal) {
+                    // FORCE Tal instructions manually for debugging
+                    enhancedInstructions = "Speak with a warm Latvian-Russian accent. " +
+                            "Roll your 'r' sounds softly and pronounce vowels with Slavic warmth. " +
+                            "Use passionate, enthusiastic delivery that shows genuine love for chess. " +
+                            "Let your excitement bubble through when discussing tactics and sacrifices. " +
+                            "Sound like Mikhail Tal from Latvia with his characteristic warmth and creativity.";
+                    Log.d(TAG, "🎭 FORCED TAL INSTRUCTIONS: " + enhancedInstructions);
+                } else {
+                    // Use the enhanced method for other masters
+                    enhancedInstructions = createAccentSpecificInstructions(selectedMaster, text);
+                    Log.d(TAG, "🎭 ENHANCED INSTRUCTIONS FOR " + selectedMaster + ": " + enhancedInstructions);
+                }
+
+                // Build the TTS request
+                JSONObject payload = new JSONObject();
+                payload.put("model", modelToUse);
+                payload.put("voice", voiceToUse);
+                payload.put("speed", getSpeedForMaster(selectedMaster));
+                payload.put("input", text);
+
+                // ALWAYS add instructions for debugging
+                if (enhancedInstructions != null && !enhancedInstructions.trim().isEmpty()) {
+                    payload.put("instructions", enhancedInstructions);
+                    Log.d(TAG, "✅ INSTRUCTIONS ADDED TO PAYLOAD");
+                } else {
+                    Log.e(TAG, "❌ NO INSTRUCTIONS - THIS IS THE PROBLEM!");
+                }
+
+                // DEBUG: Log the complete payload
+                Log.d(TAG, "📝 COMPLETE TTS PAYLOAD:");
+                Log.d(TAG, payload.toString(2));
+
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),
+                        payload.toString()
+                );
+
+                Request request = new Request.Builder()
+                        .url(TTS_URL)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Content-Type", "application/json")
+                        .post(body)
+                        .build();
+
+                Log.d(TAG, "🚀 SENDING TTS REQUEST FOR " + selectedMaster.toUpperCase());
+
+                try (Response response = httpClient.newCall(request).execute()) {
+                    Log.d(TAG, "📡 TTS API RESPONSE CODE: " + response.code());
+
+                    if (!response.isSuccessful()) {
+                        String error = "TTS API error: " + response.code();
+                        String errorBody = "";
+                        if (response.body() != null) {
+                            errorBody = response.body().string();
+                            Log.e(TAG, "❌ TTS API ERROR DETAILS: " + errorBody);
+                        }
+
+                        // Check if it's an instructions-related error
+                        if (errorBody.contains("instructions") && enhancedInstructions != null) {
+                            Log.w(TAG, "🔄 RETRYING WITHOUT INSTRUCTIONS DUE TO API ERROR");
+                            generateTTSChunkFallback(text, chunkId, isFinalChunk, callback, voiceToUse);
+                            return;
+                        }
+
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError(error));
+                        }
+                        return;
+                    }
+
+                    if (response.body() == null) {
+                        Log.e(TAG, "❌ TTS API RETURNED NULL BODY");
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError("Empty response from TTS API"));
+                        }
+                        return;
+                    }
+
+                    byte[] audioData = response.body().bytes();
+                    File audioFile = saveAudioToFile(audioData);
+
+                    Log.d(TAG, "✅ SUCCESSFULLY GENERATED AUDIO FOR " + selectedMaster.toUpperCase());
+                    Log.d(TAG, "   File: " + audioFile.getName() + " (" + audioData.length + " bytes)");
+
+                    // Create chunk item and add to pending
+                    ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
+                            chunkId, audioFile, text, callback, isFinalChunk);
+
+                    synchronized (pendingChunks) {
+                        if (chunkId == 0) {
+                            nextChunkToPlay.set(0);
+                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
+                        }
+
+                        pendingChunks.put(chunkId, chunkItem);
+                        Log.d(TAG, "📦 Added chunk " + chunkId + " for " + selectedMaster + " to pending queue");
+
+                        tryPlayNextChunks();
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ CRITICAL TTS ERROR FOR " + getCurrentChessMaster(), e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError("TTS error: " + e.getMessage()));
+                }
+            }
+        });
+    }
+
+    /**
+     * CORRECTED: Voice selection with proper male voice for Tal
+     * Replace the getVoiceForCurrentMaster method in OpenAITTSService.java
      */
     private String getVoiceForCurrentMaster() {
         SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
         String currentMaster = masterPrefs.getString("selected_master", "tal");
         String voiceOverride = prefs.getString("voice_style", "auto");
 
+        Log.d(TAG, "🎤 VOICE SELECTION DEBUG:");
+        Log.d(TAG, "   Current Master: " + currentMaster);
+        Log.d(TAG, "   Voice Override: " + voiceOverride);
+
         if (!"auto".equals(voiceOverride)) {
+            Log.d(TAG, "   Using Override Voice: " + voiceOverride);
             return voiceOverride;
         }
 
-        return FineTunedModelManager.getInstance(context).getVoiceForMaster(currentMaster);
+        // CORRECTED: Proper male voices for all chess masters
+        String selectedVoice;
+        switch (currentMaster.toLowerCase()) {
+            case "tal":
+                selectedVoice = "echo";  // FIXED: Warm, expressive MALE voice for Tal
+                Log.d(TAG, "   TAL GETS ECHO VOICE (male, warm, expressive)");
+                break;
+            case "fischer":
+                selectedVoice = "onyx";  // Strong, authoritative MALE voice for Fischer
+                Log.d(TAG, "   FISCHER GETS ONYX VOICE (male, strong, authoritative)");
+                break;
+            case "kasparov":
+                selectedVoice = "alloy"; // Dynamic MALE voice for Kasparov
+                Log.d(TAG, "   KASPAROV GETS ALLOY VOICE (male, dynamic)");
+                break;
+            case "karpov":
+                selectedVoice = "fable"; // Calm, refined MALE voice for Karpov
+                Log.d(TAG, "   KARPOV GETS FABLE VOICE (male, calm, refined)");
+                break;
+            case "kramnik":
+                selectedVoice = "alloy"; // Technical, precise MALE voice for Kramnik
+                Log.d(TAG, "   KRAMNIK GETS ALLOY VOICE (male, technical)");
+                break;
+            case "capablanca":
+                selectedVoice = "fable"; // Elegant MALE voice for Capablanca
+                Log.d(TAG, "   CAPABLANCA GETS FABLE VOICE (male, elegant)");
+                break;
+            case "alekhine":
+                selectedVoice = "echo";  // Sophisticated MALE voice for Alekhine
+                Log.d(TAG, "   ALEKHINE GETS ECHO VOICE (male, sophisticated)");
+                break;
+            case "carlsen":
+                selectedVoice = "alloy"; // Modern MALE voice for Carlsen
+                Log.d(TAG, "   CARLSEN GETS ALLOY VOICE (male, modern)");
+                break;
+            case "morphy":
+                selectedVoice = "fable"; // Dignified MALE voice for Morphy
+                Log.d(TAG, "   MORPHY GETS FABLE VOICE (male, dignified)");
+                break;
+            case "lasker":
+                selectedVoice = "echo";  // Thoughtful MALE voice for Lasker
+                Log.d(TAG, "   LASKER GETS ECHO VOICE (male, thoughtful)");
+                break;
+            case "anand":
+                selectedVoice = "alloy"; // Friendly MALE voice for Anand
+                Log.d(TAG, "   ANAND GETS ALLOY VOICE (male, friendly)");
+                break;
+            case "botvinnik":
+                selectedVoice = "onyx";  // Authoritative MALE voice for Botvinnik
+                Log.d(TAG, "   BOTVINNIK GETS ONYX VOICE (male, authoritative)");
+                break;
+            default:
+                selectedVoice = "alloy"; // Default MALE voice
+                break;
+        }
+
+        Log.d(TAG, "   Final Voice Selection: " + selectedVoice + " (MALE)");
+        return selectedVoice;
     }
 
     /**
-     * Get current chess master
+     * DEBUG: Enhanced current master detection
      */
     private String getCurrentChessMaster() {
         SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
-        return masterPrefs.getString("selected_master", "tal");
+        String master = masterPrefs.getString("selected_master", "tal");
+
+        Log.d(TAG, "🎭 CURRENT CHESS MASTER: " + master);
+
+        return master;
+    }
+
+    /**
+     * ENHANCED: Create accent-specific instructions with Tal debugging
+     */
+    private String createAccentSpecificInstructions(String master, String text) {
+        Log.d(TAG, "🎨 CREATING ACCENT INSTRUCTIONS FOR: " + master);
+
+        try {
+            StringBuilder instructions = new StringBuilder();
+
+            switch (master.toLowerCase()) {
+                case "tal":
+                    Log.d(TAG, "   Processing TAL accent instructions...");
+                    instructions.append("Speak with a warm Latvian-Russian accent. ");
+                    instructions.append("Roll your 'r' sounds softly and pronounce vowels with Slavic warmth. ");
+                    instructions.append("Use passionate, enthusiastic delivery that shows genuine love for chess. ");
+                    instructions.append("Let your excitement bubble through when discussing tactics and sacrifices. ");
+                    instructions.append("Sound like Mikhail Tal from Latvia with his characteristic warmth and creativity.");
+                    Log.d(TAG, "   ✅ TAL INSTRUCTIONS CREATED");
+                    break;
+
+                case "fischer":
+                    Log.d(TAG, "   Processing FISCHER accent instructions...");
+                    instructions.append("Speak with a confident American accent from New York. ");
+                    instructions.append("Use intense, demanding delivery with absolute precision. ");
+                    instructions.append("Emphasize words with unwavering conviction and authority. ");
+                    instructions.append("Sound supremely confident and uncompromising. ");
+                    instructions.append("Deliver every word with the perfectionist intensity of Bobby Fischer.");
+                    Log.d(TAG, "   ✅ FISCHER INSTRUCTIONS CREATED");
+                    break;
+
+                case "kasparov":
+                    instructions.append("Speak with a dynamic Russian accent from Baku. ");
+                    instructions.append("Use passionate, energetic delivery with fierce determination. ");
+                    instructions.append("Roll 'r' sounds distinctly and emphasize strong consonants. ");
+                    instructions.append("Show competitive fire and intensity in every word. ");
+                    instructions.append("Speak with the commanding presence of Garry Kasparov.");
+                    break;
+
+                case "karpov":
+                    instructions.append("Speak with a refined, diplomatic Russian accent. ");
+                    instructions.append("Use calm, measured delivery with quiet authority. ");
+                    instructions.append("Maintain elegant pronunciation and thoughtful pauses. ");
+                    instructions.append("Sound patient, wise, and diplomatically confident. ");
+                    instructions.append("Speak with the sophisticated elegance of Anatoly Karpov.");
+                    break;
+
+                case "kramnik":
+                    instructions.append("Speak with a modern Russian accent with precise articulation. ");
+                    instructions.append("Use methodical, analytical delivery with technical precision. ");
+                    instructions.append("Emphasize logical flow and systematic thinking. ");
+                    instructions.append("Sound thoroughly analytical and scientifically precise. ");
+                    instructions.append("Speak with the technical mastery of Vladimir Kramnik.");
+                    break;
+
+                default:
+                    instructions.append("Speak with the natural confidence and wisdom of a chess grandmaster. ");
+                    instructions.append("Use authoritative delivery that conveys deep chess knowledge.");
+                    break;
+            }
+
+            String result = instructions.toString().trim();
+            Log.d(TAG, "🎯 FINAL INSTRUCTIONS FOR " + master + " (" + result.length() + " chars):");
+            Log.d(TAG, "   " + result.substring(0, Math.min(100, result.length())) + "...");
+
+            return result;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ ERROR CREATING ACCENT INSTRUCTIONS FOR " + master, e);
+            return "Speak with the natural confidence and authority of " + master + ", the chess grandmaster.";
+        }
+    }
+
+    /**
+     * ENHANCED: Get speech speed for master
+     */
+    private double getSpeedForMaster(String master) {
+        double speed;
+        switch (master.toLowerCase()) {
+            case "tal":
+                speed = 1.1;  // Slightly faster, enthusiastic
+                break;
+            case "fischer":
+                speed = 0.95; // Slightly slower, deliberate and precise
+                break;
+            case "kasparov":
+                speed = 1.15; // Faster, energetic
+                break;
+            case "karpov":
+                speed = 0.9;  // Slower, thoughtful
+                break;
+            case "kramnik":
+                speed = 0.95; // Deliberate, methodical
+                break;
+            default:
+                speed = 1.0;  // Standard speed
+                break;
+        }
+
+        Log.d(TAG, "⚡ SPEED FOR " + master + ": " + speed);
+        return speed;
     }
 
     /**
@@ -592,17 +888,6 @@ public class OpenAITTSService {
     public void stopSpeech() {
         interrupt();
     }
-
-    /**
-     * Public method to generate and queue a TTS chunk with proper ordering
-     */
-    public void speakChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
-        generateTTSChunk(text, chunkId, isFinalChunk, callback);
-    }
-
-    /**
-     * ENHANCED: Interrupt current speech with thorough cleanup
-     */
 
     /**
      * ENHANCED: Interrupt current speech with thorough cleanup and better error handling

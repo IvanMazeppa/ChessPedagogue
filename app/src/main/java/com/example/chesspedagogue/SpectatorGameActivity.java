@@ -155,6 +155,8 @@ public class SpectatorGameActivity extends AppCompatActivity {
         }
     }
 
+
+
     private boolean setupObservers() {
         try {
             // Initialize ViewModel
@@ -214,6 +216,21 @@ public class SpectatorGameActivity extends AppCompatActivity {
                     Log.d(TAG, "🎯 Animating move: " + moveData[0] + "," + moveData[1] + " -> " + moveData[2] + "," + moveData[3]);
                     chessBoardView.animateMove(moveData[0], moveData[1], moveData[2], moveData[3]);
                     chessBoardView.setLastMove(moveData[0], moveData[1], moveData[2], moveData[3]);
+                }
+            });
+
+            // Add this to your setupObservers() method in SpectatorGameActivity.java
+            viewModel.isConversationActive().observe(this, isActive -> {
+                if (isActive) {
+                    // Show conversation indicator (optional)
+                    Log.d(TAG, "💬 Conversation is active between masters!");
+                }
+            });
+
+            viewModel.getConversationSpeaker().observe(this, speaker -> {
+                if (speaker != null) {
+                    Log.d(TAG, "🎭 Current speaker: " + speaker);
+                    // You could update UI to show who's speaking
                 }
             });
 
