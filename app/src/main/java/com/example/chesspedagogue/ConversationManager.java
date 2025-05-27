@@ -12,7 +12,8 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.HashMap;
+import java.util.Map;
 /**
  * Unified conversation manager that handles all conversation functionality.
  * Merged from ConversationManager, EnhancedConversationManager, and ConversationStorage.
@@ -32,11 +33,12 @@ public class ConversationManager {
 
     private List<Message> conversationHistory = new ArrayList<>();
     private String currentSessionId;
+    // Add to ConversationManager
+    private Map<String, List<Message>> masterConversations = new HashMap<>();
+    private String lastSpeaker = "";
+    private String conversationTopic = "";
 
     // For compatibility with old VoiceService constructor - FIXED
-    private SpeechToTextService sttService;
-    private ChatService chatService;
-    private TextToSpeechService ttsService;
 
     /**
      * Private constructor for singleton pattern - FIXED: Proper context handling
@@ -68,10 +70,7 @@ public class ConversationManager {
      * FIXED: Constructor for VoiceService compatibility - now requires context
      */
     public ConversationManager(Context context, SpeechToTextService sttService, ChatService chatService, TextToSpeechService ttsService) {
-        this(context); // FIXED: Pass the context instead of null
-        this.sttService = sttService;
-        this.chatService = chatService;
-        this.ttsService = ttsService;
+        this(context);
     }
 
     /**
@@ -82,6 +81,105 @@ public class ConversationManager {
             instance = new ConversationManager(context);
         }
         return instance;
+    }
+
+
+    public boolean shouldRespondToMaster(String speaker, String content) {
+        // Logic to determine if the other master should respond
+        return !speaker.equals(lastSpeaker) &&
+                containsConversationTriggers(content);
+    }
+
+    /**
+     * Callback interface for AI master conversations
+     */
+    public interface ConversationCallback {
+        void onMasterResponse(String master, String response);
+        void onConversationError(String error);
+        void onConversationComplete();
+    }
+
+    /**
+     * Check if content contains conversation triggers
+     */
+    private boolean containsConversationTriggers(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return false;
+        }
+
+        String lowerContent = content.toLowerCase();
+
+        // Conversation trigger words/phrases
+        String[] triggers = {
+                "what do you think", "your opinion", "agree", "disagree",
+                "remember when", "similar position", "reminds me",
+                "sacrifice", "attack", "defense", "strategy", "tactics",
+                "brilliant", "mistake", "interesting", "fascinating"
+        };
+
+        for (String trigger : triggers) {
+            if (lowerContent.contains(trigger)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get recent messages for conversation context
+     */
+    public List<Message> getRecentMessages(int count) {
+        List<Message> recent = new ArrayList<>();
+        List<Message> history = getConversationHistory();
+
+        int start = Math.max(0, history.size() - count);
+        for (int i = start; i < history.size(); i++) {
+            recent.add(history.get(i));
+        }
+
+        return recent;
+    }
+
+    /**
+     * Add a master's message to the conversation
+     */
+    public void addMasterMessage(String master, String content) {
+        addMessage(master, content);
+        lastSpeaker = master;
+        saveCurrentConversation();
+    }
+
+    /**
+     * Check if a master should respond to another master's comment
+     */
+    public boolean shouldMasterRespond(String speaker, String content) {
+        // Don't respond to yourself
+        if (speaker.equals(lastSpeaker)) {
+            return false;
+        }
+
+        // Check for conversation triggers
+        return containsConversationTriggers(content);
+    }
+
+    /**
+     * Build conversation context from recent messages
+     */
+    public String buildConversationContext() {
+        StringBuilder context = new StringBuilder();
+
+        List<Message> recentMessages = getRecentMessages(5);
+        for (Message msg : recentMessages) {
+            if (!msg.getRole().equals("system")) {
+                context.append(msg.getRole())
+                        .append(" said: \"")
+                        .append(msg.getContent())
+                        .append("\"\n");
+            }
+        }
+
+        return context.toString();
     }
 
     /**

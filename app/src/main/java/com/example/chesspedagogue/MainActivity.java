@@ -734,7 +734,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * NEW: Display automatic commentary in the coach panel
+     * NEW: Display automatic commentary using fine-tuned model directly
      */
     private void displayAutoCommentary(String commentary) {
         // Update the coach message text with the automatic commentary
@@ -743,11 +743,8 @@ public class MainActivity extends AppCompatActivity {
         // Briefly show the coach panel if it's not visible
         showCoachConversation();
 
-        // Auto-hide after 5 seconds (optional)
-        Handler autoHideHandler = new Handler();
-        autoHideHandler.postDelayed(() -> {
-            hideCoachConversation();
-        }, 5000);
+        // Don't auto-hide for auto-commentary - let user dismiss manually
+        Log.d(TAG, "🎭 Auto-commentary displayed using fine-tuned model");
     }
 
     /**
@@ -1157,6 +1154,46 @@ public class MainActivity extends AppCompatActivity {
         Log.d(TAG, "Binding to SimpleRecordService...");
     }
 
+    // Add this method to your existing MainActivity.java class
+    private void launchSpectatorMode() {
+        Log.d(TAG, "🎭 Launching spectator mode selection");
+
+        // For now, create a simple selection dialog
+        // You can enhance this with a proper selection activity later
+        String[] masters = {"tal", "fischer", "kramnik", "kasparov", "karpov", "alekhine", "capablanca"};
+        String[] displayNames = new String[masters.length];
+
+        for (int i = 0; i < masters.length; i++) {
+            displayNames[i] = FineTunedModelManager.getInstance(this).getMasterDisplayName(masters[i]);
+        }
+
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("Select White Player");
+        builder.setItems(displayNames, (dialog, which) -> {
+            String whitePlayer = masters[which];
+
+            // Now select black player
+            androidx.appcompat.app.AlertDialog.Builder builder2 = new androidx.appcompat.app.AlertDialog.Builder(this);
+            builder2.setTitle("Select Black Player");
+            builder2.setItems(displayNames, (dialog2, which2) -> {
+                String blackPlayer = masters[which2];
+
+                if (whitePlayer.equals(blackPlayer)) {
+                    Toast.makeText(this, "Please select different players!", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                // Launch spectator game
+                Intent intent = new Intent(this, SpectatorGameActivity.class);
+                intent.putExtra("WHITE_PLAYER", whitePlayer);
+                intent.putExtra("BLACK_PLAYER", blackPlayer);
+                startActivity(intent);
+            });
+            builder2.show();
+        });
+        builder.show();
+    }
+
     /**
      * Pre-warm the speech services on app launch for instant response
      */
@@ -1189,18 +1226,70 @@ public class MainActivity extends AppCompatActivity {
         return true;
     }
 
-    // Add these methods to your MainActivity class
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle item selection
-        if (item.getItemId() == R.id.action_settings) {
-            // Launch settings activity
+        int itemId = item.getItemId();
+
+        if (itemId == R.id.action_settings) {
             Intent intent = new Intent(this, SettingsActivity.class);
             startActivity(intent);
             return true;
+
+        } else if (itemId == R.id.action_spectator_mode) {
+            launchSpectatorMode();
+            return true;
+
+        } else if (itemId == R.id.action_save_game) {
+            // Implement save game functionality
+            Toast.makeText(this, "Save game feature coming soon!", Toast.LENGTH_SHORT).show();
+            return true;
+
+        } else if (itemId == R.id.action_load_game) {
+            // Launch saved games activity
+            Intent intent = new Intent(this, SavedGamesActivity.class);
+            startActivity(intent);
+            return true;
+
+        } else if (itemId == R.id.action_game_analysis) {
+            openAnalysisScreen();
+            return true;
+
+        } else if (itemId == R.id.action_coach_conversation) {
+            // Launch coach conversation
+            Intent intent = new Intent(this, ChessConversationActivity.class);
+            intent.putExtra("FEN", chessBoardView.getCurrentFEN());
+            intent.putStringArrayListExtra("MOVE_HISTORY",
+                    new ArrayList<>(GameHistoryManager.getInstance().getCurrentGameMoves()));
+            intent.putExtra("PLAYER_COLOR", configuredPlayerColor);
+            startActivity(intent);
+            return true;
+
+        } else if (itemId == R.id.action_chess_master_selection) {
+            Intent intent = new Intent(this, ChessMasterSelectionActivity.class);
+            startActivity(intent);
+            return true;
+
+        } else if (itemId == R.id.action_about) {
+            showAboutDialog();
+            return true;
         }
+
         return super.onOptionsItemSelected(item);
+    }
+
+    // Add this helper method for the about dialog
+    private void showAboutDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("About ChessPedagogue")
+                .setMessage("ChessPedagogue - Revolutionary AI Chess Learning\n\n" +
+                        "Features:\n" +
+                        "• Play against legendary chess masters\n" +
+                        "• AI-powered coaching and analysis\n" +
+                        "• Spectator mode with live commentary\n" +
+                        "• Voice interaction and personality engine\n\n" +
+                        "Created with passion for chess education.")
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .show();
     }
 
     /**

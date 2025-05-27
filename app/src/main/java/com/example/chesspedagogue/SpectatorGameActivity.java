@@ -1,0 +1,476 @@
+package com.example.chesspedagogue;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import androidx.lifecycle.ViewModelProvider;
+
+import java.util.List;
+
+/**
+ * 🎭 SIMPLIFIED SPECTATOR MODE - AI Masters Talking to Each Other!
+ * Focused on AI dialogue instead of commentary
+ */
+public class SpectatorGameActivity extends AppCompatActivity {
+    private static final String TAG = "SpectatorGameActivity";
+
+    // UI Elements - Simplified!
+    private ChessBoardView chessBoardView;
+    private EvaluationBarView evaluationBarView;
+    private TextView moveHistoryTextView;
+    private TextView dialogueTextView;
+    private TextView whitePlayerNameTextView;
+    private TextView blackPlayerNameTextView;
+    private CardView dialogueCard;
+    private ProgressBar thinkingProgressBar;
+    private Button pauseResumeButton;
+    private Button speedControlButton;
+    private TextView currentSpeakerTextView;
+
+    // Game state
+    private SpectatorGameViewModel viewModel;
+    private String whitePlayer;
+    private String blackPlayer;
+    private boolean isPaused = false;
+    private int gameSpeed = 3000;
+    private Handler mainHandler = new Handler(Looper.getMainLooper());
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        try {
+            Log.d(TAG, "🎭 Starting simplified spectator mode...");
+            setContentView(R.layout.activity_spectator_game);
+
+            // Get players from intent with fallbacks
+            getPlayersFromIntent();
+
+            // Initialize everything with proper error handling
+            if (setupActionBar() &&
+                    initializeViews() &&
+                    setupObservers() &&
+                    setupControls()) {
+
+                Log.d(TAG, "✅ All components initialized successfully!");
+                startSpectatorGame();
+
+            } else {
+                Log.e(TAG, "❌ Failed to initialize components");
+                showErrorAndFinish("Failed to initialize spectator mode");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Exception in onCreate", e);
+            showErrorAndFinish("Error starting spectator mode: " + e.getMessage());
+        }
+    }
+
+    private void getPlayersFromIntent() {
+        Intent intent = getIntent();
+        whitePlayer = intent.getStringExtra("WHITE_PLAYER");
+        blackPlayer = intent.getStringExtra("BLACK_PLAYER");
+
+        // Fallbacks if something went wrong
+        if (whitePlayer == null || whitePlayer.trim().isEmpty()) {
+            whitePlayer = "tal";
+            Log.w(TAG, "Using fallback white player: " + whitePlayer);
+        }
+        if (blackPlayer == null || blackPlayer.trim().isEmpty()) {
+            blackPlayer = "fischer";
+            Log.w(TAG, "Using fallback black player: " + blackPlayer);
+        }
+
+        Log.d(TAG, "🎭 Players: " + whitePlayer + " vs " + blackPlayer);
+    }
+
+    private boolean setupActionBar() {
+        try {
+            if (getSupportActionBar() != null) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+                getSupportActionBar().setTitle("🎭 AI Masters: " +
+                        FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer) +
+                        " vs " +
+                        FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer));
+
+                Log.d(TAG, "✅ Action bar set up successfully");
+                return true;
+            } else {
+                Log.w(TAG, "⚠️ No action bar available, continuing without");
+                return true; // Continue anyway
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error setting up action bar", e);
+            return true; // Don't fail just because of action bar
+        }
+    }
+
+    private boolean initializeViews() {
+        try {
+            Log.d(TAG, "🔍 Finding views...");
+
+            // Find all views with null checks
+            chessBoardView = findViewById(R.id.chessBoardView);
+            evaluationBarView = findViewById(R.id.evaluationBarView);
+            whitePlayerNameTextView = findViewById(R.id.whitePlayerName);
+            blackPlayerNameTextView = findViewById(R.id.blackPlayerName);
+            moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
+            dialogueTextView = findViewById(R.id.dialogueTextView);
+            dialogueCard = findViewById(R.id.dialogueCard);
+            thinkingProgressBar = findViewById(R.id.thinkingProgressBar);
+            pauseResumeButton = findViewById(R.id.pauseResumeButton);
+            speedControlButton = findViewById(R.id.speedControlButton);
+            currentSpeakerTextView = findViewById(R.id.currentSpeakerTextView);
+
+            // Check critical views
+            if (chessBoardView == null) {
+                Log.e(TAG, "❌ ChessBoardView not found!");
+                return false;
+            }
+            if (whitePlayerNameTextView == null || blackPlayerNameTextView == null) {
+                Log.e(TAG, "❌ Player name TextViews not found!");
+                return false;
+            }
+
+            // Set player names
+            setupPlayerInfo();
+
+            Log.d(TAG, "✅ Views initialized successfully");
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing views", e);
+            return false;
+        }
+    }
+
+    private boolean setupObservers() {
+        try {
+            // Initialize ViewModel
+            viewModel = new ViewModelProvider(this).get(SpectatorGameViewModel.class);
+
+            if (viewModel == null) {
+                Log.e(TAG, "❌ ViewModel is null, cannot set up observers");
+                return false;
+            }
+
+            // Observe game state changes
+            viewModel.getCurrentFEN().observe(this, fen -> {
+                if (fen != null && chessBoardView != null) {
+                    chessBoardView.updateBoardFromFen(fen);
+                    Log.d(TAG, "📋 Board updated");
+                }
+            });
+
+            viewModel.getMoveHistory().observe(this, moves -> {
+                if (moves != null && moveHistoryTextView != null) {
+                    updateMoveHistoryDisplay(moves);
+                }
+            });
+
+            viewModel.getCurrentEvaluation().observe(this, evaluation -> {
+                if (evaluation != null && evaluationBarView != null) {
+                    evaluationBarView.setEvaluation(evaluation);
+                }
+            });
+
+            // NEW: Observe AI dialogue instead of commentary
+            viewModel.getAIDialogue().observe(this, dialogueData -> {
+                if (dialogueData != null && !dialogueData.trim().isEmpty()) {
+                    displayAIDialogue(dialogueData);
+                }
+            });
+
+            viewModel.getCurrentPlayer().observe(this, currentPlayer -> {
+                updateCurrentPlayerIndicator(currentPlayer);
+            });
+
+            viewModel.getGameStatus().observe(this, status -> {
+                if (status != null) {
+                    updateGameStatus(status);
+                }
+            });
+
+            viewModel.isThinking().observe(this, isThinking -> {
+                if (thinkingProgressBar != null) {
+                    thinkingProgressBar.setVisibility(isThinking ? View.VISIBLE : View.GONE);
+                }
+            });
+
+            // NEW: Observe move animations so pieces actually move!
+            viewModel.getLastMove().observe(this, moveData -> {
+                if (moveData != null && moveData.length >= 4 && chessBoardView != null) {
+                    Log.d(TAG, "🎯 Animating move: " + moveData[0] + "," + moveData[1] + " -> " + moveData[2] + "," + moveData[3]);
+                    chessBoardView.animateMove(moveData[0], moveData[1], moveData[2], moveData[3]);
+                    chessBoardView.setLastMove(moveData[0], moveData[1], moveData[2], moveData[3]);
+                }
+            });
+
+            Log.d(TAG, "✅ Observers set up successfully");
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error setting up observers", e);
+            return false;
+        }
+    }
+
+    private boolean setupControls() {
+        try {
+            // Pause/Resume button
+            if (pauseResumeButton != null) {
+                pauseResumeButton.setOnClickListener(v -> {
+                    if (isPaused) {
+                        resumeGame();
+                    } else {
+                        pauseGame();
+                    }
+                });
+            }
+
+            // Speed control button
+            if (speedControlButton != null) {
+                speedControlButton.setOnClickListener(v -> cycleGameSpeed());
+                updateSpeedButtonText();
+            }
+
+            Log.d(TAG, "✅ Controls set up successfully");
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error setting up controls", e);
+            return false;
+        }
+    }
+
+    private void setupPlayerInfo() {
+        if (whitePlayerNameTextView != null && blackPlayerNameTextView != null) {
+            String whiteName = FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer);
+            String blackName = FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer);
+
+            whitePlayerNameTextView.setText("⚪ " + whiteName);
+            blackPlayerNameTextView.setText("⚫ " + blackName);
+
+            // Set evaluation bar player color
+            if (evaluationBarView != null) {
+                evaluationBarView.setPlayerColor(true); // Always show from white's perspective in spectator mode
+            }
+
+            Log.d(TAG, "✅ Player info set: " + whiteName + " vs " + blackName);
+        }
+    }
+
+    private void startSpectatorGame() {
+        Log.d(TAG, "🚀 Starting spectator game!");
+
+        try {
+            if (viewModel != null) {
+                // Show initial dialogue
+                String openingDialogue = String.format(
+                        "Welcome to this epic battle! %s and %s are about to begin their game.",
+                        FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer),
+                        FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer)
+                );
+
+                displayAIDialogue(openingDialogue);
+
+                // Initialize the game AND wait for it to be ready
+                viewModel.startSpectatorGame(whitePlayer, blackPlayer);
+
+                // FIXED: Wait a bit longer and check game status before requesting first move
+                mainHandler.postDelayed(() -> {
+                    if (!isPaused && viewModel != null) {
+                        Log.d(TAG, "🎯 Requesting first move after proper initialization...");
+
+                        // CRITICAL FIX: Ensure the game is actually ready
+                        if ("in_progress".equals(viewModel.getGameStatus().getValue())) {
+                            viewModel.requestNextMove();
+                        } else {
+                            Log.d(TAG, "🔄 Game not ready yet, trying again in 1 second...");
+                            // Try again if not ready
+                            mainHandler.postDelayed(() -> {
+                                if (!isPaused && viewModel != null && "in_progress".equals(viewModel.getGameStatus().getValue())) {
+                                    Log.d(TAG, "🎯 Second attempt - requesting first move...");
+                                    viewModel.requestNextMove();
+                                }
+                            }, 1000);
+                        }
+                    }
+                }, 4000); // Longer delay for proper initialization
+
+                Log.d(TAG, "✅ Spectator game started successfully!");
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error starting spectator game", e);
+            showErrorAndFinish("Failed to start spectator game: " + e.getMessage());
+        }
+    }
+
+    private void updateMoveHistoryDisplay(List<String> moves) {
+        if (moveHistoryTextView == null) return;
+
+        if (moves.isEmpty()) {
+            moveHistoryTextView.setText("🎭 Epic battle begins...");
+            return;
+        }
+
+        StringBuilder historyBuilder = new StringBuilder();
+        historyBuilder.append("🎭 Live Game:\n\n");
+
+        for (int i = 0; i < moves.size(); i++) {
+            if (i % 2 == 0) {
+                // White move
+                int moveNumber = (i / 2) + 1;
+                historyBuilder.append(moveNumber).append(". ").append(moves.get(i));
+                if (i + 1 < moves.size()) {
+                    historyBuilder.append(" ");
+                }
+            } else {
+                // Black move
+                historyBuilder.append(moves.get(i));
+                if (i + 1 < moves.size()) {
+                    historyBuilder.append("\n");
+                }
+            }
+        }
+
+        moveHistoryTextView.setText(historyBuilder.toString());
+    }
+
+    /**
+     * NEW: Display AI dialogue (much simpler than commentary)
+     */
+    private void displayAIDialogue(String dialogue) {
+        if (dialogueTextView != null && dialogueCard != null) {
+            dialogueTextView.setText("💬 " + dialogue);
+            dialogueCard.setVisibility(View.VISIBLE);
+
+            Log.d(TAG, "💬 AI Dialogue displayed: " + dialogue.substring(0, Math.min(50, dialogue.length())));
+        }
+    }
+
+    private void updateCurrentPlayerIndicator(String currentPlayer) {
+        if (whitePlayerNameTextView != null && blackPlayerNameTextView != null) {
+            if ("white".equals(currentPlayer)) {
+                whitePlayerNameTextView.setAlpha(1.0f);
+                blackPlayerNameTextView.setAlpha(0.6f);
+                whitePlayerNameTextView.setTextSize(18f);
+                blackPlayerNameTextView.setTextSize(16f);
+            } else {
+                whitePlayerNameTextView.setAlpha(0.6f);
+                blackPlayerNameTextView.setAlpha(1.0f);
+                whitePlayerNameTextView.setTextSize(16f);
+                blackPlayerNameTextView.setTextSize(18f);
+            }
+        }
+    }
+
+    private void updateGameStatus(String status) {
+        Log.d(TAG, "📊 Game status: " + status);
+
+        if (status.contains("checkmate") || status.contains("stalemate") || status.contains("draw")) {
+            if (pauseResumeButton != null) {
+                pauseResumeButton.setEnabled(false);
+                pauseResumeButton.setText("🏁 Game Over");
+            }
+
+            String finalDialogue = "🏁 What an incredible game! " + status + " Both masters played brilliantly!";
+            displayAIDialogue(finalDialogue);
+        }
+    }
+
+    private void pauseGame() {
+        isPaused = true;
+        if (pauseResumeButton != null) {
+            pauseResumeButton.setText("▶️ Resume");
+        }
+        if (viewModel != null) {
+            viewModel.pauseGame();
+        }
+
+        displayAIDialogue("⏸️ Game paused. The masters are taking a break!");
+        Log.d(TAG, "⏸️ Game paused by user");
+    }
+
+    private void resumeGame() {
+        isPaused = false;
+        if (pauseResumeButton != null) {
+            pauseResumeButton.setText("⏸️ Pause");
+        }
+        if (viewModel != null) {
+            viewModel.resumeGame();
+        }
+
+        displayAIDialogue("▶️ Game resumed! The battle continues...");
+        Log.d(TAG, "▶️ Game resumed by user");
+    }
+
+    private void cycleGameSpeed() {
+        switch (gameSpeed) {
+            case 5000: gameSpeed = 3000; break; // Slow to Normal
+            case 3000: gameSpeed = 1500; break; // Normal to Fast
+            case 1500: gameSpeed = 5000; break; // Fast to Slow
+        }
+
+        if (viewModel != null) {
+            viewModel.setGameSpeed(gameSpeed);
+        }
+        updateSpeedButtonText();
+
+        String speedName = gameSpeed == 5000 ? "Slow" : gameSpeed == 1500 ? "Fast" : "Normal";
+        displayAIDialogue("⚡ Game speed changed to " + speedName + " mode!");
+    }
+
+    private void updateSpeedButtonText() {
+        if (speedControlButton != null) {
+            String speedText;
+            String emoji;
+            switch (gameSpeed) {
+                case 5000: speedText = "Slow"; emoji = "🐌"; break;
+                case 1500: speedText = "Fast"; emoji = "⚡"; break;
+                default: speedText = "Normal"; emoji = "⏱️"; break;
+            }
+            speedControlButton.setText(emoji + " " + speedText);
+        }
+    }
+
+    private void showErrorAndFinish(String message) {
+        Log.e(TAG, "💥 Showing error and finishing: " + message);
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
+        finish();
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        try {
+            if (viewModel != null) {
+                viewModel.cleanup();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in onDestroy", e);
+        }
+        Log.d(TAG, "🧹 SpectatorGameActivity destroyed");
+    }
+}

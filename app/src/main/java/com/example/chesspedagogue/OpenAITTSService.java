@@ -227,6 +227,8 @@ public class OpenAITTSService {
             }
 
             // Clear all pending work
+            chunkIdCounter.set(0);
+            nextChunkToPlay.set(0);
             chunkQueue.clear();
             pendingChunks.clear();
             isPlayingChunks.set(false);
@@ -324,8 +326,13 @@ public class OpenAITTSService {
                     ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
                             chunkId, audioFile, text, callback, isFinalChunk);
 
-                    // CRITICAL FIX: Add to pending chunks AND trigger playback
+// CRITICAL FIX: Reset counter if this is the first chunk of a new speech
                     synchronized (pendingChunks) {
+                        if (chunkId == 0) {
+                            nextChunkToPlay.set(0);  // ← RESET HERE for new speech
+                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
+                        }
+
                         pendingChunks.put(chunkId, chunkItem);
                         Log.d(TAG, "📦 Added chunk " + chunkId + " to pending, total pending: " + pendingChunks.size());
 

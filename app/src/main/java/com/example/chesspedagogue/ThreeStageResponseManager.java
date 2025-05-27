@@ -5,6 +5,11 @@ import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.github.bassaer.chatmessageview.model.Message;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -658,6 +663,8 @@ public class ThreeStageResponseManager {
                         stage3Text.toLowerCase().contains("database") ||
                         stage3Text.toLowerCase().contains("archive"));
     }
+
+
 
     /**
      * HELPER: Estimate remaining audio time (you could enhance this with actual MediaPlayer duration)

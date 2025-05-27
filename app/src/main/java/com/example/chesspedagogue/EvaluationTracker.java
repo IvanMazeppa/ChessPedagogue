@@ -312,38 +312,53 @@ public class EvaluationTracker {
     }
 
     /**
-     * Trigger automatic commentary through the coaching system
+     * FIXED: Trigger automatic commentary using fine-tuned model directly
      */
     private void triggerAutoCommentary(EvaluationSwing swing) {
         try {
             // Generate context-aware commentary prompt
             String commentaryPrompt = generateCommentaryPrompt(swing);
 
-            Log.d(TAG, "🎙️ Triggering auto-commentary: " + swing.quality.shortDescription);
+            Log.d(TAG, "🎙️ Triggering auto-commentary with fine-tuned model: " + swing.quality.shortDescription);
 
-            // Use existing coach manager to generate and speak commentary
-            ChessCoachManager coachManager = ChessCoachManager.getInstance(context);
-            coachManager.sendMessage(commentaryPrompt, new ChessCoachManager.ChessCoachCallback() {
-                @Override
-                public void onResponseReceived(String response) {
-                    Log.d(TAG, "✅ Auto-commentary generated: " + response.substring(0, Math.min(100, response.length())));
+            // Use fine-tuned model directly instead of 3-stage system
+            String selectedMaster = FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+            String systemPrompt = FineTunedModelManager.getInstance(context)
+                    .getEnhancedSystemPromptForMaster(selectedMaster);
 
-                    // Notify listener with the generated commentary
-                    if (swingListener != null) {
-                        swingListener.onSignificantSwingDetected(swing, response);
+            // Execute on background thread
+            new Thread(() -> {
+                try {
+                    // Use fine-tuned model directly for faster, more personality-rich responses
+                    String response = OpenAIService.getInstance().getChatCompletion(systemPrompt, commentaryPrompt);
+
+                    if (response != null && !response.trim().isEmpty()) {
+                        Log.d(TAG, "✅ Auto-commentary generated with fine-tuned model: " +
+                                response.substring(0, Math.min(100, response.length())));
+
+                        // Speak using TTS directly
+                        Handler mainHandler = new Handler(Looper.getMainLooper());
+                        mainHandler.post(() -> {
+                            OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
+                            ttsService.speak(response, new OpenAITTSService.OnSpeechCompletedListener() {
+                                @Override
+                                public void onSpeechCompleted() {
+                                    Log.d(TAG, "🎵 Auto-commentary speech completed");
+                                }
+                            });
+
+                            // Notify listener with the generated commentary
+                            if (swingListener != null) {
+                                swingListener.onSignificantSwingDetected(swing, response);
+                            }
+                        });
+                    } else {
+                        Log.w(TAG, "Empty response from fine-tuned model for auto-commentary");
                     }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error in auto-commentary generation", e);
                 }
-
-                @Override
-                public void onError(String errorMessage) {
-                    Log.e(TAG, "❌ Auto-commentary failed: " + errorMessage);
-                }
-
-                @Override
-                public void onSpeechCompleted() {
-                    Log.d(TAG, "🎵 Auto-commentary speech completed");
-                }
-            });
+            }).start();
 
         } catch (Exception e) {
             Log.e(TAG, "Error triggering auto-commentary", e);
