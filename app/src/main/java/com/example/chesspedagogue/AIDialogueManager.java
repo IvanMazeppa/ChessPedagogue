@@ -555,6 +555,9 @@ public class AIDialogueManager {
                         originalSpeakerName, triggerStatement, responderName, originalSpeakerName
                 ));
 
+                // Select the correct chess master for the fine-tuned model
+                openAIService.selectChessMaster(responder);
+                
                 String response = cleanAndPersonalize(
                         openAIService.getChatCompletion(conversationPrompt, "Generate a conversational response"),
                         responder
@@ -700,6 +703,9 @@ public class AIDialogueManager {
         String prompt = createUserCommentResponsePrompt(respondingPlayer, userComment, gamePhase, analysis);
 
         try {
+            // Select the correct chess master for the fine-tuned model
+            openAIService.selectChessMaster(respondingPlayer);
+            
             String response = openAIService.getChatCompletion(prompt,
                     "A spectator said: \"" + userComment + "\". Respond as " + playerName + ".");
             return cleanAndPersonalize(response, respondingPlayer);
@@ -749,6 +755,9 @@ public class AIDialogueManager {
                     playerName, originalComment, firstResponse, playerName
             );
 
+            // Select the correct chess master for the fine-tuned model
+            openAIService.selectChessMaster(followUpPlayer);
+            
             String response = openAIService.getChatCompletion(prompt, "Generate brief follow-up or SKIP");
 
             if (response != null && !response.trim().equalsIgnoreCase("SKIP")) {
@@ -794,6 +803,9 @@ public class AIDialogueManager {
                 speakerName, opponentName
         ));
 
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(speaker);
+        
         return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate pre-game comment"), speaker);
     }
 
@@ -810,6 +822,9 @@ public class AIDialogueManager {
                 createConversationalPrompt(commentator, String.format(
                         "%s just played %s. %s React naturally to their move.", playerName, move, gameContext));
 
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(commentator);
+        
         return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate move comment"), commentator);
     }
 
@@ -825,6 +840,9 @@ public class AIDialogueManager {
                 "The game ended: %s. As %s, make a natural comment about the game ending.", result, speakerName
         ));
 
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(speaker);
+        
         return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate endgame comment"), speaker);
     }
 

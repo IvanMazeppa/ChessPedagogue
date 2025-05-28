@@ -52,7 +52,7 @@ import okhttp3.Response;
 
 public class SimpleRecordService extends Service {
     private static final String TAG = "SimpleRecordService";
-    private static final String groqApiKey = "GROQ_API_KEY";
+    private static final String groqApiKey = "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";
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
