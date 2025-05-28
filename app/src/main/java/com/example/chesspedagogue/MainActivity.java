@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private AlertDialog transcriptionDialog;
     // Handler for UI updates
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     // State tracking
@@ -130,6 +131,16 @@ public class MainActivity extends AppCompatActivity {
                     mainHandler.post(() -> {
                         // Update status based on processing state
                         updateUIState(isProcessing ? ProcessingState.THINKING : ProcessingState.IDLE);
+                    });
+                }
+
+                @Override
+                public void onTranscriptionReceived(String transcribedText) {
+                    Log.d(TAG, "📝 Transcription received: " + transcribedText);
+                    // Show transcribed text in UI popup
+                    mainHandler.post(() -> {
+                        showTranscriptionPopup(transcribedText);
+                        updateUIState(ProcessingState.THINKING);
                     });
                 }
 
@@ -262,6 +273,16 @@ public class MainActivity extends AppCompatActivity {
         // In onCreate or similar initialization method
         ApiKeyConfig.initializeOpenAIClient(this);
 
+        // Configure ElevenLabs API key (replace with your actual key)
+        // TODO: Move this to a secure configuration file
+        ElevenLabsConfig.setApiKey(this, "sk_78213d87bcdfcdb50e74b2a1c3944fabb71db48eb5ccbfb5");
+        
+        // Enable ElevenLabs TTS if API key is set
+        if (ElevenLabsConfig.hasApiKey(this)) {
+            TTSServiceManager.setUseElevenLabs(this, true);
+            Log.d(TAG, "✅ ElevenLabs TTS enabled");
+        }
+
         // Initialize all UI elements
         initializeViews();
 
@@ -346,7 +367,7 @@ public class MainActivity extends AppCompatActivity {
             speakButton.setOnClickListener(v -> {
                 Log.d(TAG, "🎤 Speak button clicked");
 
-                OpenAITTSService tts = OpenAITTSService.getInstance(this);
+                OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
                 if (tts != null && tts.isSpeaking()) {
                     tts.stopSpeech();
                     tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
@@ -1074,7 +1095,7 @@ public class MainActivity extends AppCompatActivity {
                 ApiKeyConfig.initializeOpenAIClient(this);
 
                 // Pre-initialize TTS service
-                OpenAITTSService.getInstance(this).setApiKey(ApiKeyConfig.getApiKey(this));
+                TTSServiceManager.getOpenAITTSService(this).setApiKey(ApiKeyConfig.getApiKey(this));
 
                 // Pre-initialize unified service
                 OpenAIService.getInstance().setApiKey(ApiKeyConfig.getApiKey(this));
@@ -1864,7 +1885,7 @@ public class MainActivity extends AppCompatActivity {
             speakButton.setOnClickListener(v -> {
                 Log.d(TAG, "Speak button clicked");
 
-                OpenAITTSService tts = OpenAITTSService.getInstance(this);
+                OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
                 if (tts != null && tts.isSpeaking()) {
                     tts.stopSpeech();
                     tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
@@ -2047,7 +2068,7 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "Try again", Toast.LENGTH_SHORT).show();
     }
     private void speakEncouragement(String message) {
-        OpenAITTSService.getInstance(this).speak(message);
+        TTSServiceManager.getOpenAITTSService(this).speak(message);
     }
 
     private void highlightSelectedSquare(int row, int col) {
@@ -2239,5 +2260,32 @@ public class MainActivity extends AppCompatActivity {
         if (statusTextView != null) {
             statusTextView.setText(message);
         }
+    }
+
+    /**
+     * Show transcription popup overlay
+     */
+    private void showTranscriptionPopup(String transcribedText) {
+        // Dismiss any existing transcription popup
+        if (transcriptionDialog != null && transcriptionDialog.isShowing()) {
+            transcriptionDialog.dismiss();
+        }
+
+        // Create a simple popup showing what was transcribed
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🎤 You said:")
+               .setMessage("\"" + transcribedText + "\"")
+               .setIcon(R.drawable.ic_microphone)
+               .setCancelable(true);
+
+        transcriptionDialog = builder.create();
+        transcriptionDialog.show();
+
+        // Auto-dismiss after 3 seconds
+        mainHandler.postDelayed(() -> {
+            if (transcriptionDialog != null && transcriptionDialog.isShowing()) {
+                transcriptionDialog.dismiss();
+            }
+        }, 3000);
     }
 }

@@ -52,7 +52,7 @@ import okhttp3.Response;
 
 public class SimpleRecordService extends Service {
     private static final String TAG = "SimpleRecordService";
-    private static final String groqApiKey = "GROQ_API_KEY";
+    private static final String groqApiKey = "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";
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
@@ -108,7 +108,7 @@ public class SimpleRecordService extends Service {
     private String latestResponse = "";
 
     public boolean isCurrentlySpeaking() {
-        return OpenAITTSService.getInstance(this) != null && OpenAITTSService.getInstance(this).isSpeaking();
+        return TTSServiceManager.getOpenAITTSService(this) != null && TTSServiceManager.getOpenAITTSService(this).isSpeaking();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class SimpleRecordService extends Service {
             openAIService.setApiKey(apiKey);
 
             // Initialize TTS service
-            ttsService = OpenAITTSService.getInstance(this);
+            ttsService = TTSServiceManager.getOpenAITTSService(this);
             ttsService.setApiKey(apiKey);
 
             servicesWarmed = true;
@@ -200,7 +200,7 @@ public class SimpleRecordService extends Service {
                 if (testApiKey != null && !testApiKey.isEmpty()) {
                     // This creates the HTTP client and connection pool
                     OpenAIService.getInstance().setApiKey(testApiKey);
-                    OpenAITTSService.getInstance(this).setApiKey(testApiKey);
+                    TTSServiceManager.getOpenAITTSService(this).setApiKey(testApiKey);
                 }
 
                 Log.d(TAG, "✅ Services pre-warmed successfully");
@@ -459,6 +459,14 @@ public class SimpleRecordService extends Service {
                 long transcriptionTime = System.currentTimeMillis() - startTime;
                 Log.d(TAG, "⏱️ GROQ Transcription completed in " + transcriptionTime + "ms");
 
+                // Show transcribed text to user immediately
+                mainHandler.post(() -> {
+                    ServiceCallback transcriptionCallback = getCallback();
+                    if (transcriptionCallback != null) {
+                        transcriptionCallback.onTranscriptionReceived(transcribedText);
+                    }
+                });
+
                 // Build context
                 String gameContext = buildEnhancedContext();
 
@@ -470,7 +478,7 @@ public class SimpleRecordService extends Service {
                 mainHandler.post(() -> {
                     updateUIForProcessing(false);
                     String errorMsg = "I'm having trouble connecting to my chess brain. Let's try again.";
-                    OpenAITTSService.getInstance(this).speak(errorMsg);
+                    TTSServiceManager.getOpenAITTSService(this).speak(errorMsg);
                     updateResponseUI(errorMsg);
                 });
             }
@@ -789,7 +797,7 @@ public class SimpleRecordService extends Service {
      * Resets the current conversation and starts a new one
      */
     public void resetConversation() {
-        OpenAITTSService tts = OpenAITTSService.getInstance(this);
+        OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
         if (tts != null) {
             tts.interrupt();
         }
@@ -823,8 +831,8 @@ public class SimpleRecordService extends Service {
      * Interrupts any ongoing speech from the coach
      */
     public void interruptSpeech() {
-        if (OpenAITTSService.getInstance(this) != null) {
-            OpenAITTSService.getInstance(this).interrupt();
+        if (TTSServiceManager.getOpenAITTSService(this) != null) {
+            TTSServiceManager.getOpenAITTSService(this).interrupt();
             Log.d(TAG, "Speech interrupted by user tap");
         }
 
@@ -1072,6 +1080,7 @@ public class SimpleRecordService extends Service {
         void onRecordingStarted();
         void onRecordingStopped();
         void onProcessingStateChanged(boolean isProcessing);
+        void onTranscriptionReceived(String transcribedText);
         void onResponseReceived(String response);
         void onResponseCompleted(String response);
     }

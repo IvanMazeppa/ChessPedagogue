@@ -180,7 +180,7 @@ public class OpenAIService {
         fineTunedModels.put("lasker", actualModelId);
         fineTunedModels.put("kasparov", actualModelId);
         fineTunedModels.put("capablanca", actualModelId);
-        fineTunedModels.put("carlsen", actualModelId);
+        fineTunedModels.put("carlsen", "gpt-4o"); // Using base model until fine-tuned model is ready
         fineTunedModels.put("morphy", actualModelId);
         fineTunedModels.put("anand", actualModelId);
         fineTunedModels.put("alekhine", "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe");

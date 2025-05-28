@@ -870,6 +870,33 @@ public class AIvsAIGameManager {
         this.gameCallback = callback;
     }
 
+    /**
+     * CRITICAL: Force stop all game processing immediately to prevent ANR
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 FORCE STOPPING AIvsAIGameManager");
+        
+        isPaused = true;
+        isValidatingMove = false;
+        
+        // Stop all executors aggressively
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+        
+        // Clear main handler
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Force stop repository
+        if (gameRepository != null) {
+            gameRepository.forceStop();
+        }
+        
+        Log.d(TAG, "✅ AIvsAIGameManager FORCE STOPPED");
+    }
+
     public void cleanup() {
         isPaused = true;
         consecutiveFailures = 0;

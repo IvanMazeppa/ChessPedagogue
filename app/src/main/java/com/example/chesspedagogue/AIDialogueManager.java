@@ -97,7 +97,8 @@ public class AIDialogueManager {
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
-        this.ttsService = OpenAITTSService.getInstance(context);
+        // Use TTSServiceManager to get the appropriate TTS service
+        this.ttsService = TTSServiceManager.getOpenAITTSService(context);
 
         Log.d(TAG, "🎭 FIXED AI Dialogue Manager initialized - infinite loops prevented!");
     }
@@ -547,16 +548,15 @@ public class AIDialogueManager {
                 String originalSpeakerName = modelManager.getMasterDisplayName(originalSpeaker);
 
                 String conversationPrompt = createConversationalPrompt(responder, String.format(
-                        "%s just said: \"%s\"\n\n" +
-                                "As %s, respond naturally to what they said. This is a conversation between two chess masters. " +
-                                "Keep your response brief (1-2 sentences) and authentic to your personality. " +
-                                "You might agree, disagree, add your own perspective, or ask a question. " +
-                                "Sound like you're actually talking to %s, not giving a lecture.",
-                        originalSpeakerName, triggerStatement, responderName, originalSpeakerName
+                        "%s: \"%s\"\n\nRespond naturally as if you're having a conversation with your opponent during the game. Do NOT give advice or teach. You are a player talking to another player.",
+                        originalSpeakerName, triggerStatement
                 ));
 
+                // Select the correct chess master for the fine-tuned model
+                openAIService.selectChessMaster(responder);
+                
                 String response = cleanAndPersonalize(
-                        openAIService.getChatCompletion(conversationPrompt, "Generate a conversational response"),
+                        openAIService.getChatCompletion(conversationPrompt, "Generate player-to-player response, not teaching"),
                         responder
                 );
 
@@ -700,8 +700,11 @@ public class AIDialogueManager {
         String prompt = createUserCommentResponsePrompt(respondingPlayer, userComment, gamePhase, analysis);
 
         try {
+            // Select the correct chess master for the fine-tuned model
+            openAIService.selectChessMaster(respondingPlayer);
+            
             String response = openAIService.getChatCompletion(prompt,
-                    "A spectator said: \"" + userComment + "\". Respond as " + playerName + ".");
+                    "A spectator said: \"" + userComment + "\"");
             return cleanAndPersonalize(response, respondingPlayer);
         } catch (Exception e) {
             Log.e(TAG, "Error generating user comment response", e);
@@ -711,13 +714,11 @@ public class AIDialogueManager {
 
     private String createUserCommentResponsePrompt(String master, String userComment,
                                                    String gamePhase, CommentAnalysis analysis) {
-        String masterName = modelManager.getMasterDisplayName(master);
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("You are ").append(masterName).append(" playing a chess game. ");
-        prompt.append("A spectator said: \"").append(userComment).append("\"\n\n");
-        prompt.append(getPersonalityNote(master)).append("\n\n");
-        prompt.append("Respond naturally to their comment. Keep it to 1-2 sentences.");
+        prompt.append(getSpectatorPersonalityNote(master));
+        prompt.append("\n\nDuring this game, a spectator said: \"").append(userComment).append("\"");
+        prompt.append("\nRespond briefly as a player would during a game. Do NOT give lessons or advice to the spectator.");
 
         return prompt.toString();
     }
@@ -742,14 +743,15 @@ public class AIDialogueManager {
 
     private String generateFollowUpResponse(String followUpPlayer, String originalComment, String firstResponse) {
         try {
-            String playerName = modelManager.getMasterDisplayName(followUpPlayer);
             String prompt = String.format(
-                    "You are %s. A spectator said: \"%s\" and another master responded: \"%s\"\n\n" +
-                            "As %s, you might add a brief comment. Keep it very short or respond with 'SKIP'.",
-                    playerName, originalComment, firstResponse, playerName
+                    "%s\n\nA spectator said: \"%s\" and another master responded: \"%s\"\nYou may add a brief comment as a fellow player, or stay silent. Do NOT teach or give advice.",
+                    getSpectatorPersonalityNote(followUpPlayer), originalComment, firstResponse
             );
 
-            String response = openAIService.getChatCompletion(prompt, "Generate brief follow-up or SKIP");
+            // Select the correct chess master for the fine-tuned model
+            openAIService.selectChessMaster(followUpPlayer);
+            
+            String response = openAIService.getChatCompletion(prompt, "Generate brief player comment or SKIP");
 
             if (response != null && !response.trim().equalsIgnoreCase("SKIP")) {
                 return cleanAndPersonalize(response, followUpPlayer);
@@ -790,11 +792,14 @@ public class AIDialogueManager {
         String opponentName = modelManager.getMasterDisplayName(opponent);
 
         String prompt = createConversationalPrompt(speaker, String.format(
-                "You are %s about to play against %s. Make a brief pre-game comment. Be authentic to your personality.",
-                speakerName, opponentName
+                "About to play %s. Make a brief comment as if you're sitting at the board about to start the game. Do NOT address any audience or give teaching advice. Speak as a player, not a coach.",
+                opponentName
         ));
 
-        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate pre-game comment"), speaker);
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(speaker);
+        
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate pre-game comment as a player, not a teacher"), speaker);
     }
 
     private String generateNaturalMoveComment(String move, String commentator, String playerWhoMoved, int moveNumber) {
@@ -806,11 +811,16 @@ public class AIDialogueManager {
 
         String prompt = commentingOnOwnMove ?
                 createConversationalPrompt(commentator, String.format(
-                        "You just played %s. %s Make a brief comment about your move.", move, gameContext)) :
+                        "Just played %s. %s Comment briefly on your move as if you're at the board playing. Do NOT give advice or teach. You are the player, not a coach.",
+                        move, gameContext)) :
                 createConversationalPrompt(commentator, String.format(
-                        "%s just played %s. %s React naturally to their move.", playerName, move, gameContext));
+                        "%s played %s. %s Comment briefly on your opponent's move as if you're at the board playing against them. Do NOT give advice or teach. You are a player, not a coach.",
+                        playerName, move, gameContext));
 
-        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate move comment"), commentator);
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(commentator);
+        
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate player comment, not teaching"), commentator);
     }
 
     private String getGameContext(int moveNumber, String move) {
@@ -822,10 +832,14 @@ public class AIDialogueManager {
     private String generateNaturalEndGameStatement(String speaker, String result) {
         String speakerName = modelManager.getMasterDisplayName(speaker);
         String prompt = createConversationalPrompt(speaker, String.format(
-                "The game ended: %s. As %s, make a natural comment about the game ending.", result, speakerName
+                "Game ended: %s. Comment on the game result as if you just finished playing. Do NOT give advice or lessons. You are a player reflecting on the game you just played, not a teacher.",
+                result
         ));
 
-        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate endgame comment"), speaker);
+        // Select the correct chess master for the fine-tuned model
+        openAIService.selectChessMaster(speaker);
+        
+        return cleanAndPersonalize(openAIService.getChatCompletion(prompt, "Generate player's endgame reflection, not teaching"), speaker);
     }
 
     private boolean shouldTriggerResponse(String statement) {
@@ -857,23 +871,74 @@ public class AIDialogueManager {
     }
 
     private String createConversationalPrompt(String master, String instruction) {
-        String personalityNote = getPersonalityNote(master);
-        return String.format("You are %s. %s\n\n%s\n\nBe natural and conversational.",
-                modelManager.getMasterDisplayName(master), personalityNote, instruction);
+        String personalityNote = getSpectatorPersonalityNote(master);
+        // FIXED: Direct first-person prompt to prevent third-person responses
+        // Instead of "You are Mikhail Tal", we just include personality traits
+        return String.format("%s\n\n%s", personalityNote, instruction);
+    }
+
+    /**
+     * Get personality note for spectator mode - focuses on player-to-player interaction
+     */
+    private String getSpectatorPersonalityNote(String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                return "You are playing a chess game. Speak as the actual player Mikhail Tal would during a game - passionate about tactics and sacrifices. Comment on your own moves or respond to your opponent naturally, as if you're at the board.";
+            case "fischer":
+                return "You are playing a chess game. Speak as Bobby Fischer would during a game - intense, demanding perfection. Comment on moves with absolute certainty, as if you're at the board playing.";
+            case "kasparov":
+                return "You are playing a chess game. Speak as Garry Kasparov would during a game - dynamic and aggressive. Comment on the battle for initiative, as if you're at the board.";
+            case "karpov":
+                return "You are playing a chess game. Speak as Anatoly Karpov would during a game - patient and strategic. Comment on accumulating small advantages, as if you're at the board.";
+            case "carlsen":
+                return "You are playing a chess game. Speak as Magnus Carlsen would during a game - practical and adaptable. Comment on squeezing advantages from any position, as if you're at the board.";
+            case "kramnik":
+                return "You are playing a chess game. Speak as Vladimir Kramnik would during a game - methodical and precise. Comment on deep positional understanding, as if you're at the board.";
+            case "alekhine":
+                return "You are playing a chess game. Speak as Alexander Alekhine would during a game - calculating deeply. Comment on hidden combinations and complexity, as if you're at the board.";
+            case "capablanca":
+                return "You are playing a chess game. Speak as Capablanca would during a game - natural and elegant. Comment on simple, strong moves, as if you're at the board.";
+            case "morphy":
+                return "You are playing a chess game. Speak as Paul Morphy would during a game - focusing on rapid development. Comment on attacking chances, as if you're at the board.";
+            case "lasker":
+                return "You are playing a chess game. Speak as Emanuel Lasker would during a game - psychological and practical. Comment on your opponent's psychology, as if you're at the board.";
+            case "anand":
+                return "You are playing a chess game. Speak as Viswanathan Anand would during a game - versatile and intuitive. Comment on your preparation and feel for positions, as if you're at the board.";
+            case "botvinnik":
+                return "You are playing a chess game. Speak as Mikhail Botvinnik would during a game - scientific and disciplined. Comment on systematic play, as if you're at the board.";
+            default:
+                return "You are playing a chess game. Comment on your moves naturally, as if you're at the board.";
+        }
     }
 
     private String getPersonalityNote(String master) {
         switch (master.toLowerCase()) {
             case "tal":
-                return "You're passionate about beautiful chess and tactical brilliance.";
+                return "I'm passionate about beautiful chess and tactical brilliance.";
             case "fischer":
-                return "You're precise, demanding, and uncompromising about excellence.";
+                return "I demand precision and uncompromising excellence in every move.";
             case "kasparov":
-                return "You're dynamic, aggressive, and competitive.";
+                return "I play dynamic, aggressive chess and fight for every advantage.";
             case "karpov":
-                return "You're patient, diplomatic, and positionally minded.";
+                return "I employ patience and positional understanding to accumulate advantages.";
+            case "carlsen":
+                return "I adapt my style to squeeze maximum advantage from any position.";
+            case "kramnik":
+                return "I focus on deep understanding and solid, principled play.";
+            case "alekhine":
+                return "I seek hidden combinational beauty through deep calculation.";
+            case "capablanca":
+                return "I play natural, elegant moves that flow from understanding.";
+            case "morphy":
+                return "I develop quickly and attack the undefended king.";
+            case "lasker":
+                return "I play the man as much as the board, using psychology.";
+            case "anand":
+                return "I combine preparation with intuition and universal style.";
+            case "botvinnik":
+                return "I approach chess scientifically with iron discipline.";
             default:
-                return "You're a chess grandmaster with your own unique style.";
+                return "I have my own unique approach to chess mastery.";
         }
     }
 
@@ -885,7 +950,77 @@ public class AIDialogueManager {
             cleaned = cleaned.substring(1, cleaned.length() - 1);
         }
 
+        // CRITICAL FIX: Remove any system instruction leakage
+        // Check if the response contains system instructions that shouldn't be spoken
+        String[] systemPatterns = {
+            "You are ",
+            "As a chess master",
+            "Be natural and conversational",
+            "Keep your response",
+            "Sound like you're actually",
+            "not giving a lecture",
+            "authentic to your personality",
+            "1-2 sentences",
+            "brief comment",
+            "React naturally",
+            "Respond in character",
+            "single natural statement",
+            "Reply as",
+            "Comment.",
+            "React.",
+            "You're passionate about",
+            "You're precise, demanding",
+            "You're dynamic, aggressive",
+            "You're patient, diplomatic"
+        };
+        
+        // Check if the response starts with any system pattern
+        for (String pattern : systemPatterns) {
+            if (cleaned.toLowerCase().contains(pattern.toLowerCase())) {
+                Log.w(TAG, "⚠️ System instruction leak detected in response: " + pattern);
+                // Try to extract just the actual dialogue
+                // Look for actual chess content after the instruction
+                int contentStart = findActualContentStart(cleaned);
+                if (contentStart > 0 && contentStart < cleaned.length()) {
+                    cleaned = cleaned.substring(contentStart).trim();
+                    Log.d(TAG, "✅ Extracted actual content: " + cleaned);
+                } else {
+                    // If we can't extract content, return a fallback
+                    Log.w(TAG, "❌ Could not extract content, using fallback");
+                    return getFallbackResponse(master);
+                }
+            }
+        }
+        
+        // Additional cleanup: Remove any remaining quotes
+        cleaned = cleaned.replaceAll("^\"|\"$", "");
+
         return cleaned;
+    }
+    
+    /**
+     * Find where the actual chess dialogue starts in a response that contains system instructions
+     */
+    private int findActualContentStart(String text) {
+        // Look for sentence boundaries after system instructions
+        String[] boundaries = {". ", "! ", "? ", "\n"};
+        int earliestBoundary = text.length();
+        
+        for (String boundary : boundaries) {
+            int index = text.indexOf(boundary);
+            if (index > 0 && index < earliestBoundary) {
+                // Check if this is after some system instruction keywords
+                String beforeBoundary = text.substring(0, index).toLowerCase();
+                if (beforeBoundary.contains("you are") || 
+                    beforeBoundary.contains("as ") ||
+                    beforeBoundary.contains("keep your") ||
+                    beforeBoundary.contains("be ")) {
+                    earliestBoundary = index + boundary.length();
+                }
+            }
+        }
+        
+        return earliestBoundary < text.length() ? earliestBoundary : -1;
     }
 
     private String getFallbackResponse(String master) {
@@ -928,6 +1063,38 @@ public class AIDialogueManager {
             ttsService.interrupt();
         }
         cleanupTTSState();
+    }
+
+    /**
+     * CRITICAL: Force stop all dialogue immediately to prevent ANR
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 FORCE STOPPING AIDialogueManager");
+        
+        // Stop all speech immediately
+        if (ttsService != null) {
+            ttsService.stopSpeaking();
+        }
+        
+        // Stop conversations
+        conversationInProgress = false;
+        isSpeaking = false;
+        
+        // Clear all queues
+        speakerQueueCount.clear();
+        conversationHistory.clear();
+        
+        // Stop executors aggressively
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+        
+        // Clear handlers
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+        
+        Log.d(TAG, "✅ AIDialogueManager FORCE STOPPED");
     }
 
     public void cleanup() {

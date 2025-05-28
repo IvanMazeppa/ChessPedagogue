@@ -18,7 +18,12 @@ import androidx.cardview.widget.CardView;
 import androidx.lifecycle.ViewModelProvider;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
+import androidx.core.content.ContextCompat;
+import android.Manifest;
+import android.content.pm.PackageManager;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 🎭 SIMPLIFIED SPECTATOR MODE - AI Masters Talking to Each Other!
@@ -48,6 +53,7 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private boolean isPaused = false;
     private int gameSpeed = 3000;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
     // Animation tracking for delayed board updates
     private boolean isAnimationInProgress = false;
@@ -388,15 +394,208 @@ public class SpectatorGameActivity extends AppCompatActivity {
 
 
     /**
-     * 🎤 Show user comment dialog
+     * 🎤 Show user comment dialog with voice recording option
      */
     private void showUserCommentDialog() {
         try {
-            Log.d(TAG, "🎤 Showing user comment dialog");
+            Log.d(TAG, "🎤 Showing user comment dialog with voice option");
 
             // Create dialog
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("💬 Chat with the Chess Masters");
+            builder.setMessage("Choose how you'd like to comment on the game:");
+
+            // Create custom view with both options
+            View dialogView = getLayoutInflater().inflate(android.R.layout.simple_list_item_1, null);
+            
+            // Option 1: Voice recording (primary)
+            builder.setPositiveButton("🎤 Speak", (dialog, which) -> {
+                startVoiceComment();
+            });
+
+            // Option 2: Type (fallback)
+            builder.setNeutralButton("⌨️ Type", (dialog, which) -> {
+                showTextCommentDialog();
+            });
+
+            builder.setNegativeButton("❌ Cancel", (dialog, which) -> dialog.cancel());
+
+            // Show dialog
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing comment dialog", e);
+            Toast.makeText(this, "Error opening comment dialog", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 🎤 Start voice recording for comment
+     */
+    private void startVoiceComment() {
+        Log.d(TAG, "🎤 Starting voice comment recording");
+        
+        // Check microphone permission first
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) 
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.w(TAG, "⚠️ No microphone permission");
+            
+            // Request permission
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.RECORD_AUDIO}, 1001);
+            } else {
+                Toast.makeText(this, "Microphone permission required for voice comments", Toast.LENGTH_LONG).show();
+                showTextCommentDialog(); // Fallback to text
+            }
+            return;
+        }
+
+        // Show recording dialog
+        AlertDialog.Builder recordingBuilder = new AlertDialog.Builder(this);
+        recordingBuilder.setTitle("🎤 Recording Your Comment");
+        recordingBuilder.setMessage("Speak your comment about the game...");
+        recordingBuilder.setCancelable(false);
+        
+        // Add progress indicator
+        ProgressBar progressBar = new ProgressBar(this);
+        progressBar.setIndeterminate(true);
+        recordingBuilder.setView(progressBar);
+        
+        recordingBuilder.setNegativeButton("⏹️ Stop", null); // Will be set later
+        
+        AlertDialog recordingDialog = recordingBuilder.create();
+        recordingDialog.show();
+        
+        // Start STT using OpenAI Whisper via SimpleRecordService pattern
+        executorService.execute(() -> {
+            try {
+                // Initialize Groq/OpenAI STT service
+                String transcribedText = performSpeechToText(recordingDialog);
+                
+                mainHandler.post(() -> {
+                    recordingDialog.dismiss();
+                    if (transcribedText != null && !transcribedText.trim().isEmpty()) {
+                        // Show what was transcribed and confirm
+                        confirmTranscription(transcribedText);
+                    } else {
+                        Toast.makeText(this, "Couldn't understand. Please try again or type instead.", Toast.LENGTH_SHORT).show();
+                        showTextCommentDialog();
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in voice recording", e);
+                mainHandler.post(() -> {
+                    recordingDialog.dismiss();
+                    Toast.makeText(this, "Voice recording failed. Please type your comment instead.", Toast.LENGTH_SHORT).show();
+                    showTextCommentDialog();
+                });
+            }
+        });
+    }
+
+    /**
+     * 🎤 Perform speech-to-text conversion using Groq
+     */
+    private String performSpeechToText(AlertDialog recordingDialog) {
+        try {
+            Log.d(TAG, "🎤 Starting speech recognition with Groq");
+            
+            // Use GroqSpeechRecognizer for fast STT
+            GroqSpeechRecognizer speechRecognizer = new GroqSpeechRecognizer(this);
+            
+            // Create a synchronization object to wait for result
+            final Object lock = new Object();
+            final String[] result = new String[1];
+            final boolean[] completed = new boolean[1];
+            
+            // Update dialog button to allow stopping
+            mainHandler.post(() -> {
+                recordingDialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(v -> {
+                    Log.d(TAG, "⏹️ User stopped recording");
+                    speechRecognizer.stopListening();
+                    synchronized (lock) {
+                        completed[0] = true;
+                        lock.notify();
+                    }
+                });
+            });
+            
+            // Start listening with callback
+            speechRecognizer.startListening(new GroqSpeechRecognizer.SpeechRecognitionCallback() {
+                @Override
+                public void onSpeechRecognized(String text) {
+                    Log.d(TAG, "✅ Speech recognized: " + text);
+                    synchronized (lock) {
+                        result[0] = text;
+                        completed[0] = true;
+                        lock.notify();
+                    }
+                }
+                
+                @Override
+                public void onSpeechError(String error) {
+                    Log.e(TAG, "❌ Speech recognition error: " + error);
+                    synchronized (lock) {
+                        result[0] = null;
+                        completed[0] = true;
+                        lock.notify();
+                    }
+                }
+            });
+            
+            // Wait for result with timeout
+            synchronized (lock) {
+                if (!completed[0]) {
+                    lock.wait(15000); // 15 second timeout
+                }
+            }
+            
+            // Stop listening if still active
+            speechRecognizer.stopListening();
+            
+            return result[0];
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ STT error", e);
+            return null;
+        }
+    }
+
+    /**
+     * ✅ Confirm transcribed text before sending
+     */
+    private void confirmTranscription(String transcribedText) {
+        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
+        confirmBuilder.setTitle("✅ Confirm Your Comment");
+        confirmBuilder.setMessage("You said: \"" + transcribedText + "\"\n\nSend this to the chess masters?");
+        
+        confirmBuilder.setPositiveButton("✅ Send", (dialog, which) -> {
+            submitUserComment(transcribedText);
+        });
+        
+        confirmBuilder.setNeutralButton("🔄 Try Again", (dialog, which) -> {
+            startVoiceComment();
+        });
+        
+        confirmBuilder.setNegativeButton("⌨️ Type Instead", (dialog, which) -> {
+            showTextCommentDialog();
+        });
+        
+        confirmBuilder.show();
+    }
+
+    /**
+     * ⌨️ Show text input dialog (fallback option)
+     */
+    private void showTextCommentDialog() {
+        try {
+            Log.d(TAG, "⌨️ Showing text comment dialog");
+
+            // Create dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("💬 Type Your Comment");
             builder.setMessage("What would you like to say about the game?");
 
             // Create input field
@@ -431,7 +630,7 @@ public class SpectatorGameActivity extends AppCompatActivity {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error showing comment dialog", e);
+            Log.e(TAG, "❌ Error showing text comment dialog", e);
             Toast.makeText(this, "Error opening comment dialog", Toast.LENGTH_SHORT).show();
         }
     }
@@ -697,15 +896,92 @@ public class SpectatorGameActivity extends AppCompatActivity {
     }
 
     @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        
+        if (requestCode == 1001) { // Voice comment permission request
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "✅ Microphone permission granted");
+                // Permission granted, try voice comment again
+                startVoiceComment();
+            } else {
+                Log.w(TAG, "⚠️ Microphone permission denied");
+                Toast.makeText(this, "Microphone permission denied. Using text input instead.", Toast.LENGTH_LONG).show();
+                showTextCommentDialog();
+            }
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "⏸️ SpectatorGameActivity pausing - stopping all processes");
+        performImmediateCleanup();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG, "🛑 SpectatorGameActivity stopping - aggressive cleanup");
+        performImmediateCleanup();
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        Log.d(TAG, "💀 SpectatorGameActivity destroying - final cleanup");
+        performImmediateCleanup();
+        Log.d(TAG, "🧹 SpectatorGameActivity destroyed");
+    }
+
+    @Override
+    public void onBackPressed() {
+        Log.d(TAG, "🔙 Back button pressed - cleaning up before exit");
+        performImmediateCleanup();
+        super.onBackPressed();
+    }
+
+    /**
+     * CRITICAL: Immediate cleanup to prevent ANR
+     */
+    private void performImmediateCleanup() {
         try {
+            Log.d(TAG, "🚨 EMERGENCY CLEANUP STARTING");
+
+            // 1. Stop ViewModel immediately
             if (viewModel != null) {
+                Log.d(TAG, "🛑 Stopping ViewModel");
+                viewModel.forceStop();
                 viewModel.cleanup();
             }
+
+            // 2. Stop all executors immediately
+            if (executorService != null && !executorService.isShutdown()) {
+                Log.d(TAG, "🛑 Shutting down executors");
+                executorService.shutdownNow();
+            }
+
+            // 3. Clear all handlers
+            if (mainHandler != null) {
+                Log.d(TAG, "🛑 Clearing all handler callbacks");
+                mainHandler.removeCallbacksAndMessages(null);
+            }
+
+            // 4. Stop TTS services
+            OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
+            if (ttsService != null) {
+                Log.d(TAG, "🛑 Stopping TTS service");
+                ttsService.stopSpeaking();
+            }
+
+            // 5. Stop all AI dialogue (via ViewModel since it has the instance)
+            Log.d(TAG, "🛑 Stopping dialogue via ViewModel");
+            // AIDialogueManager will be stopped via ViewModel.forceStop()
+
+            Log.d(TAG, "✅ EMERGENCY CLEANUP COMPLETED");
+
         } catch (Exception e) {
-            Log.e(TAG, "Error in onDestroy", e);
+            Log.e(TAG, "❌ Error during emergency cleanup", e);
         }
-        Log.d(TAG, "🧹 SpectatorGameActivity destroyed");
     }
 }

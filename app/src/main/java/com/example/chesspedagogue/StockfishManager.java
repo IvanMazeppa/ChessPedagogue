@@ -1033,4 +1033,44 @@ public class StockfishManager {
             return currentFEN;
         }
     }
+
+    /**
+     * CRITICAL: Force stop all engine operations immediately to prevent ANR
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 FORCE STOPPING StockfishManager");
+        
+        isRunning.set(false);
+        isReady = false;
+        
+        // Force kill the process
+        if (process != null) {
+            process.destroyForcibly();
+            process = null;
+        }
+        
+        // Interrupt reader thread
+        if (readerThread != null && readerThread.isAlive()) {
+            readerThread.interrupt();
+        }
+        
+        // Close streams
+        try {
+            if (writer != null) {
+                writer.close();
+                writer = null;
+            }
+            if (reader != null) {
+                reader.close();
+                reader = null;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error closing streams during force stop", e);
+        }
+        
+        // Clear output buffer
+        outputBuffer.clear();
+        
+        Log.d(TAG, "✅ StockfishManager FORCE STOPPED");
+    }
 }

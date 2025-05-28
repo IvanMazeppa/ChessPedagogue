@@ -339,7 +339,7 @@ public class EvaluationTracker {
                         // Speak using TTS directly
                         Handler mainHandler = new Handler(Looper.getMainLooper());
                         mainHandler.post(() -> {
-                            OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
+                            OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(context);
                             ttsService.speak(response, new OpenAITTSService.OnSpeechCompletedListener() {
                                 @Override
                                 public void onSpeechCompleted() {

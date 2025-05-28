@@ -104,7 +104,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
         } else {
             Log.e(TAG, "Could not find speakAnalysisButton in layout!");
         }
-        ttsService = new OpenAITTSService(this);
+        ttsService = TTSServiceManager.getOpenAITTSService(this);
         ttsService.setApiKey(ApiKeyConfig.getApiKey(this));
 
         // Get move history from intent - with extra logging

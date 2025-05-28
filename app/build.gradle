@@ -87,7 +87,7 @@ dependencies {
 
     // If you need UI controls
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.18.7'
-
+    implementation libs.firebase.inappmessaging
 
 
     // Testing dependencies

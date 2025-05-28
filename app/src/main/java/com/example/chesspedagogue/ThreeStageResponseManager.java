@@ -18,12 +18,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * OPTIMIZED 3-Stage AI Response System - API 26 COMPATIBLE VERSION
+ * 🎤 NOW WITH SUPERIOR ELEVENLABS TTS BY DEFAULT!
  *
  * Stage 1: Lightning-fast responses (under 2 seconds)
  * Stage 2: Enhanced personality responses (5-10 seconds)
  * Stage 3: Deep analysis with vector store (10-20 seconds)
  *
  * Compatible with Android API 26+ (no orTimeout dependency)
+ * Uses TTSServiceManager to automatically select ElevenLabs TTS for superior voice quality
  */
 public class ThreeStageResponseManager {
     private static final String TAG = "ThreeStageResponseManager";
@@ -107,9 +109,9 @@ public class ThreeStageResponseManager {
         // Initialize services
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
-        this.ttsService = OpenAITTSService.getInstance(context);
+        this.ttsService = TTSServiceManager.getOpenAITTSService(context);
 
-        Log.d(TAG, "✨ API 26 Compatible ThreeStageResponseManager initialized for speed!");
+        Log.d(TAG, "✨ API 26 Compatible ThreeStageResponseManager initialized with superior ElevenLabs TTS!");
     }
 
     /**
@@ -483,19 +485,54 @@ public class ThreeStageResponseManager {
     }
 
     /**
-     * ENHANCED: Anti-meta prompt for fine-tuned model
+     * ENHANCED: Anti-meta prompt for fine-tuned model with historically accurate references
      */
     private String createOptimizedFineTunedPrompt(String master) {
         String masterName = modelManager.getMasterDisplayName(master);
+        String historicalContext = getHistoricalContextForMaster(master);
 
         // ANTI-META prompting to suppress AI-like responses
         return "You are " + masterName + " speaking directly to a chess student. " +
                 "NEVER say 'Let me analyze', 'As your assistant', 'I recommend', or 'You should'. " +
-                "Instead, share your memories: 'I remember facing...', 'When I played Korchnoi...', " +
-                "'In my experience...', 'This reminds me of my game against...'. " +
+                "Instead, share your memories: 'I remember facing...', 'In my experience...', " +
+                "'This reminds me of my game against...'. " +
                 "Speak as if recalling your actual chess career and philosophy. " +
-                "Reference specific games, tournaments, or opponents when possible. " +
+                historicalContext + " " +
                 "Be direct, personal, and engaging - no meta-commentary about analyzing positions.";
+    }
+
+    /**
+     * Get historically accurate context for each chess master
+     */
+    private String getHistoricalContextForMaster(String master) {
+        switch (master.toLowerCase()) {
+            case "carlsen":
+                return "Reference your career from 2004 onwards, World Champion 2013-2023. Mention opponents like Anand, Caruana, Nepomniachtchi, or your early games against Kramnik.";
+            case "kasparov":
+                return "Reference your career from 1980-2005, World Champion 1985-2000. Mention your battles with Karpov, Kramnik, Anand, or Deep Blue.";
+            case "karpov":
+                return "Reference your career from 1970-2009, World Champion 1975-1985. Mention your matches with Kasparov, Korchnoi, or Spassky.";
+            case "fischer":
+                return "Reference your career from 1955-1972, World Champion 1972-1975. Mention your path through the Candidates, games against Spassky, Petrosian, or Tal.";
+            case "tal":
+                return "Reference your career from 1953-1992, World Champion 1960-1961. Mention your games against Botvinnik, Petrosian, Fischer, or your attacking style.";
+            case "kramnik":
+                return "Reference your career from 1992-2019, World Champion 2000-2007. Mention your victory over Kasparov, matches with Topalov, Anand, or your solid style.";
+            case "anand":
+                return "Reference your career from 1987-2017, World Champion 2007-2013. Mention your matches with Kramnik, Gelfand, Carlsen, or your versatile style.";
+            case "alekhine":
+                return "Reference your career from 1909-1946, World Champion 1927-1935, 1937-1946. Mention your games against Capablanca, Euwe, or your deep calculations.";
+            case "capablanca":
+                return "Reference your career from 1904-1939, World Champion 1921-1927. Mention your games against Lasker, Alekhine, Marshall, or your endgame technique.";
+            case "lasker":
+                return "Reference your career from 1889-1924, World Champion 1894-1921. Mention your games against Steinitz, Capablanca, Tarrasch, or your fighting spirit.";
+            case "morphy":
+                return "Reference your brief but brilliant career from 1850s-1860s. Mention your games in the 1857 American Chess Congress, your European tour, or your tactical genius.";
+            case "botvinnik":
+                return "Reference your career from 1927-1970, World Champion 1948-1957, 1958-1960, 1961-1963. Mention your matches with Smyslov, Tal, Petrosian, or your scientific approach.";
+            default:
+                return "Reference specific games, tournaments, or opponents from your actual career.";
+        }
     }
 
     /**
@@ -609,12 +646,12 @@ public class ThreeStageResponseManager {
         Log.d(TAG, "🔄 Adaptive TTS transition to stage " + stage + " for response #" + responseId);
 
         if (stage == 2) {
-            // Calculate Stage 1 audio duration and ensure it gets meaningful play time
+            // With ElevenLabs' ultra-low latency, allow Stage 1 minimal play time
             if (isStage1Speaking) {
-                // Estimate remaining play time for Stage 1 (rough heuristic: 150 chars/second)
-                int estimatedRemainingSeconds = Math.max(2, getCurrentAudioRemainingTime());
+                // Reduced delay for ElevenLabs - just enough to hear the start
+                int estimatedRemainingSeconds = Math.max(1, getCurrentAudioRemainingTime());
 
-                Log.d(TAG, "⏳ Stage 1 playing - allowing " + estimatedRemainingSeconds + " seconds before Stage 2");
+                Log.d(TAG, "⏳ Stage 1 playing - allowing " + estimatedRemainingSeconds + " seconds before Stage 2 (ElevenLabs optimized)");
 
                 mainHandler.postDelayed(() -> {
                     performTTSTransition(text, stage, responseId);
@@ -626,10 +663,10 @@ public class ThreeStageResponseManager {
         if (stage == 3) {
             // For Stage 3, be more selective about interrupting
             if (isStage2Speaking) {
-                // Only interrupt Stage 2 if it's been playing for a reasonable time
-                int minStage2PlayTime = Math.max(4000, text.length() * 20); // Adaptive based on content length
+                // Reduced minimum play time for ElevenLabs - much faster transitions
+                int minStage2PlayTime = Math.max(2000, text.length() * 8); // Reduced from 20 to 8 for ElevenLabs
 
-                Log.d(TAG, "⏳ Stage 2 playing - ensuring " + (minStage2PlayTime/1000) + " seconds minimum");
+                Log.d(TAG, "⏳ Stage 2 playing - ensuring " + (minStage2PlayTime/1000) + " seconds minimum (ElevenLabs optimized)");
 
                 mainHandler.postDelayed(() -> {
                     // Additional check: only interrupt if Stage 3 offers significantly more value
@@ -667,11 +704,11 @@ public class ThreeStageResponseManager {
 
 
     /**
-     * HELPER: Estimate remaining audio time (you could enhance this with actual MediaPlayer duration)
+     * HELPER: Estimate remaining audio time - optimized for ElevenLabs' low latency
      */
     private int getCurrentAudioRemainingTime() {
-        // Simple heuristic - you could make this more sophisticated by tracking actual audio duration
-        return 3; // Conservative 3-second minimum
+        // ElevenLabs optimized - much shorter minimum time needed
+        return 1; // Reduced from 3 to 1 second for ElevenLabs
     }
 
     /**

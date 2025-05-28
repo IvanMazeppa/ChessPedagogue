@@ -44,7 +44,7 @@ public class ChessCoachManager {
         this.mainHandler = new Handler(Looper.getMainLooper());
 
         // Initialize TTS service
-        this.ttsService = new OpenAITTSService(context);
+        this.ttsService = TTSServiceManager.getOpenAITTSService(context);
 
         // Try to load API key
         apiKey = ApiKeyConfig.getApiKey(context);
@@ -90,7 +90,7 @@ public class ChessCoachManager {
      */
     public void updateTTSSettings(String voiceStyle, boolean usePersonality) {
         // Get OpenAI TTS service
-        OpenAITTSService ttsService = OpenAITTSService.getInstance(context);
+        OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(context);
 
         // Update TTS mode settings
         ttsService.setVoicePersonalization(usePersonality);
