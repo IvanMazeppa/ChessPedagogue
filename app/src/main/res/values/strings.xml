@@ -1,3 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ChessPedagogue</string>
+    <string name="action_settings">Settings</string>
+    <!-- Add any other original strings you have here -->
+
+    <!-- Voice options for settings -->
+    <string-array name="voice_entries">
+        <item>Grandmaster (Deep, authoritative)</item>
+        <item>Tutor (Warm, encouraging)</item>
+        <item>Friendly (Neutral tone)</item>
+        <item>Cheerful (Enthusiastic)</item>
+    </string-array>
+
+    <string-array name="voice_values">
+        <item>grandmaster</item>
+        <item>tutor</item>
+        <item>alloy</item>
+        <item>shimmer</item>
+    </string-array>
+
+    <string-array name="model_entries">
+        <item>GPT-3.5 Turbo (Fast, economical)</item>
+        <item>GPT-4 (Smarter, more capable)</item>
+    </string-array>
+
+    <string-array name="model_values">
+        <item>gpt-3.5-turbo</item>
+        <item>gpt-4</item>
+    </string-array>
 </resources>

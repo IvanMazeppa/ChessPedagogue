@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory android:title="AI Coach Settings">
+        <ListPreference
+            android:key="voice_preference"
+            android:title="Coach Voice"
+            android:summary="Select the voice for your chess coach"
+            android:entries="@array/voice_entries"
+            android:entryValues="@array/voice_values"
+            android:defaultValue="grandmaster"/>
+
+        <ListPreference
+            android:key="model_preference"
+            android:title="AI Model"
+            android:summary="Select which AI model to use (better models may cost more)"
+            android:entries="@array/model_entries"
+            android:entryValues="@array/model_values"
+            android:defaultValue="gpt-3.5-turbo"/>
+    </PreferenceCategory>
+
+    <PreferenceCategory android:title="General Settings">
+        <SwitchPreference
+            android:key="auto_commentary"
+            android:title="Auto Commentary"
+            android:summary="Enable/disable automatic commentary after moves"
+            android:defaultValue="true"/>
+
+        <SwitchPreference
+            android:key="use_tts"
+            android:title="Text-to-Speech"
+            android:summary="Enable voice output for the coach"
+            android:defaultValue="true"/>
+    </PreferenceCategory>
+</PreferenceScreen>

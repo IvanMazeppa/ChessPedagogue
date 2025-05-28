@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "858869557890",
+    "project_id": "chesspedagogue-a7228",
+    "storage_bucket": "chesspedagogue-a7228.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:858869557890:android:90c8aa5e871c8df1f0629b",
+        "android_client_info": {
+          "package_name": "com.example.chesspedagogue"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQkLLHcaKxdy4jOgsAIXso0Aow02gilY4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

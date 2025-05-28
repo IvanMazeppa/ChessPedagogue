@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Enhanced Wood Theme Styles -->
+
+    <!-- Typography Hierarchy -->
+    <style name="WoodHeading" parent="@android:style/TextAppearance.Large">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/brown_dark</item>
+        <item name="android:textSize">22sp</item>
+        <item name="android:letterSpacing">0.02</item>
+    </style>
+
+    <style name="WoodSubheading" parent="@android:style/TextAppearance.Medium">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">italic</item>
+        <item name="android:textColor">@color/bronze</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:lineSpacingExtra">2sp</item>
+    </style>
+
+    <style name="WoodBodyText" parent="@android:style/TextAppearance.Medium">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textColor">@color/text_on_light</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:lineSpacingExtra">3sp</item>
+    </style>
+
+    <style name="WoodCaptionText" parent="@android:style/TextAppearance.Small">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">italic</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Enhanced Component Styles -->
+    <style name="WoodCard" parent="@style/CardView">
+        <item name="cardBackgroundColor">@color/parchment</item>
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardUseCompatPadding">true</item>
+        <item name="cardPreventCornerOverlap">true</item>
+    </style>
+
+    <style name="WoodButton" parent="@style/Widget.MaterialComponents.Button">
+        <item name="android:background">@drawable/wood_button_bg</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/cream</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:letterSpacing">0.05</item>
+        <item name="rippleColor">@color/gold</item>
+    </style>
+
+    <style name="WoodToolbar" parent="@style/Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@drawable/wood_background</item>
+        <item name="titleTextColor">@color/cream</item>
+        <item name="android:elevation">6dp</item>
+    </style>
+
+    <style name="WoodRadio" parent="@style/Widget.MaterialComponents.CompoundButton.RadioButton">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textColor">@color/text_on_light</item>
+        <item name="buttonTint">@color/gold</item>
+    </style>
+
+    <!-- ENHANCED: Material Components Compatible FAB Styles -->
+    <style name="WoodFAB" parent="@style/Widget.MaterialComponents.FloatingActionButton">
+        <!-- Core Material Components properties -->
+        <item name="backgroundTint">@color/gold</item>
+        <item name="tint">@color/brown_dark</item>
+        <item name="rippleColor">@color/cream</item>
+
+        <!-- Elevation properties -->
+        <item name="elevation">6dp</item>
+        <item name="hoveredFocusedTranslationZ">8dp</item>
+        <item name="pressedTranslationZ">10dp</item>
+
+        <!-- Size property -->
+        <item name="fabSize">normal</item>
+
+        <!-- Ensure proper Material Components theme support -->
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MaterialComponents.FloatingActionButton</item>
+    </style>
+
+    <style name="WoodFAB.Mini" parent="WoodFAB">
+        <item name="fabSize">mini</item>
+    </style>
+
+    <style name="WoodFAB.Analysis" parent="WoodFAB.Mini">
+        <item name="backgroundTint">@color/gold</item>
+        <item name="tint">@color/brown_dark</item>
+    </style>
+
+    <style name="WoodFAB.Coach" parent="WoodFAB.Mini">
+        <item name="backgroundTint">@color/bronze</item>
+        <item name="tint">@color/cream</item>
+    </style>
+
+    <style name="WoodFAB.Voice" parent="WoodFAB.Mini">
+        <item name="backgroundTint">@color/warning_amber</item>
+        <item name="tint">@color/brown_dark</item>
+    </style>
+
+    <style name="CoachPortrait">
+        <item name="android:layout_width">56dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:scaleType">centerCrop</item>
+        <item name="android:background">@drawable/portrait_frame</item>
+        <item name="android:padding">3dp</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <!-- Enhanced Input Styles -->
+    <style name="WoodEditText" parent="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox">
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textColor">@color/text_on_light</item>
+        <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="boxStrokeColor">@color/bronze</item>
+        <item name="hintTextColor">@color/bronze</item>
+    </style>
+
+    <!-- Status Indicator Styles -->
+    <style name="StatusIndicator">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
+        <item name="android:paddingTop">6dp</item>
+        <item name="android:paddingBottom">6dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">serif</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:elevation">2dp</item>
+    </style>
+
+    <style name="StatusIndicator.Success" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_success_bg</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="StatusIndicator.Warning" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_warning_bg</item>
+        <item name="android:textColor">@color/brown_dark</item>
+    </style>
+
+    <style name="StatusIndicator.Error" parent="StatusIndicator">
+        <item name="android:background">@drawable/status_error_bg</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+</resources>

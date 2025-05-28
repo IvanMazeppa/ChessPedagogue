@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- NEW: Spectator Mode - Your revolutionary new feature! -->
+    <item
+        android:id="@+id/action_spectator_mode"
+        android:title="Spectator Mode"
+        android:icon="@android:drawable/ic_media_play"
+        app:showAsAction="ifRoom" />
+
+    <!-- Game Management -->
+    <item
+        android:id="@+id/action_save_game"
+        android:title="Save Game"
+        android:icon="@android:drawable/ic_menu_save"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_load_game"
+        android:title="Load Game"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        app:showAsAction="never" />
+
+    <!-- Analysis Tools -->
+    <item
+        android:id="@+id/action_game_analysis"
+        android:title="Game Analysis"
+        android:icon="@android:drawable/ic_menu_search"
+        app:showAsAction="never" />
+
+    <!-- Coach and Learning -->
+    <item
+        android:id="@+id/action_coach_conversation"
+        android:title="Coach Chat"
+        android:icon="@drawable/ic_speak_to_coach"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_chess_master_selection"
+        android:title="Choose Chess Master"
+        android:icon="@android:drawable/ic_menu_gallery"
+        app:showAsAction="never" />
+
+    <!-- Settings -->
+    <item
+        android:id="@+id/action_settings"
+        android:title="Settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        app:showAsAction="never" />
+
+    <!-- About -->
+    <item
+        android:id="@+id/action_about"
+        android:title="About ChessPedagogue"
+        android:icon="@android:drawable/ic_menu_info_details"
+        app:showAsAction="never" />
+
+</menu>

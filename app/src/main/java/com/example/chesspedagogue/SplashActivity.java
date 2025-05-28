@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
@@ -30,16 +31,17 @@ public class SplashActivity extends AppCompatActivity {
         // Configure engine strength slider (0 = weakest, 20 = strongest)
         strengthSeekBar.setMax(20);
         strengthSeekBar.setProgress(10);  // default mid-level
-        // Show initial strength value with approximate Elo
+
+        // Show initial strength value with more appropriate Elo calculation
         int initialSkill = strengthSeekBar.getProgress();
-        int initialElo = 800 + initialSkill * 110;
+        int initialElo = 300 + initialSkill * 145; // Ranges from 300 to 3200
         strengthValueTextView.setText("Engine Strength: ~" + initialElo + " Elo (Level " + initialSkill + ")");
 
         // Update displayed strength as the user adjusts the slider
         strengthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int approxElo = 800 + progress * 110;
+                int approxElo = 300 + progress * 145; // Lower minimum, better spread
                 strengthValueTextView.setText("Engine Strength: ~" + approxElo + " Elo (Level " + progress + ")");
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
@@ -50,21 +52,74 @@ public class SplashActivity extends AppCompatActivity {
         startGameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Determine player color (default to white if none selected)
-                String playerColor = "white";
-                int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
-                if (selectedColorId == R.id.radioBlack) {
-                    playerColor = "black";
+                // Check if this is first run
+                SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+                boolean isFirstRun = prefs.getBoolean("is_first_run", true);
+
+                if (isFirstRun) {
+                    // First run - go to master selection first
+                    prefs.edit().putBoolean("is_first_run", false).apply();
+
+                    // Store the game settings for later use
+                    String playerColor = "white";
+                    int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
+                    if (selectedColorId == R.id.radioBlack) {
+                        playerColor = "black";
+                    }
+                    int skillLevel = strengthSeekBar.getProgress();
+                    int engineElo = 300 + skillLevel * 145;
+
+                    // Save these settings
+                    prefs.edit()
+                            .putString("PLAYER_COLOR", playerColor)
+                            .putInt("SKILL_LEVEL", skillLevel)
+                            .putInt("ENGINE_ELO", engineElo)
+                            .apply();
+
+                    // Go to chess master selection
+                    Intent intent = new Intent(SplashActivity.this, ChessMasterSelectionActivity.class);
+                    intent.putExtra("first_time", true);
+                    startActivity(intent);
+                } else {
+                    // Not first run, proceed as normal
+                    String playerColor = "white";
+                    int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
+                    if (selectedColorId == R.id.radioBlack) {
+                        playerColor = "black";
+                    }
+                    int skillLevel = strengthSeekBar.getProgress();
+                    int engineElo = 300 + skillLevel * 145;
+
+                    Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+                    intent.putExtra("PLAYER_COLOR", playerColor);
+                    intent.putExtra("SKILL_LEVEL", skillLevel);
+                    intent.putExtra("ENGINE_ELO", engineElo);
+                    startActivity(intent);
                 }
-                // Get selected engine strength level
-                int skillLevel = strengthSeekBar.getProgress();
-                // Launch MainActivity with the chosen options
-                Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-                intent.putExtra("PLAYER_COLOR", playerColor);
-                intent.putExtra("SKILL_LEVEL", skillLevel);
-                startActivity(intent);
                 finish(); // close splash screen
             }
         });
+
+
     }
+
+
+    // In your launcher activity
+    private void proceedToNextScreen() {
+        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        boolean isFirstRun = prefs.getBoolean("is_first_run", true);
+
+        if (isFirstRun) {
+            // First run - go to master selection
+            prefs.edit().putBoolean("is_first_run", false).apply();
+            Intent intent = new Intent(this, ChessMasterSelectionActivity.class);
+            intent.putExtra("first_time", true);
+            startActivity(intent);
+        } else {
+            // Normal flow - go to main activity
+            startActivity(new Intent(this, MainActivity.class));
+        }
+        finish();
+    }
+
 }
