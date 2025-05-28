@@ -262,6 +262,16 @@ public class MainActivity extends AppCompatActivity {
         // In onCreate or similar initialization method
         ApiKeyConfig.initializeOpenAIClient(this);
 
+        // Configure ElevenLabs API key (replace with your actual key)
+        // TODO: Move this to a secure configuration file
+        ElevenLabsConfig.setApiKey(this, "sk_78213d87bcdfcdb50e74b2a1c3944fabb71db48eb5ccbfb5");
+        
+        // Enable ElevenLabs TTS if API key is set
+        if (ElevenLabsConfig.hasApiKey(this)) {
+            TTSServiceManager.setUseElevenLabs(this, true);
+            Log.d(TAG, "✅ ElevenLabs TTS enabled");
+        }
+
         // Initialize all UI elements
         initializeViews();
 

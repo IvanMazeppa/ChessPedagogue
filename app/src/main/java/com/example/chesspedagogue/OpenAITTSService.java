@@ -76,6 +76,20 @@ public class OpenAITTSService {
 
     // ADDED: Track active players for cleanup
     private final Map<Integer, MediaPlayer> activePlayers = new HashMap<>();
+    
+    // ADDED: Queue for pending speech requests
+    private final Queue<PendingSpeech> pendingSpeechQueue = new ConcurrentLinkedQueue<>();
+    
+    // Inner class for queued speech
+    private static class PendingSpeech {
+        final String text;
+        final OnSpeechCompletedListener listener;
+        
+        PendingSpeech(String text, OnSpeechCompletedListener listener) {
+            this.text = text;
+            this.listener = listener;
+        }
+    }
 
     private SpeechCallback speechCallback;
 
@@ -138,7 +152,14 @@ public class OpenAITTSService {
             return;
         }
 
-        // CRITICAL: Clean up any previous session before starting new one
+        // Don't clean up if currently speaking - queue instead
+        if (isSpeaking && !interruptRequested) {
+            Log.d(TAG, "⚠️ Speech in progress - queueing for later playback");
+            pendingSpeechQueue.add(new PendingSpeech(text, listener));
+            return;
+        }
+
+        // Only clean up if we're not currently speaking
         cleanupPreviousSession();
 
         isSpeaking = true;
@@ -171,6 +192,8 @@ public class OpenAITTSService {
                     if (listener != null) {
                         listener.onSpeechCompleted();
                     }
+                    // Process any pending speech from the queue
+                    processPendingSpeechQueue();
                 });
             }
 
@@ -183,12 +206,28 @@ public class OpenAITTSService {
                     if (listener != null) {
                         listener.onSpeechCompleted();
                     }
+                    // Process any pending speech from the queue
+                    processPendingSpeechQueue();
                 });
             }
         };
 
         // Generate a single chunk for the entire text
         generateTTSChunk(text, 0, true, orderingCallback);
+    }
+
+    /**
+     * Process any pending speech from the queue
+     */
+    private void processPendingSpeechQueue() {
+        if (!pendingSpeechQueue.isEmpty()) {
+            PendingSpeech pending = pendingSpeechQueue.poll();
+            if (pending != null) {
+                Log.d(TAG, "📢 Processing queued speech: " + pending.text.substring(0, Math.min(50, pending.text.length())) + "...");
+                // Call speak again with the queued text
+                speak(pending.text, pending.listener);
+            }
+        }
     }
 
     /**
@@ -263,43 +302,11 @@ public class OpenAITTSService {
     }
 
     /**
-     * 🎭 ENHANCED: Create voice instructions with more focus on energy/emotion than specific accents
+     * 🎭 ENHANCED: Create voice instructions - DEPRECATED, use createAccentSpecificInstructions instead
      */
     private String createNaturalVoiceInstructions(String master) {
-        try {
-            // Focus more on energy and emotion since accents might not work reliably
-            switch (master.toLowerCase()) {
-                case "tal":
-                    return "Speak with passionate enthusiasm and high energy. Sound warm, creative, and genuinely excited about chess. Use an animated, expressive delivery.";
-
-                case "fischer":
-                    return "Speak with intense conviction and absolute certainty. Sound demanding, precise, and uncompromising. Use a direct, authoritative tone with no hesitation.";
-
-                case "kasparov":
-                    return "Speak with dynamic passion and fierce determination. Sound energetic, competitive, and compelling with strong conviction.";
-
-                case "karpov":
-                    return "Speak with calm confidence and measured wisdom. Sound diplomatic, patient, and quietly authoritative.";
-
-                case "kramnik":
-                    return "Speak with analytical precision and systematic clarity. Sound methodical, technical, and thoughtfully measured.";
-
-                case "capablanca":
-                    return "Speak with elegant confidence and natural authority. Sound effortlessly refined and gracefully assured.";
-
-                case "carlsen":
-                    return "Speak with modern confidence and relaxed authority. Sound pragmatic, adaptable, and naturally assured.";
-
-                case "alekhine":
-                    return "Speak with sophisticated intelligence and cultured authority. Sound intellectually engaging and refined.";
-
-                default:
-                    return "Speak with the wisdom and authority of an experienced chess master.";
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error creating voice instructions for " + master, e);
-            return "Speak with natural confidence and chess master authority.";
-        }
+        // This method is now deprecated - use createAccentSpecificInstructions for better accent control
+        return createAccentSpecificInstructions(master, "");
     }
 
     /**
@@ -795,30 +802,36 @@ public class OpenAITTSService {
             switch (master.toLowerCase()) {
                 case "tal":
                     Log.d(TAG, "   Processing TAL accent instructions...");
-                    instructions.append("Speak with a warm Latvian-Russian accent. ");
-                    instructions.append("Roll your 'r' sounds softly and pronounce vowels with Slavic warmth. ");
-                    instructions.append("Use passionate, enthusiastic delivery that shows genuine love for chess. ");
-                    instructions.append("Let your excitement bubble through when discussing tactics and sacrifices. ");
-                    instructions.append("Sound like Mikhail Tal from Latvia with his characteristic warmth and creativity.");
+                    // Enhanced based on OpenAI's 2025 TTS guidelines
+                    instructions.append("Voice Affect: Warm, passionate, and infectiously enthusiastic about chess; convey genuine joy and creative excitement. ");
+                    instructions.append("Accent: Soft Latvian-Russian with gentle rolled 'r' sounds and rounded Slavic vowel pronunciation. ");
+                    instructions.append("Tone: Energetic and inspirational, with a mischievous gleam when discussing sacrificial attacks and tactical brilliance. ");
+                    instructions.append("Pacing: Animated with natural excitement bursts when describing beautiful moves; slightly faster tempo reflecting enthusiasm. ");
+                    instructions.append("Emotion: Deeply emotive with genuine love for chess artistry; convey the magic and poetry of the game. ");
+                    instructions.append("Emphasis: Highlight tactical words like 'sacrifice,' 'attack,' and 'beautiful' with increased energy and conviction.");
                     Log.d(TAG, "   ✅ TAL INSTRUCTIONS CREATED");
                     break;
 
                 case "fischer":
                     Log.d(TAG, "   Processing FISCHER accent instructions...");
-                    instructions.append("Speak with a strong New York accent. ");
-                    instructions.append("Use intense, demanding delivery with absolute precision. ");
-                    instructions.append("Emphasize words with unwavering conviction and authority. ");
-                    instructions.append("Sound supremely confident and uncompromising. ");
-                    instructions.append("Deliver every word with the perfectionist intensity of Bobby Fischer.");
+                    instructions.append("Voice Affect: Intense, demanding, and uncompromisingly perfectionist; convey absolute certainty and analytical precision. ");
+                    instructions.append("Accent: Strong Brooklyn/New York with clipped consonants, dropped terminal 'r' sounds, and sharp urban pronunciation. ");
+                    instructions.append("Tone: Commanding and authoritative with zero tolerance for imprecision; speak with the voice of chess truth. ");
+                    instructions.append("Pacing: Deliberate and forceful with emphatic delivery; pause for effect when making critical points. ");
+                    instructions.append("Emotion: Controlled intensity with underlying competitive fire; convey the relentless pursuit of chess perfection. ");
+                    instructions.append("Emphasis: Stress words like 'correct,' 'best,' 'mistake,' and 'winning' with absolute conviction and authority.");
                     Log.d(TAG, "   ✅ FISCHER INSTRUCTIONS CREATED");
                     break;
 
                 case "kasparov":
-                    instructions.append("Speak with a dynamic Russian accent from Baku. ");
-                    instructions.append("Use passionate, energetic delivery with fierce determination. ");
-                    instructions.append("Roll 'r' sounds distinctly and emphasize strong consonants. ");
-                    instructions.append("Show competitive fire and intensity in every word. ");
-                    instructions.append("Speak with the commanding presence of Garry Kasparov.");
+                    instructions.append("You are speaking as Garry Kasparov from Russia. ");
+                    instructions.append("CRITICAL: Maintain a strong, consistent Russian accent throughout. ");
+                    instructions.append("Roll every 'r' sound distinctly and pronounce 'w' as 'v'. ");
+                    instructions.append("Use hard consonants and emphasize syllables forcefully. ");
+                    instructions.append("Replace 'th' with 'z' or 'd' sounds (think becomes zink). ");
+                    instructions.append("Speak with passionate intensity and competitive fire. ");
+                    instructions.append("Your delivery must be dynamic, forceful, and commanding. ");
+                    instructions.append("Never soften the Russian accent.");
                     break;
 
                 case "karpov":
@@ -839,11 +852,12 @@ public class OpenAITTSService {
 
                 case "carlsen":
                     Log.d(TAG, "   Processing CARLSEN accent instructions...");
-                    instructions.append("Speak with a clear Norwegian accent with modern confidence. ");
-                    instructions.append("Use Nordic pronunciation patterns with contemporary clarity. ");
-                    instructions.append("Sound naturally assured and pragmatically confident. ");
-                    instructions.append("Maintain a modern, relaxed but supremely competent delivery. ");
-                    instructions.append("Speak with the contemporary mastery of Magnus Carlsen.");
+                    instructions.append("Voice Affect: Relaxed confidence and modern pragmatism; convey calm mastery with understated authority. ");
+                    instructions.append("Accent: Soft Norwegian with melodic Scandinavian intonation, pure crisp vowels, and 'th' pronounced as 'd' or 't'. ");
+                    instructions.append("Tone: Casual yet supremely competent with natural assurance; speak with the voice of contemporary chess excellence. ");
+                    instructions.append("Pacing: Measured and thoughtful with natural Norwegian rhythm; allow concepts to develop organically. ");
+                    instructions.append("Emotion: Quietly confident with philosophical depth; convey the wisdom of modern chess understanding. ");
+                    instructions.append("Emphasis: Highlight strategic concepts like 'position,' 'endgame,' and 'practical' with quiet but firm conviction.");
                     Log.d(TAG, "   ✅ CARLSEN INSTRUCTIONS CREATED");
                     break;
 
@@ -1521,6 +1535,24 @@ public class OpenAITTSService {
 
     public void stopPlayback() {
         interrupt();
+    }
+
+    /**
+     * CRITICAL: Force stop all speech immediately to prevent ANR
+     */
+    public void stopSpeaking() {
+        Log.d(TAG, "🛑 FORCE STOPPING ALL TTS");
+        
+        interruptRequested = true;
+        isSpeaking = false;
+        
+        // Stop all audio immediately
+        cleanupPreviousSession();
+        
+        // Clear all pending work
+        pendingSpeechQueue.clear();
+        
+        Log.d(TAG, "✅ TTS FORCE STOPPED");
     }
 
     /**

@@ -50,6 +50,16 @@ public class PersonalityEngine {
     static {
         MASTER_NAME_CACHE.put("tal", new String[]{"Mikhail Tal", "tal", "Tal"});
         MASTER_NAME_CACHE.put("fischer", new String[]{"Bobby Fischer", "fischer", "Fischer"});
+        MASTER_NAME_CACHE.put("carlsen", new String[]{"Magnus Carlsen", "carlsen", "Carlsen"});
+        MASTER_NAME_CACHE.put("kasparov", new String[]{"Garry Kasparov", "kasparov", "Kasparov"});
+        MASTER_NAME_CACHE.put("alekhine", new String[]{"Alexander Alekhine", "alekhine", "Alekhine"});
+        MASTER_NAME_CACHE.put("karpov", new String[]{"Anatoly Karpov", "karpov", "Karpov"});
+        MASTER_NAME_CACHE.put("kramnik", new String[]{"Vladimir Kramnik", "kramnik", "Kramnik"});
+        MASTER_NAME_CACHE.put("capablanca", new String[]{"José Raúl Capablanca", "capablanca", "Capablanca"});
+        MASTER_NAME_CACHE.put("lasker", new String[]{"Emanuel Lasker", "lasker", "Lasker"});
+        MASTER_NAME_CACHE.put("morphy", new String[]{"Paul Morphy", "morphy", "Morphy"});
+        MASTER_NAME_CACHE.put("anand", new String[]{"Viswanathan Anand", "anand", "Anand"});
+        MASTER_NAME_CACHE.put("botvinnik", new String[]{"Mikhail Botvinnik", "botvinnik", "Botvinnik"});
     }
 
     /**
@@ -699,5 +709,27 @@ public class PersonalityEngine {
                 Log.e(TAG, "Error initializing master data", e);
             }
         });
+    }
+
+    /**
+     * 🚨 Force stop all PersonalityEngine operations for ANR prevention
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 PersonalityEngine FORCE STOP initiated");
+        
+        try {
+            if (executorService != null && !executorService.isShutdown()) {
+                executorService.shutdownNow();
+                Log.d(TAG, "✅ PersonalityEngine executor shut down");
+            }
+            
+            if (databaseHelper != null) {
+                databaseHelper.close();
+                Log.d(TAG, "✅ PersonalityEngine database closed");
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error during PersonalityEngine force stop", e);
+        }
     }
 }

@@ -53,13 +53,13 @@ public class FineTunedModelManager {
     private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_CARLSEN = "ftjob-GrBGWeWWaUsVtM7r1RuHyCdJ"; // 🆕 UPDATED Magnus Carlsen model!
+    private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe";
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
-    // Voice model options
+    // Voice model options2
     public static final String VOICE_ALLOY = "alloy";
     public static final String VOICE_ECHO = "echo";
     public static final String VOICE_FABLE = "fable";

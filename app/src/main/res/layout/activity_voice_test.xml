@@ -1,58 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center_horizontal">
+    android:background="#1a1a1a">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Chess AI Voice Integration"
-        android:textSize="24sp"
-        android:layout_marginTop="32dp"
-        android:layout_marginBottom="32dp"/>
-
-    <Button
-        android:id="@+id/testApiButton"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Test OpenAI API"
-        android:layout_marginBottom="16dp"/>
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/voiceButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Test Voice"
-        android:layout_marginBottom="16dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ElevenLabs Voice Testing"
+            android:textSize="24sp"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
 
-    <Button
-        android:id="@+id/conversationButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Start Coach Conversation"
-        android:layout_marginBottom="32dp"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Chess Master:"
+            android:textColor="#cccccc"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
 
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Ready to test voice integration"
-        android:textAlignment="center"
-        android:layout_marginTop="16dp"/>
+        <Spinner
+            android:id="@+id/masterSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp"
+            android:background="#333333"
+            android:popupBackground="#333333" />
 
-    <TextView
-        android:id="@+id/transcriptText"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="#F0F0F0"
-        android:padding="16dp"
-        android:textSize="16sp"
-        android:layout_marginTop="16dp"
-        android:scrollbars="vertical"
-        android:gravity="top"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Emotion:"
+            android:textColor="#cccccc"
+            android:textSize="16sp"
+            android:layout_marginBottom="8dp" />
 
-</LinearLayout>
+        <Spinner
+            android:id="@+id/emotionSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginBottom="16dp"
+            android:background="#333333"
+            android:popupBackground="#333333" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/testButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="#4CAF50"
+                android:text="Test Single"
+                android:textColor="#263238" />
+
+            <Button
+                android:id="@+id/testAllButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="#2196F3"
+                android:text="Test All"
+                android:textColor="#212121" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/statusText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ready for testing"
+            android:textColor="#ffffff"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:padding="12dp"
+            android:background="#333333"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Current Test Text:"
+            android:textColor="#cccccc"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/currentTestText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="No test running"
+            android:textColor="#ffffff"
+            android:textSize="14sp"
+            android:padding="12dp"
+            android:background="#2a2a2a"
+            android:layout_marginBottom="16dp"
+            android:minHeight="60dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Test Results:"
+            android:textColor="#cccccc"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <ListView
+            android:id="@+id/resultsListView"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:background="#2a2a2a"
+            android:divider="#444444"
+            android:dividerHeight="1dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp">
+
+            <Button
+                android:id="@+id/voiceButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:background="#FF9800"
+                android:text="Test Voice"
+                android:textColor="#424242" />
+
+            <Button
+                android:id="@+id/conversationButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Start Coach"
+                android:textColor="#ffffff"
+                android:background="#9C27B0"
+                android:layout_marginStart="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>

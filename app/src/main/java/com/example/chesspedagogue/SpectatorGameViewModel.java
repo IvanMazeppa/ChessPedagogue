@@ -765,6 +765,39 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     public LiveData<String> getConversationSpeaker() { return conversationSpeaker; }
     public LiveData<Boolean> isConversationActive() { return conversationActive; }
 
+    /**
+     * CRITICAL: Force stop all operations immediately to prevent ANR
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 FORCE STOPPING SpectatorGameViewModel");
+        
+        // Stop game immediately
+        gameInProgress = false;
+        isPaused = true;
+        
+        // Clear all pending operations
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Stop executors aggressively
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+        
+        // Force stop game manager
+        if (gameManager != null) {
+            gameManager.forceStop();
+        }
+        
+        // Force stop dialogue manager
+        if (dialogueManager != null) {
+            dialogueManager.forceStop();
+        }
+        
+        Log.d(TAG, "✅ FORCE STOP completed");
+    }
+
     public void cleanup() {
         gameInProgress = false;
 

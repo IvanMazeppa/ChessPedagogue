@@ -1101,6 +1101,43 @@ public class GameRepository {
     }
 
     /**
+     * CRITICAL: Force stop all operations immediately to prevent ANR
+     */
+    public void forceStop() {
+        Log.d(TAG, "🚨 FORCE STOPPING GameRepository");
+        
+        // Stop processing immediately
+        isEngineProcessing.set(false);
+        
+        // Force shutdown executors
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+        }
+        
+        // Clear main handler
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Force stop Stockfish
+        engineLock.lock();
+        try {
+            if (stockfishManager != null) {
+                stockfishManager.forceStop();
+            }
+        } finally {
+            engineLock.unlock();
+        }
+        
+        // Force stop personality engine
+        if (personalityEngine != null) {
+            personalityEngine.forceStop();
+        }
+        
+        Log.d(TAG, "✅ GameRepository FORCE STOPPED");
+    }
+
+    /**
      * ENHANCED: Proper cleanup with thread safety
      */
     public void cleanup() {

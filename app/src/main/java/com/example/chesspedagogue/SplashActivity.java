@@ -31,6 +31,7 @@ public class SplashActivity extends AppCompatActivity {
         // Configure engine strength slider (0 = weakest, 20 = strongest)
         strengthSeekBar.setMax(20);
         strengthSeekBar.setProgress(10);  // default mid-level
+        ElevenLabsConfig.setApiKey(this, "sk_78213d87bcdfcdb50e74b2a1c3944fabb71db48eb5ccbfb5");
 
         // Show initial strength value with more appropriate Elo calculation
         int initialSkill = strengthSeekBar.getProgress();

@@ -1,94 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Enhanced Wood Theme Styles -->
+    <!-- Enhanced Wood Theme Styles - Fully Compatible Version -->
 
-    <!-- Typography Hierarchy -->
+    <!-- Typography Hierarchy - Refined -->
     <style name="WoodHeading" parent="@android:style/TextAppearance.Large">
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/brown_dark</item>
-        <item name="android:textSize">22sp</item>
-        <item name="android:letterSpacing">0.02</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:letterSpacing">0.03</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+    </style>
+
+    <style name="WoodHeading.Large">
+        <item name="android:textSize">28sp</item>
+        <item name="android:letterSpacing">0.04</item>
     </style>
 
     <style name="WoodSubheading" parent="@android:style/TextAppearance.Medium">
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">italic</item>
-        <item name="android:textColor">@color/bronze</item>
-        <item name="android:textSize">16sp</item>
-        <item name="android:lineSpacingExtra">2sp</item>
+        <item name="android:textColor">@color/text_accent</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:lineSpacingExtra">3sp</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
     <style name="WoodBodyText" parent="@android:style/TextAppearance.Medium">
         <item name="android:fontFamily">serif</item>
         <item name="android:textColor">@color/text_on_light</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:lineSpacingExtra">3sp</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:lineSpacingExtra">4sp</item>
+        <item name="android:letterSpacing">0.01</item>
     </style>
 
     <style name="WoodCaptionText" parent="@android:style/TextAppearance.Small">
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">italic</item>
         <item name="android:textColor">@color/text_secondary</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:lineSpacingExtra">2sp</item>
     </style>
 
-    <!-- Enhanced Component Styles -->
+    <!-- Enhanced Card Styles -->
     <style name="WoodCard" parent="@style/CardView">
-        <item name="cardBackgroundColor">@color/parchment</item>
-        <item name="cardCornerRadius">12dp</item>
-        <item name="cardElevation">4dp</item>
+        <item name="cardBackgroundColor">@color/card_surface</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">6dp</item>
         <item name="cardUseCompatPadding">true</item>
         <item name="cardPreventCornerOverlap">true</item>
+        <item name="cardMaxElevation">8dp</item>
     </style>
 
+    <style name="WoodCard.Elevated">
+        <item name="cardBackgroundColor">@color/card_elevated</item>
+        <item name="cardElevation">8dp</item>
+        <item name="cardMaxElevation">12dp</item>
+    </style>
+
+    <style name="WoodCard.Interactive">
+        <item name="android:foreground">?android:attr/selectableItemBackground</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="cardElevation">4dp</item>
+        <item name="cardMaxElevation">12dp</item>
+    </style>
+
+    <!-- Enhanced Button Styles -->
     <style name="WoodButton" parent="@style/Widget.MaterialComponents.Button">
-        <item name="android:background">@drawable/wood_button_bg</item>
+        <item name="android:background">@drawable/enhanced_wood_button_bg</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/cream</item>
-        <item name="android:elevation">4dp</item>
-        <item name="android:letterSpacing">0.05</item>
-        <item name="rippleColor">@color/gold</item>
-    </style>
-
-    <style name="WoodToolbar" parent="@style/Widget.MaterialComponents.Toolbar">
-        <item name="android:background">@drawable/wood_background</item>
-        <item name="titleTextColor">@color/cream</item>
+        <item name="android:textColor">@color/text_on_dark</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">16dp</item>
         <item name="android:elevation">6dp</item>
+        <item name="android:letterSpacing">0.03</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="rippleColor">@color/gold_light</item>
     </style>
 
+    <style name="WoodButton.Primary">
+        <item name="android:background">@drawable/button_primary_bg</item>
+        <item name="android:textColor">@color/cream</item>
+    </style>
+
+    <style name="WoodButton.Secondary">
+        <item name="android:background">@drawable/button_secondary_bg</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="WoodButton.Large">
+        <item name="android:textSize">18sp</item>
+        <item name="android:paddingStart">32dp</item>
+        <item name="android:paddingEnd">32dp</item>
+        <item name="android:paddingTop">20dp</item>
+        <item name="android:paddingBottom">20dp</item>
+        <item name="android:minHeight">64dp</item>
+    </style>
+
+    <!-- Enhanced Side Selection Styles -->
+    <style name="SideSelectionContainer">
+        <item name="android:background">@drawable/side_selection_bg</item>
+        <item name="android:padding">20dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:elevation">4dp</item>
+    </style>
+
+    <style name="SideSelectionActive" parent="SideSelectionContainer">
+        <item name="android:background">@drawable/side_selection_active_bg</item>
+        <item name="android:elevation">8dp</item>
+    </style>
+
+    <!-- Enhanced Toolbar Style -->
+    <style name="WoodToolbar" parent="@style/Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@drawable/enhanced_wood_background</item>
+        <item name="titleTextColor">@color/cream</item>
+        <item name="android:elevation">8dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+    </style>
+
+    <!-- Enhanced Radio Button Style -->
     <style name="WoodRadio" parent="@style/Widget.MaterialComponents.CompoundButton.RadioButton">
         <item name="android:fontFamily">serif</item>
         <item name="android:textColor">@color/text_on_light</item>
+        <item name="android:textSize">16sp</item>
         <item name="buttonTint">@color/gold</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingTop">12dp</item>
+        <item name="android:paddingBottom">12dp</item>
     </style>
 
-    <!-- ENHANCED: Material Components Compatible FAB Styles -->
+    <!-- FIXED: Enhanced FAB Styles - Removed incompatible borderColor attributes -->
     <style name="WoodFAB" parent="@style/Widget.MaterialComponents.FloatingActionButton">
-        <!-- Core Material Components properties -->
         <item name="backgroundTint">@color/gold</item>
         <item name="tint">@color/brown_dark</item>
         <item name="rippleColor">@color/cream</item>
-
-        <!-- Elevation properties -->
-        <item name="elevation">6dp</item>
-        <item name="hoveredFocusedTranslationZ">8dp</item>
-        <item name="pressedTranslationZ">10dp</item>
-
-        <!-- Size property -->
+        <item name="elevation">8dp</item>
+        <item name="hoveredFocusedTranslationZ">12dp</item>
+        <item name="pressedTranslationZ">16dp</item>
         <item name="fabSize">normal</item>
-
-        <!-- Ensure proper Material Components theme support -->
         <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.MaterialComponents.FloatingActionButton</item>
     </style>
 
     <style name="WoodFAB.Mini" parent="WoodFAB">
         <item name="fabSize">mini</item>
+        <item name="elevation">6dp</item>
     </style>
 
     <style name="WoodFAB.Analysis" parent="WoodFAB.Mini">
-        <item name="backgroundTint">@color/gold</item>
+        <item name="backgroundTint">@color/chess_light_square</item>
         <item name="tint">@color/brown_dark</item>
     </style>
 
@@ -102,51 +168,76 @@
         <item name="tint">@color/brown_dark</item>
     </style>
 
+    <!-- Enhanced Coach Portrait Style -->
     <style name="CoachPortrait">
-        <item name="android:layout_width">56dp</item>
-        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_width">64dp</item>
+        <item name="android:layout_height">64dp</item>
         <item name="android:scaleType">centerCrop</item>
-        <item name="android:background">@drawable/portrait_frame</item>
-        <item name="android:padding">3dp</item>
-        <item name="android:elevation">2dp</item>
+        <item name="android:background">@drawable/enhanced_portrait_frame</item>
+        <item name="android:padding">4dp</item>
+        <item name="android:elevation">4dp</item>
     </style>
 
-    <!-- Enhanced Input Styles -->
+    <style name="CoachPortrait.Large">
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_height">80dp</item>
+        <item name="android:padding">6dp</item>
+        <item name="android:elevation">6dp</item>
+    </style>
+
+    <!-- FIXED: Enhanced Input Styles - Removed incompatible boxStrokeColorFocused -->
     <style name="WoodEditText" parent="@style/Widget.MaterialComponents.TextInputEditText.OutlinedBox">
         <item name="android:fontFamily">serif</item>
         <item name="android:textColor">@color/text_on_light</item>
         <item name="android:textColorHint">@color/text_secondary</item>
+        <item name="android:textSize">16sp</item>
         <item name="boxStrokeColor">@color/bronze</item>
         <item name="hintTextColor">@color/bronze</item>
+        <item name="boxCornerRadiusTopStart">12dp</item>
+        <item name="boxCornerRadiusTopEnd">12dp</item>
+        <item name="boxCornerRadiusBottomStart">12dp</item>
+        <item name="boxCornerRadiusBottomEnd">12dp</item>
     </style>
 
-    <!-- Status Indicator Styles -->
+    <!-- Enhanced Status Indicator Styles -->
     <style name="StatusIndicator">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
-        <item name="android:paddingTop">6dp</item>
-        <item name="android:paddingBottom">6dp</item>
-        <item name="android:textSize">12sp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:textSize">14sp</item>
         <item name="android:fontFamily">serif</item>
         <item name="android:textStyle">bold</item>
-        <item name="android:elevation">2dp</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:letterSpacing">0.02</item>
     </style>
 
     <style name="StatusIndicator.Success" parent="StatusIndicator">
-        <item name="android:background">@drawable/status_success_bg</item>
+        <item name="android:background">@drawable/status_success_enhanced_bg</item>
         <item name="android:textColor">@android:color/white</item>
     </style>
 
     <style name="StatusIndicator.Warning" parent="StatusIndicator">
-        <item name="android:background">@drawable/status_warning_bg</item>
+        <item name="android:background">@drawable/status_warning_enhanced_bg</item>
         <item name="android:textColor">@color/brown_dark</item>
     </style>
 
     <style name="StatusIndicator.Error" parent="StatusIndicator">
-        <item name="android:background">@drawable/status_error_bg</item>
+        <item name="android:background">@drawable/status_error_enhanced_bg</item>
         <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <!-- Enhanced SeekBar Style -->
+    <style name="WoodSeekBar" parent="@style/Widget.AppCompat.SeekBar">
+        <item name="android:progressTint">@color/gold</item>
+        <item name="android:progressBackgroundTint">@color/brown_light</item>
+        <item name="android:thumbTint">@color/bronze</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
     </style>
 
 </resources>

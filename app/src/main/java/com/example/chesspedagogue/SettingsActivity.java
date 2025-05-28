@@ -231,6 +231,9 @@ public class SettingsActivity extends AppCompatActivity {
                     "Show Advanced Settings" : "Hide Advanced Settings");
         });
 
+        // Setup ElevenLabs TTS toggle
+        setupElevenLabsTTS();
+
         // Now call the voice style settings setup
         setupVoiceStyleSettings();
     }
@@ -343,6 +346,76 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Update your TTS service
         ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+    }
+
+    /**
+     * Setup ElevenLabs TTS toggle
+     */
+    private void setupElevenLabsTTS() {
+        // Create a switch for ElevenLabs programmatically since it's not in the layout
+        Switch elevenLabsSwitch = null;
+        
+        // Find a container to add it to (e.g., the voice settings container)
+        LinearLayout container = findViewById(R.id.legacy_voice_container);
+        if (container != null) {
+            // Create the switch programmatically
+            elevenLabsSwitch = new Switch(this);
+            elevenLabsSwitch.setText("Use ElevenLabs TTS (Ultra-realistic voices)");
+            elevenLabsSwitch.setPadding(16, 16, 16, 16);
+            
+            // Add it to the container
+            container.addView(elevenLabsSwitch, 0); // Add at the top
+        }
+        
+        if (elevenLabsSwitch != null) {
+            // Load current setting
+            boolean useElevenLabs = TTSServiceManager.isUsingElevenLabs(this);
+            elevenLabsSwitch.setChecked(useElevenLabs);
+            
+            // Set up change listener
+            final Switch finalElevenLabsSwitch = elevenLabsSwitch;
+            elevenLabsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                if (isChecked) {
+                    // Check if API key is set
+                    SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+                    String apiKey = prefs.getString("elevenlabs_api_key", "");
+                    // Note: System.getenv() doesn't work reliably on Android
+                    // API key should be set through SharedPreferences
+                    
+                    if (apiKey == null || apiKey.isEmpty()) {
+                        // No API key - show error and revert
+                        Toast.makeText(this, 
+                            "Please set your ElevenLabs API key in the app first", 
+                            Toast.LENGTH_LONG).show();
+                        finalElevenLabsSwitch.setChecked(false);
+                        return;
+                    }
+                }
+                
+                // Enable/disable ElevenLabs
+                TTSServiceManager.setUseElevenLabs(this, isChecked);
+                
+                String message = isChecked ? 
+                    "Switched to ElevenLabs TTS - Ultra-realistic voices activated!" :
+                    "Switched back to OpenAI TTS";
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                
+                // Update TTS settings
+                updateTTSSettings();
+            });
+            
+            // Add a help text below the switch
+            TextView helpText = new TextView(this);
+            helpText.setText("ElevenLabs provides ultra-low latency (~75ms) and emotionally adaptive voices for each chess master");
+            helpText.setTextSize(12);
+            helpText.setPadding(16, 0, 16, 16);
+            
+            if (elevenLabsSwitch.getParent() instanceof LinearLayout) {
+                LinearLayout parent = (LinearLayout) elevenLabsSwitch.getParent();
+                int switchIndex = parent.indexOfChild(elevenLabsSwitch);
+                parent.addView(helpText, switchIndex + 1);
+            }
+        }
     }
 
     @Override
