@@ -493,23 +493,36 @@ public class MainActivity extends AppCompatActivity {
     private void initializeChessMasterDatabase() {
         Log.d("MainActivity", "🚀 Initializing chess master database...");
 
-        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
-
-        // Check if we already have data (avoid re-importing on every startup)
-        if (!dbHelper.hasMasterData("tal")) {
-            Log.d("MainActivity", "📥 First run - importing comprehensive chess data...");
-
-            // Show a progress indicator to the user
-            // You could add a progress dialog here if you want
-
-            new Thread(() -> {
-                try {
+        // Show a subtle loading indicator while we check the database
+        showDatabaseLoadingIndicator(true);
+        
+        // Run EVERYTHING on background thread, including the initial check
+        executorService.execute(() -> {
+            try {
+                GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+                
+                // Check if we already have data (this was blocking the UI!)
+                boolean hasData = dbHelper.hasMasterData("tal");
+                
+                if (!hasData) {
+                    Log.d("MainActivity", "📥 First run - importing comprehensive chess data...");
+                    
+                    // Update UI to show import progress
+                    runOnUiThread(() -> {
+                        updateStatusMessage("Loading chess master data...");
+                    });
                     // Import all your master data files
                     String[] masters = {"tal", "fischer", "kasparov"}; // Add more as you create them
 
                     for (String master : masters) {
                         String filename = master + "_positions.json";
                         Log.d("MainActivity", "📥 Importing " + filename + "...");
+                        
+                        // Update progress on UI thread
+                        final String currentMaster = master;
+                        runOnUiThread(() -> {
+                            updateStatusMessage("Loading " + currentMaster + " data...");
+                        });
 
                         boolean success = dbHelper.importMasterPositionsFromAssets(filename);
 
@@ -523,53 +536,42 @@ public class MainActivity extends AppCompatActivity {
                     // Log final database stats
                     Map<String, Integer> stats = dbHelper.getDatabaseStats();
                     Log.d("MainActivity", "🎉 Database ready! Stats: " + stats.toString());
-
-                    // Update UI on main thread
-                    runOnUiThread(() -> {
-                        // You could show a toast or update status here
-                        Log.d("MainActivity", "🎯 Chess master personalities loaded and ready!");
-                    });
-
-                } catch (Exception e) {
-                    Log.e("MainActivity", "❌ Error during database initialization", e);
+                    
+                } else {
+                    Log.d("MainActivity", "✅ Chess master database already initialized!");
+                    
+                    // Log current stats
+                    Map<String, Integer> stats = dbHelper.getDatabaseStats();
+                    Log.d("MainActivity", "📊 Current database stats: " + stats.toString());
                 }
-            }).start();
-
-        } else {
-            Log.d("MainActivity", "✅ Chess master database already initialized!");
-
-            // Log current stats
-            Map<String, Integer> stats = dbHelper.getDatabaseStats();
-            Log.d("MainActivity", "📊 Current database stats: " + stats.toString());
-        }
+                
+                // Update UI on main thread - database is ready!
+                runOnUiThread(() -> {
+                    showDatabaseLoadingIndicator(false);
+                    Log.d("MainActivity", "🎯 Chess master personalities loaded and ready!");
+                    // Enable personality engine button now that data is loaded
+                    if (speakButton != null) {
+                        speakButton.setEnabled(true);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e("MainActivity", "❌ Error during database initialization", e);
+                runOnUiThread(() -> {
+                    showDatabaseLoadingIndicator(false);
+                    Toast.makeText(MainActivity.this, 
+                        "Error loading chess data. Some features may be limited.", 
+                        Toast.LENGTH_LONG).show();
+                });
+            }
+        });
     }
 
     // Add this to MainActivity.onCreate() - one-time database setup
     private void initializePersonalityDatabase() {
-        GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
-
-        // Check if we need to import data
-        if (!dbHelper.hasMasterData("tal")) {
-            Log.d("MainActivity", "🚀 First run - importing chess master data...");
-
-            // Import all your master data files
-            String[] masters = {"tal", "fischer", "kasparov", "kramnik", "karpov"};
-
-            for (String master : masters) {
-                String filename = master + "_positions.json";
-                boolean success = dbHelper.importMasterPositionsFromAssets(filename);
-
-                if (success) {
-                    Log.d("MainActivity", "✅ Imported data for " + master);
-                } else {
-                    Log.w("MainActivity", "⚠️ Could not import " + filename);
-                }
-            }
-
-            // Log database stats
-            Map<String, Integer> stats = dbHelper.getDatabaseStats();
-            Log.d("MainActivity", "📊 Database ready! Stats: " + stats.toString());
-        }
+        // This method appears to be duplicate functionality - using the async version above
+        // Keeping it for compatibility but redirecting to the async version
+        initializeChessMasterDatabase();
     }
 
     /**
@@ -1025,7 +1027,7 @@ public class MainActivity extends AppCompatActivity {
 
         // For now, create a simple selection dialog
         // You can enhance this with a proper selection activity later
-        String[] masters = {"tal", "fischer", "kramnik", "kasparov", "karpov", "alekhine", "capablanca"};
+        String[] masters = {"tal", "fischer", "kramnik", "kasparov", "karpov", "alekhine", "capablanca", "carlsen", "anand", "morphy", "lasker", "botvinnik"};
         String[] displayNames = new String[masters.length];
 
         for (int i = 0; i < masters.length; i++) {
@@ -2205,5 +2207,37 @@ public class MainActivity extends AppCompatActivity {
     // Add this enum for tracking processing states
     private enum ProcessingState {
         IDLE, LISTENING, TRANSCRIBING, THINKING, SPEAKING
+    }
+    
+    /**
+     * Show a subtle loading indicator for database operations
+     */
+    private void showDatabaseLoadingIndicator(boolean show) {
+        // Use the existing status text view for now
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        if (statusTextView != null) {
+            if (show) {
+                statusTextView.setText("Loading chess masters...");
+                statusTextView.setVisibility(View.VISIBLE);
+            } else {
+                statusTextView.setText("Ready to play");
+            }
+        }
+        
+        // You could also add a progress bar if you have one in your layout
+        ProgressBar progressBar = findViewById(R.id.evaluationProgressBar);
+        if (progressBar != null) {
+            progressBar.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+    
+    /**
+     * Update status message during initialization
+     */
+    private void updateStatusMessage(String message) {
+        TextView statusTextView = findViewById(R.id.statusTextView);
+        if (statusTextView != null) {
+            statusTextView.setText(message);
+        }
     }
 }

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -97,6 +98,7 @@ public class GameRepository {
      */
     public void calculatePersonalityMove(MoveCallback callback) {
         if (!usePersonalityEngine || personalityEngine == null) {
+            Log.d(TAG, "🎭 Personality engine not available - falling back to regular engine");
             // Fall back to regular engine calculation
             calculateBestMove(callback);
             return;
@@ -110,10 +112,33 @@ public class GameRepository {
                 String currentFen = getCurrentFEN();
                 Log.d(TAG, "🎯 Getting personality move for position: " + currentFen.substring(0, Math.min(30, currentFen.length())));
 
+                // CRITICAL FIX: Add timeout mechanism to prevent hanging
+                final boolean[] callbackCalled = {false};
+                
+                // Set up timeout fallback (10 seconds)
+                mainHandler.postDelayed(() -> {
+                    synchronized (callbackCalled) {
+                        if (!callbackCalled[0]) {
+                            callbackCalled[0] = true;
+                            Log.w(TAG, "⚠️ Personality engine timed out - falling back to regular engine");
+                            calculateBestMove(callback);
+                        }
+                    }
+                }, 10000);
+
                 personalityEngine.selectPersonalityMove(currentFen, new PersonalityEngine.PersonalityMoveCallback() {
                     @Override
                     public void onPersonalityMoveSelected(PersonalityEngine.PersonalityMove selectedMove,
                                                           List<PersonalityEngine.PersonalityMove> allCandidates) {
+
+                        // CRITICAL FIX: Check if we already timed out
+                        synchronized (callbackCalled) {
+                            if (callbackCalled[0]) {
+                                Log.d(TAG, "🎭 Personality move result received but callback already called (timeout)");
+                                return;
+                            }
+                            callbackCalled[0] = true;
+                        }
 
                         Log.d(TAG, "🎭 PERSONALITY MOVE SELECTED: " + selectedMove);
 
@@ -148,6 +173,15 @@ public class GameRepository {
 
                     @Override
                     public void onError(String errorMessage) {
+                        // CRITICAL FIX: Check if we already timed out
+                        synchronized (callbackCalled) {
+                            if (callbackCalled[0]) {
+                                Log.d(TAG, "🎭 Personality error received but callback already called (timeout)");
+                                return;
+                            }
+                            callbackCalled[0] = true;
+                        }
+
                         Log.e(TAG, "❌ PersonalityEngine error: " + errorMessage);
                         mainHandler.post(() -> {
                             // Fall back to regular engine move
@@ -213,7 +247,11 @@ public class GameRepository {
      * Configure the personality engine settings
      */
     public void configurePersonalityEngine(String master, float personalityWeight, boolean enabled) {
+        Log.d(TAG, String.format("🎭 CONFIGURING personality engine: master=%s, weight=%.2f, enabled=%s", 
+                master, personalityWeight, enabled));
+        
         if (personalityEngine == null) {
+            Log.d(TAG, "🎭 Personality engine is null, attempting to initialize...");
             initializePersonalityEngine();
         }
 
@@ -224,10 +262,11 @@ public class GameRepository {
 
             this.usePersonalityEngine = enabled;
 
-            Log.d(TAG, String.format("🎭 Personality engine configured: master=%s, weight=%.2f, enabled=%s",
-                    master, personalityWeight, enabled));
+            Log.d(TAG, String.format("✅ Personality engine configured successfully: master=%s, weight=%.2f, enabled=%s, usePersonalityEngine=%s",
+                    master, personalityWeight, enabled, this.usePersonalityEngine));
         } else {
             Log.e(TAG, "❌ Cannot configure personality engine - initialization failed");
+            Log.e(TAG, "❌ This will cause personality moves to fall back to regular engine");
         }
     }
 
@@ -358,15 +397,25 @@ public class GameRepository {
      * ENHANCED: Thread safety with proper locking
      */
     public boolean isLegalMove(String move) {
-        engineLock.lock();
         try {
-            Log.d(TAG, "🔒 Acquired lock for move validation: " + move);
-            boolean result = stockfishManager.isLegalMove(move);
-            Log.d(TAG, "⚖️ Move " + move + " validation result: " + result);
-            return result;
-        } finally {
-            engineLock.unlock();
-            Log.d(TAG, "🔓 Released lock for move validation: " + move);
+            // Try to acquire lock with timeout to prevent deadlock
+            if (!engineLock.tryLock(2, TimeUnit.SECONDS)) {
+                Log.e(TAG, "❌ Failed to acquire lock for move validation within timeout: " + move);
+                return false;
+            }
+            try {
+                Log.d(TAG, "🔒 Acquired lock for move validation: " + move);
+                boolean result = stockfishManager.isLegalMove(move);
+                Log.d(TAG, "⚖️ Move " + move + " validation result: " + result);
+                return result;
+            } finally {
+                engineLock.unlock();
+                Log.d(TAG, "🔓 Released lock for move validation: " + move);
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "❌ Interrupted while waiting for lock: " + move, e);
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 
@@ -429,19 +478,29 @@ public class GameRepository {
      * ENHANCED: Thread-safe FEN retrieval
      */
     public String getCurrentFEN() {
-        engineLock.lock();
         try {
-            // Always get fresh FEN from engine to ensure accuracy
-            String freshFEN = stockfishManager.getCurrentFEN();
-            if (freshFEN != null && !freshFEN.isEmpty()) {
-                cachedFEN = freshFEN;
-                return cachedFEN;
-            } else {
-                Log.w(TAG, "Using cached FEN as engine returned empty");
+            // Try to acquire lock with timeout to prevent deadlock
+            if (!engineLock.tryLock(1, TimeUnit.SECONDS)) {
+                Log.w(TAG, "❌ Failed to acquire lock for getCurrentFEN - returning cached FEN");
                 return cachedFEN;
             }
-        } finally {
-            engineLock.unlock();
+            try {
+                // Always get fresh FEN from engine to ensure accuracy
+                String freshFEN = stockfishManager.getCurrentFEN();
+                if (freshFEN != null && !freshFEN.isEmpty()) {
+                    cachedFEN = freshFEN;
+                    return cachedFEN;
+                } else {
+                    Log.w(TAG, "Using cached FEN as engine returned empty");
+                    return cachedFEN;
+                }
+            } finally {
+                engineLock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "❌ Interrupted while waiting for lock in getCurrentFEN", e);
+            Thread.currentThread().interrupt();
+            return cachedFEN;
         }
     }
 
@@ -728,9 +787,14 @@ public class GameRepository {
      * ENHANCED: Robust move application with state verification
      */
     public boolean applyMoves(List<String> moves) {
-        engineLock.lock();
         try {
-            Log.d(TAG, "🔄 Applying " + (moves != null ? moves.size() : 0) + " moves");
+            // Try to acquire lock with timeout to prevent deadlock
+            if (!engineLock.tryLock(2, TimeUnit.SECONDS)) {
+                Log.e(TAG, "❌ Failed to acquire lock for applyMoves within timeout");
+                return false;
+            }
+            try {
+                Log.d(TAG, "🔄 THREAD " + Thread.currentThread().getId() + ": Applying " + (moves != null ? moves.size() : 0) + " moves");
 
             // Always reset if we have no moves
             if (moves == null || moves.isEmpty()) {
@@ -743,50 +807,43 @@ public class GameRepository {
 
             // For debugging - let's print the current position and number of moves
             Log.d(TAG, "Current cached FEN: " + cachedFEN);
+            Log.d(TAG, "Applying moves: " + moves);
 
-            // Start from a clean position for consistency
-            stockfishManager.setPosition("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-            // Apply all moves sequentially
-            for (int i = 0; i < moves.size(); i++) {
-                String move = moves.get(i);
-                Log.d(TAG, "Applying move " + (i+1) + " of " + moves.size() + ": " + move);
-
-                // Build the command with all moves up to this point
-                String command = "position startpos moves " +
-                        String.join(" ", moves.subList(0, i+1));
-
-                // Send the command (void return type)
-                stockfishManager.sendCommand(command);
-
-                // Wait for the engine to process and check success
-                boolean success = stockfishManager.waitForReady(100);
-
-                if (!success) {
-                    Log.e(TAG, "Failed to apply moves up to: " + move);
-                    return false;
-                }
+            // Use StockfishManager's optimized setPositionFromMoves method
+            String[] moveArray = moves.toArray(new String[0]);
+            boolean success = stockfishManager.setPositionFromMoves(moveArray);
+            
+            if (!success) {
+                Log.e(TAG, "Failed to apply moves: " + moves);
+                return false;
             }
 
             // Update the cached FEN AND verify it changed
             String previousFEN = cachedFEN;
             cachedFEN = stockfishManager.getCurrentFEN();
-            lastMoveCount = moves.size();
-
-            // Verify the position actually changed (unless it's the same move count)
+            
+            // Verify the position actually changed (unless we're applying the same moves)
             if (moves.size() > 0 && cachedFEN.equals(previousFEN) && lastMoveCount != moves.size()) {
                 Log.w(TAG, "⚠️ Position may not have updated correctly!");
                 Log.w(TAG, "Previous: " + previousFEN);
                 Log.w(TAG, "Current:  " + cachedFEN);
             }
+            
+            // Update move count after verification
+            lastMoveCount = moves.size();
 
             Log.d(TAG, "✅ Successfully applied " + moves.size() + " moves. Final position: " + cachedFEN);
             return true;
+            } finally {
+                engineLock.unlock();
+            }
+        } catch (InterruptedException e) {
+            Log.e(TAG, "❌ Interrupted while waiting for lock in applyMoves", e);
+            Thread.currentThread().interrupt();
+            return false;
         } catch (Exception e) {
             Log.e(TAG, "Error applying moves: " + e.getMessage(), e);
             return false;
-        } finally {
-            engineLock.unlock();
         }
     }
 

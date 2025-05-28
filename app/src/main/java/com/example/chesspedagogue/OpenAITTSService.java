@@ -571,7 +571,7 @@ public class OpenAITTSService {
 
                 String modelToUse = "gpt-4o-mini-tts";
 
-                // Create enhanced instructions with special Tal handling
+                // Create enhanced instructions with special handling for Tal and Carlsen
                 String enhancedInstructions = null;
                 if (isTal) {
                     // FORCE Tal instructions manually for debugging
@@ -581,6 +581,14 @@ public class OpenAITTSService {
                             "Let your excitement bubble through when discussing tactics and sacrifices. " +
                             "Sound like Mikhail Tal from Latvia with his characteristic warmth and creativity.";
                     Log.d(TAG, "🎭 FORCED TAL INSTRUCTIONS: " + enhancedInstructions);
+                } else if ("carlsen".equals(selectedMaster.toLowerCase())) {
+                    // FORCE Carlsen instructions manually to ensure Norwegian accent
+                    enhancedInstructions = "Speak with a clear Norwegian accent with modern confidence. " +
+                            "Use Nordic pronunciation patterns with contemporary clarity. " +
+                            "Sound naturally assured and pragmatically confident. " +
+                            "Maintain a modern, relaxed but supremely competent delivery. " +
+                            "Speak with the contemporary mastery of Magnus Carlsen.";
+                    Log.d(TAG, "🏆 FORCED CARLSEN INSTRUCTIONS: " + enhancedInstructions);
                 } else {
                     // Use the enhanced method for other masters
                     enhancedInstructions = createAccentSpecificInstructions(selectedMaster, text);
@@ -778,6 +786,8 @@ public class OpenAITTSService {
      */
     private String createAccentSpecificInstructions(String master, String text) {
         Log.d(TAG, "🎨 CREATING ACCENT INSTRUCTIONS FOR: " + master);
+        Log.d(TAG, "🔍 DEBUG: master.toLowerCase() = '" + master.toLowerCase() + "'");
+        Log.d(TAG, "🔍 DEBUG: master.length() = " + master.length());
 
         try {
             StringBuilder instructions = new StringBuilder();
@@ -827,7 +837,18 @@ public class OpenAITTSService {
                     instructions.append("Speak with the technical mastery of Vladimir Kramnik.");
                     break;
 
+                case "carlsen":
+                    Log.d(TAG, "   Processing CARLSEN accent instructions...");
+                    instructions.append("Speak with a clear Norwegian accent with modern confidence. ");
+                    instructions.append("Use Nordic pronunciation patterns with contemporary clarity. ");
+                    instructions.append("Sound naturally assured and pragmatically confident. ");
+                    instructions.append("Maintain a modern, relaxed but supremely competent delivery. ");
+                    instructions.append("Speak with the contemporary mastery of Magnus Carlsen.");
+                    Log.d(TAG, "   ✅ CARLSEN INSTRUCTIONS CREATED");
+                    break;
+
                 default:
+                    Log.d(TAG, "🚨 HITTING DEFAULT CASE FOR: '" + master.toLowerCase() + "'");
                     instructions.append("Speak with the natural confidence and wisdom of a chess grandmaster. ");
                     instructions.append("Use authoritative delivery that conveys deep chess knowledge.");
                     break;

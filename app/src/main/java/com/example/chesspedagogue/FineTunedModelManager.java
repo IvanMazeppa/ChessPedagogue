@@ -31,6 +31,7 @@ public class FineTunedModelManager {
     private static final String KEY_SELECTED_MASTER = "selected_master";
     private static final String KEY_TAL_ASSISTANT_ID = "tal_assistant_id";
     private static final String KEY_FISCHER_ASSISTANT_ID = "fischer_assistant_id";
+    private static final String KEY_CARLSEN_ASSISTANT_ID = "carlsen_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -40,6 +41,10 @@ public class FineTunedModelManager {
     private static final String FISCHER_ASSISTANT_ID = "asst_2j5uMiqmEKRUNqHCtXdsaoY3"; // Your Fischer assistant
     private static final String FISCHER_VECTOR_STORE_ID = "vs_6834a715ef788191bd9ef4caa5676436"; // Your Fischer vector store
 
+    // 🏆 MAGNUS CARLSEN CONFIGURATION - NEW!
+    private static final String CARLSEN_ASSISTANT_ID = "asst_TTzxbfvJQz3e80FetQblJ0Gl"; // Your Carlsen assistant
+    private static final String CARLSEN_VECTOR_STORE_ID = "vs_68365028eb988191b09d8d50e6f11b5d"; // Your Carlsen vector store
+
     // Model constants - updated for enhanced models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
     private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4"; // 🆕 UPDATED!
@@ -48,7 +53,7 @@ public class FineTunedModelManager {
     private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_CARLSEN = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_CARLSEN = "ftjob-GrBGWeWWaUsVtM7r1RuHyCdJ"; // 🆕 UPDATED Magnus Carlsen model!
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe";
@@ -275,20 +280,22 @@ public class FineTunedModelManager {
         // Carlsen - The Modern Universal: Adaptable, Tenacious, Practical
         personalityProfiles.put("carlsen", new EnhancedPersonalityProfile(
                 "Magnus Carlsen",
-                new String[]{"adaptable", "tenacious", "practical", "modern"},
-                "relaxed_confident", // Modern, pragmatic
+                new String[]{"adaptable", "tenacious", "practical", "modern", "endgame master", "intuitive"},
+                "relaxed_confident", // Modern, pragmatic with supreme confidence
                 "moderate_high",
-                "Find resources in any position and never give up",
-                "Norwegian accent, relaxed and modern",
-                0.7f, // High creativity
-                0.8f, // Very confident
-                true, // Balances intuition and technique
-                true, // More relaxed, uses light humor
+                "Every position contains hidden resources - squeeze every drop of advantage from the tiniest edge",
+                "Clear Norwegian accent, relaxed but supremely confident and slightly playful",
+                0.8f, // Very high creativity - famous for unconventional play
+                0.95f, // Extremely confident - highest-rated player ever
+                true, // Perfect balance of intuition and technique
+                true, // Known for relaxed demeanor and occasional humor
                 new String[]{
-                        "Every position has resources to explore",
-                        "Practical play often trumps theory",
-                        "Keep playing until the position is dead drawn",
-                        "Adapt your style to what the position demands"
+                        "Find resources in even the driest positions - there's always something",
+                        "Practical chess beats theoretical perfection every time",
+                        "Never give up - keep pressing until your opponent cracks",
+                        "Master the endgame and you master chess itself",
+                        "Adapt your style to squeeze maximum discomfort from any position",
+                        "The best move is the one that gives your opponent the most problems"
                 }
         ));
 
@@ -461,7 +468,7 @@ public class FineTunedModelManager {
                 break;
 
             case "fischer":
-                instructions.append("Speak with a strong, confident American accent from New York. ");
+                instructions.append("Speak with a strong New York accent. ");
                 instructions.append("Use sharp, precise pronunciation with unwavering conviction. ");
                 instructions.append("Emphasize every word with absolute certainty and authority. ");
                 instructions.append("Sound intensely demanding and uncompromising about chess excellence. ");
@@ -1095,11 +1102,15 @@ public class FineTunedModelManager {
                 break;
 
             case "carlsen":
-                // Carlsen's modern, adaptable approach
+                // Carlsen's modern, adaptable approach and fighting spirit
                 if (response.contains("practical") || response.contains("resource")) {
-                    enriched.append(" There are always resources to explore in any position.");
+                    enriched.append(" There are always resources to explore - even the driest position has hidden potential.");
+                } else if (response.contains("endgame") || response.contains("technique")) {
+                    enriched.append(" Modern endgame mastery means squeezing every drop of advantage from minimal positions.");
+                } else if (response.contains("equal") || response.contains("draw")) {
+                    enriched.append(" Equal doesn't mean drawn - keep pressing and your opponent will crack eventually.");
                 } else if (response.contains("adapt") || response.contains("flexible")) {
-                    enriched.append(" Adaptability is key in modern chess.");
+                    enriched.append(" The strongest player is the one who adapts best to what the position demands.");
                 }
                 break;
 
@@ -1177,7 +1188,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Get assistant ID for any master (supports multiple assistants) - 🆕 UPDATED WITH FISCHER!
+     * ENHANCED: Get assistant ID for any master (supports multiple assistants) - 🆕 UPDATED WITH CARLSEN!
      */
     public String getAssistantIdForMaster(String master) {
         switch (master.toLowerCase()) {
@@ -1185,6 +1196,8 @@ public class FineTunedModelManager {
                 return getTalAssistantId();
             case "fischer": // 🆕 NEW FISCHER SUPPORT!
                 return getFischerAssistantId();
+            case "carlsen": // 🏆 NEW CARLSEN SUPPORT!
+                return getCarlsenAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1220,12 +1233,27 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Check if master should use Assistants API (now includes Fischer!) - 🆕 UPDATED!
+     * 🏆 NEW: Get Carlsen Assistant ID with vector store support!
+     */
+    public String getCarlsenAssistantId() {
+        // Use your pre-configured Carlsen assistant
+        Log.d(TAG, "🏆 Using configured Carlsen assistant: " + CARLSEN_ASSISTANT_ID);
+        assistantIds.put("carlsen", CARLSEN_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_CARLSEN_ASSISTANT_ID, CARLSEN_ASSISTANT_ID).apply();
+
+        return CARLSEN_ASSISTANT_ID;
+    }
+
+    /**
+     * ENHANCED: Check if master should use Assistants API (now includes Carlsen!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
         switch (master.toLowerCase()) {
             case "tal":
             case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
+            case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
             case "botvinnik":
                 return true;
             default:
@@ -1235,7 +1263,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH FISCHER!
+     * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH CARLSEN!
      */
     public String getAssistantIdForDeepAnalysis(String master) {
         switch (master.toLowerCase()) {
@@ -1243,6 +1271,8 @@ public class FineTunedModelManager {
                 return getTalAssistantId();
             case "fischer": // 🆕 FISCHER GETS HIS OWN ASSISTANT!
                 return getFischerAssistantId();
+            case "carlsen": // 🏆 CARLSEN GETS HIS OWN ASSISTANT!
+                return getCarlsenAssistantId();
             default:
                 // Default to Tal assistant for other masters
                 String assistantId = getTalAssistantId();
@@ -1279,6 +1309,12 @@ public class FineTunedModelManager {
             message.append("example from my career that demonstrates the objectively correct approach to this position. ");
             message.append("Find the game where I showed the highest level of precision and preparation for similar positions. ");
             message.append("I demand only the most accurate and well-prepared examples from my games.\n\n");
+        } else if ("carlsen".equals(master.toLowerCase())) {
+            // Carlsen-specific search strategy for practical play and resourcefulness
+            message.append("CARLSEN DATABASE SEARCH: Search my chess games database for the ONE MOST INSTRUCTIVE ");
+            message.append("example where I squeezed maximum advantage from a similar position. Find a game where I ");
+            message.append("demonstrated my ability to find resources and create problems for my opponent, especially ");
+            message.append("in simplified or endgame positions. I want practical examples that show real chess fighting spirit.\n\n");
         } else {
             // General search strategy for other masters
             message.append("FOCUSED DATABASE SEARCH: Search your chess games database to find your ONE BEST ");
@@ -1299,6 +1335,8 @@ public class FineTunedModelManager {
         // 🆕 Master-specific personality note
         if ("fischer".equals(master.toLowerCase())) {
             message.append("  \"personality_note\": \"A characteristic Fischer comment demanding perfection and precision\"\n");
+        } else if ("carlsen".equals(master.toLowerCase())) {
+            message.append("  \"personality_note\": \"A characteristic Carlsen comment showing practical wisdom and fighting spirit\"\n");
         } else {
             message.append("  \"personality_note\": \"A characteristic comment in your unique voice\"\n");
         }
@@ -1316,6 +1354,14 @@ public class FineTunedModelManager {
             message.append("- Positions where I demonstrated absolute accuracy\n");
             message.append("- Examples of my uncompromising pursuit of the truth\n");
             message.append("- Moments that showcase my demand for perfection\n\n");
+        } else if ("carlsen".equals(master.toLowerCase())) {
+            message.append("CARLSEN SEARCH STRATEGY: Find the ONE game from my archive that best demonstrates ");
+            message.append("my ability to squeeze water from stone in this type of position. Look for:\n");
+            message.append("- Games where I found resources in seemingly equal positions\n");
+            message.append("- Endgames where I converted minimal advantages\n");
+            message.append("- Examples of practical play beating theoretical perfection\n");
+            message.append("- Moments that showcase my never-give-up fighting spirit\n");
+            message.append("- Positions where I adapted my style to maximize opponent discomfort\n\n");
         } else {
             // FOCUSED: Single, targeted search requirement for other masters
             message.append("SEARCH STRATEGY: Find the ONE game or position from your archive that best matches ");
@@ -1333,6 +1379,10 @@ public class FineTunedModelManager {
             message.append("Remember: Share your MOST PRECISE and WELL-PREPARED example from your career. ");
             message.append("Show the level of accuracy and perfection that made you World Champion. ");
             message.append("Speak as Bobby Fischer recalling a moment where you demonstrated absolute chess truth.");
+        } else if ("carlsen".equals(master.toLowerCase())) {
+            message.append("Remember: Share your MOST INSTRUCTIVE example of practical chess mastery. ");
+            message.append("Show how you find resources and create winning chances from any position. ");
+            message.append("Speak as Magnus Carlsen recalling a game where you demonstrated why you're the highest-rated player ever.");
         } else {
             message.append("Remember: Share your BEST personal memory related to this position - the game ");
             message.append("that first comes to mind when you see this setup. Speak as ").append(profile != null ? profile.displayName : master);
@@ -1867,6 +1917,13 @@ public class FineTunedModelManager {
             return "I'm having technical difficulties accessing my complete chess analysis, which is unacceptable. " +
                     "But let me give you the most accurate assessment I can from memory - " +
                     "this position demands precise calculation and nothing less than the objectively best moves.";
+        }
+        
+        // 🏆 Special Carlsen fallback message for practical approach
+        if ("carlsen".equals(master.toLowerCase())) {
+            return "I'm having some issues accessing my game database right now, but that's okay - " +
+                    "let me share what I see in this position from my experience. There are always practical resources " +
+                    "to find, and I'll show you how to squeeze the maximum from what we have here.";
         }
 
         return String.format(

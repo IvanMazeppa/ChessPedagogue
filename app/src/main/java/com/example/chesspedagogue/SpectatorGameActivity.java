@@ -11,11 +11,13 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import android.widget.EditText;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.lifecycle.ViewModelProvider;
-
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
 import java.util.List;
 
 /**
@@ -37,6 +39,7 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private Button pauseResumeButton;
     private Button speedControlButton;
     private TextView currentSpeakerTextView;
+    private Button userCommentButton;
 
     // Game state
     private SpectatorGameViewModel viewModel;
@@ -45,6 +48,10 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private boolean isPaused = false;
     private int gameSpeed = 3000;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
+    
+    // Animation tracking for delayed board updates
+    private boolean isAnimationInProgress = false;
+    private String pendingFenUpdate = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -170,8 +177,17 @@ public class SpectatorGameActivity extends AppCompatActivity {
             // Observe game state changes
             viewModel.getCurrentFEN().observe(this, fen -> {
                 if (fen != null && chessBoardView != null) {
-                    chessBoardView.updateBoardFromFen(fen);
-                    Log.d(TAG, "📋 Board updated");
+                    // Store the FEN for delayed update if animation is in progress
+                    pendingFenUpdate = fen;
+                    
+                    // If no animation is in progress, update immediately
+                    if (!isAnimationInProgress) {
+                        chessBoardView.updateBoardFromFen(fen);
+                        pendingFenUpdate = null;
+                        Log.d(TAG, "📋 Board updated immediately");
+                    } else {
+                        Log.d(TAG, "📋 Board update deferred - animation in progress");
+                    }
                 }
             });
 
@@ -214,8 +230,32 @@ public class SpectatorGameActivity extends AppCompatActivity {
             viewModel.getLastMove().observe(this, moveData -> {
                 if (moveData != null && moveData.length >= 4 && chessBoardView != null) {
                     Log.d(TAG, "🎯 Animating move: " + moveData[0] + "," + moveData[1] + " -> " + moveData[2] + "," + moveData[3]);
+                    
+                    // CRITICAL FIX: Clear any previous animation state first
+                    isAnimationInProgress = false;
+                    if (pendingFenUpdate != null && chessBoardView != null) {
+                        chessBoardView.updateBoardFromFen(pendingFenUpdate);
+                        pendingFenUpdate = null;
+                    }
+                    
+                    // Set animation in progress
+                    isAnimationInProgress = true;
+                    
+                    // Start the animation
                     chessBoardView.animateMove(moveData[0], moveData[1], moveData[2], moveData[3]);
                     chessBoardView.setLastMove(moveData[0], moveData[1], moveData[2], moveData[3]);
+                    
+                    // Schedule board update after animation completes (shorter duration)
+                    mainHandler.postDelayed(() -> {
+                        isAnimationInProgress = false;
+                        
+                        // Apply any pending FEN update
+                        if (pendingFenUpdate != null && chessBoardView != null) {
+                            chessBoardView.updateBoardFromFen(pendingFenUpdate);
+                            pendingFenUpdate = null;
+                            Log.d(TAG, "📋 Board updated after animation");
+                        }
+                    }, 300); // Reduced from 500ms to 300ms for faster updates
                 }
             });
 
@@ -260,6 +300,15 @@ public class SpectatorGameActivity extends AppCompatActivity {
             if (speedControlButton != null) {
                 speedControlButton.setOnClickListener(v -> cycleGameSpeed());
                 updateSpeedButtonText();
+            }
+
+            // NEW: User comment button setup
+            userCommentButton = findViewById(R.id.userCommentButton);
+            if (userCommentButton != null) {
+                userCommentButton.setOnClickListener(v -> showUserCommentDialog());
+                Log.d(TAG, "✅ User comment button initialized");
+            } else {
+                Log.w(TAG, "⚠️ User comment button not found in layout");
             }
 
             Log.d(TAG, "✅ Controls set up successfully");
@@ -332,6 +381,175 @@ public class SpectatorGameActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "❌ Error starting spectator game", e);
             showErrorAndFinish("Failed to start spectator game: " + e.getMessage());
+        }
+    }
+
+
+
+
+    /**
+     * 🎤 Show user comment dialog
+     */
+    private void showUserCommentDialog() {
+        try {
+            Log.d(TAG, "🎤 Showing user comment dialog");
+
+            // Create dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("💬 Chat with the Chess Masters");
+            builder.setMessage("What would you like to say about the game?");
+
+            // Create input field
+            final EditText input = new EditText(this);
+            input.setHint("Type your comment here...");
+            input.setMinLines(2);
+            input.setMaxLines(4);
+            input.setPadding(32, 16, 32, 16);
+            builder.setView(input);
+
+            // Add buttons
+            builder.setPositiveButton("💬 Send", (dialog, which) -> {
+                String comment = input.getText().toString().trim();
+                if (!comment.isEmpty()) {
+                    submitUserComment(comment);
+                } else {
+                    Toast.makeText(this, "Please enter a comment first!", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            builder.setNegativeButton("❌ Cancel", (dialog, which) -> dialog.cancel());
+
+            // Show dialog
+            AlertDialog dialog = builder.create();
+            dialog.show();
+
+            // Focus on input and show keyboard
+            input.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) {
+                imm.showSoftInput(input, InputMethodManager.SHOW_IMPLICIT);
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing comment dialog", e);
+            Toast.makeText(this, "Error opening comment dialog", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 🎤 Submit user comment to AI masters
+     */
+    private void submitUserComment(String comment) {
+        try {
+            Log.d(TAG, "🎤 User submitted comment: " + comment);
+
+            // Show feedback to user
+            Toast.makeText(this, "💬 Sent to chess masters: \"" + comment + "\"", Toast.LENGTH_LONG).show();
+
+            // Determine current game phase for context
+            String gamePhase = determineGamePhase();
+
+            // Send comment to dialogue manager for AI response
+            if (viewModel != null) {
+                AIDialogueManager dialogueManager = new AIDialogueManager(this);
+
+                dialogueManager.handleUserComment(
+                        comment,
+                        whitePlayer,
+                        blackPlayer,
+                        gamePhase,
+                        new AIDialogueManager.DialogueCallback() {
+                            @Override
+                            public void onDialogueGenerated(String speaker, String dialogue) {
+                                runOnUiThread(() -> {
+                                    Log.d(TAG, "🎭 Master " + speaker + " responded to user comment");
+                                    displayAIDialogue(dialogue);
+
+                                    // Show special indicator that this is a response to user
+                                    String userResponseIndicator = "👤➡️🎭 " +
+                                            FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(speaker) +
+                                            " responds: \"" + dialogue + "\"";
+                                    displayAIDialogue(userResponseIndicator);
+                                });
+                            }
+
+                            @Override
+                            public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+                                runOnUiThread(() -> {
+                                    Log.d(TAG, "🎉 User comment triggered conversation!");
+                                    String conversationIndicator = "💭 " +
+                                            FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(respondingSpeaker) +
+                                            " is thinking about your comment...";
+                                    displayAIDialogue(conversationIndicator);
+                                });
+                            }
+
+                            @Override
+                            public void onConversationComplete(String finalSpeaker, String finalStatement) {
+                                Log.d(TAG, "✅ User-triggered conversation completed");
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                runOnUiThread(() -> {
+                                    Log.e(TAG, "❌ Error processing user comment: " + error);
+                                    Toast.makeText(SpectatorGameActivity.this,
+                                            "Masters are too focused on the game right now",
+                                            Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                        }
+                );
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error submitting user comment", e);
+            Toast.makeText(this, "Error sending comment to masters", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 🎯 Determine current game phase for context
+     */
+    private String determineGamePhase() {
+        try {
+            if (viewModel != null && viewModel.getMoveHistory().getValue() != null) {
+                int moveCount = viewModel.getMoveHistory().getValue().size();
+
+                if (moveCount < 12) {
+                    return "opening";
+                } else if (moveCount < 40) {
+                    return "middlegame";
+                } else if (moveCount < 60) {
+                    return "endgame";
+                } else {
+                    return "endgame_critical";
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error determining game phase", e);
+        }
+
+        return "middlegame"; // Default
+    }
+
+    /**
+     * 🎤 Enhanced dialogue display for user interactions
+     */
+    private void displayUserInteractionDialogue(String dialogue, boolean isUserResponse) {
+        if (dialogueTextView != null && dialogueCard != null) {
+            String prefix = isUserResponse ? "👤➡️🎭 " : "💬 ";
+            dialogueTextView.setText(prefix + dialogue);
+            dialogueCard.setVisibility(View.VISIBLE);
+
+            // Special styling for user interaction responses
+            if (isUserResponse && dialogueCard != null) {
+                dialogueCard.setCardBackgroundColor(getColor(R.color.user_interaction_bg)); // Add this color
+            } else {
+                dialogueCard.setCardBackgroundColor(getColor(R.color.default_dialogue_bg)); // Add this color
+            }
+
+            Log.d(TAG, "💬 User interaction dialogue displayed");
         }
     }
 

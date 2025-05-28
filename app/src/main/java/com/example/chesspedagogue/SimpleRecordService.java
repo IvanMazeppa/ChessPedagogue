@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -73,11 +74,11 @@ public class SimpleRecordService extends Service {
     private OpenAIService openAIService;
     private String apiKey;
 
-    // UI references
+    // UI references - Using WeakReferences to prevent memory leaks
     private TextView responseTextView;
     private View loadingIndicator;
     private TextView coachThinkingText;
-    private ServiceCallback callback;
+    private WeakReference<ServiceCallback> callbackRef;
 
     // Auto-stop recording after a period of silence
     private ScheduledExecutorService silenceDetector;
@@ -227,8 +228,36 @@ public class SimpleRecordService extends Service {
 
     @Override
     public void onDestroy() {
+        // Clean up recording
         stopRecording();
-        executorService.shutdown();
+        
+        // Clean up handlers to prevent leaks
+        if (mainHandler != null) {
+            mainHandler.removeCallbacksAndMessages(null);
+        }
+        
+        // Clear callback reference
+        if (callbackRef != null) {
+            callbackRef.clear();
+            callbackRef = null;
+        }
+        
+        // Shutdown executor service properly
+        if (executorService != null && !executorService.isShutdown()) {
+            executorService.shutdownNow();
+            try {
+                if (!executorService.awaitTermination(2, TimeUnit.SECONDS)) {
+                    Log.w(TAG, "ExecutorService did not terminate in time");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        // Clean up silence detector
+        if (silenceDetector != null && !silenceDetector.isShutdown()) {
+            silenceDetector.shutdownNow();
+        }
 
         // CRITICAL: Shutdown the Groq client's connection pool
         try {
@@ -237,9 +266,34 @@ public class SimpleRecordService extends Service {
         } catch (Exception e) {
             Log.e(TAG, "Error shutting down Groq client", e);
         }
+        
+        // Clean up temp files
+        cleanupTempFiles();
 
-        Log.d(TAG, "SimpleRecordService destroyed");
+        Log.d(TAG, "SimpleRecordService destroyed - all resources cleaned up");
         super.onDestroy();
+    }
+    
+    /**
+     * Clean up temporary recording files
+     */
+    private void cleanupTempFiles() {
+        try {
+            File cacheDir = getCacheDir();
+            if (cacheDir != null && cacheDir.exists()) {
+                File[] tempFiles = cacheDir.listFiles((dir, name) -> 
+                    name.startsWith("recording_") && (name.endsWith(".pcm") || name.endsWith(".wav")));
+                if (tempFiles != null) {
+                    for (File file : tempFiles) {
+                        if (!file.delete()) {
+                            Log.w(TAG, "Failed to delete temp file: " + file.getName());
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error cleaning up temp files", e);
+        }
     }
 
     /**
@@ -276,6 +330,7 @@ public class SimpleRecordService extends Service {
             startSilenceDetector();
 
             // Notify callback
+            ServiceCallback callback = getCallback();
             if (callback != null) {
                 callback.onRecordingStarted();
             }
@@ -294,9 +349,10 @@ public class SimpleRecordService extends Service {
      */
     private void recordingLoop() {
         FileOutputStream outputStream = null;
+        byte[] buffer = null;
         try {
             outputStream = new FileOutputStream(outputFile);
-            byte[] buffer = new byte[bufferSize];
+            buffer = new byte[bufferSize];
 
             while (isRecording) {
                 int read = recorder.read(buffer, 0, bufferSize);
@@ -355,6 +411,7 @@ public class SimpleRecordService extends Service {
         }
 
         // Notify callback
+        ServiceCallback callback = getCallback();
         if (callback != null) {
             callback.onRecordingStopped();
         }
@@ -373,6 +430,7 @@ public class SimpleRecordService extends Service {
     private void processRecordingWithThreeStages() {
         Log.d(TAG, "⚡ Starting 3-stage processing pipeline");
 
+        ServiceCallback callback = getCallback();
         if (callback != null) {
             callback.onProcessingStateChanged(true);
         }
@@ -381,9 +439,10 @@ public class SimpleRecordService extends Service {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "Recording permission not granted!");
-            if (callback != null) {
-                callback.onProcessingStateChanged(false);
-                callback.onResponseReceived("I need permission to hear your voice. Please grant microphone access in settings.");
+            ServiceCallback cb = getCallback();
+            if (cb != null) {
+                cb.onProcessingStateChanged(false);
+                cb.onResponseReceived("I need permission to hear your voice. Please grant microphone access in settings.");
             }
             return;
         }
@@ -487,8 +546,9 @@ public class SimpleRecordService extends Service {
                             }
 
                             // Notify callback
-                            if (callback != null) {
-                                callback.onResponseReceived(response);
+                            ServiceCallback cb = getCallback();
+                            if (cb != null) {
+                                cb.onResponseReceived(response);
                             }
                         }
 
@@ -524,6 +584,7 @@ public class SimpleRecordService extends Service {
                             updateStageIndicator("");
 
                             // Final callback
+                            ServiceCallback callback = getCallback();
                             if (callback != null) {
                                 callback.onResponseCompleted(finalResponse);
                             }
@@ -549,6 +610,7 @@ public class SimpleRecordService extends Service {
     private void updateStageIndicator(String stageText) {
         // You can implement this to show which stage is currently active
         // For now, we'll use the existing status text
+        ServiceCallback callback = getCallback();
         if (callback != null) {
             mainHandler.post(() -> {
                 // This could be enhanced to show stage-specific UI
@@ -851,6 +913,7 @@ public class SimpleRecordService extends Service {
      * Updates UI elements when processing starts/stops
      */
     private void updateUIForProcessing(boolean isProcessing) {
+        ServiceCallback callback = getCallback();
         if (callback != null) {
             callback.onProcessingStateChanged(isProcessing);
         }
@@ -872,6 +935,7 @@ public class SimpleRecordService extends Service {
      * Updates any visual representation of Coach Tal's response
      */
     private void updateResponseUI(String response) {
+        ServiceCallback callback = getCallback();
         if (callback != null) {
             callback.onResponseReceived(response);
         }
@@ -921,11 +985,34 @@ public class SimpleRecordService extends Service {
     /**
      * Clean up resources
      */
+    /**
+     * Clean up recording resources
+     */
     private void cleanup() {
-        if (outputFile != null && outputFile.exists()) {
-            outputFile.delete();
+        // Clean up output file
+        if (outputFile != null) {
+            if (outputFile.exists() && !outputFile.delete()) {
+                Log.w(TAG, "Failed to delete output file: " + outputFile.getName());
+            }
             outputFile = null;
         }
+        
+        // Clean up recorder
+        if (recorder != null) {
+            try {
+                if (recorder.getState() == AudioRecord.STATE_INITIALIZED) {
+                    recorder.stop();
+                }
+                recorder.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing recorder in cleanup", e);
+            } finally {
+                recorder = null;
+            }
+        }
+        
+        // Reset recording state
+        isRecording = false;
     }
 
     /**
@@ -968,7 +1055,14 @@ public class SimpleRecordService extends Service {
      * Set the callback for service events
      */
     public void setCallback(ServiceCallback callback) {
-        this.callback = callback;
+        this.callbackRef = new WeakReference<>(callback);
+    }
+    
+    /**
+     * Safely get callback from weak reference
+     */
+    private ServiceCallback getCallback() {
+        return callbackRef != null ? callbackRef.get() : null;
     }
 
     /**

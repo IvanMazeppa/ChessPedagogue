@@ -8,6 +8,8 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -17,8 +19,10 @@ import android.view.View;
 import androidx.core.content.ContextCompat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Custom View that draws the chessboard and animates moves.
@@ -57,6 +61,13 @@ public class ChessBoardView extends View {
     private int legalAlpha = 0;
     private Paint highlightPaint = new Paint();
     private OnSquareTapListener squareTapListener;
+    
+    /* ───── Performance optimization: Pre-allocated objects ───── */
+    private final RectF reusableRectF = new RectF();  // For drawing squares
+    private final Rect reusableBounds = new Rect();   // For drawable bounds
+    private final int[] reusableCoords = new int[2];  // For coordinate conversions
+    private final PorterDuffXfermode srcOverXfermode = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
+    private final Map<Character, Drawable> pieceDrawableCache = new HashMap<>();  // Cache drawables
 
     /* ───── ctor ───── */
     public ChessBoardView(Context c) {
@@ -101,6 +112,11 @@ public class ChessBoardView extends View {
         highlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         highlightPaint.setStyle(Paint.Style.FILL);
         highlightPaint.setAlpha(80);
+        
+        // Enable hardware acceleration for smoother animations
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
+            setLayerType(LAYER_TYPE_HARDWARE, null);
+        }
     }
 
     /* ─────────   DRAW   ───────── */
@@ -110,29 +126,38 @@ public class ChessBoardView extends View {
         squareSize = getWidth() / 8;
         int pad = squareSize / 16;
 
-        /* 1) squares */
-        for (int r = 0; r < 8; r++)
+        /* 1) squares - Using pre-allocated RectF */
+        for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 int br = flipped ? 7 - r : r, bc = flipped ? 7 - c : c;
                 Paint p = ((br + bc) & 1) == 0 ? lightPaint : darkPaint;
-                float l = c * squareSize - 0.5f, t = r * squareSize - 0.5f;
-                canvas.drawRect(l, t, l + squareSize + 1, t + squareSize + 1, p);
+                
+                // Reuse RectF instead of creating new bounds
+                reusableRectF.set(
+                    c * squareSize - 0.5f, 
+                    r * squareSize - 0.5f,
+                    c * squareSize + squareSize + 0.5f, 
+                    r * squareSize + squareSize + 0.5f
+                );
+                canvas.drawRect(reusableRectF, p);
             }
+        }
 
-        /* 1a) last move highlights */
+        /* 1a) last move highlights - Using pre-allocated RectF */
         if (lastMoveFrom[0] != -1) {
             // Draw source square highlight
             int fr = flipped ? 7 - lastMoveFrom[0] : lastMoveFrom[0];
             int fc = flipped ? 7 - lastMoveFrom[1] : lastMoveFrom[1];
-            float l = fc * squareSize, t = fr * squareSize;
-            canvas.drawRect(l, t, l + squareSize, t + squareSize, lastMovePaint);
+            reusableRectF.set(fc * squareSize, fr * squareSize, 
+                             (fc + 1) * squareSize, (fr + 1) * squareSize);
+            canvas.drawRect(reusableRectF, lastMovePaint);
 
             // Draw destination square highlight
             int tr = flipped ? 7 - lastMoveTo[0] : lastMoveTo[0];
             int tc = flipped ? 7 - lastMoveTo[1] : lastMoveTo[1];
-            l = tc * squareSize;
-            t = tr * squareSize;
-            canvas.drawRect(l, t, l + squareSize, t + squareSize, lastMovePaint);
+            reusableRectF.set(tc * squareSize, tr * squareSize,
+                             (tc + 1) * squareSize, (tr + 1) * squareSize);
+            canvas.drawRect(reusableRectF, lastMovePaint);
         }
 
         /* 2) legal‑move dots */
@@ -158,18 +183,24 @@ public class ChessBoardView extends View {
                 char pc = boardState[r][c];
                 if (pc == ' ') continue;
                 int vr = flipped ? 7 - r : r, vc = flipped ? 7 - c : c;
-                Drawable d = ContextCompat.getDrawable(getContext(), getDrawableForPiece(pc));
+                
+                // Use cached drawable to avoid repeated resource loading
+                Drawable d = getCachedPieceDrawable(pc);
                 if (d == null) continue;
-                d.setBounds(vc * squareSize + pad, vr * squareSize + pad,
+                
+                // Reuse bounds object
+                reusableBounds.set(vc * squareSize + pad, vr * squareSize + pad,
                         vc * squareSize + squareSize - pad, vr * squareSize + squareSize - pad);
+                d.setBounds(reusableBounds);
                 d.draw(canvas);
             }
 
-        /* 4) glow */
+        /* 4) glow - Using pre-allocated RectF */
         if (selectedRow != -1) {
-            int l = selectedCol * squareSize, t = selectedRow * squareSize;
-            canvas.drawRoundRect(l, t, l + squareSize, t + squareSize,
-                    squareSize * 0.1f, squareSize * 0.1f, selectedPaint);
+            reusableRectF.set(selectedCol * squareSize, selectedRow * squareSize,
+                             selectedCol * squareSize + squareSize, selectedRow * squareSize + squareSize);
+            float cornerRadius = squareSize * 0.1f;
+            canvas.drawRoundRect(reusableRectF, cornerRadius, cornerRadius, selectedPaint);
         }
 
         /* 5) moving sprite */
@@ -296,10 +327,17 @@ public class ChessBoardView extends View {
         int vtr = flipped ? 7 - toR : toR;
         int vtc = flipped ? 7 - toC : toC;
 
+        // FIXED: Try to get piece from destination first (for post-move animation)
+        // If not there, try source (for pre-move animation)
         char pc = boardState[toR][toC];
+        if (pc == ' ') {
+            // Piece not at destination, check if it's still at source
+            pc = boardState[fromR][fromC];
+        }
+        
         int res = getDrawableForPiece(pc);
         if (res == 0) {
-            Log.d("ChessBoardView", "No drawable found for piece " + pc);
+            Log.d("ChessBoardView", "No drawable found for piece '" + pc + "' at either source or destination");
             return;
         }
 
@@ -321,7 +359,7 @@ public class ChessBoardView extends View {
         postInvalidateOnAnimation();
     }
 
-    // Method to draw all highlights - ADD THIS ENTIRE METHOD
+    // Method to draw all highlights - Optimized version
     private void drawHighlights(Canvas canvas) {
         // Remove expired highlights first
         Iterator<SquareHighlight> iterator = activeHighlights.iterator();
@@ -334,45 +372,45 @@ public class ChessBoardView extends View {
 
         // Save canvas state before drawing highlights
         int savedCount = canvas.save();
+        
+        // Set xfermode once for all highlights
+        highlightPaint.setXfermode(srcOverXfermode);
 
         // Draw each active highlight
         for (SquareHighlight highlight : activeHighlights) {
-            // Convert algebraic notation to board coordinates
-            int[] coords = algebraicToCoordinates(highlight.getSquare());
-            int row = coords[0];
-            int col = coords[1];
+            // Convert algebraic notation to board coordinates using pre-allocated array
+            algebraicToCoordinates(highlight.getSquare(), reusableCoords);
+            int row = reusableCoords[0];
+            int col = reusableCoords[1];
 
-            // Calculate square size and position
-            float squareSize = getWidth() / 8.0f;
+            // Calculate square position using already-computed squareSize
             float left = col * squareSize;
             float top = row * squareSize;
 
             // Create a more transparent color (only 40% opacity)
             int originalColor = highlight.getColor();
-            int alpha = 102; // 40% of 255
-            int transparentColor = Color.argb(
-                    alpha,
-                    Color.red(originalColor),
-                    Color.green(originalColor),
-                    Color.blue(originalColor)
-            );
+            int transparentColor = (originalColor & 0x00FFFFFF) | 0x66000000; // 40% alpha
 
-            // Set the color for this highlight with proper transparency
+            // Set the color for this highlight
             highlightPaint.setColor(transparentColor);
 
-            // Draw the highlight using SRC_OVER blend mode (preserves what's underneath)
-            highlightPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER));
-
-            // Draw the highlight
-            canvas.drawRect(left, top, left + squareSize, top + squareSize, highlightPaint);
+            // Draw the highlight using pre-allocated RectF
+            reusableRectF.set(left, top, left + squareSize, top + squareSize);
+            canvas.drawRect(reusableRectF, highlightPaint);
         }
 
         // Restore canvas state
         canvas.restoreToCount(savedCount);
     }
 
-    // Helper method to convert algebraic notation to board coordinates - ADD THIS
+    // Helper method to convert algebraic notation to board coordinates - Optimized
     private int[] algebraicToCoordinates(String algebraic) {
+        algebraicToCoordinates(algebraic, reusableCoords);
+        return reusableCoords;
+    }
+    
+    // Overloaded version that fills provided array (avoids allocation)
+    private void algebraicToCoordinates(String algebraic, int[] result) {
         char file = algebraic.charAt(0);
         int rank = Character.getNumericValue(algebraic.charAt(1));
 
@@ -385,7 +423,8 @@ public class ChessBoardView extends View {
             col = 7 - col;
         }
 
-        return new int[]{row, col};
+        result[0] = row;
+        result[1] = col;
     }
 
     // Public method to add a highlight - ADD THIS
@@ -549,6 +588,25 @@ public class ChessBoardView extends View {
         invalidate(); // Request redraw
     }
 
+    /**
+     * Get cached drawable for a piece - avoids repeated resource loading
+     */
+    private Drawable getCachedPieceDrawable(char piece) {
+        Drawable cached = pieceDrawableCache.get(piece);
+        if (cached == null) {
+            int resourceId = getDrawableForPiece(piece);
+            if (resourceId != 0) {
+                cached = ContextCompat.getDrawable(getContext(), resourceId);
+                if (cached != null) {
+                    // Clone the drawable so each piece has its own instance
+                    cached = cached.getConstantState().newDrawable().mutate();
+                    pieceDrawableCache.put(piece, cached);
+                }
+            }
+        }
+        return cached;
+    }
+    
     private int getDrawableForPiece(char p) {
         switch (p) {
             case 'P':
@@ -591,7 +649,7 @@ public class ChessBoardView extends View {
         final float sx, sy, ex, ey;
         final int toRow, toCol;
         final long startT;
-        final long dur = 250;   // ms
+        final long dur = 250;   // ms - keep consistent with activity timing
 
         MovingPiece(Drawable d, float sx, float sy, float ex, float ey,
                     int toRow, int toCol) {

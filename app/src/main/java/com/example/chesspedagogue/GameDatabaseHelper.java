@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import android.util.LruCache;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -90,10 +92,18 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             "CREATE INDEX idx_master ON " + TABLE_MASTER_POSITIONS + "(" + COLUMN_MASTER_NAME + ")";
 
     private final Context context;
+    
+    // Performance optimization: LRU cache for position lookups
+    // Caches the last 100 position queries to avoid database hits
+    private final LruCache<String, List<HistoricalPosition>> positionCache;
 
     public GameDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         this.context = context.getApplicationContext();
+        
+        // Initialize the cache with 100 entries max
+        // Each entry uses approximately 1KB, so total cache size ~100KB
+        this.positionCache = new LruCache<>(100);
     }
 
     @Override
@@ -255,11 +265,21 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
      * This replaces slow API calls with blazing-fast local queries.
      */
     public List<HistoricalPosition> findSimilarPositions(String fen, String masterName, int maxResults) {
+        // First check the cache!
+        String cacheKey = masterName + ":" + fen + ":" + maxResults;
+        List<HistoricalPosition> cachedResult = positionCache.get(cacheKey);
+        
+        if (cachedResult != null) {
+            Log.d(TAG, "🎯 CACHE HIT! Returning instant result for " + masterName);
+            return new ArrayList<>(cachedResult); // Return a copy to prevent external modifications
+        }
+        
+        // Not in cache, perform database lookup
         List<HistoricalPosition> results = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
         try {
-            Log.d(TAG, "⚡ Lightning-fast FEN lookup for " + masterName + "...");
+            Log.d(TAG, "⚡ Database FEN lookup for " + masterName + " (will be cached)...");
 
             // First try exact FEN match for the specific master
             String exactQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
@@ -305,6 +325,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Error in lightning-fast FEN lookup", e);
+        }
+        
+        // Cache the results before returning
+        if (!results.isEmpty()) {
+            positionCache.put(cacheKey, new ArrayList<>(results));
+            Log.d(TAG, "💾 Cached results for future lookups");
         }
 
         return results;
@@ -401,6 +427,10 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
             db.setTransactionSuccessful();
             Log.d(TAG, "✅ Successfully imported " + chunks.length() + " master positions!");
+            
+            // Clear the cache since we have new data
+            positionCache.evictAll();
+            Log.d(TAG, "🧹 Cleared position cache after import");
 
             return true;
 
@@ -497,6 +527,21 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         }
 
         return stats;
+    }
+    
+    /**
+     * Get cache performance statistics
+     */
+    public String getCacheStats() {
+        int currentSize = positionCache.size();
+        int maxSize = positionCache.maxSize();
+        int hitCount = positionCache.hitCount();
+        int missCount = positionCache.missCount();
+        float hitRate = (hitCount + missCount) > 0 ? 
+            (float) hitCount / (hitCount + missCount) * 100 : 0;
+        
+        return String.format("Cache: %d/%d entries, %.1f%% hit rate (%d hits, %d misses)",
+            currentSize, maxSize, hitRate, hitCount, missCount);
     }
 
     // ========== HELPER METHODS ==========
