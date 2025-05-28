@@ -86,8 +86,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintDimensionRatio="1:1" />
-
-    <!-- Controls Container - Fixed position to avoid overlap -->
+    <!-- Enhanced Controls Container with User Comment Button -->
     <LinearLayout
         android:id="@+id/controlsContainer"
         android:layout_width="match_parent"
@@ -103,25 +102,38 @@
             android:id="@+id/pauseResumeButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="8dp"
             android:text="⏸️ Pause"
-            android:backgroundTint="#FF9800" />
+            android:backgroundTint="#FF9800"
+            android:textSize="12sp" />
 
         <Button
             android:id="@+id/speedControlButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
             android:text="⏱️ Normal"
-            android:backgroundTint="#2196F3" />
+            android:backgroundTint="#2196F3"
+            android:textSize="12sp" />
+
+        <!-- NEW: User Comment Button -->
+        <Button
+            android:id="@+id/userCommentButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:text="🎤 Comment"
+            android:backgroundTint="#4CAF50"
+            android:textSize="12sp" />
 
         <ProgressBar
             android:id="@+id/thinkingProgressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
             android:visibility="gone" />
 
     </LinearLayout>
+
 
     <!-- Game Info Container - Fixed at bottom -->
     <LinearLayout

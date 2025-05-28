@@ -795,7 +795,7 @@ public class OpenAITTSService {
 
                 case "fischer":
                     Log.d(TAG, "   Processing FISCHER accent instructions...");
-                    instructions.append("Speak with a confident American accent from New York. ");
+                    instructions.append("Speak with a strong New York accent. ");
                     instructions.append("Use intense, demanding delivery with absolute precision. ");
                     instructions.append("Emphasize words with unwavering conviction and authority. ");
                     instructions.append("Sound supremely confident and uncompromising. ");
@@ -873,6 +873,469 @@ public class OpenAITTSService {
 
         Log.d(TAG, "⚡ SPEED FOR " + master + ": " + speed);
         return speed;
+    }
+
+    /**
+     * 🎭 EMOTIONAL VOICE RESPONSE SYSTEM
+     * Add these methods to OpenAITTSService.java for evaluation-based emotional responses
+     */
+
+    /**
+     * 🎭 Enhanced TTS generation with emotional state based on evaluation
+     */
+    private void generateTTSChunkWithEmotion(String text, int chunkId, boolean isFinalChunk,
+                                             TTSCallback callback, String emotionalState, float evaluationChange) {
+        executorService.execute(() -> {
+            try {
+                String voiceToUse = getVoiceForCurrentMaster();
+                String selectedMaster = getCurrentChessMaster();
+
+                Log.d(TAG, "🎭 EMOTIONAL TTS GENERATION:");
+                Log.d(TAG, "   Master: " + selectedMaster);
+                Log.d(TAG, "   Emotional State: " + emotionalState);
+                Log.d(TAG, "   Evaluation Change: " + evaluationChange);
+
+                String modelToUse = "gpt-4o-mini-tts";
+
+                // Create emotion-enhanced instructions
+                String emotionalInstructions = createEmotionalVoiceInstructions(
+                        selectedMaster, text, emotionalState, evaluationChange);
+
+                JSONObject payload = new JSONObject();
+                payload.put("model", modelToUse);
+                payload.put("voice", voiceToUse);
+                payload.put("speed", getEmotionalSpeed(selectedMaster, emotionalState));
+                payload.put("input", text);
+
+                if (emotionalInstructions != null && !emotionalInstructions.trim().isEmpty()) {
+                    payload.put("instructions", emotionalInstructions);
+                    Log.d(TAG, "🎭 EMOTIONAL INSTRUCTIONS: " + emotionalInstructions);
+                }
+
+                Log.d(TAG, "📝 EMOTIONAL PAYLOAD: " + payload.toString(2));
+
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),
+                        payload.toString()
+                );
+
+                Request request = new Request.Builder()
+                        .url(TTS_URL)
+                        .header("Authorization", "Bearer " + apiKey)
+                        .header("Content-Type", "application/json")
+                        .post(body)
+                        .build();
+
+                // Continue with existing response handling...
+                try (Response response = httpClient.newCall(request).execute()) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        byte[] audioData = response.body().bytes();
+                        File audioFile = saveAudioToFile(audioData);
+
+                        Log.d(TAG, "✅ Generated emotional audio for " + selectedMaster + " (" + emotionalState + ")");
+
+                        ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
+                                chunkId, audioFile, text, callback, isFinalChunk);
+
+                        synchronized (pendingChunks) {
+                            if (chunkId == 0) {
+                                nextChunkToPlay.set(0);
+                            }
+                            pendingChunks.put(chunkId, chunkItem);
+                            tryPlayNextChunks();
+                        }
+                    } else {
+                        Log.e(TAG, "❌ Emotional TTS API error: " + response.code());
+                        if (callback != null) {
+                            mainHandler.post(() -> callback.onError("Emotional TTS error"));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Emotional TTS generation error", e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError("Emotional TTS error: " + e.getMessage()));
+                }
+            }
+        });
+    }
+
+    /**
+     * 🎭 Create emotion-specific voice instructions for each master
+     */
+    private String createEmotionalVoiceInstructions(String master, String text,
+                                                    String emotionalState, float evaluationChange) {
+        StringBuilder instructions = new StringBuilder();
+
+        // Base accent instructions (keep the authentic accents!)
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Speak with a warm Latvian-Russian accent. ");
+                break;
+            case "fischer":
+                instructions.append("Speak with a confident American accent from New York. ");
+                break;
+            case "kasparov":
+                instructions.append("Speak with a dynamic Russian accent from Baku. ");
+                break;
+            case "karpov":
+                instructions.append("Speak with a refined, diplomatic Russian accent. ");
+                break;
+            case "kramnik":
+                instructions.append("Speak with a modern Russian accent with precise articulation. ");
+                break;
+            case "carlsen":
+                instructions.append("Speak with a clear Norwegian accent with modern confidence. ");
+                break;
+            default:
+                instructions.append("Speak with natural chess master authority. ");
+                break;
+        }
+
+        // Add emotional layer based on evaluation change
+        switch (emotionalState.toLowerCase()) {
+            case "thrilled":
+                instructions.append("Sound absolutely delighted and excited. ");
+                addMasterSpecificThrilledResponse(instructions, master);
+                break;
+
+            case "pleased":
+                instructions.append("Sound satisfied and confident. ");
+                addMasterSpecificPleasedResponse(instructions, master);
+                break;
+
+            case "concerned":
+                instructions.append("Sound slightly worried but determined. ");
+                addMasterSpecificConcernedResponse(instructions, master);
+                break;
+
+            case "frustrated":
+                instructions.append("Sound annoyed and disappointed. ");
+                addMasterSpecificFrustratedResponse(instructions, master);
+                break;
+
+            case "desperate":
+                instructions.append("Sound stressed and urgently focused. ");
+                addMasterSpecificDesperateResponse(instructions, master);
+                break;
+
+            default: // neutral
+                instructions.append("Maintain your characteristic confidence and wisdom. ");
+                break;
+        }
+
+        return instructions.toString().trim();
+    }
+
+    /**
+     * 🎭 Master-specific emotional responses when thrilled
+     */
+    private void addMasterSpecificThrilledResponse(StringBuilder instructions, String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Let your joy and passion for beautiful chess shine through! ");
+                instructions.append("Sound like you've just seen the most gorgeous combination. ");
+                break;
+            case "fischer":
+                instructions.append("Sound intensely satisfied with your precision and superiority. ");
+                instructions.append("Speak with the confidence of someone who knows they're winning. ");
+                break;
+            case "kasparov":
+                instructions.append("Show your competitive fire and triumph! ");
+                instructions.append("Sound like a gladiator who's gaining the upper hand. ");
+                break;
+            case "karpov":
+                instructions.append("Allow quiet satisfaction to show through your diplomatic composure. ");
+                instructions.append("Sound pleased but maintain your elegant restraint. ");
+                break;
+            case "carlsen":
+                instructions.append("Sound relaxed but clearly pleased with your resourcefulness. ");
+                instructions.append("Show modern confidence in your superior technique. ");
+                break;
+        }
+    }
+
+    /**
+     * 🎭 Master-specific emotional responses when frustrated
+     */
+    private void addMasterSpecificFrustratedResponse(StringBuilder instructions, String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Sound disappointed but still maintain your love for the game. ");
+                instructions.append("Show that even setbacks can't dampen your chess passion completely. ");
+                break;
+            case "fischer":
+                instructions.append("Sound intensely displeased and demanding better. ");
+                instructions.append("Show your perfectionist nature - anything less than the best is unacceptable. ");
+                break;
+            case "kasparov":
+                instructions.append("Sound like a fierce competitor who's been challenged. ");
+                instructions.append("Show your fighting spirit rising to meet the challenge. ");
+                break;
+            case "karpov":
+                instructions.append("Sound concerned but maintain your diplomatic composure. ");
+                instructions.append("Show subtle displeasure while remaining professionally measured. ");
+                break;
+            case "carlsen":
+                instructions.append("Sound slightly annoyed but analytically focused on finding resources. ");
+                instructions.append("Show modern resilience - setbacks are just puzzles to solve. ");
+                break;
+        }
+    }
+
+    /**
+     * 🎭 MISSING EMOTIONAL RESPONSE METHODS
+     * Add these methods to OpenAITTSService.java to complete the emotional voice system
+     */
+
+    /**
+     * 🎭 Master-specific emotional responses when pleased
+     */
+    private void addMasterSpecificPleasedResponse(StringBuilder instructions, String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Sound warmly satisfied with the chess beauty unfolding. ");
+                instructions.append("Let your pleasure in good moves shine through your voice. ");
+                instructions.append("Show that you're enjoying the tactical possibilities. ");
+                break;
+
+            case "fischer":
+                instructions.append("Sound coolly satisfied with your superior preparation and accuracy. ");
+                instructions.append("Show quiet confidence in your technical superiority. ");
+                instructions.append("Speak with the assurance of someone who knows they're playing correctly. ");
+                break;
+
+            case "kasparov":
+                instructions.append("Sound energetically pleased with your dynamic play. ");
+                instructions.append("Show satisfaction with your fighting spirit and initiative. ");
+                instructions.append("Let your competitive confidence come through clearly. ");
+                break;
+
+            case "karpov":
+                instructions.append("Sound quietly pleased but maintain your diplomatic composure. ");
+                instructions.append("Show refined satisfaction with your positional understanding. ");
+                instructions.append("Express pleasure in elegant, measured tones. ");
+                break;
+
+            case "kramnik":
+                instructions.append("Sound analytically satisfied with your sound preparation. ");
+                instructions.append("Show methodical pleasure in accurate calculation. ");
+                instructions.append("Express confidence in your systematic approach. ");
+                break;
+
+            case "carlsen":
+                instructions.append("Sound relaxed but clearly pleased with finding good resources. ");
+                instructions.append("Show modern confidence in your practical solutions. ");
+                instructions.append("Express satisfaction with your adaptable play. ");
+                break;
+
+            case "capablanca":
+                instructions.append("Sound naturally pleased with the elegant flow of the game. ");
+                instructions.append("Show effortless satisfaction with logical moves. ");
+                instructions.append("Express pleasure in the natural harmony of good play. ");
+                break;
+
+            case "alekhine":
+                instructions.append("Sound intellectually pleased with the combinational possibilities. ");
+                instructions.append("Show sophisticated satisfaction with deep calculations. ");
+                instructions.append("Express artistic pleasure in complex variations. ");
+                break;
+
+            default:
+                instructions.append("Sound satisfied and confident with your chess understanding. ");
+                break;
+        }
+    }
+
+    /**
+     * 🎭 Master-specific emotional responses when concerned
+     */
+    private void addMasterSpecificConcernedResponse(StringBuilder instructions, String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Sound thoughtfully concerned but still optimistic about finding tactics. ");
+                instructions.append("Show that you're looking harder for creative solutions. ");
+                instructions.append("Maintain your love for the game even when worried. ");
+                break;
+
+            case "fischer":
+                instructions.append("Sound intensely focused on finding the objectively correct response. ");
+                instructions.append("Show increased concentration and analytical precision. ");
+                instructions.append("Speak with determined focus on perfect accuracy. ");
+                break;
+
+            case "kasparov":
+                instructions.append("Sound like a warrior assessing a new challenge. ");
+                instructions.append("Show increased intensity and fighting determination. ");
+                instructions.append("Express concern but with underlying competitive fire. ");
+                break;
+
+            case "karpov":
+                instructions.append("Sound diplomatically concerned but intellectually engaged. ");
+                instructions.append("Show thoughtful consideration of defensive resources. ");
+                instructions.append("Maintain composed dignity while acknowledging difficulties. ");
+                break;
+
+            case "kramnik":
+                instructions.append("Sound systematically concerned and analytically focused. ");
+                instructions.append("Show methodical assessment of the position's problems. ");
+                instructions.append("Express concern through careful, measured analysis. ");
+                break;
+
+            case "carlsen":
+                instructions.append("Sound practically concerned but still looking for defensive chances. ");
+                instructions.append("Show determination to find concrete solutions. ");
+                instructions.append("Express modern resilience in facing challenges. ");
+                break;
+
+            case "capablanca":
+                instructions.append("Sound elegantly concerned but confident in your technique. ");
+                instructions.append("Show natural worry tempered by classical understanding. ");
+                instructions.append("Express concern with refined composure. ");
+                break;
+
+            case "alekhine":
+                instructions.append("Sound intellectually concerned about the position's complexity. ");
+                instructions.append("Show deep analytical worry about tactical complications. ");
+                instructions.append("Express sophisticated concern about combinational threats. ");
+                break;
+
+            default:
+                instructions.append("Sound thoughtfully concerned but focused on finding solutions. ");
+                break;
+        }
+    }
+
+    /**
+     * 🎭 Master-specific emotional responses when desperate
+     */
+    private void addMasterSpecificDesperateResponse(StringBuilder instructions, String master) {
+        switch (master.toLowerCase()) {
+            case "tal":
+                instructions.append("Sound desperately creative, looking for miraculous tactical saves. ");
+                instructions.append("Show urgent need to find beautiful, surprising moves. ");
+                instructions.append("Let desperation fuel your search for brilliant sacrifices. ");
+                break;
+
+            case "fischer":
+                instructions.append("Sound grimly determined to find the most accurate defense. ");
+                instructions.append("Show intense focus under pressure - perfection is still demanded. ");
+                instructions.append("Express desperation through increased analytical intensity. ");
+                break;
+
+            case "kasparov":
+                instructions.append("Sound like a fierce fighter backed into a corner. ");
+                instructions.append("Show maximum competitive intensity and refusal to surrender. ");
+                instructions.append("Let desperation transform into fighting fury. ");
+                break;
+
+            case "karpov":
+                instructions.append("Sound diplomatically desperate but still maintaining dignity. ");
+                instructions.append("Show controlled urgency in seeking defensive resources. ");
+                instructions.append("Express desperation through intensified but composed analysis. ");
+                break;
+
+            case "kramnik":
+                instructions.append("Sound systematically desperate, calculating every defensive chance. ");
+                instructions.append("Show methodical urgency in finding technical solutions. ");
+                instructions.append("Express desperation through precise, focused calculation. ");
+                break;
+
+            case "carlsen":
+                instructions.append("Sound practically desperate but never giving up on resources. ");
+                instructions.append("Show tenacious determination to complicate the position. ");
+                instructions.append("Express modern fighting spirit even in hopeless positions. ");
+                break;
+
+            case "capablanca":
+                instructions.append("Sound elegantly desperate, seeking classical defensive harmony. ");
+                instructions.append("Show refined urgency in applying natural principles. ");
+                instructions.append("Express desperation through dignified but intense focus. ");
+                break;
+
+            case "alekhine":
+                instructions.append("Sound intellectually desperate, seeking complex tactical salvation. ");
+                instructions.append("Show sophisticated urgency in finding combinational escapes. ");
+                instructions.append("Express desperation through deepened analytical intensity. ");
+                break;
+
+            case "morphy":
+                instructions.append("Sound graciously desperate, maintaining gentlemanly composure. ");
+                instructions.append("Show principled urgency in seeking classical solutions. ");
+                instructions.append("Express desperation with dignified determination. ");
+                break;
+
+            case "lasker":
+                instructions.append("Sound philosophically desperate, drawing on deep wisdom. ");
+                instructions.append("Show psychological urgency in creating practical problems. ");
+                instructions.append("Express desperation through experienced fighting spirit. ");
+                break;
+
+            case "anand":
+                instructions.append("Sound urgently desperate but still optimistic about chances. ");
+                instructions.append("Show quick, calculated desperation in finding resources. ");
+                instructions.append("Express friendly determination even under severe pressure. ");
+                break;
+
+            case "botvinnik":
+                instructions.append("Sound scientifically desperate, systematically seeking salvation. ");
+                instructions.append("Show methodical urgency in applying chess principles. ");
+                instructions.append("Express desperation through disciplined analytical focus. ");
+                break;
+
+            default:
+                instructions.append("Sound urgently focused on finding any possible defensive resources. ");
+                break;
+        }
+    }
+
+    /**
+     * ⚡ Adjust speech speed based on emotional state
+     */
+    private double getEmotionalSpeed(String master, String emotionalState) {
+        double baseSpeed = getSpeedForMaster(master);
+
+        switch (emotionalState.toLowerCase()) {
+            case "thrilled":
+                return Math.min(1.3, baseSpeed * 1.15); // Faster when excited
+            case "pleased":
+                return baseSpeed * 1.05; // Slightly faster when confident
+            case "concerned":
+                return baseSpeed * 0.95; // Slightly slower when thinking
+            case "frustrated":
+                return baseSpeed * 0.85; // Slower when annoyed/calculating
+            case "desperate":
+                return Math.max(0.8, baseSpeed * 0.8); // Much slower when under pressure
+            default:
+                return baseSpeed;
+        }
+    }
+
+    /**
+     * 📊 Determine emotional state based on evaluation change
+     */
+    public static String determineEmotionalState(float evaluationChange, float currentEvaluation) {
+        // Determine if this is good or bad for the current player
+        boolean isGoodChange = evaluationChange > 0;
+        float absChange = Math.abs(evaluationChange);
+
+        if (isGoodChange) {
+            if (absChange > 2.0f || currentEvaluation > 3.0f) {
+                return "thrilled";   // Major improvement or winning position
+            } else if (absChange > 0.8f || currentEvaluation > 1.5f) {
+                return "pleased";    // Good improvement or advantage
+            }
+        } else {
+            if (absChange > 2.5f || currentEvaluation < -3.0f) {
+                return "desperate";  // Major loss or losing badly
+            } else if (absChange > 1.5f || currentEvaluation < -1.5f) {
+                return "frustrated"; // Significant loss or disadvantage
+            } else if (absChange > 0.8f) {
+                return "concerned";  // Moderate loss
+            }
+        }
+
+        return "neutral"; // Small changes or balanced position
     }
 
     /**

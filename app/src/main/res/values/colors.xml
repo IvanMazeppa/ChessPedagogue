@@ -47,4 +47,7 @@
     <color name="chess_dark_square">#B58863</color>
     <color name="highlight_move">#FFE082</color>
     <color name="highlight_check">#FFCDD2</color>
+
+    <color name="user_interaction_bg">#E3F2FD</color>
+    <color name="default_dialogue_bg">#E8F5E8</color>
 </resources>
