@@ -549,6 +549,20 @@ public class EvaluationTracker {
         
         return null;
     }
+    
+    /**
+     * Get the current evaluation (most recent)
+     * @return The current evaluation, or null if no evaluations tracked
+     */
+    public Float getCurrentEvaluation() {
+        if (evaluationHistory.isEmpty()) {
+            return null;
+        }
+        
+        // Get the most recent evaluation
+        EvaluationSnapshot current = evaluationHistory.get(evaluationHistory.size() - 1);
+        return current.getEffectiveEvaluation();
+    }
 
     /**
      * Clean up resources when no longer needed

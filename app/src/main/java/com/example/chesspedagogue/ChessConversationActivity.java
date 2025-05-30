@@ -75,8 +75,9 @@ public class ChessConversationActivity extends AppCompatActivity {
         sendButton.setOnClickListener(v -> sendMessage());
         voiceButton.setOnClickListener(v -> startVoiceRecognition());
 
-        // Add welcome message
-        addCoachMessage("Hello! I'm Coach Mikhail Tal. I'm here to help with your chess game. What would you like to know?");
+        // Add welcome message with dynamic master name
+        String selectedMaster = getSelectedMasterDisplayName();
+        addCoachMessage("Hello! I'm " + selectedMaster + ". I'm here to help with your chess game. What would you like to know?");
     }
 
     private void sendMessage() {
@@ -168,6 +169,43 @@ public class ChessConversationActivity extends AppCompatActivity {
         @Override
         public void onSpeechCompleted() {
             // Nothing needed here
+        }
+    }
+
+    /**
+     * Get the display name of the currently selected chess master
+     */
+    private String getSelectedMasterDisplayName() {
+        android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        String selectedMaster = prefs.getString("selected_master", "tal");
+        
+        switch (selectedMaster.toLowerCase()) {
+            case "tal":
+                return "Mikhail Tal";
+            case "fischer":
+                return "Bobby Fischer";
+            case "carlsen":
+                return "Magnus Carlsen";
+            case "kasparov":
+                return "Garry Kasparov";
+            case "karpov":
+                return "Anatoly Karpov";
+            case "kramnik":
+                return "Vladimir Kramnik";
+            case "anand":
+                return "Viswanathan Anand";
+            case "alekhine":
+                return "Alexander Alekhine";
+            case "capablanca":
+                return "José Raúl Capablanca";
+            case "lasker":
+                return "Emanuel Lasker";
+            case "morphy":
+                return "Paul Morphy";
+            case "botvinnik":
+                return "Mikhail Botvinnik";
+            default:
+                return "Chess Master";
         }
     }
 }

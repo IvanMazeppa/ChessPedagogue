@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +24,8 @@ public class SpectatorConversationOrchestrator {
     private static SpectatorConversationOrchestrator instance;
     private final Context context;
     private final ChessMasterResponsesManager responsesManager;
-    private final OpenAITTSService ttsService;
+    private final TTSServiceManager ttsServiceManager;
+    private final OpenAITTSService ttsService; // Can be wrapper around ElevenLabs
     private final EvaluationTracker evaluationTracker;
     private final PersonalityEngine personalityEngine;
     private final ExecutorService executorService;
@@ -36,7 +38,7 @@ public class SpectatorConversationOrchestrator {
     // Conversation timing
     private static final long MIN_RESPONSE_DELAY = 2000; // 2 seconds
     private static final long MAX_RESPONSE_DELAY = 4000; // 4 seconds
-    private static final int MAX_CONVERSATION_TURNS = 6;
+    private static final int MAX_CONVERSATION_TURNS = 12; // Increased for more natural conversations
     
     /**
      * Tracks conversation state between masters
@@ -93,7 +95,18 @@ public class SpectatorConversationOrchestrator {
     private SpectatorConversationOrchestrator(Context context) {
         this.context = context.getApplicationContext();
         this.responsesManager = ChessMasterResponsesManager.getInstance(context);
+        this.ttsServiceManager = TTSServiceManager.getInstance(context);
+        // Get OpenAI TTS service (which may be a wrapper around ElevenLabs)
         this.ttsService = TTSServiceManager.getOpenAITTSService(context);
+        
+        // Set usage context for ElevenLabs if that's what we're using
+        if (TTSServiceManager.isUsingElevenLabs(context)) {
+            TTSServiceManager.setUsageContext(context, "spectator_mode");
+            Log.d(TAG, "🎭 Using ElevenLabs TTS for spectator mode");
+        } else {
+            Log.d(TAG, "🎤 Using OpenAI TTS for spectator mode");
+        }
+        
         this.evaluationTracker = EvaluationTracker.getInstance(context);
         // PersonalityEngine requires StockfishManager instance
         // Note: StockfishManager doesn't have getInstance(), create new instance
@@ -196,8 +209,15 @@ public class SpectatorConversationOrchestrator {
                                 
                                 // Deliver dialogue
                                 mainHandler.post(() -> {
-                                    callback.onDialogueGenerated(speaker, cleanedResponse);
-                                    speakWithPersonality(speaker, cleanedResponse);
+                                    // Check for emotional context
+                                    String emotionalState = detectEmotionalContext(state);
+                                    if (emotionalState != null) {
+                                        callback.onEmotionalResponse(speaker, emotionalState, cleanedResponse);
+                                        speakWithEmotionalPersonality(speaker, cleanedResponse, emotionalState);
+                                    } else {
+                                        callback.onDialogueGenerated(speaker, cleanedResponse);
+                                        speakWithPersonality(speaker, cleanedResponse);
+                                    }
                                     
                                     // Schedule response if appropriate
                                     if (shouldTriggerResponse(cleanedResponse, state)) {
@@ -315,11 +335,11 @@ public class SpectatorConversationOrchestrator {
                                         mainHandler.post(() -> {
                                             if (emotionalContext != null) {
                                                 callback.onEmotionalResponse(responder, emotionalContext, cleanedResponse);
+                                                speakWithEmotionalPersonality(responder, cleanedResponse, emotionalContext);
                                             } else {
                                                 callback.onDialogueGenerated(responder, cleanedResponse);
+                                                speakWithPersonality(responder, cleanedResponse);
                                             }
-                                            
-                                            speakWithPersonality(responder, cleanedResponse);
                                             
                                             // Continue or end conversation
                                             String nextSpeaker = responder.equals(state.whitePlayer) ? 
@@ -418,6 +438,99 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
+     * Speak dialogue with emotional personality based on evaluation changes
+     */
+    private void speakWithEmotionalPersonality(String speaker, String dialogue, String emotionalState) {
+        try {
+            // Save current master preference
+            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            String currentMaster = prefs.getString("selected_master", "tal");
+            
+            // Set speaker's voice
+            prefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
+            
+            // Check if we're using ElevenLabs for better emotional voice
+            if (TTSServiceManager.isUsingElevenLabs(context)) {
+                Log.d(TAG, "🎭 Using ElevenLabs emotional voice for " + speaker + " (" + emotionalState + ")");
+                
+                // Get evaluation context for more nuanced emotions
+                Float evalChange = evaluationTracker.getRecentEvaluationChange();
+                Float currentEval = evaluationTracker.getCurrentEvaluation();
+                
+                // When using ElevenLabs through the wrapper, just use the normal speak method
+                // The wrapper handles the adaptation
+                ttsService.speak(dialogue, new OpenAITTSService.OnSpeechCompletedListener() {
+                    @Override
+                    public void onSpeechCompleted() {
+                        // Restore original master
+                        prefs.edit().putString("selected_master", currentMaster).apply();
+                    }
+                });
+            } else {
+                Log.d(TAG, "🎤 Using OpenAI emotional voice for " + speaker + " (" + emotionalState + ")");
+                
+                // OpenAI TTS has emotional methods we can use
+                OpenAITTSService openAITTS = (OpenAITTSService) ttsService;
+                
+                // Get evaluation context
+                Float evalChange = evaluationTracker.getRecentEvaluationChange();
+                if (evalChange == null) evalChange = 0f;
+                Float currentEval = evaluationTracker.getCurrentEvaluation();
+                if (currentEval == null) currentEval = 0f;
+                
+                // Determine more specific emotional state
+                String specificEmotion = OpenAITTSService.determineEmotionalState(evalChange, currentEval);
+                
+                // Use generateTTSChunkWithEmotion if available (through reflection to avoid compilation issues)
+                try {
+                    java.lang.reflect.Method emotionalMethod = openAITTS.getClass().getDeclaredMethod(
+                        "generateTTSChunkWithEmotion", String.class, int.class, boolean.class, 
+                        OpenAITTSService.TTSCallback.class, String.class, float.class
+                    );
+                    emotionalMethod.setAccessible(true);
+                    
+                    OpenAITTSService.TTSCallback emotionalCallback = new OpenAITTSService.TTSCallback() {
+                        @Override
+                        public void onSpeechStarted() {
+                            Log.d(TAG, "🎭 Emotional speech started");
+                        }
+                        
+                        @Override
+                        public void onSpeechReady(File audioFile) {
+                            Log.d(TAG, "🎭 Emotional audio ready");
+                        }
+                        
+                        @Override
+                        public void onSpeechCompleted() {
+                            // Restore original master
+                            prefs.edit().putString("selected_master", currentMaster).apply();
+                        }
+                        
+                        @Override
+                        public void onError(String errorMessage) {
+                            Log.e(TAG, "Emotional TTS error: " + errorMessage);
+                            // Fallback to regular speech
+                            speakWithPersonality(speaker, dialogue);
+                        }
+                    };
+                    
+                    emotionalMethod.invoke(openAITTS, dialogue, 0, true, emotionalCallback, specificEmotion, evalChange);
+                    
+                } catch (Exception e) {
+                    Log.w(TAG, "Could not use emotional TTS method, falling back to regular speech", e);
+                    // Fallback to regular speech
+                    speakWithPersonality(speaker, dialogue);
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error speaking emotional dialogue", e);
+            // Fallback to regular speech
+            speakWithPersonality(speaker, dialogue);
+        }
+    }
+    
+    /**
      * Helper methods
      */
     
@@ -441,37 +554,76 @@ public class SpectatorConversationOrchestrator {
         // Check conversation limits
         if (state.turnCount >= MAX_CONVERSATION_TURNS) return false;
         
-        // Check statement triggers
+        // Always continue for first few turns to establish banter
+        if (state.turnCount < 5) return true; // Increased minimum turns
+        
+        // Check statement triggers - be more permissive
         String lower = statement.toLowerCase();
-        return lower.contains("?") || lower.contains("but") || 
-               lower.contains("however") || lower.contains("interesting");
+        return lower.contains("?") || lower.contains("!") || 
+               lower.contains("but") || lower.contains("however") || 
+               lower.contains("interesting") || lower.contains("you") ||
+               lower.contains("your") || lower.length() > 40;
     }
     
     private boolean shouldContinueConversation(String response, ConversationState state) {
         // Check turn limit
         if (state.turnCount >= MAX_CONVERSATION_TURNS) return false;
         
-        // Check response characteristics
-        return response.length() > 50 && 
-               (response.contains("?") || response.contains("..."));
+        // Continue for at least 4-5 exchanges for natural flow
+        if (state.turnCount < 8) return true; // Increased minimum exchanges
+        
+        // Check response characteristics - be more permissive
+        return response.length() > 20 && 
+               (response.contains("?") || response.contains("!") || 
+                response.contains("...") || response.contains(",") ||
+                Math.random() < 0.7); // 70% chance to continue for natural flow
     }
     
     private String detectEmotionalContext(ConversationState state) {
-        // Check evaluation changes
+        // Check evaluation changes for more nuanced emotions
         Float evalChange = evaluationTracker.getRecentEvaluationChange();
-        if (evalChange != null) {
-            if (Math.abs(evalChange) > 2.0f) {
-                return evalChange > 0 ? "excited" : "concerned";
+        Float currentEval = evaluationTracker.getCurrentEvaluation();
+        
+        if (evalChange != null && currentEval != null) {
+            // Determine who benefits from the change
+            boolean isWhiteToMove = state.turnCount % 2 == 0;
+            boolean isGoodForCurrentPlayer = (evalChange > 0 && isWhiteToMove) || (evalChange < 0 && !isWhiteToMove);
+            float absChange = Math.abs(evalChange);
+            
+            if (isGoodForCurrentPlayer) {
+                if (absChange > 3.0f || currentEval > 4.0f) {
+                    return "thrilled"; // Major advantage or winning position
+                } else if (absChange > 1.5f || currentEval > 2.0f) {
+                    return "pleased"; // Good improvement
+                } else if (absChange > 0.5f) {
+                    return "satisfied"; // Minor improvement
+                }
+            } else {
+                if (absChange > 3.0f || currentEval < -4.0f) {
+                    return "desperate"; // Major disadvantage or losing
+                } else if (absChange > 2.0f || currentEval < -2.0f) {
+                    return "frustrated"; // Significant setback
+                } else if (absChange > 1.0f) {
+                    return "concerned"; // Worrying development
+                }
             }
         }
         
-        // Check conversation content
+        // Check conversation content for emotional cues
         if (!state.turns.isEmpty()) {
             String lastMessage = state.turns.get(state.turns.size() - 1).message.toLowerCase();
-            if (lastMessage.contains("brilliant") || lastMessage.contains("amazing")) {
+            if (lastMessage.contains("brilliant") || lastMessage.contains("amazing") || 
+                lastMessage.contains("fantastic") || lastMessage.contains("beautiful")) {
                 return "impressed";
-            } else if (lastMessage.contains("mistake") || lastMessage.contains("blunder")) {
+            } else if (lastMessage.contains("terrible") || lastMessage.contains("awful") || 
+                       lastMessage.contains("disaster") || lastMessage.contains("blunder")) {
                 return "critical";
+            } else if (lastMessage.contains("interesting") || lastMessage.contains("creative") || 
+                       lastMessage.contains("unusual")) {
+                return "intrigued";
+            } else if (lastMessage.contains("obvious") || lastMessage.contains("forced") || 
+                       lastMessage.contains("only move")) {
+                return "matter-of-fact";
             }
         }
         
@@ -497,73 +649,252 @@ public class SpectatorConversationOrchestrator {
         // Generate varied prompts to avoid repetitive responses
         java.util.Random rand = new java.util.Random();
         
+        // Add personality flavor to prompts
+        String speakerLower = speaker.toLowerCase();
+        
         switch (triggerType) {
             case "opening":
-                String[] openingPrompts = {
-                    "You're facing " + opponent + " in this game. What's your opening strategy?",
-                    "Playing against " + opponent + " today. Share your initial thoughts on the position.",
-                    "The game begins against " + opponent + ". What's your approach?",
-                    "Starting position against " + opponent + ". How do you feel about this matchup?",
-                    "Here we go against " + opponent + ". What are your expectations?"
-                };
+                String[] openingPrompts = getOpeningPrompts(speaker, opponent);
                 return openingPrompts[rand.nextInt(openingPrompts.length)];
                 
             case "brilliant_move":
-                String[] brilliantPrompts = {
-                    "You just found a strong tactical sequence. What did you see?",
-                    "That was a powerful move! Explain your calculation.",
-                    "Nice tactical shot! What was the key idea?",
-                    "Strong play! Share the concept behind this move.",
-                    "Excellent move! What made you choose this continuation?"
-                };
+                String[] brilliantPrompts = getBrilliantMovePrompts(speaker, opponent);
                 return brilliantPrompts[rand.nextInt(brilliantPrompts.length)];
                 
             case "blunder":
-                String[] blunderPrompts = {
-                    "A critical error just occurred. What's your assessment?",
-                    "That move looks problematic. Share your thoughts.",
-                    "Something went wrong there. How do you evaluate this?",
-                    "A slip in the position. What's your take?",
-                    "That doesn't look right. Comment on what just happened."
-                };
+                String[] blunderPrompts = getBlunderPrompts(speaker, opponent);
                 return blunderPrompts[rand.nextInt(blunderPrompts.length)];
                 
             case "endgame":
-                String[] endgamePrompts = {
-                    "The game concludes. Your final thoughts?",
-                    "It's over. How do you reflect on this game?",
-                    "Game finished. What's your assessment?",
-                    "The battle ends. Share your immediate reaction.",
-                    "Final position reached. Your conclusion?"
-                };
+                String[] endgamePrompts = getEndgamePrompts(speaker, opponent);
                 return endgamePrompts[rand.nextInt(endgamePrompts.length)];
                 
             default:
-                String[] generalPrompts = {
-                    "Analyze the current position against " + opponent + ".",
-                    "What's your evaluation here against " + opponent + "?",
-                    "Share your thoughts on this position versus " + opponent + ".",
-                    "How do you assess this moment against " + opponent + "?",
-                    "Your perspective on the current state against " + opponent + "?"
-                };
+                String[] generalPrompts = getGeneralPrompts(speaker, opponent);
                 return generalPrompts[rand.nextInt(generalPrompts.length)];
         }
+    }
+    
+    private String[] getOpeningPrompts(String speaker, String opponent) {
+        String speakerLower = speaker.toLowerCase();
+        
+        if (speakerLower.contains("tal")) {
+            return new String[] {
+                "Facing " + opponent + "! I can already sense the tactical storms brewing. What complications shall we create?",
+                "Ah, " + opponent + " sits across from me! Time to paint another masterpiece on the chessboard!",
+                "The game begins with " + opponent + "! I feel the pieces wanting to dance - shall we give them wings?",
+                "Playing " + opponent + " today! My heart races with the possibilities for beautiful sacrifices!",
+                "Here we go against " + opponent + "! The empty board is like a blank canvas waiting for our art!"
+            };
+        } else if (speakerLower.contains("fischer")) {
+            return new String[] {
+                "Playing " + opponent + ". I've prepared everything. Time to prove who plays the most accurate chess.",
+                "Facing " + opponent + " now. My preparation is perfect. Let's see if they can handle precision.",
+                "Game against " + opponent + " starts. I demand nothing less than perfect play from myself.",
+                "" + opponent + " is my opponent. Good. I'll show them what real chess accuracy looks like.",
+                "Starting against " + opponent + ". Every move must be the best. No compromises."
+            };
+        } else if (speakerLower.contains("carlsen")) {
+            return new String[] {
+                "Playing " + opponent + " today. Let's see where the game takes us - I'm ready for anything.",
+                "Facing " + opponent + ". Time to play some chess and find practical solutions.",
+                "Game with " + opponent + " begins. I'll keep it simple and look for my chances.",
+                "Starting against " + opponent + ". No need to force anything - good moves will come.",
+                "Here we go versus " + opponent + ". Let's play solid chess and see what happens."
+            };
+        } else {
+            return new String[] {
+                "You're facing " + opponent + " in this game. What's your opening strategy?",
+                "Playing against " + opponent + " today. Share your initial thoughts on the position.",
+                "The game begins against " + opponent + ". What's your approach?",
+                "Starting position against " + opponent + ". How do you feel about this matchup?",
+                "Here we go against " + opponent + ". What are your expectations?"
+            };
+        }
+    }
+    
+    private String[] getBrilliantMovePrompts(String speaker, String opponent) {
+        String speakerLower = speaker.toLowerCase();
+        
+        if (speakerLower.contains("tal")) {
+            return new String[] {
+                "Did you see that combination? The pieces sang in harmony! Let me show you the magic!",
+                "Ah! The sacrifice reveals itself! Beauty triumphs over material once again!",
+                "This tactical blow! It's like lightning striking the board! Feel the energy!",
+                "The pieces dance to my will! This combination - it's pure chess poetry!",
+                "Look at this! When you truly love chess, the tactics find you!"
+            };
+        } else if (speakerLower.contains("fischer")) {
+            return new String[] {
+                "That's it! The only move! Calculated to perfection. This is how you play chess.",
+                "Found it! The best move, as always. Precision beats everything else.",
+                "This move wins by force. No luck, just superior calculation.",
+                "Perfect! This is what happens when you play accurately. The position collapses.",
+                "There! The crushing blow. This is what real chess looks like."
+            };
+        } else {
+            return new String[] {
+                "You just found a strong tactical sequence. What did you see?",
+                "That was a powerful move! Explain your calculation.",
+                "Nice tactical shot! What was the key idea?",
+                "Strong play! Share the concept behind this move.",
+                "Excellent move! What made you choose this continuation?"
+            };
+        }
+    }
+    
+    private String[] getBlunderPrompts(String speaker, String opponent) {
+        return new String[] {
+            "A critical error just occurred. What's your assessment?",
+            "That move looks problematic. Share your thoughts.",
+            "Something went wrong there. How do you evaluate this?",
+            "A slip in the position. What's your take?",
+            "That doesn't look right. Comment on what just happened.",
+            "A mistake has been made. Analyze the consequences.",
+            "The position shifted dramatically. What went wrong?",
+            "That's a serious error. How do you see the position now?"
+        };
+    }
+    
+    private String[] getEndgamePrompts(String speaker, String opponent) {
+        return new String[] {
+            "The game concludes. Your final thoughts?",
+            "It's over. How do you reflect on this game?",
+            "Game finished. What's your assessment?",
+            "The battle ends. Share your immediate reaction.",
+            "Final position reached. Your conclusion?",
+            "The dust settles. What are your takeaways?",
+            "Game over. Sum up this chess battle.",
+            "The result is decided. Your closing comments?"
+        };
+    }
+    
+    private String[] getGeneralPrompts(String speaker, String opponent) {
+        return new String[] {
+            "Analyze the current position against " + opponent + ".",
+            "What's your evaluation here against " + opponent + "?",
+            "Share your thoughts on this position versus " + opponent + ".",
+            "How do you assess this moment against " + opponent + "?",
+            "Your perspective on the current state against " + opponent + "?",
+            "Break down this position in your game with " + opponent + ".",
+            "What's happening in this phase against " + opponent + "?",
+            "Give us your read on the position versus " + opponent + "."
+        };
     }
     
     private String createResponsePrompt(String responder, String previousStatement, ConversationState state) {
         String opponent = responder.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
         
-        // Varied response prompts to encourage natural dialogue
-        java.util.Random rand = new java.util.Random();
-        String[] responseFormats = {
-            opponent + " just said: \"" + previousStatement + "\". Share your perspective.",
-            "Responding to " + opponent + "'s comment: \"" + previousStatement + "\"",
-            "After " + opponent + " said: \"" + previousStatement + "\", what's your take?",
-            opponent + " commented: \"" + previousStatement + "\". Your thoughts?",
-            "React to " + opponent + "'s statement: \"" + previousStatement + "\""
-        };
+        // Detect emotional context for the prompt
+        String emotionalContext = detectEmotionalContext(state);
+        Float evalChange = evaluationTracker.getRecentEvaluationChange();
         
-        return responseFormats[rand.nextInt(responseFormats.length)];
+        // Build prompt with personality clash potential
+        StringBuilder prompt = new StringBuilder();
+        
+        // Add emotional context if relevant
+        if (emotionalContext != null && evalChange != null) {
+            if (Math.abs(evalChange) > 2.0f) {
+                if (evalChange > 0 && responder.equals(state.whitePlayer)) {
+                    prompt.append("(You just gained a big advantage!) ");
+                } else if (evalChange < 0 && responder.equals(state.blackPlayer)) {
+                    prompt.append("(You just gained a big advantage!) ");
+                } else {
+                    prompt.append("(Your position just got worse!) ");
+                }
+            }
+        }
+        
+        // Varied response prompts that encourage banter and personality clashes
+        java.util.Random rand = new java.util.Random();
+        
+        // Different prompt styles based on emotional context
+        String[] responseFormats;
+        
+        if ("thrilled".equals(emotionalContext) || "pleased".equals(emotionalContext)) {
+            responseFormats = new String[] {
+                "You're doing well! " + opponent + " says: \"" + previousStatement + "\". Share your confident response!",
+                "From your advantage, respond to " + opponent + ": \"" + previousStatement + "\". Show your superiority!",
+                opponent + " comments: \"" + previousStatement + "\". You're winning - let them know it!",
+                "With your strong position, react to " + opponent + ": \"" + previousStatement + "\"",
+                "You have the edge! Counter " + opponent + "'s claim: \"" + previousStatement + "\""
+            };
+        } else if ("frustrated".equals(emotionalContext) || "desperate".equals(emotionalContext)) {
+            responseFormats = new String[] {
+                "You're under pressure! " + opponent + " taunts: \"" + previousStatement + "\". Defend yourself!",
+                "Fighting for survival, respond to " + opponent + ": \"" + previousStatement + "\"",
+                opponent + " presses: \"" + previousStatement + "\". Show your fighting spirit!",
+                "In a tough spot, counter " + opponent + "'s words: \"" + previousStatement + "\"",
+                "Struggling but not beaten! React to " + opponent + ": \"" + previousStatement + "\""
+            };
+        } else {
+            responseFormats = new String[] {
+                opponent + " claims: \"" + previousStatement + "\". What's your response? Feel free to challenge their view!",
+                opponent + " just said: \"" + previousStatement + "\". Do you agree or is that nonsense?",
+                "After " + opponent + "'s comment: \"" + previousStatement + "\", give your honest reaction. Don't hold back!",
+                opponent + " thinks: \"" + previousStatement + "\". Show them why they're wrong (or right)!",
+                "React to " + opponent + ": \"" + previousStatement + "\". Be direct and competitive!",
+                opponent + " states: \"" + previousStatement + "\". Time for your counterpoint!",
+                "Hearing " + opponent + " say: \"" + previousStatement + "\", what's your take?",
+                opponent + " argues: \"" + previousStatement + "\". Set the record straight!"
+            };
+        }
+        
+        prompt.append(responseFormats[rand.nextInt(responseFormats.length)]);
+        
+        // Add personality-specific encouragement with more variety
+        String responderLower = responder.toLowerCase();
+        if (responderLower.contains("fischer")) {
+            String[] fischerPrompts = {
+                " Remember: only perfect moves matter!",
+                " Show them the objective truth!",
+                " Precision beats everything!",
+                " No compromises - only the best!"
+            };
+            prompt.append(fischerPrompts[rand.nextInt(fischerPrompts.length)]);
+        } else if (responderLower.contains("carlsen")) {
+            String[] carlsenPrompts = {
+                " Keep it practical but confident!",
+                " Modern chess wisdom prevails!",
+                " Show your endgame mastery!",
+                " Pragmatic excellence wins!"
+            };
+            prompt.append(carlsenPrompts[rand.nextInt(carlsenPrompts.length)]);
+        } else if (responderLower.contains("tal")) {
+            String[] talPrompts = {
+                " Find the creative angle!",
+                " Where's the magic in this position?",
+                " Show them chess poetry!",
+                " Tactics and imagination!"
+            };
+            prompt.append(talPrompts[rand.nextInt(talPrompts.length)]);
+        } else if (responderLower.contains("kasparov")) {
+            String[] kasparovPrompts = {
+                " Dynamic play conquers all!",
+                " Show your fighting spirit!",
+                " Initiative is everything!",
+                " Attack with fury!"
+            };
+            prompt.append(kasparovPrompts[rand.nextInt(kasparovPrompts.length)]);
+        } else if (responderLower.contains("karpov")) {
+            String[] karpovPrompts = {
+                " Positional mastery speaks!",
+                " Subtle refinement wins!",
+                " Strategic depth prevails!",
+                " Patience and precision!"
+            };
+            prompt.append(karpovPrompts[rand.nextInt(karpovPrompts.length)]);
+        } else if (responderLower.contains("kramnik")) {
+            String[] kramnikPrompts = {
+                " Technical precision is key!",
+                " Deep preparation shows!",
+                " Systematic approach wins!",
+                " Modern theory prevails!"
+            };
+            prompt.append(kramnikPrompts[rand.nextInt(kramnikPrompts.length)]);
+        }
+        
+        return prompt.toString();
     }
     
     private String cleanResponse(String response, String speaker) {
@@ -592,6 +923,7 @@ public class SpectatorConversationOrchestrator {
         
         return response;
     }
+    
     
     /**
      * Force stop all conversations

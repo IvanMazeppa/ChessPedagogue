@@ -280,6 +280,44 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         try {
             Log.d(TAG, "⚡ Database FEN lookup for " + masterName + " (will be cached)...");
+            
+            // 🚨 DEBUG: Check total positions first
+            String countQuery = "SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS;
+            Cursor countCursor = db.rawQuery(countQuery, null);
+            int totalPositions = 0;
+            if (countCursor.moveToFirst()) {
+                totalPositions = countCursor.getInt(0);
+            }
+            countCursor.close();
+            Log.d(TAG, "📊 Total positions in database: " + totalPositions);
+            
+            // 🚨 DEBUG: Check positions for this master
+            String masterCountQuery = "SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = ?";
+            Cursor masterCountCursor = db.rawQuery(masterCountQuery, new String[]{masterName});
+            int masterPositions = 0;
+            if (masterCountCursor.moveToFirst()) {
+                masterPositions = masterCountCursor.getInt(0);
+            }
+            masterCountCursor.close();
+            Log.d(TAG, "📊 Positions for " + masterName + ": " + masterPositions);
+            
+            if (totalPositions == 0) {
+                Log.e(TAG, "❌ CRITICAL: Database is completely empty! Import failed.");
+                return results;
+            }
+            
+            if (masterPositions == 0) {
+                Log.e(TAG, "❌ No positions found for master: '" + masterName + "' - checking all masters...");
+                String allMastersQuery = "SELECT DISTINCT " + COLUMN_MASTER_NAME + " FROM " + TABLE_MASTER_POSITIONS;
+                Cursor allMastersCursor = db.rawQuery(allMastersQuery, null);
+                List<String> availableMasters = new ArrayList<>();
+                while (allMastersCursor.moveToNext()) {
+                    availableMasters.add(allMastersCursor.getString(0));
+                }
+                allMastersCursor.close();
+                Log.d(TAG, "📋 Available masters in database: " + availableMasters.toString());
+                return results;
+            }
 
             // First try exact FEN match for the specific master
             String exactQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
@@ -292,6 +330,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 Log.d(TAG, "🎯 EXACT FEN MATCH FOUND for " + masterName + "!");
                 results.addAll(cursorToHistoricalPositions(cursor));
                 cursor.close();
+                
+                // Cache the results before returning
+                if (!results.isEmpty()) {
+                    positionCache.put(cacheKey, new ArrayList<>(results));
+                    Log.d(TAG, "💾 Cached exact match results for future lookups");
+                }
                 return results;
             }
             cursor.close();
@@ -308,6 +352,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 Log.d(TAG, "🔍 Similar position found for " + masterName);
                 results.addAll(cursorToHistoricalPositions(cursor));
                 cursor.close();
+                
+                // Cache the results before returning
+                if (!results.isEmpty()) {
+                    positionCache.put(cacheKey, new ArrayList<>(results));
+                    Log.d(TAG, "💾 Cached similar match results for future lookups");
+                }
                 return results;
             }
             cursor.close();
@@ -324,7 +374,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             Log.d(TAG, "📚 Found " + results.size() + " reference positions for " + masterName);
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error in lightning-fast FEN lookup", e);
+            Log.e(TAG, "❌ Error in lightning-fast FEN lookup for " + masterName + " with FEN: " + fen, e);
         }
         
         // Cache the results before returning
@@ -410,7 +460,10 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 JSONObject chunk = chunks.getJSONObject(i);
 
                 ContentValues values = new ContentValues();
-                values.put(COLUMN_MASTER_NAME, chunk.optString("player_name", ""));
+                // 🎯 CRITICAL FIX: Map full names to standardized short names for lookup compatibility
+                String playerName = chunk.optString("player_name", "");
+                String standardizedName = getStandardizedMasterName(playerName);
+                values.put(COLUMN_MASTER_NAME, standardizedName);
                 values.put(COLUMN_FEN, chunk.optString("fen", ""));
                 values.put(COLUMN_OPPONENT, chunk.optString("opponent", ""));
                 values.put(COLUMN_YEAR, chunk.optString("year", ""));
@@ -420,7 +473,13 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 values.put(COLUMN_SIGNIFICANCE, chunk.optString("significance", ""));
                 values.put(COLUMN_MOVE_NUMBER, chunk.optInt("move_number", 0));
                 values.put(COLUMN_ANNOTATION, chunk.optString("annotation", ""));
-                values.put(COLUMN_TAGS, chunk.optJSONArray("tags").toString());
+                // 🚨 SAFE: Handle potentially null tags array
+                org.json.JSONArray tagsArray = chunk.optJSONArray("tags");
+                if (tagsArray != null) {
+                    values.put(COLUMN_TAGS, tagsArray.toString());
+                } else {
+                    values.put(COLUMN_TAGS, "[]"); // Empty array as fallback
+                }
 
                 db.insert(TABLE_MASTER_POSITIONS, null, values);
             }
@@ -494,6 +553,28 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         return false;
     }
+    
+    /**
+     * 🔄 Force clear and reimport all master data - use when database structure changes
+     */
+    public boolean clearAndReimportAllData() {
+        SQLiteDatabase db = this.getWritableDatabase();
+        
+        try {
+            Log.d(TAG, "🗑️ Clearing existing master positions data...");
+            db.delete(TABLE_MASTER_POSITIONS, null, null);
+            
+            // Clear cache
+            positionCache.evictAll();
+            
+            Log.d(TAG, "✅ All master data cleared. Ready for fresh import.");
+            return true;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error clearing master data", e);
+            return false;
+        }
+    }
 
     /**
      * Get cool database statistics for debugging
@@ -545,6 +626,47 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     }
 
     // ========== HELPER METHODS ==========
+    
+    /**
+     * 🎯 CRITICAL: Map full master names to standardized short names for lookup compatibility
+     * This ensures PersonalityEngine lookups work correctly with the imported data
+     */
+    private String getStandardizedMasterName(String fullName) {
+        if (fullName == null) return "";
+        
+        String normalized = fullName.toLowerCase().trim();
+        
+        // Map full names to the exact strings PersonalityEngine expects
+        if (normalized.contains("mikhail tal") || normalized.contains("tal")) {
+            return "tal";
+        } else if (normalized.contains("bobby fischer") || normalized.contains("fischer")) {
+            return "fischer";  
+        } else if (normalized.contains("magnus carlsen") || normalized.contains("carlsen")) {
+            return "carlsen";
+        } else if (normalized.contains("garry kasparov") || normalized.contains("kasparov")) {
+            return "kasparov";
+        } else if (normalized.contains("anatoly karpov") || normalized.contains("karpov")) {
+            return "karpov";
+        } else if (normalized.contains("vladimir kramnik") || normalized.contains("kramnik")) {
+            return "kramnik";
+        } else if (normalized.contains("alexander alekhine") || normalized.contains("alekhine")) {
+            return "alekhine";
+        } else if (normalized.contains("josé raúl capablanca") || normalized.contains("capablanca")) {
+            return "capablanca";
+        } else if (normalized.contains("emanuel lasker") || normalized.contains("lasker")) {
+            return "lasker";
+        } else if (normalized.contains("paul morphy") || normalized.contains("morphy")) {
+            return "morphy";
+        } else if (normalized.contains("viswanathan anand") || normalized.contains("anand")) {
+            return "anand";
+        } else if (normalized.contains("mikhail botvinnik") || normalized.contains("botvinnik")) {
+            return "botvinnik";
+        }
+        
+        // Fallback - return original name
+        Log.w(TAG, "⚠️ Unknown master name, using as-is: " + fullName);
+        return fullName;
+    }
 
     private List<HistoricalPosition> cursorToHistoricalPositions(Cursor cursor) {
         List<HistoricalPosition> positions = new ArrayList<>();
@@ -683,5 +805,52 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     1.0f // High similarity since it's a local match
             );
         }
+    }
+    
+    /**
+     * 🔍 Comprehensive database diagnostics - call this to debug empty database issues
+     */
+    public String getDatabaseDiagnostics() {
+        StringBuilder diagnostics = new StringBuilder();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            // Check if table exists
+            String checkTableQuery = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + TABLE_MASTER_POSITIONS + "'";
+            Cursor tableCursor = db.rawQuery(checkTableQuery, null);
+            boolean tableExists = tableCursor.getCount() > 0;
+            tableCursor.close();
+            
+            diagnostics.append("📊 DATABASE DIAGNOSTICS:\n");
+            diagnostics.append("- Table exists: ").append(tableExists ? "✅ YES" : "❌ NO").append("\n");
+            
+            if (tableExists) {
+                // Total positions
+                Cursor totalCursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS, null);
+                if (totalCursor.moveToFirst()) {
+                    int total = totalCursor.getInt(0);
+                    diagnostics.append("- Total positions: ").append(total).append("\n");
+                }
+                totalCursor.close();
+                
+                // Sample data
+                Cursor sampleCursor = db.rawQuery("SELECT " + COLUMN_MASTER_NAME + ", COUNT(*) FROM " + 
+                    TABLE_MASTER_POSITIONS + " GROUP BY " + COLUMN_MASTER_NAME + " LIMIT 10", null);
+                diagnostics.append("- Masters with data:\n");
+                while (sampleCursor.moveToNext()) {
+                    String master = sampleCursor.getString(0);
+                    int count = sampleCursor.getInt(1);
+                    diagnostics.append("  • ").append(master).append(": ").append(count).append(" positions\n");
+                }
+                sampleCursor.close();
+            }
+            
+        } catch (Exception e) {
+            diagnostics.append("❌ Error during diagnostics: ").append(e.getMessage()).append("\n");
+        }
+        
+        String result = diagnostics.toString();
+        Log.d(TAG, result);
+        return result;
     }
 }

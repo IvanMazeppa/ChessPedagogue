@@ -554,6 +554,27 @@ public class MainActivity extends AppCompatActivity {
                 // Check if we already have data (this was blocking the UI!)
                 boolean hasData = dbHelper.hasMasterData("tal");
                 
+                // 🎯 FORCE REIMPORT: Clear existing data if master names don't match
+                // This fixes the "Mikhail Tal" vs "tal" mismatch issue
+                if (hasData) {
+                    // Check if data was imported with wrong master names
+                    Map<String, Integer> stats = dbHelper.getDatabaseStats();
+                    boolean hasWrongNames = false;
+                    for (String masterName : stats.keySet()) {
+                        if (masterName.contains(" ") || masterName.length() > 10) {
+                            // Found full names like "Mikhail Tal" instead of "tal"
+                            hasWrongNames = true;
+                            break;
+                        }
+                    }
+                    
+                    if (hasWrongNames) {
+                        Log.d("MainActivity", "🔄 Found data with incorrect master names - forcing reimport...");
+                        dbHelper.clearAndReimportAllData();
+                        hasData = false; // Force reimport
+                    }
+                }
+                
                 if (!hasData) {
                     Log.d("MainActivity", "📥 First run - importing comprehensive chess data...");
                     
@@ -583,16 +604,24 @@ public class MainActivity extends AppCompatActivity {
                         }
                     }
 
-                    // Log final database stats
+                    // Log final database stats and diagnostics
                     Map<String, Integer> stats = dbHelper.getDatabaseStats();
                     Log.d("MainActivity", "🎉 Database ready! Stats: " + stats.toString());
+                    
+                    // 🔍 Run comprehensive diagnostics
+                    String diagnostics = dbHelper.getDatabaseDiagnostics();
+                    Log.d("MainActivity", "🔬 " + diagnostics);
                     
                 } else {
                     Log.d("MainActivity", "✅ Chess master database already initialized!");
                     
-                    // Log current stats
+                    // Log current stats and diagnostics
                     Map<String, Integer> stats = dbHelper.getDatabaseStats();
                     Log.d("MainActivity", "📊 Current database stats: " + stats.toString());
+                    
+                    // 🔍 Run comprehensive diagnostics
+                    String diagnostics = dbHelper.getDatabaseDiagnostics();
+                    Log.d("MainActivity", "🔬 " + diagnostics);
                 }
                 
                 // Update UI on main thread - database is ready!

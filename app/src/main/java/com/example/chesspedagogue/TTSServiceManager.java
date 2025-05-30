@@ -18,9 +18,44 @@ public class TTSServiceManager {
     private static final String PREFS_NAME = "ChessPedagoguePrefs";
     private static final String KEY_USE_ELEVENLABS = "use_elevenlabs_tts";
     
+    private static TTSServiceManager instance;
     private static boolean useElevenLabs = false;
     private static OpenAITTSService openAIService;
     private static ElevenLabsTTSService elevenLabsService;
+    
+    private Context context;
+    
+    /**
+     * Get singleton instance
+     */
+    public static synchronized TTSServiceManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new TTSServiceManager(context);
+        }
+        return instance;
+    }
+    
+    private TTSServiceManager(Context context) {
+        this.context = context.getApplicationContext();
+    }
+    
+    /**
+     * Get the preferred TTS service as OpenAITTSService (may be wrapper)
+     */
+    public OpenAITTSService getPreferredTTSService() {
+        // This returns the OpenAITTSService which may be a wrapper around ElevenLabs
+        return getOpenAITTSService(context);
+    }
+    
+    /**
+     * Get ElevenLabs TTS Service directly
+     */
+    public static ElevenLabsTTSService getElevenLabsTTSService(Context context) {
+        if (elevenLabsService == null) {
+            elevenLabsService = ElevenLabsTTSService.getInstance(context);
+        }
+        return elevenLabsService;
+    }
     
     /**
      * Get the appropriate TTS service based on configuration

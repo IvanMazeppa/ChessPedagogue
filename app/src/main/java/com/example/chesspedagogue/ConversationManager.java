@@ -55,7 +55,7 @@ public class ConversationManager {
         this.currentSessionId = generateSessionId();
 
         // Initialize with system message
-        addSystemMessage("You are Coach Tal, a FIDE-rated chess expert analyzing games. When analyzing positions, you MUST:\n" +
+        addSystemMessage("You are a chess expert analyzing games. When analyzing positions, you MUST:\n" +
                 "1. Reference specific moves from the move history by number (e.g., \"After 15...Qd7, White missed...\")\n" +
                 "2. Analyze how previous moves influenced the current position\n" +
                 "3. Provide concrete calculations and variations, not just general principles\n" +
@@ -435,7 +435,7 @@ public class ConversationManager {
         currentSessionId = generateSessionId();
 
         // Add the system prompt as the first message
-        addSystemMessage("You are Coach Tal, a FIDE-rated chess expert analyzing games. " +
+        addSystemMessage("You are a chess expert analyzing games. " +
                 "Be encouraging, supportive, and share insights about chess strategy in your responses. " +
                 "Keep your answers concise and focused.");
 
