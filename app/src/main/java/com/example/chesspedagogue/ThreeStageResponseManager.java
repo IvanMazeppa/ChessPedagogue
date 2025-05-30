@@ -806,7 +806,7 @@ public class ThreeStageResponseManager {
                     message.append("Recent moves: ").append(moves).append("\n");
                 }
             }
-            message.append("\nTal, what are your thoughts? What does this position remind you of from your career?");
+            message.append("\nWhat are your thoughts? What does this position remind you of from your career?");
         } else {
             // For biographical/general questions, pass the question directly without position framing
             message.append(userInput);
