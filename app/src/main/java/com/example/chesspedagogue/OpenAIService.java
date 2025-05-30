@@ -47,6 +47,7 @@ public class OpenAIService {
     static final String API_URL = "https://api.openai.com/v1/chat/completions";
     private static final String TTS_URL = "https://api.openai.com/v1/audio/speech";
     private static final String TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
+    private static final String RESPONSES_API_URL = "https://api.openai.com/v1/assistants";
 
     static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private static final String DEFAULT_MODEL = "gpt-4-turbo-preview";
@@ -140,6 +141,19 @@ public class OpenAIService {
         }
         return "Bearer " + apiKey;
     }
+    
+    /**
+     * Get API key for external use (e.g., Responses API)
+     */
+    public String getApiKey() {
+        if (!hasApiKey() && context != null) {
+            String configKey = ApiKeyConfig.getApiKey(context);
+            if (configKey != null && !configKey.isEmpty()) {
+                setApiKey(configKey);
+            }
+        }
+        return apiKey;
+    }
 
     /**
      * Get the HTTP client
@@ -188,9 +202,17 @@ public class OpenAIService {
     }
 
     /**
-     * Get chat completion with conversation history
+     * Get chat completion with conversation history and variety management
      */
     public String getChatCompletionWithHistory(ConversationManager conversationManager) {
+        return getChatCompletionWithHistoryAndVariety(conversationManager, null, null);
+    }
+
+    /**
+     * Enhanced chat completion with variety management
+     */
+    public String getChatCompletionWithHistoryAndVariety(ConversationManager conversationManager, 
+                                                         String masterName, String conversationContext) {
         if (!hasApiKey()) {
             Log.e(TAG, "API key not set");
             return "Error: API key not configured.";
@@ -202,14 +224,36 @@ public class OpenAIService {
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", modelToUse);
 
-            // Add optimization settings if using fine-tuned model
-            if (context != null) {
-                FineTunedModelManager.ModelOptimizationSettings settings =
-                        FineTunedModelManager.getInstance(context).getOptimizationSettings();
-                requestBody.put("temperature", settings.temperature);
-                requestBody.put("max_tokens", settings.maxTokens);
-                if (settings.allowCreativeLiberty) {
-                    requestBody.put("top_p", 0.9);
+            // Apply variety parameters if available
+            if (context != null && masterName != null) {
+                ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                ConversationVarietyManager.VarietyParams varietyParams = 
+                    varietyManager.getVarietyParams(masterName, conversationContext);
+                
+                Log.d(TAG, "🎭 Applying variety params for " + masterName + ": temp=" + varietyParams.temperature + 
+                         ", presence=" + varietyParams.presencePenalty + ", frequency=" + varietyParams.frequencyPenalty);
+                
+                requestBody.put("temperature", varietyParams.temperature);
+                requestBody.put("max_tokens", varietyParams.maxTokens);
+                requestBody.put("presence_penalty", varietyParams.presencePenalty);
+                requestBody.put("frequency_penalty", varietyParams.frequencyPenalty);
+                requestBody.put("top_p", varietyParams.topP);
+                
+                // Add seed for reproducibility testing (if needed)
+                if (varietyParams.seedSuffix != null) {
+                    String conversationSeed = varietyManager.generateConversationSeed(masterName, conversationContext);
+                    Log.d(TAG, "🌱 Using conversation seed: " + conversationSeed);
+                }
+            } else {
+                // Fallback to optimization settings
+                if (context != null) {
+                    FineTunedModelManager.ModelOptimizationSettings settings =
+                            FineTunedModelManager.getInstance(context).getOptimizationSettings();
+                    requestBody.put("temperature", settings.temperature);
+                    requestBody.put("max_tokens", settings.maxTokens);
+                    if (settings.allowCreativeLiberty) {
+                        requestBody.put("top_p", 0.9);
+                    }
                 }
             }
 
@@ -248,7 +292,20 @@ public class OpenAIService {
                 if (choices.length() > 0) {
                     JSONObject choice = choices.getJSONObject(0);
                     JSONObject message = choice.getJSONObject("message");
-                    return message.getString("content");
+                    String responseContent = message.getString("content");
+                    
+                    // Track response for variety management
+                    if (context != null && masterName != null) {
+                        ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                        varietyManager.trackResponse(masterName, responseContent);
+                        
+                        // Check for potential repetition
+                        if (varietyManager.isPotentialRepetition(masterName, responseContent)) {
+                            Log.w(TAG, "⚠️ Potential repetition detected in response for " + masterName);
+                        }
+                    }
+                    
+                    return responseContent;
                 }
             }
         } catch (Exception e) {
@@ -268,22 +325,47 @@ public class OpenAIService {
     // REPLACE the getChatCompletionWithModel method in OpenAIService.java with this corrected version:
 
     /**
-     * Get chat completion using a specific model (including fine-tuned models)
-     * Uses your existing HTTP client structure
+     * Get chat completion using a specific model with variety management
      */
     public String getChatCompletionWithModel(String modelId, String systemPrompt, String userMessage) {
+        return getChatCompletionWithModelAndVariety(modelId, systemPrompt, userMessage, null, null);
+    }
+
+    /**
+     * Get chat completion using a specific model with enhanced variety management
+     */
+    public String getChatCompletionWithModelAndVariety(String modelId, String systemPrompt, String userMessage,
+                                                        String masterName, String conversationContext) {
         if (!hasApiKey()) {
             Log.e(TAG, "API key not available");
             return "API key not configured";
         }
 
         try {
-            Log.d(TAG, "🎭 Using fine-tuned model: " + modelId);
+            Log.d(TAG, "🎭 Using model with variety: " + modelId);
 
             JSONObject requestBody = new JSONObject();
-            requestBody.put("model", modelId);  // Use the fine-tuned model
-            requestBody.put("max_tokens", 300);
-            requestBody.put("temperature", 0.8); // Higher temp for Tal's creativity
+            requestBody.put("model", modelId);
+
+            // Apply variety parameters or defaults
+            if (context != null && masterName != null) {
+                ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                ConversationVarietyManager.VarietyParams varietyParams = 
+                    varietyManager.getVarietyParams(masterName, conversationContext);
+                
+                requestBody.put("temperature", varietyParams.temperature);
+                requestBody.put("max_tokens", varietyParams.maxTokens);
+                requestBody.put("presence_penalty", varietyParams.presencePenalty);
+                requestBody.put("frequency_penalty", varietyParams.frequencyPenalty);
+                requestBody.put("top_p", varietyParams.topP);
+                
+                Log.d(TAG, "🎯 Variety params applied: temp=" + varietyParams.temperature + 
+                         ", penalties=" + varietyParams.presencePenalty + "/" + varietyParams.frequencyPenalty);
+            } else {
+                // Default parameters
+                requestBody.put("max_tokens", 800);
+                requestBody.put("temperature", 0.4);
+            }
 
             JSONArray messages = new JSONArray();
 
@@ -315,7 +397,13 @@ public class OpenAIService {
                             JSONObject message = firstChoice.getJSONObject("message");
                             String content = message.getString("content");
 
-                            Log.d(TAG, "✅ Tal's voice: " + content.substring(0, Math.min(100, content.length())) + "...");
+                            // Track response for variety management
+                            if (context != null && masterName != null) {
+                                ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                                varietyManager.trackResponse(masterName, content);
+                            }
+
+                            Log.d(TAG, "✅ Response generated: " + content.substring(0, Math.min(100, content.length())) + "...");
                             return content;
                         }
                     }
@@ -674,6 +762,97 @@ public class OpenAIService {
         } catch (Exception e) {
             Log.e(TAG, "Error listing messages", e);
             return null;
+        }
+    }
+
+    /**
+     * Get chat completion with enhanced context and variety management
+     */
+    public String getChatCompletionWithEnhancedContext(List<Map<String, String>> contextMessages, 
+                                                      String modelId) {
+        return getChatCompletionWithEnhancedContextAndVariety(contextMessages, modelId, null, null);
+    }
+
+    /**
+     * Get chat completion with enhanced context and full variety management
+     */
+    public String getChatCompletionWithEnhancedContextAndVariety(List<Map<String, String>> contextMessages, 
+                                                                String modelId, String masterName, String conversationContext) {
+        if (!hasApiKey()) {
+            Log.e(TAG, "API key not available");
+            return "API key not configured";
+        }
+
+        try {
+            Log.d(TAG, "🎭 Using enhanced context with variety for " + masterName + " (" + contextMessages.size() + " messages)");
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", modelId != null ? modelId : getModelForRequest());
+
+            // Apply variety parameters or enhanced defaults
+            if (context != null && masterName != null) {
+                ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                ConversationVarietyManager.VarietyParams varietyParams = 
+                    varietyManager.getVarietyParams(masterName, conversationContext);
+                
+                requestBody.put("temperature", varietyParams.temperature);
+                requestBody.put("max_tokens", varietyParams.maxTokens);
+                requestBody.put("presence_penalty", varietyParams.presencePenalty);
+                requestBody.put("frequency_penalty", varietyParams.frequencyPenalty);
+                requestBody.put("top_p", varietyParams.topP);
+                
+                Log.d(TAG, "🌟 Enhanced variety applied: temp=" + varietyParams.temperature + 
+                         ", context=" + conversationContext);
+            } else {
+                // Enhanced default parameters for personality
+                requestBody.put("temperature", 0.8);
+                requestBody.put("max_tokens", 150);
+                requestBody.put("presence_penalty", 0.6);
+                requestBody.put("frequency_penalty", 0.3);
+            }
+
+            // Convert context messages to JSON array
+            JSONArray messages = new JSONArray();
+            for (Map<String, String> msg : contextMessages) {
+                JSONObject jsonMsg = new JSONObject();
+                jsonMsg.put("role", msg.get("role"));
+                jsonMsg.put("content", msg.get("content"));
+                if (msg.containsKey("name")) {
+                    jsonMsg.put("name", msg.get("name"));
+                }
+                messages.put(jsonMsg);
+            }
+
+            requestBody.put("messages", messages);
+
+            // Make API call
+            String response = makeOpenAIRequest(API_URL, requestBody.toString());
+
+            if (response != null && !response.trim().isEmpty()) {
+                JSONObject jsonResponse = new JSONObject(response);
+                if (jsonResponse.has("choices")) {
+                    JSONArray choices = jsonResponse.getJSONArray("choices");
+                    if (choices.length() > 0) {
+                        JSONObject firstChoice = choices.getJSONObject(0);
+                        JSONObject message = firstChoice.getJSONObject("message");
+                        String content = message.getString("content");
+                        
+                        // Track response for variety management
+                        if (context != null && masterName != null) {
+                            ConversationVarietyManager varietyManager = ConversationVarietyManager.getInstance(context);
+                            varietyManager.trackResponse(masterName, content);
+                        }
+                        
+                        return content;
+                    }
+                }
+            }
+
+            return "I need a moment to think about that...";
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error with enhanced context", e);
+            return "Let me reconsider that move...";
         }
     }
 

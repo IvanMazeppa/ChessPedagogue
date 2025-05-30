@@ -54,12 +54,12 @@ public class ElevenLabsTTSService {
     private static final Map<String, String> MASTER_VOICE_IDS = new HashMap<>();
     static {
         // Voices selected to match each chess master's personality and accent
-        MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // Selected voice for Tal - passionate, expressive
+        MASTER_VOICE_IDS.put("tal", "l1TTYDn50ppSCqvuVlKY"); // Selected voice for Tal - passionate, expressive
 
-        MASTER_VOICE_IDS.put("fischer", "wHyj5kruHjhgqAyTfIiz"); // Selected voice for Fischer - intense, precise
+        MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // Selected voice for Fischer - intense, precise
         //MASTER_VOICE_IDS.put("fischer", "mrmh5i7zNpOwftrj8xdS"); // Selected voice for Fischer - intense, precise
         MASTER_VOICE_IDS.put("kasparov", "TxGEqnHWrfWFTfGW9XjX"); // Josh - dynamic, passionate
-        MASTER_VOICE_IDS.put("carlsen", "ygiXC2Oa1BiHksD3WkJZ"); // Selected voice for Carlsen - modern, confident
+        MASTER_VOICE_IDS.put("carlsen", "ygiXC2Oa1BiHksD3WkJZ"); // Selected voice for Carlsen - modern, confident Norwegian-accented
         MASTER_VOICE_IDS.put("karpov", "IKne3meq5aSn9XLyUdCD"); // Charlie - refined, measured
         MASTER_VOICE_IDS.put("kramnik", "ErXwobaYiN019PkySvjV"); // Antoni - analytical, precise
         MASTER_VOICE_IDS.put("capablanca", "VR6AewLTigWG4xSOukaG"); // Arnold - elegant, natural
@@ -81,6 +81,9 @@ public class ElevenLabsTTSService {
     private boolean interruptRequested = false;
     private boolean isSpeaking = false;
     private SharedPreferences prefs;
+    
+    // Usage context for dynamic model selection
+    private String currentContext = "default";
     
     // Chunk management
     private final ConcurrentLinkedQueue<ChunkPlaybackItem> chunkQueue = new ConcurrentLinkedQueue<>();
@@ -159,6 +162,14 @@ public class ElevenLabsTTSService {
     
     public void setSpeechCallback(SpeechCallback callback) {
         this.speechCallback = callback;
+    }
+    
+    /**
+     * Set usage context for dynamic model selection
+     */
+    public void setUsageContext(String context) {
+        this.currentContext = context;
+        Log.d(TAG, "🎯 ElevenLabs context set to: " + context);
     }
     
     /**
@@ -330,7 +341,7 @@ public class ElevenLabsTTSService {
             try {
                 String selectedMaster = getCurrentChessMaster();
                 String voiceId = getVoiceIdForMaster(selectedMaster);
-                String model = MODEL_TURBO; // Use turbo v2.5 for enhanced quality with good latency
+                String model = getModelForContext(currentContext);
                 
                 Log.d(TAG, "🎯 ElevenLabs TTS Generation:");
                 Log.d(TAG, "   Master: " + selectedMaster);
@@ -426,6 +437,34 @@ public class ElevenLabsTTSService {
                 }
             }
         });
+    }
+    
+    /**
+     * Get ElevenLabs model based on usage context
+     */
+    private String getModelForContext(String context) {
+        switch (context.toLowerCase()) {
+            case "main_game":
+            case "main":
+            case "game":
+                Log.d(TAG, "🏃‍♂️ Using FLASH model for main game (ultra-low latency)");
+                return MODEL_FLASH; // eleven_flash_v2_5 for main game screen
+                
+            case "spectator_mode":
+            case "spectator":
+            case "ai_dialogue":
+            case "dialogue":
+                Log.d(TAG, "🎭 Using TURBO model for spectator mode (enhanced quality)");
+                return MODEL_TURBO; // eleven_turbo_v2_5 for spectator mode
+                
+            case "analysis":
+                Log.d(TAG, "🔬 Using TURBO model for analysis (balanced quality)");
+                return MODEL_TURBO; // eleven_turbo_v2_5 for analysis
+                
+            default:
+                Log.d(TAG, "🔄 Using TURBO model for default context");
+                return MODEL_TURBO; // Default to turbo for backwards compatibility
+        }
     }
     
     /**

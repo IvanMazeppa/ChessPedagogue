@@ -62,12 +62,20 @@ public class TTSServiceManager {
      * Get OpenAI TTS Service (for compatibility)
      */
     public static OpenAITTSService getOpenAITTSService(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        useElevenLabs = prefs.getBoolean(KEY_USE_ELEVENLABS, true);
+        
         if (useElevenLabs) {
-            Log.d(TAG, "🔄 Wrapping ElevenLabs service as OpenAI service");
+            Log.d(TAG, "🔄 Using ElevenLabs via OpenAI wrapper");
             // Return a wrapper that adapts ElevenLabs to OpenAI interface
             return new OpenAITTSServiceWrapper(context);
         }
-        return OpenAITTSService.getInstance(context);
+        
+        Log.d(TAG, "🔄 Using OpenAI TTS service");
+        if (openAIService == null) {
+            openAIService = OpenAITTSService.getInstance(context);
+        }
+        return openAIService;
     }
     
     /**
@@ -87,6 +95,22 @@ public class TTSServiceManager {
     public static boolean isUsingElevenLabs(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         return prefs.getBoolean(KEY_USE_ELEVENLABS, true);
+    }
+    
+    /**
+     * Set usage context for dynamic model selection
+     */
+    public static void setUsageContext(Context context, String usageContext) {
+        if (isUsingElevenLabs(context)) {
+            // Initialize service if not already done
+            if (elevenLabsService == null) {
+                elevenLabsService = ElevenLabsTTSService.getInstance(context);
+            }
+            elevenLabsService.setUsageContext(usageContext);
+            Log.d(TAG, "✅ Usage context set to: " + usageContext);
+        } else {
+            Log.d(TAG, "ℹ️ Context setting skipped (OpenAI mode)");
+        }
     }
     
     /**
@@ -179,6 +203,13 @@ public class TTSServiceManager {
                     callback.onSpeechInterrupted();
                 }
             });
+        }
+        
+        /**
+         * Set usage context for dynamic model selection
+         */
+        public void setUsageContext(String context) {
+            elevenLabsService.setUsageContext(context);
         }
         
         // Note: Some OpenAI-specific methods like speakStreamingText won't work perfectly

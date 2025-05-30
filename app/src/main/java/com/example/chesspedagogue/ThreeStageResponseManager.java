@@ -8,6 +8,8 @@ import android.util.Log;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import com.github.bassaer.chatmessageview.model.Message;
 
@@ -45,6 +47,7 @@ public class ThreeStageResponseManager {
     private final OpenAIService openAIService;
     private final FineTunedModelManager modelManager;
     private final OpenAITTSService ttsService;
+    private final EnhancedContextManager contextManager;
 
     // Current response tracking
     private final AtomicInteger currentResponseId = new AtomicInteger(0);
@@ -110,8 +113,9 @@ public class ThreeStageResponseManager {
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
         this.ttsService = TTSServiceManager.getOpenAITTSService(context);
+        this.contextManager = EnhancedContextManager.getInstance();
 
-        Log.d(TAG, "✨ API 26 Compatible ThreeStageResponseManager initialized with superior ElevenLabs TTS!");
+        Log.d(TAG, "✨ API 26 Compatible ThreeStageResponseManager initialized with superior ElevenLabs TTS and enhanced context!");
     }
 
     /**
@@ -148,16 +152,34 @@ public class ThreeStageResponseManager {
                 Log.d(TAG, "⚡ OPTIMIZED Stage 1 starting for response #" + responseId);
                 callback.onStageStarted(ResponseStage.STAGE_1_QUICK);
 
-                // OPTIMIZED: Ultra-simple prompt for maximum speed
-                String quickSystemPrompt = createLightningQuickPrompt(selectedMaster);
-                String simpleUserMessage = createSimpleUserMessage(userInput);
+                // Get context for quick response
+                List<Map<String, String>> context = contextManager.getContextForApiCall(selectedMaster, "");
+                
+                // Add minimal user message for speed
+                Map<String, String> userMsg = new HashMap<>();
+                userMsg.put("role", "user");
+                userMsg.put("content", userInput);
+                context.add(userMsg);
+                
+                // Keep context minimal for stage 1 (last 5 messages max)
+                if (context.size() > 6) { // system + relationship + 4 recent
+                    List<Map<String, String>> minimalContext = new ArrayList<>();
+                    minimalContext.addAll(context.subList(0, Math.min(2, context.size()))); // Keep system messages
+                    if (context.size() > 4) {
+                        minimalContext.addAll(context.subList(context.size() - 4, context.size()));
+                    }
+                    context = minimalContext;
+                }
 
-                // CRITICAL: Use fast model with minimal context
-                String quickResponse = openAIService.getChatCompletion(quickSystemPrompt, simpleUserMessage);
+                // Use fast response with context
+                String quickResponse = openAIService.getChatCompletionWithEnhancedContext(context, null);
 
                 if (quickResponse == null || quickResponse.trim().isEmpty()) {
                     return getEmergencyQuickResponse(selectedMaster);
                 }
+
+                // Add to context manager
+                contextManager.addConversationTurn(selectedMaster, quickResponse, "stage1_response");
 
                 Log.d(TAG, "✅ OPTIMIZED Stage 1 success for response #" + responseId);
                 return quickResponse.trim();
@@ -219,39 +241,263 @@ public class ThreeStageResponseManager {
         isStage1Speaking = false;
         isStage2Speaking = false;
 
-        // Always start with Stage 1 for immediate feedback
-        processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
-
-        // Continue with other stages based on mode
+        // Continue with stages based on mode
         switch (mode) {
             case FAST_ONLY:
                 Log.d(TAG, "⚡ Fast-only mode: Stage 1 only");
+                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
                 return;
 
             case ENHANCED_ONLY:
                 Log.d(TAG, "🎭 Enhanced mode: Stages 1-2");
+                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
                 processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
                 return;
 
             case FULL_ANALYSIS:
                 Log.d(TAG, "🧠 Full analysis mode: All 3 stages - PARALLEL EXECUTION! 🚀");
-                // PARALLEL EXECUTION: Start both Stage 2 and Stage 3 simultaneously
+                // PARALLEL EXECUTION: Start Stage 1, then both Stage 2 and Stage 3 simultaneously
+                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
                 processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
                 processOptimizedStage3Deep(responseId, userInput, gameContext, selectedMaster, callback);
                 return;
 
             case ADAPTIVE:
                 if (isSimpleQuestion(userInput)) {
-                    Log.d(TAG, "🤖 Adaptive: simple question, enhanced only");
-                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
+                    Log.d(TAG, "🤖 Adaptive: simple question, FT model only");
+                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
+                } else if (isChessAnalysisQuestion(userInput, gameContext)) {
+                    Log.d(TAG, "🤖 Adaptive: chess analysis, FT → Assistant with DB lookup! 🚀");
+                    // PARALLEL: FT first for speed, Assistant with vector/DB for depth
+                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
+                    processAssistantWithLookup(responseId, userInput, gameContext, selectedMaster, callback);
                 } else {
-                    Log.d(TAG, "🤖 Adaptive: complex question, PARALLEL full analysis! 🚀");
-                    // PARALLEL EXECUTION for complex questions
-                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
-                    processOptimizedStage3Deep(responseId, userInput, gameContext, selectedMaster, callback);
+                    Log.d(TAG, "🤖 Adaptive: complex question, FT → Assistant! 🚀");
+                    // PARALLEL: FT first for speed, Assistant for detailed analysis
+                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
+                    processAssistantResponse(responseId, userInput, gameContext, selectedMaster, callback);
                 }
                 return;
         }
+    }
+
+    /**
+     * NEW: Process with fine-tuned model only (optimized for ElevenLabs speed)
+     */
+    private void processFineTunedResponse(int responseId, String userInput, String gameContext,
+                                         String selectedMaster, ThreeStageCallback callback) {
+        final long startTime = System.currentTimeMillis();
+        
+        CompletableFuture<String> ftTask = CompletableFuture.supplyAsync(() -> {
+            try {
+                Log.d(TAG, "⚡ FT-only response starting for response #" + responseId);
+                callback.onStageStarted(ResponseStage.STAGE_1_QUICK);
+                
+                String fineTunedModelId = modelManager.getSelectedModelId();
+                String systemPrompt = createOptimizedFineTunedPrompt(selectedMaster);
+                String userMessage = createOptimizedUserMessage(userInput, gameContext);
+                
+                String response;
+                if (fineTunedModelId.startsWith("ft:")) {
+                    Log.d(TAG, "✨ Using fine-tuned model: " + fineTunedModelId);
+                    response = openAIService.getChatCompletionWithModel(fineTunedModelId, systemPrompt, userMessage);
+                } else {
+                    response = openAIService.getChatCompletion(systemPrompt, userMessage);
+                }
+                
+                if (response == null || response.trim().isEmpty()) {
+                    throw new Exception("Empty FT response");
+                }
+                
+                String cleanedResponse = cleanMetaLanguage(response, selectedMaster);
+                Log.d(TAG, "✅ FT-only response success for response #" + responseId);
+                return cleanedResponse;
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ FT-only response error for response #" + responseId, e);
+                return getEmergencyQuickResponse(selectedMaster);
+            }
+        }, executorService);
+        
+        implementCustomTimeout(ftTask, STAGE_1_TIMEOUT_MS, new TimeoutCallback() {
+            @Override
+            public void onResult(String result) {
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, result, true);
+                        callback.onAllStagesComplete(result);
+                    }
+                    startOptimizedTTS(result, 1, responseId);
+                });
+            }
+            
+            @Override
+            public void onTimeout() {
+                Log.e(TAG, "⏰ FT-only timeout for response #" + responseId);
+                final String timeoutResult = getEmergencyQuickResponse(selectedMaster);
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, timeoutResult, false);
+                        callback.onAllStagesComplete(timeoutResult);
+                    }
+                    startOptimizedTTS(timeoutResult, 1, responseId);
+                });
+            }
+        });
+    }
+    
+    /**
+     * NEW: Process with assistant (renamed from Stage 3)
+     */
+    private void processAssistantResponse(int responseId, String userInput, String gameContext,
+                                        String selectedMaster, ThreeStageCallback callback) {
+        final long startTime = System.currentTimeMillis();
+        
+        CompletableFuture<String> assistantTask = CompletableFuture.supplyAsync(() -> {
+            try {
+                Log.d(TAG, "🧠 Assistant response starting for response #" + responseId);
+                callback.onStageStarted(ResponseStage.STAGE_2_ENHANCED);
+                
+                String assistantResponse = modelManager.processWithMasterAssistant(userInput, gameContext, selectedMaster);
+                
+                if (assistantResponse == null || assistantResponse.trim().isEmpty()) {
+                    throw new Exception("Empty assistant response");
+                }
+                
+                String cleanedResponse = cleanMetaLanguage(assistantResponse, selectedMaster);
+                Log.d(TAG, "✅ Assistant response success for response #" + responseId);
+                return cleanedResponse;
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Assistant response error for response #" + responseId, e);
+                return getDefaultDeepResponse(selectedMaster);
+            }
+        }, executorService);
+        
+        implementCustomTimeout(assistantTask, STAGE_2_TIMEOUT_MS, new TimeoutCallback() {
+            @Override
+            public void onResult(String result) {
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_2_ENHANCED, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_2_ENHANCED, result, true);
+                        callback.onAllStagesComplete(result);
+                    }
+                    interruptPreviousTTSAndStart(result, 2, responseId);
+                });
+            }
+            
+            @Override
+            public void onTimeout() {
+                Log.e(TAG, "⏰ Assistant timeout for response #" + responseId);
+                final String timeoutResult = getDefaultDeepResponse(selectedMaster);
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_2_ENHANCED, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_2_ENHANCED, timeoutResult, false);
+                        callback.onAllStagesComplete(timeoutResult);
+                    }
+                    interruptPreviousTTSAndStart(timeoutResult, 2, responseId);
+                });
+            }
+        });
+    }
+    
+    /**
+     * NEW: Process with assistant + vector/DB lookup for chess analysis
+     */
+    private void processAssistantWithLookup(int responseId, String userInput, String gameContext,
+                                          String selectedMaster, ThreeStageCallback callback) {
+        final long startTime = System.currentTimeMillis();
+        
+        CompletableFuture<String> lookupTask = CompletableFuture.supplyAsync(() -> {
+            try {
+                Log.d(TAG, "🔍 Assistant+DB response starting for response #" + responseId);
+                callback.onStageStarted(ResponseStage.STAGE_3_DEEP);
+                
+                // Enhanced context with DB lookup
+                String enhancedContext = gameContext;
+                if (gameContext != null && gameContext.contains("POSITION:")) {
+                    // Add historical position data from local DB
+                    enhancedContext += "\n" + getHistoricalPositionContext(gameContext, selectedMaster);
+                }
+                
+                String assistantResponse = modelManager.processWithMasterAssistant(userInput, enhancedContext, selectedMaster);
+                
+                if (assistantResponse == null || assistantResponse.trim().isEmpty()) {
+                    throw new Exception("Empty assistant+lookup response");
+                }
+                
+                String cleanedResponse = cleanMetaLanguage(assistantResponse, selectedMaster);
+                Log.d(TAG, "✅ Assistant+DB response success for response #" + responseId);
+                return cleanedResponse;
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Assistant+DB response error for response #" + responseId, e);
+                return getDefaultDeepResponse(selectedMaster);
+            }
+        }, executorService);
+        
+        implementCustomTimeout(lookupTask, STAGE_3_TIMEOUT_MS, new TimeoutCallback() {
+            @Override
+            public void onResult(String result) {
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_3_DEEP, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_3_DEEP, result, true);
+                        callback.onAllStagesComplete(result);
+                    }
+                    if (isSignificantlyDifferent(result)) {
+                        interruptPreviousTTSAndStart(result, 3, responseId);
+                    }
+                });
+            }
+            
+            @Override
+            public void onTimeout() {
+                Log.e(TAG, "⏰ Assistant+DB timeout for response #" + responseId);
+                final String timeoutResult = getDefaultDeepResponse(selectedMaster);
+                final long duration = System.currentTimeMillis() - startTime;
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_3_DEEP, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_3_DEEP, timeoutResult, false);
+                        callback.onAllStagesComplete(timeoutResult);
+                    }
+                    interruptPreviousTTSAndStart(timeoutResult, 3, responseId);
+                });
+            }
+        });
+    }
+    
+    /**
+     * NEW: Detect chess analysis questions
+     */
+    private boolean isChessAnalysisQuestion(String userInput, String gameContext) {
+        if (gameContext != null && gameContext.contains("POSITION:") && !gameContext.contains("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR")) {
+            return true; // Non-starting position
+        }
+        
+        String input = userInput.toLowerCase();
+        return input.contains("position") || input.contains("move") || input.contains("analyze") || 
+               input.contains("evaluation") || input.contains("tactic") || input.contains("strategy") ||
+               input.contains("what should i play") || input.contains("best move");
+    }
+    
+    /**
+     * NEW: Get historical position context from local DB
+     */
+    private String getHistoricalPositionContext(String gameContext, String selectedMaster) {
+        // This will hook into your existing personality engine DB lookup
+        // For now, return empty - you can enhance this with actual DB queries
+        return "";
     }
 
     /**
@@ -290,27 +536,28 @@ public class ThreeStageResponseManager {
         // Clean up any double spaces or awkward starts
         cleaned = cleaned.replaceAll("\\s+", " ").trim();
 
+        // DISABLED: Auto-opener addition was corrupting biographical responses
         // Enhanced natural opening replacement for Tal
-        if (cleaned.length() > 10 &&
-                !cleaned.toLowerCase().matches("^(you know|when i|in my|during my|against \\w+|i remember|this reminds me).*")) {
-
-            String[] talOpeners = {
-                    "You know, ",
-                    "In my experience, ",
-                    "I've always believed that ",
-                    "This reminds me of when ",
-                    "During my career, I learned that ",
-                    "Against strong opponents, I found that ",
-                    "In positions like this, "
-            };
-
-            String opener = talOpeners[(int)(Math.random() * talOpeners.length)];
-
-            // Ensure first letter is lowercase for natural flow
-            if (cleaned.length() > 0) {
-                cleaned = opener + Character.toLowerCase(cleaned.charAt(0)) + cleaned.substring(1);
-            }
-        }
+        // if (cleaned.length() > 10 &&
+        //         !cleaned.toLowerCase().matches("^(you know|when i|in my|during my|against \\w+|i remember|this reminds me).*")) {
+        //
+        //     String[] talOpeners = {
+        //             "You know, ",
+        //             "In my experience, ",
+        //             "I've always believed that ",
+        //             "This reminds me of when ",
+        //             "During my career, I learned that ",
+        //             "Against strong opponents, I found that ",
+        //             "In positions like this, "
+        //     };
+        //
+        //     String opener = talOpeners[(int)(Math.random() * talOpeners.length)];
+        //
+        //     // Ensure first letter is lowercase for natural flow
+        //     if (cleaned.length() > 0) {
+        //         cleaned = opener + Character.toLowerCase(cleaned.charAt(0)) + cleaned.substring(1);
+        //     }
+        // }
 
         Log.d(TAG, "🧹 Enhanced meta-language cleaning applied to " + master);
         return cleaned.trim();
@@ -491,14 +738,17 @@ public class ThreeStageResponseManager {
         String masterName = modelManager.getMasterDisplayName(master);
         String historicalContext = getHistoricalContextForMaster(master);
 
-        // ANTI-META prompting to suppress AI-like responses
+        // ENHANCED: Direct instruction to answer the specific question asked
         return "You are " + masterName + " speaking directly to a chess student. " +
-                "NEVER say 'Let me analyze', 'As your assistant', 'I recommend', or 'You should'. " +
-                "Instead, share your memories: 'I remember facing...', 'In my experience...', " +
-                "'This reminds me of my game against...'. " +
-                "Speak as if recalling your actual chess career and philosophy. " +
+                "Answer the specific question they ask about your chess career, games, or experiences. " +
+                "If they ask about losses, defeats, or difficult games, share specific examples from your career. " +
+                "If they ask about wins or successes, share those instead. " +
+                "NEVER give generic chess advice when asked about specific biographical details. " +
+                "Instead, share your actual memories: 'I remember my loss against...', 'My worst defeat was...', " +
+                "'My greatest victory came against...'. " +
+                "Be specific about opponents, tournaments, years, and what happened. " +
                 historicalContext + " " +
-                "Be direct, personal, and engaging - no meta-commentary about analyzing positions.";
+                "Always directly address what they asked about.";
     }
 
     /**
@@ -536,12 +786,12 @@ public class ThreeStageResponseManager {
     }
 
     /**
-     * ENHANCED: Context message that reinforces persona
+     * ENHANCED: Context message that reinforces persona and handles different question types
      */
     private String createOptimizedUserMessage(String userInput, String gameContext) {
         StringBuilder message = new StringBuilder();
 
-        // Add context but frame it as if Tal is looking at the board himself
+        // Add position context only if provided (for position-related questions)
         if (gameContext != null && !gameContext.trim().isEmpty()) {
             message.append("Looking at this position: ");
 
@@ -556,10 +806,11 @@ public class ThreeStageResponseManager {
                     message.append("Recent moves: ").append(moves).append("\n");
                 }
             }
+            message.append("\nTal, what are your thoughts? What does this position remind you of from your career?");
+        } else {
+            // For biographical/general questions, pass the question directly without position framing
+            message.append(userInput);
         }
-
-        // Frame the question as if asking Tal directly about his experience
-        message.append("\nTal, what are your thoughts? What does this position remind you of from your career?");
 
         return message.toString();
     }
@@ -644,11 +895,12 @@ public class ThreeStageResponseManager {
      */
     private void interruptPreviousTTSAndStart(String text, int stage, int responseId) {
         Log.d(TAG, "🔄 Adaptive TTS transition to stage " + stage + " for response #" + responseId);
+        Log.d(TAG, "🔍 Stage states - Stage1Speaking: " + isStage1Speaking + ", Stage2Speaking: " + isStage2Speaking);
 
         if (stage == 2) {
-            // With ElevenLabs' ultra-low latency, allow Stage 1 minimal play time
+            // With ElevenLabs' ultra-low latency, allow minimal Stage 1 play time
             if (isStage1Speaking) {
-                // Reduced delay for ElevenLabs - just enough to hear the start
+                // Optimized delay for ElevenLabs - ultra-fast transitions
                 int estimatedRemainingSeconds = Math.max(1, getCurrentAudioRemainingTime());
 
                 Log.d(TAG, "⏳ Stage 1 playing - allowing " + estimatedRemainingSeconds + " seconds before Stage 2 (ElevenLabs optimized)");
@@ -663,8 +915,8 @@ public class ThreeStageResponseManager {
         if (stage == 3) {
             // For Stage 3, be more selective about interrupting
             if (isStage2Speaking) {
-                // Reduced minimum play time for ElevenLabs - much faster transitions
-                int minStage2PlayTime = Math.max(2000, text.length() * 8); // Reduced from 20 to 8 for ElevenLabs
+                // Optimized timing for ElevenLabs - much faster transitions
+                int minStage2PlayTime = Math.max(2000, text.length() * 8); // Optimized for ElevenLabs speed
 
                 Log.d(TAG, "⏳ Stage 2 playing - ensuring " + (minStage2PlayTime/1000) + " seconds minimum (ElevenLabs optimized)");
 

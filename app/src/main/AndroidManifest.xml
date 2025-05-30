@@ -89,6 +89,13 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ChessPedagogue"
             android:label="Spectator Mode"/>
+        
+        <!-- Responses API Test Activity -->
+        <activity
+            android:name=".ResponsesAPITestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ChessPedagogue"
+            android:label="Responses API Test" />
 
     </application>
 

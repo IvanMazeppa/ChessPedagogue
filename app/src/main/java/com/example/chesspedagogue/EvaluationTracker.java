@@ -519,6 +519,38 @@ public class EvaluationTracker {
     }
 
     /**
+     * Get the recent evaluation change if any significant swing occurred
+     * @return The evaluation change amount, or null if no recent significant change
+     */
+    public Float getRecentEvaluationChange() {
+        if (evaluationHistory.size() < 2) {
+            return null;
+        }
+        
+        // Get the last two evaluations
+        EvaluationSnapshot prev = evaluationHistory.get(evaluationHistory.size() - 2);
+        EvaluationSnapshot curr = evaluationHistory.get(evaluationHistory.size() - 1);
+        
+        // Calculate the swing
+        float prevEval = prev.getEffectiveEvaluation();
+        float currEval = curr.getEffectiveEvaluation();
+        float swingAmount = currEval - prevEval;
+        
+        // Adjust for player perspective
+        boolean isWhiteMove = (moveCount % 2 == 0);
+        if (!isWhiteMove) {
+            swingAmount = -swingAmount;
+        }
+        
+        // Only return if significant
+        if (Math.abs(swingAmount) >= INACCURACY_THRESHOLD) {
+            return swingAmount;
+        }
+        
+        return null;
+    }
+
+    /**
      * Clean up resources when no longer needed
      */
     public void cleanup() {

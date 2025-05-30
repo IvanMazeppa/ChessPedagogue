@@ -99,18 +99,22 @@ public class MainActivity extends AppCompatActivity {
     private final ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            SimpleRecordService.LocalBinder binder = (SimpleRecordService.LocalBinder) service;
-            recordService = binder.getService();
-            isServiceBound = true;
-            Log.d(TAG, "🎉 Service connected successfully!");
+            Log.d(TAG, "🎯 onServiceConnected called!");
+            try {
+                SimpleRecordService.LocalBinder binder = (SimpleRecordService.LocalBinder) service;
+                recordService = binder.getService();
+                isServiceBound = true;
+                Log.d(TAG, "🎉 Service connected successfully!");
+                Log.d(TAG, "📋 Service instance: " + (recordService != null ? "VALID" : "NULL"));
 
-            updateVoiceForCurrentMaster();
+                updateVoiceForCurrentMaster();
 
             if (recordService != null) {
                 recordService.refreshVoiceSettings();
             }
 
             // Set up the callback to handle responses
+            Log.d(TAG, "🔗 Setting up ServiceCallback...");
             recordService.setCallback(new SimpleRecordService.ServiceCallback() {
                 @Override
                 public void onRecordingStarted() {
@@ -159,6 +163,12 @@ public class MainActivity extends AppCompatActivity {
                     mainHandler.post(() -> updateUIState(ProcessingState.IDLE));
                 }
             });
+            
+            Log.d(TAG, "✅ ServiceCallback setup completed!");
+            
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Exception in onServiceConnected", e);
+            }
         }
 
         @Override
@@ -263,9 +273,13 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        preWarmSpeechServices();
+        try {
+            super.onCreate(savedInstanceState);
+            Log.d(TAG, "🚀 MainActivity onCreate starting...");
+            setContentView(R.layout.activity_main);
+            Log.d(TAG, "✅ setContentView completed!");
+            preWarmSpeechServices();
+            Log.d(TAG, "✅ preWarmSpeechServices completed!");
 
         // NEW: Get configuration from splash screen
         loadGameConfiguration();
@@ -284,7 +298,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Initialize all UI elements
+        Log.d(TAG, "🎯 About to call initializeViews...");
         initializeViews();
+        Log.d(TAG, "✅ initializeViews completed!");
 
         // ENHANCED: Add null check for chessBoardView before proceeding
         if (chessBoardView == null) {
@@ -292,6 +308,7 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Error initializing chess board. Please restart the app.", Toast.LENGTH_LONG).show();
             return;
         }
+        Log.d(TAG, "✅ ChessBoardView validated successfully!");
 
         // Initialize game ViewModel with configuration
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
@@ -330,7 +347,15 @@ public class MainActivity extends AppCompatActivity {
         initializeGameWithConfiguration();
 
         // Bind to the SimpleRecordService
+        Log.d(TAG, "📞 About to call bindRecordService...");
         bindRecordService();
+        Log.d(TAG, "✅ MainActivity onCreate completed!");
+        
+        } catch (Exception e) {
+            Log.e(TAG, "💥 CRITICAL: Exception in onCreate!", e);
+            // Try to show error to user
+            Toast.makeText(this, "App initialization failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     /**
@@ -365,9 +390,13 @@ public class MainActivity extends AppCompatActivity {
         // Speak Button (FAB) - using your existing voice recording logic
         if (speakButton != null) {
             speakButton.setOnClickListener(v -> {
-                Log.d(TAG, "🎤 Speak button clicked");
+                Log.d(TAG, "🎤 MODIFIED SPEAK BUTTON CLICKED - SERVICE BOUND: " + isServiceBound);
 
                 OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
+                
+                // Set context for main game screen (ultra-fast eleven_flash_v2_5)
+                TTSServiceManager.setUsageContext(this, "main_game");
+                
                 if (tts != null && tts.isSpeaking()) {
                     tts.stopSpeech();
                     tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
@@ -533,7 +562,7 @@ public class MainActivity extends AppCompatActivity {
                         updateStatusMessage("Loading chess master data...");
                     });
                     // Import all your master data files
-                    String[] masters = {"tal", "fischer", "kasparov"}; // Add more as you create them
+                    String[] masters = {"tal", "fischer", "kasparov", "carlsen"}; // Add more as you create them
 
                     for (String master : masters) {
                         String filename = master + "_positions.json";
@@ -1035,11 +1064,24 @@ public class MainActivity extends AppCompatActivity {
      * Bind to the SimpleRecordService
      */
     private void bindRecordService() {
+        Log.d(TAG, "🔄 Starting bindRecordService process...");
         Intent serviceIntent = new Intent(this, SimpleRecordService.class);
-        // Start and bind the service
-        startService(serviceIntent);
-        bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
-        Log.d(TAG, "Binding to SimpleRecordService...");
+        
+        try {
+            // Start and bind the service
+            Log.d(TAG, "🚀 Starting SimpleRecordService...");
+            startService(serviceIntent);
+            
+            Log.d(TAG, "🔗 Binding to SimpleRecordService...");
+            boolean bindResult = bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE);
+            
+            Log.d(TAG, "📊 Service binding result: " + (bindResult ? "SUCCESS" : "FAILED"));
+            if (!bindResult) {
+                Log.e(TAG, "❌ Failed to bind to SimpleRecordService!");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Exception during service binding", e);
+        }
     }
 
     // Add this method to your existing MainActivity.java class
@@ -1886,6 +1928,10 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "Speak button clicked");
 
                 OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
+                
+                // Set context for main game screen (ultra-fast eleven_flash_v2_5)
+                TTSServiceManager.setUsageContext(this, "main_game");
+                
                 if (tts != null && tts.isSpeaking()) {
                     tts.stopSpeech();
                     tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
