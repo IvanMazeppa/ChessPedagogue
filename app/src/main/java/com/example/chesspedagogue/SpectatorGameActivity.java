@@ -648,20 +648,29 @@ public class SpectatorGameActivity extends AppCompatActivity {
             // Determine current game phase for context
             String gamePhase = determineGamePhase();
 
-            // Send comment to dialogue manager for AI response
+            // Send comment to enhanced conversation orchestrator for AI response
             if (viewModel != null) {
-                AIDialogueManager dialogueManager = new AIDialogueManager(this);
+                SpectatorConversationOrchestrator orchestrator = SpectatorConversationOrchestrator.getInstance(this);
 
-                dialogueManager.handleUserComment(
-                        comment,
+                // Create game context from current state
+                String gameContext = String.format("Game: %s vs %s\nPhase: %s\nUser comment: %s", 
+                    whitePlayer, blackPlayer, gamePhase, comment);
+
+                orchestrator.startConversation(
+                        "user_comment",
                         whitePlayer,
                         blackPlayer,
-                        gamePhase,
-                        new AIDialogueManager.DialogueCallback() {
+                        gameContext,
+                        new SpectatorConversationOrchestrator.ConversationCallback() {
+                            @Override
+                            public void onConversationStart(String speaker1, String speaker2) {
+                                Log.d(TAG, "🎬 Enhanced conversation started between " + speaker1 + " and " + speaker2);
+                            }
+
                             @Override
                             public void onDialogueGenerated(String speaker, String dialogue) {
                                 runOnUiThread(() -> {
-                                    Log.d(TAG, "🎭 Master " + speaker + " responded to user comment");
+                                    Log.d(TAG, "🎭 Master " + speaker + " responded to user comment with enhanced AI");
                                     displayAIDialogue(dialogue);
 
                                     // Show special indicator that this is a response to user
@@ -673,19 +682,19 @@ public class SpectatorGameActivity extends AppCompatActivity {
                             }
 
                             @Override
-                            public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
+                            public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
                                 runOnUiThread(() -> {
-                                    Log.d(TAG, "🎉 User comment triggered conversation!");
-                                    String conversationIndicator = "💭 " +
-                                            FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(respondingSpeaker) +
-                                            " is thinking about your comment...";
-                                    displayAIDialogue(conversationIndicator);
+                                    Log.d(TAG, "😮 Emotional response from " + speaker + ": " + emotion);
+                                    String emotionalIndicator = "💭 " + 
+                                            FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(speaker) +
+                                            " (" + emotion + "): \"" + dialogue + "\"";
+                                    displayAIDialogue(emotionalIndicator);
                                 });
                             }
 
                             @Override
-                            public void onConversationComplete(String finalSpeaker, String finalStatement) {
-                                Log.d(TAG, "✅ User-triggered conversation completed");
+                            public void onConversationEnd(String finalSpeaker, String finalMessage) {
+                                Log.d(TAG, "✅ User-triggered conversation completed by " + finalSpeaker);
                             }
 
                             @Override

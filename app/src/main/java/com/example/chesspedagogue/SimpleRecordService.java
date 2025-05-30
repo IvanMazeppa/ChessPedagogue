@@ -78,7 +78,7 @@ public class SimpleRecordService extends Service {
     private TextView responseTextView;
     private View loadingIndicator;
     private TextView coachThinkingText;
-    private WeakReference<ServiceCallback> callbackRef;
+    private ServiceCallback callback;
 
     // Auto-stop recording after a period of silence
     private ScheduledExecutorService silenceDetector;
@@ -237,9 +237,8 @@ public class SimpleRecordService extends Service {
         }
         
         // Clear callback reference
-        if (callbackRef != null) {
-            callbackRef.clear();
-            callbackRef = null;
+        if (callback != null) {
+            callback = null;
         }
         
         // Shutdown executor service properly
@@ -462,13 +461,38 @@ public class SimpleRecordService extends Service {
                 // Show transcribed text to user immediately
                 mainHandler.post(() -> {
                     ServiceCallback transcriptionCallback = getCallback();
+                    Log.d(TAG, "🔍 Transcription callback check: " + (transcriptionCallback != null ? "FOUND" : "NULL"));
+                    Log.d(TAG, "🔍 Service callback instance: " + transcriptionCallback);
+                    Log.d(TAG, "🔍 Service callback: " + (callback != null ? "EXISTS" : "NULL"));
                     if (transcriptionCallback != null) {
+                        Log.d(TAG, "📝 Calling onTranscriptionReceived with: " + transcribedText);
                         transcriptionCallback.onTranscriptionReceived(transcribedText);
+                    } else {
+                        Log.e(TAG, "❌ No callback registered - transcription UI will not show!");
+                        Log.e(TAG, "❌ Service bound but callback missing - registration failed!");
                     }
                 });
 
-                // Build context
-                String gameContext = buildEnhancedContext();
+                // RESTORED: Check if question is relevant before processing
+                if (!isRelevantChessQuestion(transcribedText)) {
+                    Log.d(TAG, "🚫 Filtering out irrelevant question: " + transcribedText);
+                    mainHandler.post(() -> {
+                        updateUIForProcessing(false);
+                        String filterMsg = "I'm your chess coach! Please ask me about chess positions, moves, or chess history.";
+                        TTSServiceManager.getOpenAITTSService(this).speak(filterMsg);
+                        updateResponseUI(filterMsg);
+                    });
+                    return;
+                }
+
+                // FIXED: Only include game context for position-related questions
+                String gameContext = "";
+                if (checkIfPositionRelated(transcribedText)) {
+                    Log.d(TAG, "🎯 Position-related question - including board context");
+                    gameContext = buildEnhancedContext();
+                } else {
+                    Log.d(TAG, "💭 General chess question - no board context needed");
+                }
 
                 // Process with 3-stage system
                 processWithThreeStageSystem(transcribedText, gameContext);
@@ -640,7 +664,51 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Check if the user's question is about the current chess position
+     * ENHANCED: Check if question is relevant to chess coaching
+     */
+    private boolean isRelevantChessQuestion(String question) {
+        if (question == null || question.trim().isEmpty()) {
+            return false;
+        }
+
+        String lowerQuestion = question.toLowerCase().trim();
+
+        // Always allow chess-related questions
+        String[] chessKeywords = {
+            "chess", "position", "move", "piece", "board", "game", "tactic", "strategy",
+            "opening", "endgame", "middlegame", "checkmate", "check", "castle", "capture",
+            "pawn", "rook", "knight", "bishop", "queen", "king", 
+            "master", "grandmaster", "tournament", "rating", "elo",
+            "tal", "fischer", "kasparov", "carlsen", "kramnik", "karpov", 
+            "alekhine", "capablanca", "morphy", "lasker", "anand", "botvinnik"
+        };
+
+        for (String keyword : chessKeywords) {
+            if (lowerQuestion.contains(keyword)) {
+                return true;
+            }
+        }
+
+        // Filter out clearly non-chess questions
+        String[] nonChessKeywords = {
+            "weather", "restaurant", "movie", "music", "sports", "politics",
+            "cooking", "recipe", "shopping", "travel", "news", "celebrity",
+            "health", "medicine", "programming", "code", "mathematics",
+            "science", "physics", "chemistry", "biology"
+        };
+
+        for (String keyword : nonChessKeywords) {
+            if (lowerQuestion.contains(keyword)) {
+                return false;
+            }
+        }
+
+        // If unclear, allow it (to avoid filtering too aggressively)
+        return true;
+    }
+
+    /**
+     * LEGACY: Check if the user's question is about the current chess position
      */
     private boolean checkIfPositionRelated(String question) {
         if (question == null) return false;
@@ -1063,14 +1131,16 @@ public class SimpleRecordService extends Service {
      * Set the callback for service events
      */
     public void setCallback(ServiceCallback callback) {
-        this.callbackRef = new WeakReference<>(callback);
+        Log.d(TAG, "📋 SimpleRecordService setCallback called with: " + (callback != null ? "VALID CALLBACK" : "NULL"));
+        this.callback = callback;
+        Log.d(TAG, "✅ Callback stored as strong reference");
     }
     
     /**
-     * Safely get callback from weak reference
+     * Get the callback
      */
     private ServiceCallback getCallback() {
-        return callbackRef != null ? callbackRef.get() : null;
+        return callback;
     }
 
     /**

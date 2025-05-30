@@ -36,28 +36,28 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private final GameRepository gameRepository;
     private final ExecutorService executorService;
     private final Handler mainHandler;
-    private final AIDialogueManager dialogueManager;
+    private final SpectatorConversationOrchestrator conversationOrchestrator;
     private final AIvsAIGameManager gameManager;
 
     // Game state with better tracking
     private final MutableLiveData<String> currentFEN = new MutableLiveData<>();
     private final MutableLiveData<List<String>> moveHistory = new MutableLiveData<>();
     private final MutableLiveData<Float> currentEvaluation = new MutableLiveData<>();
-    private final MutableLiveData<String> aiDialogue = new MutableLiveData<>();
+    protected final MutableLiveData<String> aiDialogue = new MutableLiveData<>();
     private final MutableLiveData<String> currentPlayer = new MutableLiveData<>();
-    private final MutableLiveData<String> gameStatus = new MutableLiveData<>();
+    protected final MutableLiveData<String> gameStatus = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isThinking = new MutableLiveData<>();
     private final MutableLiveData<int[]> lastMove = new MutableLiveData<>();
 
     // ENHANCED: Conversation tracking
-    private final MutableLiveData<String> conversationSpeaker = new MutableLiveData<>();
-    private final MutableLiveData<Boolean> conversationActive = new MutableLiveData<>();
+    protected final MutableLiveData<String> conversationSpeaker = new MutableLiveData<>();
+    protected final MutableLiveData<Boolean> conversationActive = new MutableLiveData<>();
 
     // Game control with better state tracking
     private boolean isPaused = false;
     private int gameSpeed = 3000;
-    private String whitePlayer;
-    private String blackPlayer;
+    protected String whitePlayer;
+    protected String blackPlayer;
     private int moveCount = 0;
     private boolean gameInProgress = false;
     private Float lastEvaluationForEmotions = null;
@@ -72,7 +72,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         this.gameRepository = new GameRepository(application);
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
-        this.dialogueManager = new AIDialogueManager(application);
+        this.conversationOrchestrator = SpectatorConversationOrchestrator.getInstance(application);
         this.gameManager = new AIvsAIGameManager(application);
 
         // Initialize state
@@ -111,8 +111,8 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         // Reset emotional state for new game
         lastEvaluationForEmotions = null;
 
-        // Initialize dialogue manager with emotional reset
-        dialogueManager.resetEmotionalState();  // 🎭 RESET emotions for new game
+        // Initialize conversation orchestrator for new game
+        // Note: SpectatorConversationOrchestrator handles emotional state internally
 
         // Store player information
         this.whitePlayer = whitePlayer;
@@ -393,11 +393,17 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     /**
      * 🎬 ENHANCED: Generate opening dialogue with conversation support
      */
-    private void generateEnhancedOpeningDialogue() {
+    protected void generateEnhancedOpeningDialogue() {
         Log.d(TAG, "🎬 Generating enhanced opening dialogue with conversation potential");
 
-        dialogueManager.generateOpeningDialogue(whitePlayer, blackPlayer,
-                new EnhancedDialogueCallback("opening"));
+        // Use conversation orchestrator for enhanced opening dialogue
+        String gameContext = String.format("Opening game between %s and %s", whitePlayer, blackPlayer);
+        conversationOrchestrator.startConversation(
+                "opening",
+                whitePlayer,
+                blackPlayer,
+                gameContext,
+                new EnhancedConversationCallback("opening"));
     }
 
     /**
@@ -428,19 +434,29 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private void generateEnhancedEndGameDialogue(String result) {
         Log.d(TAG, "🏁 Generating enhanced end game dialogue for: " + result);
 
-        dialogueManager.generateEndGameDialogue(
-                result, whitePlayer, blackPlayer,
-                new EnhancedDialogueCallback("endgame"));
+        // Use conversation orchestrator for enhanced endgame dialogue
+        String gameContext = String.format("Game ended: %s (between %s and %s)", result, whitePlayer, blackPlayer);
+        conversationOrchestrator.startConversation(
+                "endgame",
+                whitePlayer,
+                blackPlayer,
+                gameContext,
+                new EnhancedConversationCallback("endgame"));
     }
 
     /**
      * 🎭 ENHANCED: Dialogue callback that supports conversations
      */
-    private class EnhancedDialogueCallback implements AIDialogueManager.DialogueCallback {
+    private class EnhancedConversationCallback implements SpectatorConversationOrchestrator.ConversationCallback {
         private final String context;
 
-        public EnhancedDialogueCallback(String context) {
+        public EnhancedConversationCallback(String context) {
             this.context = context;
+        }
+
+        @Override
+        public void onConversationStart(String speaker1, String speaker2) {
+            Log.d(TAG, "🎬 Enhanced conversation started: " + speaker1 + " vs " + speaker2);
         }
 
         @Override
@@ -463,25 +479,24 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         }
 
         @Override
-        public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
-            Log.d(TAG, "🎉 CONVERSATION STARTED! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
+        public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
+            Log.d(TAG, "😮 EMOTIONAL RESPONSE from " + speaker + " (" + emotion + "): " + dialogue);
 
-            // Update conversation state
-            conversationActive.setValue(true);
-
-            // You could show a special UI indicator here
-            String responderName = FineTunedModelManager.getInstance(getApplication())
-                    .getMasterDisplayName(respondingSpeaker);
-
-            Log.d(TAG, "💬 " + responderName + " is responding to the conversation...");
+            // Handle emotional dialogue specially
+            String speakerName = FineTunedModelManager.getInstance(getApplication())
+                    .getMasterDisplayName(speaker);
+            String emotionalDialogue = speakerName + " (" + emotion + "): \"" + dialogue + "\"";
+            
+            aiDialogue.setValue(emotionalDialogue);
+            conversationSpeaker.setValue(speakerName);
         }
 
         @Override
-        public void onConversationComplete(String finalSpeaker, String finalStatement) {
-            Log.d(TAG, "🎭 CONVERSATION COMPLETED with " + finalSpeaker + ": " + finalStatement);
+        public void onConversationEnd(String finalSpeaker, String finalMessage) {
+            Log.d(TAG, "🎭 CONVERSATION ENDED with " + finalSpeaker + ": " + finalMessage);
 
             // Update conversation state
-            conversationActive.setValue(false);
+            conversationActive.postValue(false);
 
             Log.d(TAG, "✅ Conversation has ended naturally");
         }
@@ -566,7 +581,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private void triggerEmotionalCommentary(String affectedPlayer, float evalChange, float currentEval) {
         Log.d(TAG, "🎭 TRIGGERING EMOTIONAL COMMENTARY for " + affectedPlayer + " (change: " + evalChange + ")");
 
-        AIDialogueManager dialogueManager = new AIDialogueManager(getApplication());
+        // Use the conversation orchestrator for emotional responses
 
         // Create emotional context based on evaluation change
         String emotionalContext = determineEmotionalContext(evalChange, currentEval);
@@ -583,13 +598,15 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
             conversationSpeaker.postValue(affectedPlayer);
 
-            // Speak with emotion
-            dialogueManager.speakDialogueWithPersonalityAndEmotion(
-                    affectedPlayer,
-                    emotionalStatement,
-                    emotionalContext,
-                    currentEval
-            );
+            // Trigger enhanced emotional conversation using the orchestrator
+            String gameContext = String.format("Emotional response to evaluation change: %.2f\nContext: %s", 
+                evalChange, emotionalContext);
+            conversationOrchestrator.startConversation(
+                    "emotional_response",
+                    whitePlayer,
+                    blackPlayer,
+                    gameContext,
+                    new EnhancedConversationCallback("emotional"));
         }
     }
 
@@ -625,18 +642,20 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
             Log.d(TAG, "🎭 EMOTIONAL DIALOGUE: move=" + move + ", eval=" + currentEval + ", lastEval=" + lastEvaluationForEmotions);
 
-            // Create dialogue manager
-            AIDialogueManager dialogueManager = new AIDialogueManager(getApplication());
-
-            // 🎭 EMOTIONAL: Use the emotional dialogue method instead of regular one
-            dialogueManager.generateMoveDialogueWithEmotion(
-                    move,
-                    playerWhoMoved,
+            // 🎭 ENHANCED: Use conversation orchestrator for intelligent move commentary
+            String gameContext = String.format("Move: %s by %s\nEvaluation: %.2f\nMove number: %d", 
+                move, playerWhoMoved, currentEval != null ? currentEval : 0.0f, history.size());
+                
+            conversationOrchestrator.startConversation(
+                    "brilliant_move",
                     whitePlayerName,
                     blackPlayerName,
-                    history.size(),
-                    currentEval,  // 🎭 CRITICAL: Pass evaluation for emotional analysis
-                    new AIDialogueManager.DialogueCallback() {
+                    gameContext,
+                    new SpectatorConversationOrchestrator.ConversationCallback() {
+                        @Override
+                        public void onConversationStart(String speaker1, String speaker2) {
+                            Log.d(TAG, "🎬 Move commentary conversation started");
+                        }
                         @Override
                         public void onDialogueGenerated(String speaker, String dialogue) {
                             Log.d(TAG, "🎭 Enhanced dialogue from " + speaker + ": " + dialogue);
@@ -649,14 +668,19 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                         }
 
                         @Override
-                        public void onConversationStarted(String respondingSpeaker, String triggerStatement) {
-                            Log.d(TAG, "🎉 CONVERSATION STARTED! " + respondingSpeaker + " responding to: \"" + triggerStatement + "\"");
-                            conversationActive.postValue(true);
+                        public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
+                            Log.d(TAG, "😮 EMOTIONAL RESPONSE! " + speaker + " (" + emotion + "): " + dialogue);
+                            
+                            // Update UI with emotional dialogue
+                            String emotionalDialogue = FineTunedModelManager.getInstance(getApplication())
+                                    .getMasterDisplayName(speaker) + " (" + emotion + "): \"" + dialogue + "\"";
+                            aiDialogue.postValue(emotionalDialogue);
+                            conversationSpeaker.postValue(speaker);
                         }
 
                         @Override
-                        public void onConversationComplete(String finalSpeaker, String finalStatement) {
-                            Log.d(TAG, "✅ Conversation completed with " + finalSpeaker);
+                        public void onConversationEnd(String finalSpeaker, String finalMessage) {
+                            Log.d(TAG, "✅ Move commentary conversation completed with " + finalSpeaker);
                             conversationActive.postValue(false);
                         }
 
@@ -790,9 +814,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             gameManager.forceStop();
         }
         
-        // Force stop dialogue manager
-        if (dialogueManager != null) {
-            dialogueManager.forceStop();
+        // Force stop conversation orchestrator
+        if (conversationOrchestrator != null) {
+            conversationOrchestrator.forceStop();
         }
         
         Log.d(TAG, "✅ FORCE STOP completed");
@@ -804,8 +828,8 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         if (gameManager != null) {
             gameManager.cleanup();
         }
-        if (dialogueManager != null) {
-            dialogueManager.cleanup();
+        if (conversationOrchestrator != null) {
+            conversationOrchestrator.cleanup();
         }
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
