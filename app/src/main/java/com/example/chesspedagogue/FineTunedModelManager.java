@@ -32,6 +32,7 @@ public class FineTunedModelManager {
     private static final String KEY_TAL_ASSISTANT_ID = "tal_assistant_id";
     private static final String KEY_FISCHER_ASSISTANT_ID = "fischer_assistant_id";
     private static final String KEY_CARLSEN_ASSISTANT_ID = "carlsen_assistant_id";
+    private static final String KEY_ANAND_ASSISTANT_ID = "anand_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -44,6 +45,10 @@ public class FineTunedModelManager {
     // 🏆 MAGNUS CARLSEN CONFIGURATION - NEW!
     private static final String CARLSEN_ASSISTANT_ID = "asst_TTzxbfvJQz3e80FetQblJ0Gl"; // Your Carlsen assistant
     private static final String CARLSEN_VECTOR_STORE_ID = "vs_68365028eb988191b09d8d50e6f11b5d"; // Your Carlsen vector store
+
+    // 🏆 MAGNUS ANAND CONFIGURATION - NEW!
+    private static final String ANAND_ASSISTANT_ID = "asst_3PUe4Mra1zfY1VEfcDxF0xa9"; // Your Anand assistant
+    private static final String ANAND_VECTOR_STORE_ID = "vs_683a6d79f3f881918134880655179275"; // Your Anand vector store
 
     // Model constants - updated for enhanced models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
@@ -1131,6 +1136,19 @@ public class FineTunedModelManager {
                     enriched.append(" Scientific analysis reveals the truth in every position.");
                 }
                 break;
+                
+            case "anand":
+                // Anand's practical, adaptable approach with quick intuition
+                if (response.contains("practical") || response.contains("intuition")) {
+                    enriched.append(" Trust your intuition but verify with calculation - that's the modern way.");
+                } else if (response.contains("adapt") || response.contains("flexible")) {
+                    enriched.append(" The best players adapt their style to what the position demands. Flexibility is strength.");
+                } else if (response.contains("rapid") || response.contains("quick")) {
+                    enriched.append(" Quick thinking combined with solid preparation - this is how we succeed in the modern era.");
+                } else if (response.contains("computer") || response.contains("engine")) {
+                    enriched.append(" We must embrace technology while keeping our human intuition sharp.");
+                }
+                break;
         }
 
         return enriched.toString();
@@ -1198,6 +1216,8 @@ public class FineTunedModelManager {
                 return getFischerAssistantId();
             case "carlsen": // 🏆 NEW CARLSEN SUPPORT!
                 return getCarlsenAssistantId();
+            case "anand":
+                return getAnandAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1247,13 +1267,28 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Check if master should use Assistants API (now includes Carlsen!) - 🆕 UPDATED!
+     * 🏆 NEW: Get Anand Assistant ID with vector store support!
+     */
+    public String getAnandAssistantId() {
+        // Use your pre-configured Anand assistant
+        Log.d(TAG, "🏆 Using configured Anand assistant: " + ANAND_ASSISTANT_ID);
+        assistantIds.put("anand", ANAND_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_ANAND_ASSISTANT_ID, ANAND_ASSISTANT_ID).apply();
+
+        return ANAND_ASSISTANT_ID;
+    }
+
+    /**
+     * ENHANCED: Check if master should use Assistants API (now includes Anand!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
         switch (master.toLowerCase()) {
             case "tal":
             case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
+            case "anand": // 🏆 ANAND NOW USES ASSISTANTS API!
             case "botvinnik":
                 return true;
             default:
@@ -1263,7 +1298,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH CARLSEN!
+     * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH ANAND!
      */
     public String getAssistantIdForDeepAnalysis(String master) {
         switch (master.toLowerCase()) {
@@ -1273,6 +1308,8 @@ public class FineTunedModelManager {
                 return getFischerAssistantId();
             case "carlsen": // 🏆 CARLSEN GETS HIS OWN ASSISTANT!
                 return getCarlsenAssistantId();
+            case "anand": // 🏆 ANAND GETS HIS OWN ASSISTANT!
+                return getAnandAssistantId();
             default:
                 // Default to Tal assistant for other masters
                 String assistantId = getTalAssistantId();

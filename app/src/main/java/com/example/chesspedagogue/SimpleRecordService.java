@@ -90,6 +90,11 @@ public class SimpleRecordService extends Service {
 
     // NEW: Three-stage response manager
     private ThreeStageResponseManager threeStageManager;
+    
+    // NEW: Direct Responses API integration for enhanced voice responses
+    private ChessMasterResponsesManager responsesManager;
+    private ResponsesAPIIntegrationHelper integrationHelper;
+    private String currentVoiceSessionId = null;
 
     // NEW: Pre-warming for ultra-fast response
     private OpenAITTSService ttsService;
@@ -125,6 +130,10 @@ public class SimpleRecordService extends Service {
 
         // NEW: Initialize 3-stage response manager
         threeStageManager = ThreeStageResponseManager.getInstance(this);
+        
+        // NEW: Initialize Responses API integration for enhanced voice interactions
+        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
 
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
@@ -494,8 +503,9 @@ public class SimpleRecordService extends Service {
                     Log.d(TAG, "💭 General chess question - no board context needed");
                 }
 
-                // Process with 3-stage system
-                processWithThreeStageSystem(transcribedText, gameContext);
+                // NEW: Enhanced processing with direct Responses API option
+                Log.d(TAG, "🚀 Starting enhanced voice processing with Responses API integration");
+                processEnhancedVoiceResponse(transcribedText, gameContext);
 
             } catch (Exception e) {
                 Log.e(TAG, "Error in 3-stage processing", e);
@@ -510,7 +520,151 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * NEW: Process with the 3-stage system
+     * NEW: Enhanced voice processing with intelligent Responses API routing
+     */
+    private void processEnhancedVoiceResponse(String transcribedText, String gameContext) {
+        String selectedMaster = getSelectedChessMaster();
+        boolean useResponsesAPI = integrationHelper.shouldUseResponsesAPI(selectedMaster);
+        
+        if (useResponsesAPI) {
+            Log.d(TAG, "🚀 Using direct Responses API for voice: " + selectedMaster);
+            processVoiceWithResponsesAPI(selectedMaster, transcribedText, gameContext);
+        } else {
+            Log.d(TAG, "⚠️ Fallback to 3-stage system for: " + selectedMaster);
+            processWithThreeStageSystem(transcribedText, gameContext);
+        }
+    }
+    
+    /**
+     * NEW: Process voice input directly with Responses API (like spectator mode)
+     */
+    private void processVoiceWithResponsesAPI(String masterName, String transcribedText, String gameContext) {
+        try {
+            Log.d(TAG, "🎙️ Processing voice with Responses API: " + masterName);
+            
+            if (currentVoiceSessionId == null) {
+                // Create new voice session
+                responsesManager.createResponseSession(masterName, "voice_main_game",
+                    new ChessMasterResponsesManager.ResponseCallback() {
+                        @Override
+                        public void onResponseStart(String sessionId) {
+                            currentVoiceSessionId = sessionId;
+                            Log.d(TAG, "✅ Voice session created: " + sessionId);
+                            sendVoiceMessageToSession(sessionId, transcribedText, gameContext);
+                        }
+                        
+                        @Override
+                        public void onResponseChunk(String chunk, boolean isFirst) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onResponseComplete(String fullResponse) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onConversationTurn(String speaker, String message) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "❌ Voice session creation failed: " + error);
+                            // Fallback to 3-stage system
+                            processWithThreeStageSystem(transcribedText, gameContext);
+                        }
+                    });
+            } else {
+                // Use existing session
+                sendVoiceMessageToSession(currentVoiceSessionId, transcribedText, gameContext);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in voice Responses API processing", e);
+            // Fallback to 3-stage system
+            processWithThreeStageSystem(transcribedText, gameContext);
+        }
+    }
+    
+    /**
+     * NEW: Send voice message to established Responses API session
+     */
+    private void sendVoiceMessageToSession(String sessionId, String transcribedText, String gameContext) {
+        responsesManager.sendMessage(sessionId, transcribedText, gameContext,
+            new ChessMasterResponsesManager.ResponseCallback() {
+                private StringBuilder responseBuilder = new StringBuilder();
+                private boolean hasSpoken = false;
+                
+                @Override
+                public void onResponseStart(String sessionId) {
+                    Log.d(TAG, "🎤 Voice response processing started");
+                    mainHandler.post(() -> updateUIForProcessing(false));
+                }
+                
+                @Override
+                public void onResponseChunk(String chunk, boolean isFirst) {
+                    responseBuilder.append(chunk);
+                    // For voice mode, collect all chunks and speak the complete response
+                    Log.d(TAG, "📝 Voice chunk received: " + chunk.substring(0, Math.min(20, chunk.length())) + "... (accumulated: " + responseBuilder.length() + " chars)");
+                }
+                
+                @Override
+                public void onResponseComplete(String fullResponse) {
+                    String finalResponse = !responseBuilder.toString().trim().isEmpty() 
+                        ? responseBuilder.toString().trim() 
+                        : fullResponse;
+                    
+                    if (finalResponse != null && !finalResponse.trim().isEmpty()) {
+                        Log.d(TAG, "✅ Voice Responses API completed: " + finalResponse.substring(0, Math.min(50, finalResponse.length())));
+                        Log.d(TAG, "🎵 Speaking COMPLETE response: " + finalResponse);
+                        
+                        mainHandler.post(() -> {
+                            updateResponseUI(finalResponse);
+                            ServiceCallback callback = getCallback();
+                            if (callback != null) {
+                                callback.onResponseCompleted(finalResponse);
+                            }
+                            
+                            // FIXED: Always speak the complete response for voice interactions
+                            if (ttsService != null) {
+                                ttsService.speak(finalResponse, new OnSpeechCompletedListener() {
+                                    @Override
+                                    public void onSpeechCompleted() {
+                                        Log.d(TAG, "🎵 Complete voice response speech finished");
+                                    }
+                                });
+                            }
+                        });
+                        
+                        // Save to conversation manager
+                        conversationManager.addMessage("user", transcribedText);
+                        conversationManager.addMessage("assistant", finalResponse);
+                        conversationManager.saveCurrentConversation();
+                        
+                    } else {
+                        // Fallback if empty response
+                        Log.w(TAG, "⚠️ Empty response from voice Responses API, falling back");
+                        processWithThreeStageSystem(transcribedText, gameContext);
+                    }
+                }
+                
+                @Override
+                public void onConversationTurn(String speaker, String message) {
+                    Log.d(TAG, "💬 Voice conversation turn: " + speaker);
+                }
+                
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ Voice Responses API error: " + error);
+                    // Fallback to 3-stage system
+                    processWithThreeStageSystem(transcribedText, gameContext);
+                }
+            });
+    }
+
+    /**
+     * LEGACY: Process with the 3-stage system (fallback)
      */
     private void processWithThreeStageSystem(String transcribedText, String gameContext) {
         try {
@@ -874,6 +1028,9 @@ public class SimpleRecordService extends Service {
         if (threeStageManager != null) {
             threeStageManager.interruptCurrentResponse();
         }
+        
+        // NEW: Clear voice session for fresh start
+        currentVoiceSessionId = null;
 
         // Clear ALL conversation history
         conversationManager.startNewConversation();

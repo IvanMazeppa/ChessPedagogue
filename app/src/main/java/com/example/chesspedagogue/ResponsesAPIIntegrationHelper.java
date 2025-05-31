@@ -46,9 +46,24 @@ public class ResponsesAPIIntegrationHelper {
             enableResponsesAPIForMaster("tal", true);
             enableResponsesAPIForMaster("fischer", true);
             enableResponsesAPIForMaster("carlsen", true);
+            enableResponsesAPIForMaster("anand", true);
+            
+            // FUTURE: Enable for other masters when assistants are created
+            // For now, these masters will fallback to Chat Completions with enhanced context
+            Log.d(TAG, "🚀 Enabled Responses API by default for masters with assistants: Tal, Fischer, Carlsen, Anand");
+            Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) will use enhanced Chat Completions fallback");
         }
         
+        // IMPORTANT: Enable for main game mode by setting a preference flag
+        prefs.edit().putBoolean("responses_api_main_game_enabled", true).apply();
+        
         Log.d(TAG, "🔄 Integration helper initialized. Responses API enabled: " + useResponsesAPI.get());
+        Log.d(TAG, "🎯 Masters with Responses API enabled: " + masterResponsesEnabled.toString());
+        
+        // FORCE LOG: Show current configuration
+        for (String master : masterResponsesEnabled.keySet()) {
+            Log.d(TAG, "📋 Master '" + master + "' → Responses API: " + masterResponsesEnabled.get(master));
+        }
     }
     
     public static synchronized ResponsesAPIIntegrationHelper getInstance(Context context) {
@@ -80,14 +95,24 @@ public class ResponsesAPIIntegrationHelper {
      * Check if Responses API should be used for a master
      */
     public boolean shouldUseResponsesAPI(String masterName) {
+        Log.d(TAG, "🔍 Checking Responses API eligibility for: " + masterName);
+        
         // Check if globally enabled
-        if (!useResponsesAPI.get()) return false;
+        if (!useResponsesAPI.get()) {
+            Log.d(TAG, "❌ Responses API globally disabled");
+            return false;
+        }
         
         // Check if master has assistant configured
-        if (!hasAssistantConfigured(masterName)) return false;
+        if (!hasAssistantConfigured(masterName)) {
+            Log.d(TAG, "❌ No assistant configured for: " + masterName);
+            return false;
+        }
         
         // Check master-specific setting
-        return masterResponsesEnabled.getOrDefault(masterName.toLowerCase(), false);
+        boolean enabled = masterResponsesEnabled.getOrDefault(masterName.toLowerCase(), false);
+        Log.d(TAG, "🎯 Master " + masterName + " Responses API enabled: " + enabled);
+        return enabled;
     }
     
     /**

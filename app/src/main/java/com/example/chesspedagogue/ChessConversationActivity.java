@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.ImageButton;
@@ -28,6 +29,11 @@ public class ChessConversationActivity extends AppCompatActivity {
 
     private ChessCoachManager chessCoach;
     private SpeechRecognitionManager speechRecognitionManager;
+    
+    // NEW: Responses API integration for better responses
+    private ChessMasterResponsesManager responsesManager;
+    private ResponsesAPIIntegrationHelper integrationHelper;
+    private String currentSessionId = null;
 
     // Game state passed from main activity
     private String currentFen;
@@ -70,6 +76,10 @@ public class ChessConversationActivity extends AppCompatActivity {
         // Initialize coach and speech recognition
         chessCoach = ChessCoachManager.getInstance(this);
         speechRecognitionManager = new SpeechRecognitionManager(this);
+        
+        // NEW: Initialize Responses API integration for enhanced conversations
+        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
 
         // Set up click listeners
         sendButton.setOnClickListener(v -> sendMessage());
@@ -88,8 +98,182 @@ public class ChessConversationActivity extends AppCompatActivity {
         addUserMessage(text);
         messageInput.setText("");
 
-        //   message and get response
-        chessCoach.sendMessage(text, new CoachResponseCallback());
+        // NEW: Enhanced message processing with Responses API integration
+        processMessageWithResponsesAPI(text);
+    }
+    
+    /**
+     * NEW: Process message using Responses API when available, fallback to ChessCoachManager
+     */
+    private void processMessageWithResponsesAPI(String userMessage) {
+        android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        String selectedMaster = prefs.getString("selected_master", "tal");
+        
+        // Check if we should use Responses API for this master
+        boolean useResponsesAPI = integrationHelper.shouldUseResponsesAPI(selectedMaster);
+        
+        if (useResponsesAPI) {
+            Log.d("ChessConversation", "🚀 Using Responses API for " + selectedMaster);
+            processWithResponsesAPI(selectedMaster, userMessage);
+        } else {
+            Log.d("ChessConversation", "⚠️ Fallback to ChessCoachManager for " + selectedMaster);
+            // Fallback to original ChessCoachManager
+            chessCoach.sendMessage(userMessage, new CoachResponseCallback());
+        }
+    }
+    
+    /**
+     * NEW: Process message using Responses API with proper session management
+     */
+    private void processWithResponsesAPI(String masterName, String userMessage) {
+        // Build game context if position-related
+        String gameContext = buildGameContext(userMessage);
+        
+        if (currentSessionId == null) {
+            // Create new session first
+            responsesManager.createResponseSession(masterName, "conversation", 
+                new ChessMasterResponsesManager.ResponseCallback() {
+                    @Override
+                    public void onResponseStart(String sessionId) {
+                        currentSessionId = sessionId;
+                        Log.d("ChessConversation", "✅ Session created: " + sessionId);
+                        // Now send the message
+                        sendMessageToSession(sessionId, userMessage, gameContext);
+                    }
+                    
+                    @Override
+                    public void onResponseChunk(String chunk, boolean isFirst) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onResponseComplete(String fullResponse) {
+                        // Not used for session creation  
+                    }
+                    
+                    @Override
+                    public void onConversationTurn(String speaker, String message) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e("ChessConversation", "❌ Session creation failed: " + error);
+                        // Fallback to ChessCoachManager
+                        chessCoach.sendMessage(userMessage, new CoachResponseCallback());
+                    }
+                });
+        } else {
+            // Use existing session
+            sendMessageToSession(currentSessionId, userMessage, gameContext);
+        }
+    }
+    
+    /**
+     * NEW: Send message to established Responses API session
+     */
+    private void sendMessageToSession(String sessionId, String userMessage, String gameContext) {
+        responsesManager.sendMessage(sessionId, userMessage, gameContext,
+            new ChessMasterResponsesManager.ResponseCallback() {
+                private StringBuilder fullResponse = new StringBuilder();
+                
+                @Override
+                public void onResponseStart(String sessionId) {
+                    Log.d("ChessConversation", "📡 Response processing started");
+                    // Show "thinking" indicator if needed
+                }
+                
+                @Override
+                public void onResponseChunk(String chunk, boolean isFirst) {
+                    fullResponse.append(chunk);
+                    // For conversation mode, we'll show the complete response when done
+                    // rather than streaming individual chunks for better readability
+                }
+                
+                @Override
+                public void onResponseComplete(String response) {
+                    String finalResponse = !fullResponse.toString().trim().isEmpty() 
+                        ? fullResponse.toString().trim() 
+                        : response;
+                        
+                    if (finalResponse != null && !finalResponse.trim().isEmpty()) {
+                        runOnUiThread(() -> addCoachMessage(finalResponse));
+                        Log.d("ChessConversation", "✅ Responses API response delivered");
+                    } else {
+                        // Fallback if empty response
+                        chessCoach.sendMessage(userMessage, new CoachResponseCallback());
+                    }
+                }
+                
+                @Override
+                public void onConversationTurn(String speaker, String message) {
+                    Log.d("ChessConversation", "💬 Conversation turn: " + speaker + " - " + message.substring(0, Math.min(50, message.length())));
+                }
+                
+                @Override
+                public void onError(String error) {
+                    Log.e("ChessConversation", "❌ Responses API error: " + error);
+                    // Fallback to ChessCoachManager
+                    chessCoach.sendMessage(userMessage, new CoachResponseCallback());
+                }
+            });
+    }
+    
+    /**
+     * NEW: Build game context for position-related questions
+     */
+    private String buildGameContext(String userMessage) {
+        // Check if the question is position-related
+        if (isPositionRelated(userMessage) && currentFen != null) {
+            StringBuilder context = new StringBuilder();
+            context.append("POSITION: ").append(currentFen);
+            
+            if (playerColor != null) {
+                context.append("\nPLAYER: ").append(playerColor);
+            }
+            
+            if (moveHistory != null && !moveHistory.isEmpty()) {
+                context.append("\nRECENT_MOVES: ");
+                // Include last 6 moves for context
+                int startIndex = Math.max(0, moveHistory.size() - 6);
+                for (int i = startIndex; i < moveHistory.size(); i += 2) {
+                    int moveNumber = (startIndex / 2) + (i - startIndex) / 2 + 1;
+                    context.append(moveNumber).append(".");
+                    context.append(moveHistory.get(i));
+                    if (i + 1 < moveHistory.size()) {
+                        context.append(" ").append(moveHistory.get(i + 1));
+                    }
+                    context.append(" ");
+                }
+            }
+            
+            return context.toString();
+        }
+        
+        return ""; // No game context needed for general questions
+    }
+    
+    /**
+     * NEW: Check if user question is position-related
+     */
+    private boolean isPositionRelated(String question) {
+        if (question == null) return false;
+        
+        String lowerQuestion = question.toLowerCase();
+        String[] positionKeywords = {
+            "this position", "current position", "this move", "what should i play",
+            "best move", "analyze", "evaluation", "this board", "here",
+            "what do you think of", "how about", "should i take", "can i play",
+            "is it good to", "what if i", "in this position"
+        };
+        
+        for (String keyword : positionKeywords) {
+            if (lowerQuestion.contains(keyword)) {
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     private void startVoiceRecognition() {

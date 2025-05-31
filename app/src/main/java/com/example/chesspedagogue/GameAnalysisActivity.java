@@ -202,7 +202,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
 
     // Add this method to show a dialog for selecting a chess master
     private void showChessMasterSelector() {
-        String[] masters = {"Tal", "Botvinnik", "Kramnik", "Fischer", "Kasparov", "Karpov"};
+        String[] masters = {"Tal", "Fischer", "Carlsen", "Anand", "Kasparov", "Karpov", "Kramnik", "Alekhine", "Capablanca", "Morphy", "Lasker", "Botvinnik"};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Choose Your Chess Coach")

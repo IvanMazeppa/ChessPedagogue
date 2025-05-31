@@ -66,7 +66,7 @@ public class ElevenLabsTTSService {
         MASTER_VOICE_IDS.put("alekhine", "EXAVITQu4vr4xnSDxMaL"); // Sam - sophisticated
         MASTER_VOICE_IDS.put("morphy", "yoZ06aMxZJJ28mfd3POQ"); // Sam - gentlemanly American
         MASTER_VOICE_IDS.put("lasker", "t0jbNlBVZ17f02VDIeMI"); // Adam - wise, philosophical
-        MASTER_VOICE_IDS.put("anand", "g5CIjZEefAph4nQFvHAz"); // Premade - friendly, optimistic
+        MASTER_VOICE_IDS.put("anand", "Mgih2jslgx7pUv85yYYU"); // Maksud - conversational, friendly, optimistic
         MASTER_VOICE_IDS.put("botvinnik", "SOYHLrjzK2X1ezoPC6cr"); // Harry - methodical British
     }
     

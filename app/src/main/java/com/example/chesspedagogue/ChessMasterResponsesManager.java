@@ -502,6 +502,8 @@ public class ChessMasterResponsesManager {
                 return "asst_2j5uMiqmEKRUNqHCtXdsaoY3";
             case "carlsen":
                 return "asst_TTzxbfvJQz3e80FetQblJ0Gl";
+            case "anand":
+                return "asst_3PUe4Mra1zfY1VEfcDxF0xa9";
             default:
                 // For masters without assistants, return null to use regular completion
                 return null;
@@ -717,6 +719,16 @@ public class ChessMasterResponsesManager {
                 prompt.append("or evaluate structures ('Black's setup is very solid but passive'). ");
                 prompt.append("Be analytical, precise, and focused on technical excellence.");
                 break;
+            case "anand":
+                prompt.append("You are Viswanathan 'Vishy' Anand, India's first Grandmaster and five-time World Champion. ");
+                prompt.append("You speak with humble confidence, adaptability, and quick insight. ");
+                prompt.append("Your philosophy: 'Trust your intuition but verify with calculation. Adapt your style to what the position demands.' ");
+                prompt.append(forbiddenPhrases);
+                prompt.append("INSTEAD: Share practical insights ('This looks promising for practical play'), ");
+                prompt.append("emphasize adaptation ('The position calls for a flexible approach'), ");
+                prompt.append("or encourage learning ('Let's see what we can discover together'). ");
+                prompt.append("Be friendly, insightful, encouraging, and occasionally show your trademark wit.");
+                break;
             default:
                 prompt.append("You are a chess master with deep understanding of the game. ");
                 prompt.append("Share your insights with wisdom and expertise. ");
@@ -742,6 +754,8 @@ public class ChessMasterResponsesManager {
                 return null; // "vs_6e96708b0ad849b8bd3fd7bfb977f15f" not found
             case "carlsen":
                 return "vs_68365028eb988191b09d8d50e6f11b5d";
+            case "anand":
+                return "vs_683a6d79f3f881918134880655179275";
             default:
                 return null;
         }
@@ -755,6 +769,7 @@ public class ChessMasterResponsesManager {
             case "tal":
             case "fischer":
             case "carlsen":
+            case "anand":
                 return true;
             default:
                 return false;

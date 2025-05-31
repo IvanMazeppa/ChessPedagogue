@@ -50,7 +50,7 @@ public class VoiceTestActivity extends AppCompatActivity {
     
     private void setupSpinners() {
         // Chess masters
-        String[] masters = {"tal", "fischer", "carlsen", "kasparov", "karpov", "kramnik"};
+        String[] masters = {"tal", "fischer", "carlsen", "anand", "kasparov", "karpov", "kramnik", "alekhine", "capablanca", "morphy", "lasker", "botvinnik"};
         ArrayAdapter<String> masterAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, masters);
         masterAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         masterSpinner.setAdapter(masterAdapter);

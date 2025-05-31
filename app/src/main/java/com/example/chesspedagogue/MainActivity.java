@@ -65,6 +65,11 @@ public class MainActivity extends AppCompatActivity {
 
     private AnimatorSet pulseAnimatorSet;
     private OpenAIService openAIService;
+    
+    // NEW: Responses API integration for enhanced challenge generation
+    private ResponsesAPIIntegrationHelper integrationHelper;
+    private ChessMasterResponsesManager responsesManager;
+    
     private String selectedSquare = null;
     private boolean isSpeaking = false;
 
@@ -317,6 +322,11 @@ public class MainActivity extends AppCompatActivity {
         com.example.chesspedagogue.OpenAIService.getInstance().init(this);
 
         initializeChessMasterDatabase();
+        
+        // NEW: Initialize Responses API services for enhanced challenge generation
+        integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
+        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        Log.d(TAG, "✅ Responses API services initialized for challenge generation");
 
         Button debugButton = new Button(this);
         // Set up click listeners - this is what was missing!
@@ -583,10 +593,16 @@ public class MainActivity extends AppCompatActivity {
                         updateStatusMessage("Loading chess master data...");
                     });
                     // Import all your master data files
-                    String[] masters = {"tal", "fischer", "kasparov", "carlsen"}; // Add more as you create them
+                    String[] masters = {"tal", "fischer", "kasparov", "carlsen", "anand", "kramnik", "karpov", "alekhine", "capablanca", "morphy", "lasker", "botvinnik"};
 
                     for (String master : masters) {
-                        String filename = master + "_positions.json";
+                        String filename;
+                        // Handle special case for Anand's filename
+                        if (master.equals("anand")) {
+                            filename = "viswanathan_anand_full_positions.json";
+                        } else {
+                            filename = master + "_positions.json";
+                        }
                         Log.d("MainActivity", "📥 Importing " + filename + "...");
                         
                         // Update progress on UI thread
@@ -1559,6 +1575,10 @@ public class MainActivity extends AppCompatActivity {
     private void generateChallenge() {
         // Get current board position
         String currentFEN = chessBoardView.getCurrentFEN();
+        
+        // Get current selected master for personality-appropriate challenge generation
+        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        String selectedMaster = prefs.getString("selected_master", "tal");
 
         // Create a special prompt with VERY specific formatting instructions
         String prompt = "Create a chess puzzle starting from this position: " + currentFEN +
@@ -1574,12 +1594,122 @@ public class MainActivity extends AppCompatActivity {
         // Show loading indicator
         showChallengeLoading(true);
 
-        // Use our ExecutorService instead of creating a new Thread
+        // NEW: Use Responses API for enhanced challenge generation with master personality
+        boolean useResponsesAPI = integrationHelper.shouldUseResponsesAPI(selectedMaster);
+        
+        if (useResponsesAPI) {
+            Log.d(TAG, "🚀 Generating challenge with Responses API: " + selectedMaster);
+            generateChallengeWithResponsesAPI(selectedMaster, prompt, currentFEN);
+        } else {
+            Log.d(TAG, "⚠️ Fallback to Chat Completions for challenge: " + selectedMaster);
+            generateChallengeWithChatCompletions(prompt);
+        }
+    }
+    
+    /**
+     * NEW: Generate challenge using Responses API with master personality
+     */
+    private void generateChallengeWithResponsesAPI(String masterName, String prompt, String currentFEN) {
         executorService.execute(() -> {
             try {
+                // Build game context for the challenge
+                String gameContext = "POSITION: " + currentFEN + "\nCONTEXT: challenge_generation";
+                
+                // Create a session for challenge generation
+                responsesManager.createResponseSession(masterName, "challenge_generation",
+                    new ChessMasterResponsesManager.ResponseCallback() {
+                        @Override
+                        public void onResponseStart(String sessionId) {
+                            Log.d(TAG, "✅ Challenge session created: " + sessionId);
+                            // Send the challenge prompt
+                            responsesManager.sendMessage(sessionId, prompt, gameContext,
+                                new ChessMasterResponsesManager.ResponseCallback() {
+                                    private StringBuilder challengeResponse = new StringBuilder();
+                                    
+                                    @Override
+                                    public void onResponseStart(String sessionId) {
+                                        Log.d(TAG, "📡 Challenge generation started");
+                                    }
+                                    
+                                    @Override
+                                    public void onResponseChunk(String chunk, boolean isFirst) {
+                                        challengeResponse.append(chunk);
+                                    }
+                                    
+                                    @Override
+                                    public void onResponseComplete(String fullResponse) {
+                                        String finalChallenge = !challengeResponse.toString().trim().isEmpty() 
+                                            ? challengeResponse.toString().trim() 
+                                            : fullResponse;
+                                            
+                                        if (finalChallenge != null && !finalChallenge.trim().isEmpty()) {
+                                            Log.d(TAG, "✅ Responses API challenge generated");
+                                            mainHandler.post(() -> {
+                                                showChallengeLoading(false);
+                                                parseChallengeResponse(finalChallenge);
+                                            });
+                                        } else {
+                                            Log.w(TAG, "⚠️ Empty challenge from Responses API, falling back");
+                                            generateChallengeWithChatCompletions(prompt);
+                                        }
+                                    }
+                                    
+                                    @Override
+                                    public void onConversationTurn(String speaker, String message) {
+                                        // Not needed for challenge generation
+                                    }
+                                    
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e(TAG, "❌ Challenge generation error: " + error);
+                                        generateChallengeWithChatCompletions(prompt);
+                                    }
+                                });
+                        }
+                        
+                        @Override
+                        public void onResponseChunk(String chunk, boolean isFirst) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onResponseComplete(String fullResponse) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onConversationTurn(String speaker, String message) {
+                            // Not used for session creation
+                        }
+                        
+                        @Override
+                        public void onError(String error) {
+                            Log.e(TAG, "❌ Challenge session creation failed: " + error);
+                            generateChallengeWithChatCompletions(prompt);
+                        }
+                    });
+                    
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in Responses API challenge generation", e);
+                generateChallengeWithChatCompletions(prompt);
+            }
+        });
+    }
+    
+    /**
+     * LEGACY: Generate challenge using Chat Completions (fallback)
+     */
+    private void generateChallengeWithChatCompletions(String prompt) {
+        executorService.execute(() -> {
+            try {
+                // Get the selected master for system message
+                SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+                String selectedMaster = prefs.getString("selected_master", "tal");
+                String masterName = getMasterDisplayName(selectedMaster);
+                
                 // Get challenge from OpenAI (synchronous call)
                 String response = openAIService.getChatCompletion(
-                        "You are Coach Tal, a chess grandmaster creating engaging, instructive tactical puzzles.",
+                        "You are " + masterName + ", a chess grandmaster creating engaging, instructive tactical puzzles.",
                         prompt);
 
                 // Process the response on the UI thread
@@ -1597,6 +1727,27 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+    
+    /**
+     * NEW: Get display name for selected master
+     */
+    private String getMasterDisplayName(String selectedMaster) {
+        switch (selectedMaster.toLowerCase()) {
+            case "tal": return "Mikhail Tal";
+            case "fischer": return "Bobby Fischer";
+            case "carlsen": return "Magnus Carlsen";
+            case "kasparov": return "Garry Kasparov";
+            case "karpov": return "Anatoly Karpov";
+            case "kramnik": return "Vladimir Kramnik";
+            case "anand": return "Viswanathan Anand";
+            case "alekhine": return "Alexander Alekhine";
+            case "capablanca": return "José Raúl Capablanca";
+            case "lasker": return "Emanuel Lasker";
+            case "morphy": return "Paul Morphy";
+            case "botvinnik": return "Mikhail Botvinnik";
+            default: return "Coach Tal";
+        }
     }
 
     private void showChallenge(ChallengeData challenge) {

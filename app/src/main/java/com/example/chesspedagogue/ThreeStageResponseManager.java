@@ -19,15 +19,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * OPTIMIZED 3-Stage AI Response System - API 26 COMPATIBLE VERSION
+ * ENHANCED 3-Stage AI Response System with Responses API Integration
  * 🎤 NOW WITH SUPERIOR ELEVENLABS TTS BY DEFAULT!
+ * 🚀 UPGRADED: Uses OpenAI Responses API for stateful conversations
  *
- * Stage 1: Lightning-fast responses (under 2 seconds)
- * Stage 2: Enhanced personality responses (5-10 seconds)
- * Stage 3: Deep analysis with vector store (10-20 seconds)
+ * Stage 1: Lightning-fast responses (under 2 seconds) - Uses Responses API when available
+ * Stage 2: Enhanced personality responses (5-10 seconds) - Fine-tuned models via Responses API
+ * Stage 3: Deep analysis with vector store (10-20 seconds) - Assistant API with context
  *
  * Compatible with Android API 26+ (no orTimeout dependency)
  * Uses TTSServiceManager to automatically select ElevenLabs TTS for superior voice quality
+ * Seamlessly falls back to Chat Completions for unsupported masters
  */
 public class ThreeStageResponseManager {
     private static final String TAG = "ThreeStageResponseManager";
@@ -48,6 +50,13 @@ public class ThreeStageResponseManager {
     private final FineTunedModelManager modelManager;
     private final OpenAITTSService ttsService;
     private final EnhancedContextManager contextManager;
+    
+    // NEW: Responses API integration
+    private final ChessMasterResponsesManager responsesManager;
+    private final ResponsesAPIIntegrationHelper integrationHelper;
+    
+    // Session tracking for stateful conversations
+    private final Map<String, String> activeSessions = new HashMap<>();
 
     // Current response tracking
     private final AtomicInteger currentResponseId = new AtomicInteger(0);
@@ -114,8 +123,18 @@ public class ThreeStageResponseManager {
         this.modelManager = FineTunedModelManager.getInstance(context);
         this.ttsService = TTSServiceManager.getOpenAITTSService(context);
         this.contextManager = EnhancedContextManager.getInstance();
-
-        Log.d(TAG, "✨ API 26 Compatible ThreeStageResponseManager initialized with superior ElevenLabs TTS and enhanced context!");
+        
+        // NEW: Initialize Responses API integration
+        this.responsesManager = ChessMasterResponsesManager.getInstance(context);
+        this.integrationHelper = ResponsesAPIIntegrationHelper.getInstance(context);
+        
+        Log.d(TAG, "🚀 Enhanced ThreeStageResponseManager initialized with Responses API integration!");
+        
+        // FORCE: Show integration status on initialization
+        Log.d(TAG, "🔍 Integration Status Check:");
+        Log.d(TAG, "🎯 Fischer eligible: " + integrationHelper.shouldUseResponsesAPI("fischer"));
+        Log.d(TAG, "🎯 Tal eligible: " + integrationHelper.shouldUseResponsesAPI("tal"));
+        Log.d(TAG, "🎯 Carlsen eligible: " + integrationHelper.shouldUseResponsesAPI("carlsen"));
     }
 
     /**
@@ -130,9 +149,23 @@ public class ThreeStageResponseManager {
 
     /**
      * MAIN ENTRY POINT: Process user input through optimized 3 stages
+     * DISABLED IN SPECTATOR MODE: SpectatorConversationOrchestrator uses Responses API exclusively
      */
     public void processThreeStageResponse(String userInput, String gameContext, ThreeStageCallback callback) {
+        // CRITICAL FIX: Disable ThreeStageResponseManager entirely in spectator mode
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
+        
+        if (isSpectatorMode) {
+            Log.d(TAG, "🎭 BLOCKED: ThreeStageResponseManager disabled in spectator mode - Responses API handles all dialogue");
+            if (callback != null) {
+                callback.onStageError(ResponseStage.STAGE_1_QUICK, "Disabled in spectator mode - using Responses API");
+            }
+            return;
+        }
+
         ResponseMode userMode = getUserResponseMode();
+        Log.d(TAG, "🎮 RESPONSE MODE: " + userMode + " for user input: '" + userInput.substring(0, Math.min(50, userInput.length())) + "'");
         processThreeStageResponse(userInput, gameContext, userMode, callback);
     }
 
@@ -171,7 +204,27 @@ public class ThreeStageResponseManager {
                     context = minimalContext;
                 }
 
-                // Use fast response with context
+                // NEW: Use Responses API for Stage 1 if available
+                String normalizedMasterName = normalizeMasterName(selectedMaster);
+                Log.d(TAG, "🔍 DECISION POINT: Checking Responses API for '" + normalizedMasterName + "'");
+                boolean shouldUseResponses = integrationHelper.shouldUseResponsesAPI(normalizedMasterName);
+                Log.d(TAG, "🎯 DECISION RESULT: shouldUseResponsesAPI='" + shouldUseResponses + "' for '" + normalizedMasterName + "'");
+                
+                if (shouldUseResponses) {
+                    Log.d(TAG, "🚀 USING RESPONSES API for Stage 1 with " + normalizedMasterName);
+                    
+                    // Handle Responses API asynchronously - don't block this thread
+                    executorService.execute(() -> {
+                        handleResponsesAPIStage1(normalizedMasterName, userInput, gameContext, responseId, startTime, callback);
+                    });
+                    
+                    // Return placeholder response immediately
+                    return "Analyzing position with " + normalizedMasterName + "'s expertise...";
+                } else {
+                    Log.d(TAG, "⚠️ FALLBACK: Using Chat Completions for " + normalizedMasterName);
+                }
+                
+                // Fallback: Use fast response with context
                 String quickResponse = openAIService.getChatCompletionWithEnhancedContext(context, null);
 
                 if (quickResponse == null || quickResponse.trim().isEmpty()) {
@@ -228,14 +281,32 @@ public class ThreeStageResponseManager {
 
     /**
      * ENHANCED: Process user input with PARALLEL stage execution for faster responses
+     * DISABLED IN SPECTATOR MODE: SpectatorConversationOrchestrator uses Responses API exclusively
      */
     public void processThreeStageResponse(String userInput, String gameContext,
                                           ResponseMode mode, ThreeStageCallback callback) {
+        // CRITICAL FIX: Disable ThreeStageResponseManager entirely in spectator mode
+        // The Responses API via SpectatorConversationOrchestrator handles all dialogue with proper context
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
+        
+        if (isSpectatorMode) {
+            Log.d(TAG, "🎭 BLOCKED: ThreeStageResponseManager disabled in spectator mode - Responses API handles all dialogue");
+            // Don't create Chat Completions calls that lack position context and say "Show me the position"
+            if (callback != null) {
+                callback.onStageError(ResponseStage.STAGE_1_QUICK, "Disabled in spectator mode - using Responses API");
+            }
+            return;
+        }
+
         int responseId = currentResponseId.incrementAndGet();
         Log.d(TAG, "🚀 Starting PARALLEL 3-stage response #" + responseId + " in " + mode + " mode");
 
-        // Get current master
+        // Get current master and normalize name for Responses API
         String selectedMaster = modelManager.getSelectedChessMaster();
+        String normalizedMaster = normalizeMasterName(selectedMaster);
+        Log.d(TAG, "🎭 MASTER DEBUG: Original='" + selectedMaster + "' → Normalized='" + normalizedMaster + "'");
+        Log.d(TAG, "🔍 RESPONSES API CHECK: About to check eligibility for '" + normalizedMaster + "'");
 
         // Reset speaking flags
         isStage1Speaking = false;
@@ -245,37 +316,36 @@ public class ThreeStageResponseManager {
         switch (mode) {
             case FAST_ONLY:
                 Log.d(TAG, "⚡ Fast-only mode: Stage 1 only");
-                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
                 return;
 
             case ENHANCED_ONLY:
                 Log.d(TAG, "🎭 Enhanced mode: Stages 1-2");
-                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
-                processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
                 return;
 
             case FULL_ANALYSIS:
                 Log.d(TAG, "🧠 Full analysis mode: All 3 stages - PARALLEL EXECUTION! 🚀");
                 // PARALLEL EXECUTION: Start Stage 1, then both Stage 2 and Stage 3 simultaneously
-                processOptimizedStage1Quick(responseId, userInput, gameContext, selectedMaster, callback);
-                processOptimizedStage2Enhanced(responseId, userInput, gameContext, selectedMaster, callback);
-                processOptimizedStage3Deep(responseId, userInput, gameContext, selectedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, callback);
                 return;
 
             case ADAPTIVE:
                 if (isSimpleQuestion(userInput)) {
-                    Log.d(TAG, "🤖 Adaptive: simple question, FT model only");
-                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
+                    Log.d(TAG, "🤖 Adaptive: simple question, using Stage 1 (with Responses API support)");
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
                 } else if (isChessAnalysisQuestion(userInput, gameContext)) {
-                    Log.d(TAG, "🤖 Adaptive: chess analysis, FT → Assistant with DB lookup! 🚀");
-                    // PARALLEL: FT first for speed, Assistant with vector/DB for depth
-                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
-                    processAssistantWithLookup(responseId, userInput, gameContext, selectedMaster, callback);
+                    Log.d(TAG, "🤖 Adaptive: chess analysis, Stages 1-2 with enhanced context");
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
                 } else {
-                    Log.d(TAG, "🤖 Adaptive: complex question, FT → Assistant! 🚀");
-                    // PARALLEL: FT first for speed, Assistant for detailed analysis
-                    processFineTunedResponse(responseId, userInput, gameContext, selectedMaster, callback);
-                    processAssistantResponse(responseId, userInput, gameContext, selectedMaster, callback);
+                    Log.d(TAG, "🤖 Adaptive: complex question, full 3-stage analysis");
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, callback);
                 }
                 return;
         }
@@ -1162,5 +1232,389 @@ public class ThreeStageResponseManager {
 
     public ResponseMode getCurrentResponseMode() {
         return getUserResponseMode();
+    }
+    
+    /**
+     * NEW: Handle Responses API Stage 1 asynchronously
+     */
+    private void handleResponsesAPIStage1(String masterName, String userInput, String gameContext,
+                                        int responseId, long startTime, ThreeStageCallback callback) {
+        try {
+            Log.d(TAG, "🚀 Async Responses API Stage 1 with " + masterName);
+            
+            // Build context message with game information
+            String contextualMessage = buildContextualMessage(userInput, gameContext);
+            
+            // Create session first, then send message in the callback (like spectator mode)
+            responsesManager.createResponseSession(masterName, "main_game", 
+                new ChessMasterResponsesManager.ResponseCallback() {
+                    
+                    @Override
+                    public void onResponseStart(String sessionId) {
+                        Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
+                        
+                        // Now that session is created, send the message
+                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
+                            new ChessMasterResponsesManager.ResponseCallback() {
+                                private StringBuilder response = new StringBuilder();
+                                
+                                @Override
+                                public void onResponseStart(String sessionId) {
+                                    Log.d(TAG, "📡 Responses API message processing started: " + sessionId);
+                                }
+                                
+                                @Override
+                                public void onResponseChunk(String chunk, boolean isFirst) {
+                                    // FIXED: Send only individual chunks to TTS, don't accumulate
+                                    if (isFirst) {
+                                        response.append(chunk);
+                                        String partialResponse = response.toString().trim();
+                                        
+                                        // Only process if we have meaningful content
+                                        if (partialResponse.length() > 10) {
+                                            Log.d(TAG, "⚡ First Responses API chunk: " + partialResponse.substring(0, Math.min(50, partialResponse.length())) + "...");
+                                            
+                                            // Add to context manager
+                                            contextManager.addConversationTurn(masterName, partialResponse, "stage1_responses_api");
+                                            
+                                            final long duration = System.currentTimeMillis() - startTime;
+                                            mainHandler.post(() -> {
+                                                if (callback != null) {
+                                                    callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                                                    callback.onStageResponse(ResponseStage.STAGE_1_QUICK, partialResponse, false);
+                                                }
+                                                // FIXED: Send only the first chunk to TTS, then stop
+                                                startOptimizedTTS(partialResponse, 1, responseId);
+                                            });
+                                            
+                                            // CRITICAL: Clear and stop processing to prevent progressive accumulation
+                                            response.setLength(0);
+                                            return;
+                                        }
+                                    }
+                                    // For subsequent chunks after first, ignore them for Stage 1 (speed optimization)
+                                    Log.d(TAG, "🔇 Ignoring subsequent chunk for Stage 1: " + chunk.substring(0, Math.min(20, chunk.length())) + "...");
+                                }
+                                
+                                @Override
+                                public void onResponseComplete(String fullResponse) {
+                                    // Only use if we haven't already delivered a chunk response
+                                    if (response.length() <= 20 && fullResponse != null && !fullResponse.trim().isEmpty()) {
+                                        String finalResponse = fullResponse.trim();
+                                        Log.d(TAG, "✅ Complete Responses API response: " + finalResponse.substring(0, Math.min(50, finalResponse.length())) + "...");
+                                        
+                                        // Add to context manager
+                                        contextManager.addConversationTurn(masterName, finalResponse, "stage1_responses_api");
+                                        
+                                        final long duration = System.currentTimeMillis() - startTime;
+                                        mainHandler.post(() -> {
+                                            if (callback != null) {
+                                                callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                                                callback.onStageResponse(ResponseStage.STAGE_1_QUICK, finalResponse, false);
+                                            }
+                                            startOptimizedTTS(finalResponse, 1, responseId);
+                                        });
+                                    }
+                                }
+                                
+                                @Override
+                                public void onConversationTurn(String speaker, String message) {
+                                    // Track conversation turns
+                                }
+                                
+                                @Override
+                                public void onError(String error) {
+                                    Log.w(TAG, "⚠️ Responses API message error: " + error);
+                                    handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+                                }
+                            });
+                    }
+                    
+                    @Override
+                    public void onResponseChunk(String chunk, boolean isFirst) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onResponseComplete(String fullResponse) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onConversationTurn(String speaker, String message) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Session creation error: " + error);
+                        handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+                    }
+                });
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in async Responses API Stage 1: " + e.getMessage(), e);
+            handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+        }
+    }
+    
+    /**
+     * Handle fallback when Responses API fails
+     */
+    private void handleResponsesAPIFallback(String masterName, String userInput, String gameContext,
+                                          int responseId, long startTime, ThreeStageCallback callback) {
+        Log.d(TAG, "🔄 Falling back to Chat Completions for " + masterName);
+        
+        executorService.execute(() -> {
+            try {
+                // Get context for fallback
+                List<Map<String, String>> context = contextManager.getContextForApiCall(masterName, "");
+                
+                // Add minimal user message
+                Map<String, String> userMsg = new HashMap<>();
+                userMsg.put("role", "user");
+                userMsg.put("content", userInput);
+                context.add(userMsg);
+                
+                // Use Chat Completions as fallback
+                String fallbackResponse = openAIService.getChatCompletionWithEnhancedContext(context, null);
+                
+                if (fallbackResponse == null || fallbackResponse.trim().isEmpty()) {
+                    fallbackResponse = getEmergencyQuickResponse(masterName);
+                }
+                
+                // Add to context manager
+                contextManager.addConversationTurn(masterName, fallbackResponse, "stage1_fallback");
+                
+                final String finalResponse = fallbackResponse.trim();
+                final long duration = System.currentTimeMillis() - startTime;
+                
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, finalResponse, false);
+                    }
+                    startOptimizedTTS(finalResponse, 1, responseId);
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Fallback also failed", e);
+                final String errorResponse = getEmergencyQuickResponse(masterName);
+                final long duration = System.currentTimeMillis() - startTime;
+                
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, errorResponse, false);
+                    }
+                    startOptimizedTTS(errorResponse, 1, responseId);
+                });
+            }
+        });
+    }
+    
+    /**
+     * OLD: Process Stage 1 using Responses API for enhanced performance and state management
+     * DEPRECATED: This method is no longer used, replaced by handleResponsesAPIStage1
+     */
+    private String processStage1WithResponsesAPI(String masterName, String userInput, String gameContext) {
+        try {
+            Log.d(TAG, "🚀 Using Responses API for Stage 1 with " + masterName);
+            
+            // Build context message with game information
+            String contextualMessage = buildContextualMessage(userInput, gameContext);
+            
+            // Use a CompletableFuture to make this synchronous but with timeout
+            CompletableFuture<String> responseFuture = new CompletableFuture<>();
+            
+            // FIXED: Create session first, then send message in the callback (like spectator mode)
+            responsesManager.createResponseSession(masterName, "main_game", 
+                new ChessMasterResponsesManager.ResponseCallback() {
+                    
+                    @Override
+                    public void onResponseStart(String sessionId) {
+                        Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
+                        
+                        // Now that session is created, send the message
+                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
+                            new ChessMasterResponsesManager.ResponseCallback() {
+                                private StringBuilder response = new StringBuilder();
+                                
+                                @Override
+                                public void onResponseStart(String sessionId) {
+                                    Log.d(TAG, "📡 Responses API message processing started: " + sessionId);
+                                }
+                                
+                                @Override
+                                public void onResponseChunk(String chunk, boolean isFirst) {
+                                    response.append(chunk);
+                                    // For Stage 1, we want immediate response, so complete on first substantial chunk
+                                    if (response.length() > 20 && !responseFuture.isDone()) {
+                                        responseFuture.complete(response.toString());
+                                    }
+                                }
+                                
+                                @Override
+                                public void onResponseComplete(String fullResponse) {
+                                    if (!responseFuture.isDone()) {
+                                        responseFuture.complete(fullResponse);
+                                    }
+                                }
+                                
+                                @Override
+                                public void onConversationTurn(String speaker, String message) {
+                                    // Add to context manager for next turn
+                                    contextManager.addConversationTurn(speaker, message, "responses_api_stage1");
+                                }
+                                
+                                @Override
+                                public void onError(String error) {
+                                    Log.w(TAG, "⚠️ Responses API message error: " + error);
+                                    if (!responseFuture.isDone()) {
+                                        responseFuture.complete(getEmergencyQuickResponse(masterName));
+                                    }
+                                }
+                            });
+                    }
+                    
+                    @Override
+                    public void onResponseChunk(String chunk, boolean isFirst) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onResponseComplete(String fullResponse) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onConversationTurn(String speaker, String message) {
+                        // Not used for session creation
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Session creation error: " + error);
+                        if (!responseFuture.isDone()) {
+                            responseFuture.complete(getEmergencyQuickResponse(masterName));
+                        }
+                    }
+                });
+            
+            // Wait for response with timeout (synchronous for this method)
+            String response = responseFuture.get(STAGE_1_TIMEOUT_MS, java.util.concurrent.TimeUnit.MILLISECONDS);
+            
+            if (response != null && !response.trim().isEmpty()) {
+                Log.d(TAG, "✅ Responses API Stage 1 success: " + response.substring(0, Math.min(50, response.length())) + "...");
+                return response.trim();
+            } else {
+                Log.w(TAG, "⚠️ Empty response from Responses API, using fallback");
+                return getEmergencyQuickResponse(masterName);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in Responses API Stage 1: " + e.getMessage(), e);
+            // Fallback to emergency response
+            return getEmergencyQuickResponse(masterName);
+        }
+    }
+    
+    /**
+     * Get or create a session for the master, ensuring state continuity
+     */
+    private String getOrCreateSession(String masterName) {
+        String sessionId = activeSessions.get(masterName);
+        if (sessionId == null) {
+            sessionId = "main_game_" + masterName + "_" + System.currentTimeMillis();
+            activeSessions.put(masterName, sessionId);
+            
+            // Create the session asynchronously
+            responsesManager.createResponseSession(masterName, "main_game", 
+                new ChessMasterResponsesManager.ResponseCallback() {
+                    @Override
+                    public void onResponseStart(String sessionId) {
+                        Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
+                    }
+                    
+                    @Override
+                    public void onResponseChunk(String chunk, boolean isFirst) {}
+                    @Override
+                    public void onResponseComplete(String fullResponse) {}
+                    @Override
+                    public void onConversationTurn(String speaker, String message) {}
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Failed to create session for " + masterName + ": " + error);
+                    }
+                });
+        }
+        return sessionId;
+    }
+    
+    /**
+     * Build contextual message with game state for better responses
+     */
+    private String buildContextualMessage(String userInput, String gameContext) {
+        StringBuilder message = new StringBuilder();
+        
+        if (gameContext != null && !gameContext.trim().isEmpty()) {
+            message.append("Current game context: ").append(gameContext).append("\n\n");
+        }
+        
+        message.append("User: ").append(userInput);
+        
+        return message.toString();
+    }
+    
+    /**
+     * Cleanup sessions periodically
+     */
+    public void cleanupSessions() {
+        responsesManager.cleanupOldSessions();
+        
+        // Also clean our local session tracking
+        if (activeSessions.size() > 10) {
+            Log.d(TAG, "🧹 Cleaning up old sessions");
+            activeSessions.clear();
+        }
+    }
+    
+    /**
+     * Normalize master names from full names to short names for API consistency
+     */
+    private String normalizeMasterName(String masterName) {
+        if (masterName == null) return "tal"; // Default fallback
+        
+        String normalized = masterName.toLowerCase().trim();
+        
+        // Handle common variations and full names
+        if (normalized.contains("bobby") || normalized.contains("fischer")) {
+            return "fischer";
+        } else if (normalized.contains("magnus") || normalized.contains("carlsen")) {
+            return "carlsen";
+        } else if (normalized.contains("tal") || normalized.contains("mikhail")) {
+            return "tal";
+        } else if (normalized.contains("kasparov") || normalized.contains("garry")) {
+            return "kasparov";
+        } else if (normalized.contains("kramnik") || normalized.contains("vladimir")) {
+            return "kramnik";
+        } else if (normalized.contains("karpov") || normalized.contains("anatoly")) {
+            return "karpov";
+        } else if (normalized.contains("alekhine") || normalized.contains("alexander")) {
+            return "alekhine";
+        } else if (normalized.contains("capablanca") || normalized.contains("jose")) {
+            return "capablanca";
+        } else if (normalized.contains("morphy") || normalized.contains("paul")) {
+            return "morphy";
+        } else if (normalized.contains("lasker") || normalized.contains("emanuel")) {
+            return "lasker";
+        } else if (normalized.contains("anand") || normalized.contains("viswanathan")) {
+            return "anand";
+        } else if (normalized.contains("botvinnik") || normalized.contains("mikhail bot")) {
+            return "botvinnik";
+        }
+        
+        // If already normalized or unknown, return as is (default to tal if empty)
+        return normalized.isEmpty() ? "tal" : normalized;
     }
 }
