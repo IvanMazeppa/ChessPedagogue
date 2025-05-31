@@ -286,6 +286,7 @@ public class ChessMasterResponsesManager {
                 private String responseId = null;
                 boolean hasReceivedContent = false;
                 private long startTime = System.currentTimeMillis();
+                private boolean hasCompletedResponse = false; // ADDED: Track if we've already completed a response
                 
                 @Override
                 public void onEvent(EventSource eventSource, String id, String type, String data) {
@@ -302,10 +303,17 @@ public class ChessMasterResponsesManager {
                     try {
                         // Check if data is [DONE]
                         if ("[DONE]".equals(data)) {
+                            // FIXED: Only process if we haven't already completed
+                            if (hasCompletedResponse) {
+                                Log.d(TAG, "🔄 [DONE] received but already completed - ignoring");
+                                return;
+                            }
+                            
                             // Response complete
                             String fullResponse = responseBuilder.toString();
                             Log.d(TAG, "✅ Response complete: " + fullResponse);
                             session.lastActivityTime = System.currentTimeMillis();
+                            hasCompletedResponse = true; // ADDED: Mark as completed
                             
                             if (responseId != null) {
                                 session.previousResponseId = responseId;
@@ -345,10 +353,17 @@ public class ChessMasterResponsesManager {
                                 Log.d(TAG, "📝 Text chunk: " + text);
                             }
                         } else if ("response.done".equals(type) || "response.completed".equals(type)) {
+                            // FIXED: Only process the first complete response, ignore subsequent ones
+                            if (hasCompletedResponse) {
+                                Log.d(TAG, "🔄 Ignoring additional response - already completed");
+                                return;
+                            }
+                            
                             // Response complete - handle both possible event names
                             String fullResponse = responseBuilder.toString();
                             Log.d(TAG, "✅ Response complete event - Full response: " + fullResponse);
                             session.lastActivityTime = System.currentTimeMillis();
+                            hasCompletedResponse = true; // ADDED: Mark as completed
                             
                             // Store final response ID if we haven't already
                             if (responseId != null) {
@@ -536,36 +551,62 @@ public class ChessMasterResponsesManager {
     
     /**
      * Fallback to Chat Completions API when Responses API is not available
+     * FIXED: Now includes proper game context (FEN, move history) so masters can see the position
      */
     private void fallbackToChatCompletions(ResponseSession session, JSONObject originalRequest, ResponseCallback callback) {
-        Log.d(TAG, "🔄 Using fallback for " + session.masterName);
+        Log.d(TAG, "🔄 Using fallback for " + session.masterName + " with FULL GAME CONTEXT");
         
         executorService.execute(() -> {
             try {
-                // Extract user message from the input field
-                String input = "";
+                // FIXED: Extract the FULL input including game context, not just user message
+                String fullInput = "";
+                String gameContext = "";
                 if (originalRequest.has("input")) {
-                    String combinedInput = originalRequest.getString("input");
-                    // Extract the user message part (after the system prompt)
-                    String[] parts = combinedInput.split("\n\n", 2);
-                    if (parts.length > 1) {
-                        input = parts[1];
-                    } else {
-                        input = combinedInput;
+                    fullInput = originalRequest.getString("input");
+                    Log.d(TAG, "📋 Fallback preserving full input: " + fullInput.substring(0, Math.min(200, fullInput.length())) + "...");
+                }
+                
+                // FIXED: Extract metadata for additional context
+                if (originalRequest.has("metadata")) {
+                    try {
+                        JSONObject metadata = originalRequest.getJSONObject("metadata");
+                        if (metadata.has("context")) {
+                            gameContext = metadata.getString("context");
+                            Log.d(TAG, "📋 Fallback found game context: " + gameContext);
+                        }
+                    } catch (Exception e) {
+                        Log.w(TAG, "Could not extract metadata: " + e.getMessage());
                     }
                 }
                 
                 // Check if this master has an assistant configured
                 if (session.assistantId != null && hasAssistantSupport(session.masterName)) {
-                    Log.d(TAG, "🤖 Using Assistant API for " + session.masterName);
-                    fallbackToAssistantAPI(session, input, callback);
+                    Log.d(TAG, "🤖 Using Assistant API for " + session.masterName + " with full context");
+                    fallbackToAssistantAPI(session, fullInput, callback);
                 } else {
-                    Log.d(TAG, "💬 Using Chat Completions for " + session.masterName);
-                    // Build conversation context for regular chat completions
+                    Log.d(TAG, "💬 Using Chat Completions for " + session.masterName + " with POSITION CONTEXT");
+                    
+                    // FIXED: Build enhanced conversation context with game state
                     ConversationManager conversationManager = ConversationManager.getInstance(context);
-                    // Set system message (this replaces any existing system message)
-                    conversationManager.setSystemMessage(buildSystemPromptForMaster(session.masterName));
-                    conversationManager.addUserMessage(input);
+                    
+                    // FIXED: Create enhanced system message that includes context awareness
+                    String enhancedSystemPrompt = buildSystemPromptForMaster(session.masterName) + 
+                        "\n\nIMPORTANT: You have full access to the current chess position and game context. " +
+                        "Never say 'Show me the position' or 'I need to see the position' - you can see everything needed to analyze.";
+                    
+                    conversationManager.setSystemMessage(enhancedSystemPrompt);
+                    
+                    // FIXED: Add the FULL input with game context, not just user message
+                    String contextualMessage = fullInput;
+                    if (!gameContext.isEmpty()) {
+                        contextualMessage = "Game Context: " + gameContext + "\n\n" + fullInput;
+                    }
+                    
+                    conversationManager.addUserMessage(contextualMessage);
+                    Log.d(TAG, "📋 Chat Completions fallback message includes: " + 
+                        (contextualMessage.contains("FEN:") ? "✅ FEN position" : "❌ NO FEN") + ", " +
+                        (contextualMessage.contains("Recent moves:") ? "✅ Move history" : "❌ NO MOVES") + ", " +
+                        (contextualMessage.contains("Game Context:") ? "✅ Game context" : "❌ NO CONTEXT"));
                     
                     // Set the master in the model manager to use the correct model
                     modelManager.setSelectedChessMaster(session.masterName);
@@ -574,6 +615,9 @@ public class ChessMasterResponsesManager {
                     String response = openAIService.getChatCompletionWithHistory(conversationManager);
                     
                     if (response != null && !response.isEmpty()) {
+                        // FIXED: Log successful fallback with context
+                        Log.d(TAG, "✅ Chat Completions fallback SUCCESS with context for " + session.masterName);
+                        
                         // Simulate streaming callbacks on main thread
                         mainHandler.post(() -> {
                             callback.onResponseChunk(response, true);
@@ -719,22 +763,29 @@ public class ChessMasterResponsesManager {
     
     /**
      * Fallback to Assistant API for masters with assistants
+     * FIXED: Now receives full input with game context (FEN, move history)
      */
     private void fallbackToAssistantAPI(ResponseSession session, String input, ResponseCallback callback) {
+        Log.d(TAG, "🤖 Assistant API fallback for " + session.masterName + " with FULL CONTEXT");
+        Log.d(TAG, "📋 Assistant fallback input includes: " + 
+            (input.contains("FEN:") ? "✅ FEN position" : "❌ NO FEN") + ", " +
+            (input.contains("Recent moves:") ? "✅ Move history" : "❌ NO MOVES") + ", " +
+            (input.contains("Game context:") ? "✅ Game context" : "❌ NO CONTEXT"));
+        
         // Set the selected master first
         modelManager.setSelectedChessMaster(session.masterName);
         
         // Use the three-stage response manager for assistant-supported masters
         ThreeStageResponseManager threeStageManager = ThreeStageResponseManager.getInstance(context);
         
-        // Create a simple context with the input
+        // FIXED: Pass full input with game context to assistant
         Map<String, String> contextMap = new HashMap<>();
-        contextMap.put("prompt", input);
+        contextMap.put("prompt", input); // Now contains full context including FEN and moves
         contextMap.put("master", session.masterName);
         
         threeStageManager.processThreeStageResponse(
-            input,
-            contextMap.get("prompt"), // gameContext
+            input, // Full input with position context
+            input, // Use same full input as gameContext - contains FEN, moves, etc.
             ThreeStageResponseManager.ResponseMode.ADAPTIVE,
             new ThreeStageResponseManager.ThreeStageCallback() {
                 private StringBuilder fullResponse = new StringBuilder();

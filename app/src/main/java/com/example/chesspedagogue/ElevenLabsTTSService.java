@@ -245,8 +245,23 @@ public class ElevenLabsTTSService {
             }
         };
         
-        // Generate a single chunk for the entire text
-        generateTTSChunk(text, 0, true, orderingCallback);
+        // Format text with TTS controls based on master and context
+        String formattedText = text;
+        try {
+            String currentMaster = getCurrentChessMaster();
+            boolean isEmotional = currentContext != null && 
+                (currentContext.contains("BRILLIANT") || 
+                 currentContext.contains("BLUNDER") || 
+                 currentContext.contains("SWING"));
+            
+            formattedText = ElevenLabsTTSFormatter.formatForTTS(text, currentMaster, isEmotional);
+            Log.d(TAG, "📝 Formatted text for TTS: " + formattedText.substring(0, Math.min(100, formattedText.length())) + "...");
+        } catch (Exception e) {
+            Log.w(TAG, "Error formatting text for TTS, using original", e);
+        }
+        
+        // Generate a single chunk for the formatted text
+        generateTTSChunk(formattedText, 0, true, orderingCallback);
     }
     
     /**
