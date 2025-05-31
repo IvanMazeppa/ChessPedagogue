@@ -37,9 +37,16 @@ public class ResponsesAPIIntegrationHelper {
         this.responsesManager = ChessMasterResponsesManager.getInstance(context);
         this.conversationOrchestrator = SpectatorConversationOrchestrator.getInstance(context);
         
-        // Load migration settings
-        this.useResponsesAPI = new AtomicBoolean(prefs.getBoolean(KEY_USE_RESPONSES_API, false));
+        // Load migration settings - default to true for Responses API
+        this.useResponsesAPI = new AtomicBoolean(prefs.getBoolean(KEY_USE_RESPONSES_API, true));
         this.masterResponsesEnabled = loadMasterSettings();
+        
+        // Enable Responses API by default for masters with assistants
+        if (masterResponsesEnabled.isEmpty()) {
+            enableResponsesAPIForMaster("tal", true);
+            enableResponsesAPIForMaster("fischer", true);
+            enableResponsesAPIForMaster("carlsen", true);
+        }
         
         Log.d(TAG, "🔄 Integration helper initialized. Responses API enabled: " + useResponsesAPI.get());
     }

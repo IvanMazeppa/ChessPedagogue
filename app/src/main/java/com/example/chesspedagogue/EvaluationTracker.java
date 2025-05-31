@@ -313,9 +313,24 @@ public class EvaluationTracker {
 
     /**
      * FIXED: Trigger automatic commentary using fine-tuned model directly
+     * DISABLED IN SPECTATOR MODE: SpectatorConversationOrchestrator handles all dialogue via Responses API
      */
     private void triggerAutoCommentary(EvaluationSwing swing) {
         try {
+            // CRITICAL FIX: Check if we're in spectator mode - if so, skip this auto-commentary
+            // because SpectatorConversationOrchestrator is already handling all dialogue via Responses API
+            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
+            
+            if (isSpectatorMode) {
+                Log.d(TAG, "🎭 SKIPPING EvaluationTracker auto-commentary in spectator mode - Responses API handles all dialogue");
+                // Still notify the listener for UI updates, but don't generate duplicate API calls
+                if (swingListener != null) {
+                    swingListener.onSignificantSwingDetected(swing, null);
+                }
+                return;
+            }
+
             // Generate context-aware commentary prompt
             String commentaryPrompt = generateCommentaryPrompt(swing);
 

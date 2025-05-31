@@ -94,7 +94,12 @@ public class SpectatorConversationOrchestrator {
     
     private SpectatorConversationOrchestrator(Context context) {
         this.context = context.getApplicationContext();
+        Log.d(TAG, "🔧 Initializing SpectatorConversationOrchestrator...");
+        
+        Log.d(TAG, "📡 Getting ChessMasterResponsesManager instance...");
         this.responsesManager = ChessMasterResponsesManager.getInstance(context);
+        Log.d(TAG, "✅ ChessMasterResponsesManager initialized: " + (responsesManager != null));
+        
         this.ttsServiceManager = TTSServiceManager.getInstance(context);
         // Get OpenAI TTS service (which may be a wrapper around ElevenLabs)
         this.ttsService = TTSServiceManager.getOpenAITTSService(context);
@@ -114,6 +119,8 @@ public class SpectatorConversationOrchestrator {
         this.personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
+        
+        Log.d(TAG, "✅ SpectatorConversationOrchestrator fully initialized!");
     }
     
     public static synchronized SpectatorConversationOrchestrator getInstance(Context context) {
@@ -170,10 +177,15 @@ public class SpectatorConversationOrchestrator {
      */
     private void generateInitialStatement(ConversationState state, String triggerType, 
                                          String gameContext, ConversationCallback callback) {
+        Log.d(TAG, "🎬 generateInitialStatement called: trigger=" + triggerType + ", speaker=" + state.currentSpeaker);
+        
         executorService.execute(() -> {
             try {
                 String speaker = state.currentSpeaker;
                 String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                
+                Log.d(TAG, "📡 About to call responsesManager.createResponseSession for " + speaker);
+                Log.d(TAG, "📡 responsesManager is: " + (responsesManager != null ? "AVAILABLE" : "NULL"));
                 
                 // Create response session
                 responsesManager.createResponseSession(speaker, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
@@ -187,19 +199,28 @@ public class SpectatorConversationOrchestrator {
                         
                         // Now that we have a valid session, send the initial prompt
                         String prompt = createInitialPrompt(speaker, opponent, triggerType, gameContext);
-                        responsesManager.sendMessage(sessionId, prompt, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
+                        Log.d(TAG, "📨 About to call responsesManager.sendMessage with sessionId: " + sessionId);
+                        Log.d(TAG, "📨 Prompt: " + prompt.substring(0, Math.min(100, prompt.length())) + "...");
+                        
+                        try {
+                            Log.d(TAG, "🚨 ORCHESTRATOR: Calling sendMessage NOW");
+                            Log.d(TAG, "🔧 ORCHESTRATOR: responsesManager class: " + responsesManager.getClass().getSimpleName());
+                            Log.d(TAG, "🔧 ORCHESTRATOR: responsesManager instance: " + responsesManager);
+                            responsesManager.sendMessage(sessionId, prompt, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
                             @Override
                             public void onResponseStart(String sessionId) {
-                                Log.d(TAG, "📡 Initial prompt response started");
+                                Log.d(TAG, "📡 CALLBACK: onResponseStart called for sessionId: " + sessionId);
                             }
 
                             @Override
                             public void onResponseChunk(String chunk, boolean isFirst) {
+                                Log.d(TAG, "📡 CALLBACK: onResponseChunk called, chunk length: " + (chunk != null ? chunk.length() : 0));
                                 responseBuilder.append(chunk);
                             }
 
                             @Override
                             public void onResponseComplete(String fullResponse) {
+                                Log.d(TAG, "📡 CALLBACK: onResponseComplete called, response length: " + (fullResponse != null ? fullResponse.length() : 0));
                                 // Clean and personalize response
                                 String cleanedResponse = cleanResponse(fullResponse, speaker);
                                 
@@ -235,11 +256,21 @@ public class SpectatorConversationOrchestrator {
 
                             @Override
                             public void onError(String error) {
-                                Log.e(TAG, "❌ Initial prompt error: " + error);
+                                Log.e(TAG, "❌ CALLBACK: onError called with error: " + error);
+                                Log.e(TAG, "❌ CALLBACK: This error from sendMessage will trigger Chat Completions fallback!");
                                 mainHandler.post(() -> callback.onError("Failed to send initial prompt: " + error));
                                 endConversation(state, state.currentSpeaker, "[Error occurred]", callback);
                             }
                         });
+                        
+                        Log.d(TAG, "🚨 ORCHESTRATOR: sendMessage call completed successfully");
+                        Log.d(TAG, "🔧 ORCHESTRATOR: sendMessage method invocation finished - now waiting for callbacks");
+                        
+                        } catch (Exception e) {
+                            Log.e(TAG, "❌ ORCHESTRATOR EXCEPTION when calling sendMessage: " + e.getMessage(), e);
+                            mainHandler.post(() -> callback.onError("Exception in sendMessage: " + e.getMessage()));
+                            endConversation(state, speaker, "[Exception occurred]", callback);
+                        }
                     }
                     
                     @Override

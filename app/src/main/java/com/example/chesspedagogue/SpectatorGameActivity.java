@@ -67,6 +67,11 @@ public class SpectatorGameActivity extends AppCompatActivity {
             Log.d(TAG, "🎭 Starting simplified spectator mode...");
             setContentView(R.layout.activity_spectator_game);
 
+            // CRITICAL FIX: Set spectator mode flag to prevent duplicate Chat Completions calls
+            android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("is_spectator_mode", true).apply();
+            Log.d(TAG, "✅ Spectator mode flag set - EvaluationTracker auto-commentary disabled");
+
             // Get players from intent with fallbacks
             getPlayersFromIntent();
 
@@ -956,6 +961,11 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private void performImmediateCleanup() {
         try {
             Log.d(TAG, "🚨 EMERGENCY CLEANUP STARTING");
+
+            // 0. CRITICAL FIX: Clear spectator mode flag to re-enable EvaluationTracker in normal mode
+            android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            prefs.edit().putBoolean("is_spectator_mode", false).apply();
+            Log.d(TAG, "✅ Spectator mode flag cleared - EvaluationTracker auto-commentary re-enabled for normal mode");
 
             // 1. Stop ViewModel immediately
             if (viewModel != null) {

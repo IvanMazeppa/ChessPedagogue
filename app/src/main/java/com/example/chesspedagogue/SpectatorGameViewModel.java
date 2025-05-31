@@ -396,8 +396,10 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     protected void generateEnhancedOpeningDialogue() {
         Log.d(TAG, "🎬 Generating enhanced opening dialogue with conversation potential");
 
-        // Use conversation orchestrator for enhanced opening dialogue
-        String gameContext = String.format("Opening game between %s and %s", whitePlayer, blackPlayer);
+        // FIXED: Use proper game context with position for opening dialogue
+        String currentFen = currentFEN.getValue();
+        String gameContext = String.format("Opening game between %s and %s\nPOSITION: %s\nMove number: 1", 
+            whitePlayer, blackPlayer, currentFen != null ? currentFen : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         conversationOrchestrator.startConversation(
                 "opening",
                 whitePlayer,
@@ -434,8 +436,13 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private void generateEnhancedEndGameDialogue(String result) {
         Log.d(TAG, "🏁 Generating enhanced end game dialogue for: " + result);
 
-        // Use conversation orchestrator for enhanced endgame dialogue
-        String gameContext = String.format("Game ended: %s (between %s and %s)", result, whitePlayer, blackPlayer);
+        // FIXED: Include final position context for endgame dialogue
+        String currentFen = currentFEN.getValue();
+        List<String> history = moveHistory.getValue();
+        String gameContext = String.format("Game ended: %s (between %s and %s)\nFINAL_POSITION: %s\nTotal moves: %d", 
+            result, whitePlayer, blackPlayer, 
+            currentFen != null ? currentFen : "unknown", 
+            history != null ? history.size() : 0);
         conversationOrchestrator.startConversation(
                 "endgame",
                 whitePlayer,
@@ -513,7 +520,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     /**
-     * 🎭 Determine if we should generate emotional dialogue based on evaluation changes
+     * 🎭 FIXED: Much higher threshold for emotional dialogue to reduce API spam
      */
     private boolean shouldGenerateEmotionalDialogue(Float currentEval, Float previousEval) {
         if (currentEval == null || previousEval == null) {
@@ -522,9 +529,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
         float evalChange = Math.abs(currentEval - previousEval);
 
-        // Generate emotional dialogue for significant evaluation swings
-        if (evalChange > 0.8f) {  // Significant change
-            Log.d(TAG, "🎭 SIGNIFICANT EVAL CHANGE DETECTED: " + previousEval + " → " + currentEval + " (Δ" + evalChange + ")");
+        // FIXED: Only generate for MAJOR evaluation swings to reduce costs
+        if (evalChange > 2.0f) {  // INCREASED from 0.8f to 2.0f - major changes only
+            Log.d(TAG, "🎭 MAJOR EVAL CHANGE DETECTED: " + previousEval + " → " + currentEval + " (Δ" + evalChange + ")");
             return true;
         }
 
@@ -532,23 +539,23 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     /**
-     * 🎭 Enhanced dialogue checking that considers emotional triggers
+     * 🎭 FIXED: Much more selective dialogue to reduce API spam and costs
      */
     private boolean shouldGenerateDialogue(int moveNumber) {
-        // Always generate for significant evaluation changes (handled separately)
-
-        // Opening moves (moves 1-12): Selective dialogue
-        if (moveNumber <= 12) {
-            return moveNumber % 4 == 0;  // Every 4th move in opening
+        // FIXED: Much more selective - only emotional triggers should cause regular commentary
+        
+        // Opening moves (moves 1-15): Very selective - only major moments
+        if (moveNumber <= 15) {
+            return moveNumber == 8 || moveNumber == 15;  // Only moves 8 and 15
         }
 
-        // Middlegame (moves 13-40): More frequent, especially for tactical positions
-        if (moveNumber <= 40) {
-            return moveNumber % 6 == 0;  // Every 6th move
+        // Middlegame (moves 16-35): Key tactical moments only
+        if (moveNumber <= 35) {
+            return moveNumber % 12 == 0;  // Every 12th move (moves 24, 36)
         }
 
-        // Endgame (moves 40+): Less frequent but more emotional
-        return moveNumber % 8 == 0;  // Every 8th move
+        // Endgame (moves 36+): Critical moments only
+        return moveNumber % 15 == 0;  // Every 15th move (moves 45, 60)
     }
 
     /**
@@ -642,9 +649,26 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
             Log.d(TAG, "🎭 EMOTIONAL DIALOGUE: move=" + move + ", eval=" + currentEval + ", lastEval=" + lastEvaluationForEmotions);
 
-            // 🎭 ENHANCED: Use conversation orchestrator for intelligent move commentary
-            String gameContext = String.format("Move: %s by %s\nEvaluation: %.2f\nMove number: %d", 
-                move, playerWhoMoved, currentEval != null ? currentEval : 0.0f, history.size());
+            // 🎭 FIXED: Include FULL game context with position and move history for masters
+            String currentFen = currentFEN.getValue();
+            StringBuilder gameContextBuilder = new StringBuilder();
+            gameContextBuilder.append(String.format("Move: %s by %s\nEvaluation: %.2f\nMove number: %d\n", 
+                move, playerWhoMoved, currentEval != null ? currentEval : 0.0f, history.size()));
+            
+            // CRITICAL: Add FEN position so masters can see the board
+            if (currentFen != null) {
+                gameContextBuilder.append("POSITION: ").append(currentFen).append("\n");
+            }
+            
+            // CRITICAL: Add recent move history so masters have context
+            if (history.size() > 0) {
+                // Include last 10 moves for context
+                int startIdx = Math.max(0, history.size() - 10);
+                List<String> recentMoves = history.subList(startIdx, history.size());
+                gameContextBuilder.append("RECENT_MOVES: ").append(String.join(" ", recentMoves)).append("\n");
+            }
+            
+            String gameContext = gameContextBuilder.toString();
                 
             conversationOrchestrator.startConversation(
                     "brilliant_move",
