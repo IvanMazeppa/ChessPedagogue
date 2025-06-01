@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
+    private static final int REQUEST_CHESS_SET_SELECTION = 1002;
 
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -1282,6 +1283,12 @@ public class MainActivity extends AppCompatActivity {
         } else if (itemId == R.id.action_about) {
             showAboutDialog();
             return true;
+
+        } else if (itemId == R.id.action_chess_set_selection) {
+            Log.d(TAG, "🎨 Opening chess set selection");
+            Intent intent = new Intent(this, ChessSetSelectionActivity.class);
+            startActivityForResult(intent, REQUEST_CHESS_SET_SELECTION);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -2474,6 +2481,24 @@ public class MainActivity extends AppCompatActivity {
                 // Permission denied
                 Toast.makeText(this, "Microphone permission is required for voice interaction",
                         Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == REQUEST_CHESS_SET_SELECTION) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "🎨 Chess set selection completed successfully");
+                // Clear the piece cache to force redraw with new chess set
+                if (chessBoardView != null) {
+                    chessBoardView.clearPieceCache();
+                }
+                Toast.makeText(this, "Chess set updated! ♛", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.d(TAG, "🎨 Chess set selection cancelled");
             }
         }
     }

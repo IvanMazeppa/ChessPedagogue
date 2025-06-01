@@ -28,6 +28,7 @@ public class SpectatorConversationOrchestrator {
     private final OpenAITTSService ttsService; // Can be wrapper around ElevenLabs
     private final EvaluationTracker evaluationTracker;
     private final PersonalityEngine personalityEngine;
+    private final EmotionalIntelligenceManager emotionalIntelligence;
     private final ExecutorService executorService;
     private final Handler mainHandler;
     
@@ -117,6 +118,7 @@ public class SpectatorConversationOrchestrator {
         // Note: StockfishManager doesn't have getInstance(), create new instance
         StockfishManager stockfishManager = new StockfishManager();
         this.personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
+        this.emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         
@@ -228,13 +230,14 @@ public class SpectatorConversationOrchestrator {
                                 state.turns.add(new ConversationTurn(speaker, cleanedResponse, triggerType));
                                 state.turnCount++;
                                 
-                                // Deliver dialogue
+                                // 🎭 ENHANCED: Deliver dialogue with sophisticated emotional intelligence
                                 mainHandler.post(() -> {
-                                    // Check for emotional context
+                                    // Check for emotional context using enhanced system
                                     String emotionalState = detectEmotionalContext(state);
                                     if (emotionalState != null) {
                                         callback.onEmotionalResponse(speaker, emotionalState, cleanedResponse);
-                                        speakWithEmotionalPersonality(speaker, cleanedResponse, emotionalState);
+                                        // Use enhanced emotional intelligence for TTS
+                                        speakWithEnhancedEmotionalIntelligence(speaker, cleanedResponse, state);
                                     } else {
                                         callback.onDialogueGenerated(speaker, cleanedResponse);
                                         speakWithPersonality(speaker, cleanedResponse);
@@ -363,10 +366,12 @@ public class SpectatorConversationOrchestrator {
                                         state.turns.add(new ConversationTurn(responder, cleanedResponse, emotionalContext));
                                         state.turnCount++;
                                         
+                                        // 🎭 ENHANCED: Use sophisticated emotional intelligence for responses
                                         mainHandler.post(() -> {
                                             if (emotionalContext != null) {
                                                 callback.onEmotionalResponse(responder, emotionalContext, cleanedResponse);
-                                                speakWithEmotionalPersonality(responder, cleanedResponse, emotionalContext);
+                                                // Use enhanced emotional intelligence for TTS
+                                                speakWithEnhancedEmotionalIntelligence(responder, cleanedResponse, state);
                                             } else {
                                                 callback.onDialogueGenerated(responder, cleanedResponse);
                                                 speakWithPersonality(responder, cleanedResponse);
@@ -469,7 +474,8 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * Speak dialogue with emotional personality based on evaluation changes
+     * 🎭 ENHANCED: Speak dialogue with sophisticated emotional personality
+     * Uses EmotionalIntelligenceManager results for nuanced voice modulation
      */
     private void speakWithEmotionalPersonality(String speaker, String dialogue, String emotionalState) {
         try {
@@ -610,67 +616,290 @@ public class SpectatorConversationOrchestrator {
                 Math.random() < 0.7); // 70% chance to continue for natural flow
     }
     
+    /**
+     * 🎭 ENHANCED: Sophisticated emotional analysis using EmotionalIntelligenceManager
+     */
     private String detectEmotionalContext(ConversationState state) {
-        // Check evaluation changes for more nuanced emotions
-        Float evalChange = evaluationTracker.getRecentEvaluationChange();
-        Float currentEval = evaluationTracker.getCurrentEvaluation();
-        
-        if (evalChange != null && currentEval != null) {
-            // Determine who benefits from the change
-            boolean isWhiteToMove = state.turnCount % 2 == 0;
-            boolean isGoodForCurrentPlayer = (evalChange > 0 && isWhiteToMove) || (evalChange < 0 && !isWhiteToMove);
-            float absChange = Math.abs(evalChange);
+        try {
+            // Get evaluation data for emotional analysis
+            Float evalChange = evaluationTracker.getRecentEvaluationChange();
+            Float currentEval = evaluationTracker.getCurrentEvaluation();
             
-            if (isGoodForCurrentPlayer) {
-                if (absChange > 3.0f || currentEval > 4.0f) {
-                    return "thrilled"; // Major advantage or winning position
-                } else if (absChange > 1.5f || currentEval > 2.0f) {
-                    return "pleased"; // Good improvement
-                } else if (absChange > 0.5f) {
-                    return "satisfied"; // Minor improvement
-                }
-            } else {
-                if (absChange > 3.0f || currentEval < -4.0f) {
-                    return "desperate"; // Major disadvantage or losing
-                } else if (absChange > 2.0f || currentEval < -2.0f) {
-                    return "frustrated"; // Significant setback
-                } else if (absChange > 1.0f) {
-                    return "concerned"; // Worrying development
-                }
+            // Build conversation context for the emotional analysis
+            String conversationContext = buildConversationContext(state);
+            String gameContext = buildGameContext(state, evalChange, currentEval);
+            
+            // Use EmotionalIntelligenceManager for sophisticated analysis
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
+                emotionalIntelligence.analyzeEmotionalState(
+                    state.currentSpeaker,
+                    gameContext,
+                    conversationContext,
+                    currentEval,
+                    evalChange
+                );
+            
+            Log.d(TAG, String.format("🎭 Emotional analysis for %s: %s (intensity: %.2f, momentum: %.2f)", 
+                  state.currentSpeaker, emotionalResult.emotion.name, 
+                  emotionalResult.intensity, emotionalResult.momentum));
+            
+            // Return emotion name if intensity is significant enough
+            if (emotionalResult.intensity > 0.2f) { // Threshold for emotional expression
+                return emotionalResult.emotion.name;
+            }
+            
+            return null; // No significant emotional state
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error in emotional analysis, falling back to basic detection", e);
+            return basicEmotionalFallback(state);
+        }
+    }
+    
+    /**
+     * Build conversation context for emotional analysis
+     */
+    private String buildConversationContext(ConversationState state) {
+        if (state.turns.isEmpty()) {
+            return "conversation_start";
+        }
+        
+        StringBuilder context = new StringBuilder();
+        context.append("spectator_conversation");
+        
+        // Add recent conversation themes
+        if (state.turns.size() >= 2) {
+            String lastMessage = state.turns.get(state.turns.size() - 1).message.toLowerCase();
+            if (lastMessage.contains("brilliant") || lastMessage.contains("amazing")) {
+                context.append("_praise");
+            } else if (lastMessage.contains("mistake") || lastMessage.contains("blunder")) {
+                context.append("_criticism");  
+            } else if (lastMessage.contains("interesting") || lastMessage.contains("creative")) {
+                context.append("_analysis");
             }
         }
         
-        // Check conversation content for emotional cues
+        return context.toString();
+    }
+    
+    /**
+     * Build game context for emotional analysis
+     */
+    private String buildGameContext(ConversationState state, Float evalChange, Float currentEval) {
+        StringBuilder context = new StringBuilder();
+        
+        // Add evaluation context
+        if (evalChange != null && currentEval != null) {
+            float absChange = Math.abs(evalChange);
+            if (absChange > 2.0f) {
+                context.append("major_evaluation_swing");
+            } else if (absChange > 1.0f) {
+                context.append("significant_evaluation_change");
+            } else {
+                context.append("minor_evaluation_change");
+            }
+            
+            // Add position assessment
+            if (Math.abs(currentEval) > 3.0f) {
+                context.append("_decisive_position");
+            } else if (Math.abs(currentEval) > 1.5f) {
+                context.append("_advantage_position");
+            } else {
+                context.append("_balanced_position");
+            }
+        } else {
+            context.append("positional_discussion");
+        }
+        
+        return context.toString();
+    }
+    
+    /**
+     * Fallback emotional detection (simplified version of old logic)
+     */
+    private String basicEmotionalFallback(ConversationState state) {
+        Float evalChange = evaluationTracker.getRecentEvaluationChange();
+        Float currentEval = evaluationTracker.getCurrentEvaluation();
+        
+        if (evalChange != null && Math.abs(evalChange) > 2.0f) {
+            return evalChange > 0 ? "pleased" : "concerned";
+        }
+        
+        // Check conversation content for basic emotional cues
         if (!state.turns.isEmpty()) {
             String lastMessage = state.turns.get(state.turns.size() - 1).message.toLowerCase();
-            if (lastMessage.contains("brilliant") || lastMessage.contains("amazing") || 
-                lastMessage.contains("fantastic") || lastMessage.contains("beautiful")) {
+            if (lastMessage.contains("brilliant") || lastMessage.contains("amazing")) {
                 return "impressed";
-            } else if (lastMessage.contains("terrible") || lastMessage.contains("awful") || 
-                       lastMessage.contains("disaster") || lastMessage.contains("blunder")) {
-                return "critical";
-            } else if (lastMessage.contains("interesting") || lastMessage.contains("creative") || 
-                       lastMessage.contains("unusual")) {
-                return "intrigued";
-            } else if (lastMessage.contains("obvious") || lastMessage.contains("forced") || 
-                       lastMessage.contains("only move")) {
-                return "matter-of-fact";
+            } else if (lastMessage.contains("terrible") || lastMessage.contains("blunder")) {
+                return "frustrated";
             }
         }
         
         return null;
     }
     
-    private String buildConversationContext(ConversationState state) {
-        StringBuilder context = new StringBuilder();
-        context.append("Game: ").append(state.whitePlayer).append(" vs ").append(state.blackPlayer);
-        context.append("\nTurn ").append(state.turnCount).append(" of conversation");
+    /**
+     * 🎭 NEW: Enhanced emotional TTS using full EmotionalIntelligenceManager results
+     */
+    private void speakWithEnhancedEmotionalIntelligence(String speaker, String dialogue, ConversationState state) {
+        try {
+            // Save current master preference
+            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            String currentMaster = prefs.getString("selected_master", "tal");
+            
+            // Set speaker's voice
+            prefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
+            
+            // Get full emotional analysis
+            Float evalChange = evaluationTracker.getRecentEvaluationChange();
+            Float currentEval = evaluationTracker.getCurrentEvaluation();
+            String conversationContext = buildConversationContext(state);
+            String gameContext = buildGameContext(state, evalChange, currentEval);
+            
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
+                emotionalIntelligence.analyzeEmotionalState(
+                    speaker,
+                    gameContext,
+                    conversationContext,
+                    currentEval,
+                    evalChange
+                );
+            
+            Log.d(TAG, String.format("🎭 Enhanced TTS for %s: %s (intensity: %.2f, momentum: %.2f)", 
+                  speaker, emotionalResult.emotion.name, emotionalResult.intensity, emotionalResult.momentum));
+            
+            // Use ElevenLabs if available for superior emotional voice synthesis
+            if (TTSServiceManager.isUsingElevenLabs(context)) {
+                speakWithElevenLabsEmotionalIntelligence(speaker, dialogue, emotionalResult, currentMaster);
+            } else {
+                speakWithOpenAIEmotionalIntelligence(speaker, dialogue, emotionalResult, currentMaster);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error in enhanced emotional TTS, falling back to basic speech", e);
+            speakWithPersonality(speaker, dialogue);
+        }
+    }
+    
+    /**
+     * 🎤 ElevenLabs emotional voice synthesis with EmotionalIntelligence
+     */
+    private void speakWithElevenLabsEmotionalIntelligence(String speaker, String dialogue, 
+                                                         EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult,
+                                                         String originalMaster) {
         
-        // Add recent turns
-        int startIdx = Math.max(0, state.turns.size() - 3);
-        for (int i = startIdx; i < state.turns.size(); i++) {
-            ConversationTurn turn = state.turns.get(i);
-            context.append("\n").append(turn.speaker).append(": ").append(turn.message);
+        // Format dialogue with emotional context for ElevenLabs
+        String emotionallyFormattedDialogue = formatDialogueForEmotionalTTS(dialogue, emotionalResult);
+        
+        // Get ElevenLabs service directly for more control
+        ElevenLabsTTSService elevenLabsService = ElevenLabsTTSService.getInstance(context);
+        
+        // Set emotional context for ElevenLabs
+        String emotionalContext = buildElevenLabsEmotionalContext(emotionalResult);
+        elevenLabsService.setUsageContext(emotionalContext);
+        
+        Log.d(TAG, String.format("🎭 ElevenLabs emotional synthesis: %s speaking with %s (intensity: %.2f)", 
+              speaker, emotionalResult.emotion.name, emotionalResult.intensity));
+        
+        elevenLabsService.speak(emotionallyFormattedDialogue, new ElevenLabsTTSService.OnSpeechCompletedListener() {
+            @Override
+            public void onSpeechCompleted() {
+                // Restore original master and reset context
+                android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+                prefs.edit().putString("selected_master", originalMaster).apply();
+                elevenLabsService.setUsageContext("spectator_mode"); // Reset to default
+                Log.d(TAG, "✅ Emotional ElevenLabs speech completed for " + speaker);
+            }
+        });
+    }
+    
+    /**
+     * 🎤 OpenAI emotional voice synthesis with EmotionalIntelligence  
+     */
+    private void speakWithOpenAIEmotionalIntelligence(String speaker, String dialogue,
+                                                     EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult,
+                                                     String originalMaster) {
+        
+        Log.d(TAG, String.format("🎭 OpenAI emotional synthesis: %s with %s (intensity: %.2f)", 
+              speaker, emotionalResult.emotion.name, emotionalResult.intensity));
+        
+        // Use regular TTS service (may be OpenAI or wrapper)
+        ttsService.speak(dialogue, new OpenAITTSService.OnSpeechCompletedListener() {
+            @Override
+            public void onSpeechCompleted() {
+                // Restore original master
+                android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+                prefs.edit().putString("selected_master", originalMaster).apply();
+                Log.d(TAG, "✅ Emotional OpenAI speech completed for " + speaker);
+            }
+        });
+    }
+    
+    /**
+     * Format dialogue text with emotional cues for TTS engines
+     */
+    private String formatDialogueForEmotionalTTS(String dialogue, EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult) {
+        // Use the emotional expression from the result if available
+        if (emotionalResult.expression != null && !emotionalResult.expression.isEmpty() && 
+            !emotionalResult.expression.equals(emotionalResult.emotion.defaultExpression)) {
+            
+            // If the emotional result has a specific expression, use it
+            return emotionalResult.expression;
+        }
+        
+        // Otherwise, enhance the original dialogue with emotional context
+        return enhanceDialogueWithEmotion(dialogue, emotionalResult);
+    }
+    
+    /**
+     * Enhance dialogue with emotional context cues for TTS
+     */
+    private String enhanceDialogueWithEmotion(String dialogue, EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult) {
+        // Add emotional intensity markers based on the analysis
+        if (emotionalResult.intensity > 0.7f) {
+            // High intensity emotions get strong markers
+            switch (emotionalResult.emotion) {
+                case ECSTATIC:
+                case THRILLED:
+                    return dialogue + "!"; // Add excitement
+                case DEVASTATED:
+                case FRUSTRATED:
+                    return dialogue.replace(".", "..."); // Add hesitation/frustration
+                default:
+                    return dialogue;
+            }
+        } else if (emotionalResult.intensity > 0.4f) {
+            // Medium intensity gets subtle markers
+            switch (emotionalResult.emotion) {
+                case EXCITED:
+                case PLEASED:
+                    return dialogue; // Natural delivery
+                case CONCERNED:
+                case UNEASY:
+                    return dialogue.replace("!", "."); // Tone down excitement
+                default:
+                    return dialogue;
+            }
+        }
+        
+        return dialogue; // Low intensity - natural delivery
+    }
+    
+    /**
+     * Build ElevenLabs-specific emotional context
+     */
+    private String buildElevenLabsEmotionalContext(EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult) {
+        StringBuilder context = new StringBuilder("spectator_mode");
+        
+        // Add emotional context for ElevenLabs model selection and voice settings
+        if (emotionalResult.intensity > 0.5f) {
+            context.append("_").append(emotionalResult.emotion.name.toLowerCase());
+            
+            if (emotionalResult.shouldInterruptConversation()) {
+                context.append("_urgent");
+            } else if (emotionalResult.shouldInfluenceVoice()) {
+                context.append("_expressive");
+            }
         }
         
         return context.toString();

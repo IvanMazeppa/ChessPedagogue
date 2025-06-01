@@ -85,6 +85,9 @@ public class ElevenLabsTTSService {
     // Usage context for dynamic model selection
     private String currentContext = "default";
     
+    // 🎭 Emotional intelligence integration
+    private EmotionalIntelligenceManager.EmotionalAnalysisResult currentEmotionalState;
+    
     // Chunk management
     private final ConcurrentLinkedQueue<ChunkPlaybackItem> chunkQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isPlayingChunks = new AtomicBoolean(false);
@@ -170,6 +173,19 @@ public class ElevenLabsTTSService {
     public void setUsageContext(String context) {
         this.currentContext = context;
         Log.d(TAG, "🎯 ElevenLabs context set to: " + context);
+    }
+    
+    /**
+     * 🎭 NEW: Set emotional state for voice modulation
+     */
+    public void setEmotionalState(EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalState) {
+        this.currentEmotionalState = emotionalState;
+        if (emotionalState != null) {
+            Log.d(TAG, String.format("🎭 ElevenLabs emotional state set: %s (intensity: %.2f, momentum: %.2f)", 
+                  emotionalState.emotion.name, emotionalState.intensity, emotionalState.momentum));
+        } else {
+            Log.d(TAG, "🎭 ElevenLabs emotional state cleared");
+        }
     }
     
     /**
@@ -369,12 +385,8 @@ public class ElevenLabsTTSService {
                 payload.put("text", text);
                 payload.put("model_id", model);
                 
-                // Voice settings for optimal quality
-                JSONObject voiceSettings = new JSONObject();
-                voiceSettings.put("stability", getStabilityForMaster(selectedMaster));
-                voiceSettings.put("similarity_boost", getSimilarityBoostForMaster(selectedMaster));
-                voiceSettings.put("style", 0); // Keep at 0 as recommended by ElevenLabs docs
-                voiceSettings.put("use_speaker_boost", true);
+                // 🎭 ENHANCED: Voice settings with emotional intelligence
+                JSONObject voiceSettings = getEmotionallyAwareVoiceSettings(selectedMaster);
                 
                 payload.put("voice_settings", voiceSettings);
                 
@@ -537,6 +549,123 @@ public class ElevenLabsTTSService {
         // As per ElevenLabs docs: "we recommend keeping this setting at 0 at all times"
         // Style exaggeration makes the model less stable and increases latency
         return 0.0;
+    }
+    
+    /**
+     * 🎭 NEW: Get emotionally-aware voice settings based on current emotional state
+     */
+    private JSONObject getEmotionallyAwareVoiceSettings(String master) throws Exception {
+        JSONObject voiceSettings = new JSONObject();
+        
+        // Base settings for the master
+        double baseStability = getStabilityForMaster(master);
+        double baseSimilarity = getSimilarityBoostForMaster(master);
+        double baseStyle = getStyleForMaster(master);
+        
+        // Apply emotional modulations if we have emotional state
+        if (currentEmotionalState != null && currentEmotionalState.intensity > 0.2f) {
+            // Modify voice settings based on emotional state
+            EmotionalVoiceModulation modulation = getEmotionalVoiceModulation(currentEmotionalState);
+            
+            voiceSettings.put("stability", Math.max(0.0, Math.min(1.0, baseStability + modulation.stabilityAdjustment)));
+            voiceSettings.put("similarity_boost", Math.max(0.0, Math.min(1.0, baseSimilarity + modulation.similarityAdjustment)));
+            voiceSettings.put("style", Math.max(0.0, Math.min(1.0, baseStyle + modulation.styleAdjustment)));
+            voiceSettings.put("use_speaker_boost", true);
+            
+            Log.d(TAG, String.format("🎭 Emotional voice settings for %s (%s): stability=%.2f, similarity=%.2f, style=%.2f", 
+                  master, currentEmotionalState.emotion.name, 
+                  voiceSettings.getDouble("stability"), 
+                  voiceSettings.getDouble("similarity_boost"),
+                  voiceSettings.getDouble("style")));
+        } else {
+            // Use default settings
+            voiceSettings.put("stability", baseStability);
+            voiceSettings.put("similarity_boost", baseSimilarity);
+            voiceSettings.put("style", baseStyle);
+            voiceSettings.put("use_speaker_boost", true);
+            
+            Log.d(TAG, String.format("🎤 Default voice settings for %s: stability=%.2f, similarity=%.2f", 
+                  master, baseStability, baseSimilarity));
+        }
+        
+        return voiceSettings;
+    }
+    
+    /**
+     * 🎭 Calculate voice modulation based on emotional state
+     */
+    private EmotionalVoiceModulation getEmotionalVoiceModulation(EmotionalIntelligenceManager.EmotionalAnalysisResult emotional) {
+        EmotionalVoiceModulation modulation = new EmotionalVoiceModulation();
+        
+        // Intensity-based base adjustments
+        float intensityFactor = emotional.intensity;
+        
+        switch (emotional.emotion) {
+            case ECSTATIC:
+            case THRILLED:
+                // Very excited - less stable, more expressive
+                modulation.stabilityAdjustment = -0.2f * intensityFactor;
+                modulation.styleAdjustment = 0.3f * intensityFactor; // More style for high excitement
+                break;
+                
+            case EXCITED:
+            case PLEASED:
+                // Moderately excited - slightly less stable
+                modulation.stabilityAdjustment = -0.1f * intensityFactor;
+                modulation.styleAdjustment = 0.1f * intensityFactor;
+                break;
+                
+            case DEVASTATED:
+            case FRUSTRATED:
+                // Negative emotions - less stable, more variation
+                modulation.stabilityAdjustment = -0.15f * intensityFactor;
+                modulation.styleAdjustment = 0.2f * intensityFactor;
+                break;
+                
+            case CONCERNED:
+            case UNEASY:
+                // Worry - slight stability reduction
+                modulation.stabilityAdjustment = -0.05f * intensityFactor;
+                modulation.styleAdjustment = 0.05f * intensityFactor;
+                break;
+                
+            case ANALYTICAL:
+            case FOCUSED:
+                // Analytical - more stable, less variation
+                modulation.stabilityAdjustment = 0.1f * intensityFactor;
+                modulation.styleAdjustment = -0.05f * intensityFactor;
+                break;
+                
+            case CONFIDENT:
+                // Confidence - balanced with slight expressiveness
+                modulation.stabilityAdjustment = 0.05f * intensityFactor;
+                modulation.styleAdjustment = 0.05f * intensityFactor;
+                break;
+                
+            default:
+                // Neutral emotions - minimal adjustments
+                modulation.stabilityAdjustment = 0.0f;
+                modulation.styleAdjustment = 0.0f;
+                break;
+        }
+        
+        // Apply momentum factor - emotional streaks can amplify effects
+        if (Math.abs(emotional.momentum) > 0.5f) {
+            float momentumMultiplier = 1.0f + (Math.abs(emotional.momentum) * 0.3f);
+            modulation.stabilityAdjustment *= momentumMultiplier;
+            modulation.styleAdjustment *= momentumMultiplier;
+        }
+        
+        return modulation;
+    }
+    
+    /**
+     * 🎭 Emotional voice modulation parameters
+     */
+    private static class EmotionalVoiceModulation {
+        float stabilityAdjustment = 0.0f;
+        float similarityAdjustment = 0.0f;
+        float styleAdjustment = 0.0f;
     }
     
     /**

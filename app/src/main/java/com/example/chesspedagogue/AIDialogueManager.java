@@ -37,6 +37,7 @@ public class AIDialogueManager {
     private final ThreeStageResponseManager threeStageManager;
     private final EnhancedContextManager contextManager;
     private final ConversationVarietyManager varietyManager;
+    private final EmotionalIntelligenceManager emotionalIntelligence;
 
     // FIXED: Smart conversation state tracking to prevent infinite loops
     private String lastSpeaker = "";
@@ -113,10 +114,13 @@ public class AIDialogueManager {
         // Initialize Conversation Variety Manager for response diversification
         this.varietyManager = ConversationVarietyManager.getInstance(context);
         
+        // Initialize Emotional Intelligence Manager for sophisticated emotional responses
+        this.emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
+        
         // Set context for spectator mode (enhanced quality eleven_turbo_v2_5)
         TTSServiceManager.setUsageContext(context, "spectator_mode");
 
-        Log.d(TAG, "🎭 ENHANCED AI Dialogue Manager initialized with contextual awareness!");
+        Log.d(TAG, "🎭 ENHANCED AI Dialogue Manager initialized with emotional intelligence!");
     }
 
     /**
@@ -753,20 +757,98 @@ public class AIDialogueManager {
 
     // KEEPING ALL YOUR EXISTING HELPER METHODS (shortened for space but they're all here)
 
+    /**
+     * 🎭 ENHANCED: Sophisticated emotional response using EmotionalIntelligenceManager
+     */
     private String determineEmotionalResponseToComment(CommentAnalysis analysis, String respondingPlayer) {
+        try {
+            // Build context for emotional analysis
+            String gameContext = buildUserCommentGameContext(analysis);
+            String conversationContext = buildUserCommentConversationContext(analysis);
+            
+            // Get emotional analysis result
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
+                emotionalIntelligence.analyzeEmotionalState(
+                    respondingPlayer,
+                    gameContext,
+                    conversationContext
+                );
+            
+            Log.d(TAG, String.format("🎭 Emotional response to user comment - %s: %s (intensity: %.2f)", 
+                  respondingPlayer, emotionalResult.emotion.name, emotionalResult.intensity));
+            
+            // Return the emotion name from sophisticated analysis
+            return emotionalResult.emotion.name;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error in emotional analysis for user comment, using fallback", e);
+            return determineEmotionalResponseFallback(analysis, respondingPlayer);
+        }
+    }
+    
+    /**
+     * Build game context for user comment emotional analysis
+     */
+    private String buildUserCommentGameContext(CommentAnalysis analysis) {
+        StringBuilder context = new StringBuilder("user_comment");
+        
+        // Add comment topic context
+        switch (analysis.topic) {
+            case "move_critique":
+                context.append("_move_discussion");
+                break;
+            case "praise":
+                context.append("_praise_received");
+                break;
+            case "criticism":
+                context.append("_criticism_received");
+                break;
+            default:
+                context.append("_general_discussion");
+                break;
+        }
+        
+        return context.toString();
+    }
+    
+    /**
+     * Build conversation context for user comment emotional analysis
+     */
+    private String buildUserCommentConversationContext(CommentAnalysis analysis) {
+        StringBuilder context = new StringBuilder("spectator_user_interaction");
+        
+        // Add sentiment context
+        if (analysis.sentiment != null) {
+            context.append("_").append(analysis.sentiment);
+        }
+        
+        // Add likelihood context
+        if (analysis.likelihood > 0.8f) {
+            context.append("_confident");
+        } else if (analysis.likelihood < 0.5f) {
+            context.append("_uncertain");
+        }
+        
+        return context.toString();
+    }
+    
+    /**
+     * Fallback emotional response (simplified version of old logic)
+     */
+    private String determineEmotionalResponseFallback(CommentAnalysis analysis, String respondingPlayer) {
         switch (analysis.sentiment) {
             case "positive":
-                return analysis.topic.equals("praise") ? "pleased" : "neutral";
+                return analysis.topic.equals("praise") ? "pleased" : "content";
             case "negative":
                 switch (respondingPlayer.toLowerCase()) {
                     case "fischer": return "frustrated";
-                    case "tal": return "neutral";
+                    case "tal": return "intrigued";
                     case "kasparov": return "concerned";
-                    case "karpov": return "neutral";
+                    case "karpov": return "analytical";
                     default: return "concerned";
                 }
             default:
-                return analysis.topic.equals("question") ? "pleased" : "neutral";
+                return analysis.topic.equals("question") ? "intrigued" : "analytical";
         }
     }
 

@@ -23,11 +23,14 @@ public class StockfishManager {
     private static final String TAG = "StockfishManager";
     private final List<String> outputBuffer = new CopyOnWriteArrayList<>();
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final AtomicBoolean isRecovering = new AtomicBoolean(false);
     private Process process;
     private BufferedReader reader;
     private BufferedWriter writer;
     private Thread readerThread;
     private boolean isReady = false;
+    private String enginePath;
+    private List<String> moveHistory = new ArrayList<>();
 
     // Add this field to track the current FEN
     private String currentFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -39,6 +42,11 @@ public class StockfishManager {
      * @return true if the engine started successfully
      */
     public boolean startEngine(String enginePath) {
+        this.enginePath = enginePath; // Store for recovery
+        return startEngineInternal(enginePath);
+    }
+
+    private boolean startEngineInternal(String enginePath) {
         try {
             // Start the engine using the provided path
             File engineFile = new File(enginePath);
@@ -108,13 +116,30 @@ public class StockfishManager {
      * @throws IOException if an I/O error occurs
      */
     public void sendCommand(String command) throws IOException {
+        // First, try to send the command normally
         if (writer == null || !isRunning.get()) {
-            throw new IOException("Engine not running");
+            Log.w(TAG, "🚨 Engine not running, attempting recovery...");
+            if (attemptEngineRecovery()) {
+                Log.i(TAG, "✅ Engine recovery successful, retrying command: " + command);
+            } else {
+                throw new IOException("Engine not running and recovery failed");
+            }
         }
 
-        Log.d(TAG, "Sending: " + command);
-        writer.write(command + "\n");
-        writer.flush();
+        try {
+            Log.d(TAG, "Sending: " + command);
+            writer.write(command + "\n");
+            writer.flush();
+        } catch (IOException e) {
+            Log.e(TAG, "❌ Failed to send command, attempting recovery: " + e.getMessage());
+            if (attemptEngineRecovery()) {
+                Log.i(TAG, "✅ Recovery after IOException successful, retrying: " + command);
+                writer.write(command + "\n");
+                writer.flush();
+            } else {
+                throw new IOException("Engine communication failed and recovery failed", e);
+            }
+        }
     }
 
     /**
@@ -1072,5 +1097,152 @@ public class StockfishManager {
         outputBuffer.clear();
         
         Log.d(TAG, "✅ StockfishManager FORCE STOPPED");
+    }
+
+    /**
+     * 🚨 NEW: Attempts to recover the engine when it crashes
+     */
+    private synchronized boolean attemptEngineRecovery() {
+        if (isRecovering.get()) {
+            Log.d(TAG, "Recovery already in progress, waiting...");
+            return waitForRecovery();
+        }
+
+        if (enginePath == null) {
+            Log.e(TAG, "❌ Cannot recover: no engine path stored");
+            return false;
+        }
+
+        isRecovering.set(true);
+        try {
+            Log.i(TAG, "🔄 Starting engine recovery process...");
+
+            // Step 1: Force stop current engine
+            forceStop();
+            Thread.sleep(500); // Brief pause
+
+            // Step 2: Restart engine
+            if (!startEngineInternal(enginePath)) {
+                Log.e(TAG, "❌ Failed to restart engine during recovery");
+                return false;
+            }
+
+            // Step 3: Restore game position
+            if (!restoreGamePosition()) {
+                Log.e(TAG, "❌ Failed to restore game position during recovery");
+                return false;
+            }
+
+            Log.i(TAG, "🎉 Engine recovery completed successfully!");
+            return true;
+
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Engine recovery failed", e);
+            return false;
+        } finally {
+            isRecovering.set(false);
+        }
+    }
+
+    /**
+     * 🔄 Restores the current game position after engine restart
+     */
+    private boolean restoreGamePosition() {
+        try {
+            if (moveHistory.isEmpty()) {
+                Log.d(TAG, "📋 No move history to restore, using starting position");
+                currentFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+                return true;
+            }
+
+            Log.d(TAG, "📋 Restoring position with " + moveHistory.size() + " moves");
+            
+            // Build position command with all moves
+            StringBuilder posCommand = new StringBuilder("position startpos");
+            if (!moveHistory.isEmpty()) {
+                posCommand.append(" moves");
+                for (String move : moveHistory) {
+                    posCommand.append(" ").append(move);
+                }
+            }
+
+            // Send the position and wait for ready
+            sendCommandDirect(posCommand.toString());
+            if (waitForReady(2000)) {
+                // Update FEN after successful restoration
+                currentFEN = getCurrentFEN();
+                Log.i(TAG, "✅ Position restored successfully");
+                return true;
+            } else {
+                Log.e(TAG, "❌ Engine not ready after position restoration");
+                return false;
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Failed to restore game position", e);
+            return false;
+        }
+    }
+
+    /**
+     * 📡 Sends command directly without recovery (used during recovery process)
+     */
+    private void sendCommandDirect(String command) throws IOException {
+        if (writer == null || !isRunning.get()) {
+            throw new IOException("Engine not running (direct send)");
+        }
+        Log.d(TAG, "Sending (direct): " + command);
+        writer.write(command + "\n");
+        writer.flush();
+    }
+
+    /**
+     * ⏳ Waits for recovery to complete
+     */
+    private boolean waitForRecovery() {
+        int attempts = 0;
+        while (isRecovering.get() && attempts < 50) { // Max 5 seconds
+            try {
+                Thread.sleep(100);
+                attempts++;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return false;
+            }
+        }
+        return !isRecovering.get() && isRunning.get();
+    }
+
+    /**
+     * 💓 Checks if the engine process is actually alive
+     */
+    public boolean isEngineAlive() {
+        return process != null && process.isAlive() && isRunning.get();
+    }
+
+    /**
+     * 📋 Adds a move to the history for recovery purposes
+     */
+    public void addMoveToHistory(String move) {
+        if (move != null && !move.trim().isEmpty()) {
+            moveHistory.add(move);
+            Log.d(TAG, "📝 Added move to history: " + move + " (total: " + moveHistory.size() + ")");
+        }
+    }
+
+    /**
+     * 🗑️ Clears move history (for new games)
+     */
+    public void clearMoveHistory() {
+        moveHistory.clear();
+        currentFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        Log.d(TAG, "🗑️ Move history cleared");
+    }
+
+    /**
+     * 📊 Gets current move history
+     */
+    public List<String> getMoveHistory() {
+        return new ArrayList<>(moveHistory);
     }
 }

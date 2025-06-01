@@ -1166,4 +1166,41 @@ public class GameRepository {
 
         Log.d(TAG, "✅ GameRepository cleanup complete");
     }
+
+    /**
+     * 🩺 Add engine health monitoring
+     */
+    public boolean isEngineHealthy() {
+        return stockfishManager != null && stockfishManager.isEngineAlive();
+    }
+
+    /**
+     * 🔧 Manual engine recovery trigger for testing
+     */
+    public boolean triggerEngineRecovery() {
+        engineLock.lock();
+        try {
+            Log.i(TAG, "🔧 Manual engine recovery triggered");
+            
+            // Get current move history before recovery
+            List<String> currentMoves = GameHistoryManager.getInstance().getCurrentGameMoves();
+            
+            // Clear and rebuild move history in StockfishManager
+            stockfishManager.clearMoveHistory();
+            for (String move : currentMoves) {
+                stockfishManager.addMoveToHistory(move);
+            }
+            
+            // The recovery will be triggered automatically on next sendCommand call
+            // or we can force it by attempting to get the current FEN
+            String fen = stockfishManager.getCurrentFEN();
+            return fen != null;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Manual recovery failed", e);
+            return false;
+        } finally {
+            engineLock.unlock();
+        }
+    }
 }

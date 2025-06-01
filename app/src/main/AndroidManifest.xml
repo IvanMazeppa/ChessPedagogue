@@ -97,6 +97,17 @@
             android:theme="@style/Theme.ChessPedagogue"
             android:label="Responses API Test" />
 
+        <!-- Chess Set Selection Activity -->
+        <activity
+            android:name=".ChessSetSelectionActivity"
+            android:exported="false"
+            android:label="Choose Chess Set"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+
     </application>
 
 </manifest>
