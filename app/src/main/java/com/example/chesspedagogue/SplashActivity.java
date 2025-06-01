@@ -3,124 +3,248 @@ package com.example.chesspedagogue;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class SplashActivity extends AppCompatActivity {
+    private static final String TAG = "SplashActivity";
 
     private RadioGroup colorRadioGroup;
+    private RadioButton radioWhite;
+    private RadioButton radioBlack;
     private SeekBar strengthSeekBar;
     private TextView strengthValueTextView;
     private Button startGameButton;
+    private LinearLayout whiteSelectionLayout;
+    private LinearLayout blackSelectionLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(TAG, "🚀 SplashActivity onCreate starting...");
+        
         setContentView(R.layout.activity_splash);
 
-        // Find UI elements
+        // Initialize UI elements
+        initializeViews();
+        
+        // Setup functionality
+        setupColorSelection();
+        setupStrengthSlider();
+        setupStartButton();
+        
+        // Set initial state - ensure white is selected by default
+        colorRadioGroup.check(R.id.radioWhite);
+        updateSelectionVisuals();
+        
+        Log.d(TAG, "✅ SplashActivity initialization completed");
+    }
+
+    private void initializeViews() {
+        Log.d(TAG, "🔍 Initializing views...");
+        
         colorRadioGroup = findViewById(R.id.radioGroupColor);
+        radioWhite = findViewById(R.id.radioWhite);
+        radioBlack = findViewById(R.id.radioBlack);
         strengthSeekBar = findViewById(R.id.seekBarStrength);
         strengthValueTextView = findViewById(R.id.textViewStrengthValue);
         startGameButton = findViewById(R.id.buttonStartGame);
+        whiteSelectionLayout = findViewById(R.id.whiteSelectionLayout);
+        blackSelectionLayout = findViewById(R.id.blackSelectionLayout);
+        
+        // Verify all views found
+        boolean allViewsFound = 
+            colorRadioGroup != null && radioWhite != null && radioBlack != null &&
+            strengthSeekBar != null && strengthValueTextView != null && 
+            startGameButton != null && whiteSelectionLayout != null && blackSelectionLayout != null;
+            
+        Log.d(TAG, allViewsFound ? "✅ All views found successfully" : "❌ Some views not found!");
+    }
 
-        // Configure engine strength slider (0 = weakest, 20 = strongest)
+    private void setupColorSelection() {
+        Log.d(TAG, "🎨 Setting up color selection...");
+        
+        // Set up click listeners for the selection areas
+        whiteSelectionLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "🤴 WHITE selection area clicked!");
+                selectWhite();
+            }
+        });
+
+        blackSelectionLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "♛ BLACK selection area clicked!");
+                selectBlack();
+            }
+        });
+
+        // Also set up radio button listeners
+        radioWhite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "🤴 White radio button clicked!");
+                selectWhite();
+            }
+        });
+
+        radioBlack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "♛ Black radio button clicked!");
+                selectBlack();
+            }
+        });
+
+        // RadioGroup listener for any other changes
+        colorRadioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                Log.d(TAG, "📻 RadioGroup changed to ID: " + checkedId);
+                updateSelectionVisuals();
+            }
+        });
+        
+        Log.d(TAG, "✅ Color selection setup completed");
+    }
+
+    private void selectWhite() {
+        Log.d(TAG, "🤴 Selecting WHITE color...");
+        colorRadioGroup.check(R.id.radioWhite);
+        updateSelectionVisuals();
+        Log.d(TAG, "✅ White selected and visuals updated");
+    }
+
+    private void selectBlack() {
+        Log.d(TAG, "♛ Selecting BLACK color...");
+        colorRadioGroup.check(R.id.radioBlack);
+        updateSelectionVisuals();
+        Log.d(TAG, "✅ Black selected and visuals updated");
+    }
+
+    private void updateSelectionVisuals() {
+        int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
+        String selectedName = (selectedColorId == R.id.radioWhite) ? "WHITE" : 
+                             (selectedColorId == R.id.radioBlack) ? "BLACK" : "NONE";
+        Log.d(TAG, "🎨 Updating visuals for selected ID: " + selectedColorId + " (" + selectedName + ")");
+        
+        if (selectedColorId == R.id.radioWhite) {
+            whiteSelectionLayout.setBackgroundResource(R.drawable.side_selection_active_bg);
+            blackSelectionLayout.setBackgroundResource(R.drawable.side_selection_bg);
+            Log.d(TAG, "🎨 Visual feedback: WHITE highlighted");
+        } else if (selectedColorId == R.id.radioBlack) {
+            blackSelectionLayout.setBackgroundResource(R.drawable.side_selection_active_bg);
+            whiteSelectionLayout.setBackgroundResource(R.drawable.side_selection_bg);
+            Log.d(TAG, "🎨 Visual feedback: BLACK highlighted");
+        } else {
+            Log.w(TAG, "⚠️ No valid selection found - keeping current state");
+        }
+    }
+
+    private void setupStrengthSlider() {
+        Log.d(TAG, "⚡ Setting up strength slider...");
+        
+        // Configure slider
         strengthSeekBar.setMax(20);
         strengthSeekBar.setProgress(10);  // default mid-level
-        ElevenLabsConfig.setApiKey(this, "sk_78213d87bcdfcdb50e74b2a1c3944fabb71db48eb5ccbfb5");
-
-        // Show initial strength value with more appropriate Elo calculation
-        int initialSkill = strengthSeekBar.getProgress();
-        int initialElo = 300 + initialSkill * 145; // Ranges from 300 to 3200
-        strengthValueTextView.setText("Engine Strength: ~" + initialElo + " Elo (Level " + initialSkill + ")");
-
-        // Update displayed strength as the user adjusts the slider
+        
+        // Update display
+        updateStrengthDisplay(10);
+        
+        // Listen for changes
         strengthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                int approxElo = 300 + progress * 145; // Lower minimum, better spread
-                strengthValueTextView.setText("Engine Strength: ~" + approxElo + " Elo (Level " + progress + ")");
+                updateStrengthDisplay(progress);
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) { }
             @Override public void onStopTrackingTouch(SeekBar seekBar) { }
         });
+        
+        Log.d(TAG, "✅ Strength slider setup completed");
+    }
 
-        // Start Game button launches the main game activity
+    private void updateStrengthDisplay(int skillLevel) {
+        int approxElo = 300 + skillLevel * 145;
+        String strengthText = "Engine Strength: ~" + approxElo + " Elo (Level " + skillLevel + ")";
+        strengthValueTextView.setText(strengthText);
+        Log.d(TAG, "⚡ Strength updated: " + strengthText);
+    }
+
+    private void setupStartButton() {
+        Log.d(TAG, "▶️ Setting up start button...");
+        
         startGameButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Check if this is first run
-                SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
-                boolean isFirstRun = prefs.getBoolean("is_first_run", true);
-
-                if (isFirstRun) {
-                    // First run - go to master selection first
-                    prefs.edit().putBoolean("is_first_run", false).apply();
-
-                    // Store the game settings for later use
-                    String playerColor = "white";
-                    int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
-                    if (selectedColorId == R.id.radioBlack) {
-                        playerColor = "black";
-                    }
-                    int skillLevel = strengthSeekBar.getProgress();
-                    int engineElo = 300 + skillLevel * 145;
-
-                    // Save these settings
-                    prefs.edit()
-                            .putString("PLAYER_COLOR", playerColor)
-                            .putInt("SKILL_LEVEL", skillLevel)
-                            .putInt("ENGINE_ELO", engineElo)
-                            .apply();
-
-                    // Go to chess master selection
-                    Intent intent = new Intent(SplashActivity.this, ChessMasterSelectionActivity.class);
-                    intent.putExtra("first_time", true);
-                    startActivity(intent);
-                } else {
-                    // Not first run, proceed as normal
-                    String playerColor = "white";
-                    int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
-                    if (selectedColorId == R.id.radioBlack) {
-                        playerColor = "black";
-                    }
-                    int skillLevel = strengthSeekBar.getProgress();
-                    int engineElo = 300 + skillLevel * 145;
-
-                    Intent intent = new Intent(SplashActivity.this, MainActivity.class);
-                    intent.putExtra("PLAYER_COLOR", playerColor);
-                    intent.putExtra("SKILL_LEVEL", skillLevel);
-                    intent.putExtra("ENGINE_ELO", engineElo);
-                    startActivity(intent);
-                }
-                finish(); // close splash screen
+                Log.d(TAG, "▶️ START GAME button clicked!");
+                startGame();
             }
         });
-
-
+        
+        Log.d(TAG, "✅ Start button setup completed");
     }
 
-
-    // In your launcher activity
-    private void proceedToNextScreen() {
+    private void startGame() {
+        // Get current configuration
+        String playerColor = getSelectedColor();
+        int skillLevel = strengthSeekBar.getProgress();
+        int engineElo = 300 + skillLevel * 145;
+        
+        Log.d(TAG, "🎮 Starting game with configuration:");
+        Log.d(TAG, "   🎨 Player Color: " + playerColor);
+        Log.d(TAG, "   ⚡ Skill Level: " + skillLevel);
+        Log.d(TAG, "   🏆 Engine Elo: " + engineElo);
+        
+        // Check if this is first run
         SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
         boolean isFirstRun = prefs.getBoolean("is_first_run", true);
+        
+        Log.d(TAG, "🆕 Is first run: " + isFirstRun);
 
         if (isFirstRun) {
-            // First run - go to master selection
+            // First run - go to master selection first
+            Log.d(TAG, "🎭 First run detected - going to master selection");
             prefs.edit().putBoolean("is_first_run", false).apply();
-            Intent intent = new Intent(this, ChessMasterSelectionActivity.class);
+
+            // Store the game settings for later use
+            prefs.edit()
+                    .putString("PLAYER_COLOR", playerColor)
+                    .putInt("SKILL_LEVEL", skillLevel)
+                    .putInt("ENGINE_ELO", engineElo)
+                    .apply();
+
+            // Go to chess master selection
+            Intent intent = new Intent(SplashActivity.this, ChessMasterSelectionActivity.class);
             intent.putExtra("first_time", true);
             startActivity(intent);
         } else {
-            // Normal flow - go to main activity
-            startActivity(new Intent(this, MainActivity.class));
+            // Not first run, go directly to main game
+            Log.d(TAG, "🎮 Regular start - going to MainActivity");
+            Intent intent = new Intent(SplashActivity.this, MainActivity.class);
+            intent.putExtra("PLAYER_COLOR", playerColor);
+            intent.putExtra("SKILL_LEVEL", skillLevel);
+            intent.putExtra("ENGINE_ELO", engineElo);
+            startActivity(intent);
         }
-        finish();
+        
+        Log.d(TAG, "✅ Game start completed, finishing splash activity");
+        finish(); // close splash screen
     }
 
+    private String getSelectedColor() {
+        int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
+        String color = (selectedColorId == R.id.radioBlack) ? "black" : "white";
+        Log.d(TAG, "🎨 Selected color: " + color + " (ID: " + selectedColorId + ")");
+        return color;
+    }
 }
