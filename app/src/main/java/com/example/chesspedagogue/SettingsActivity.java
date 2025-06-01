@@ -104,8 +104,12 @@ public class SettingsActivity extends AppCompatActivity {
             editor.putString("voice_persona", selectedVoice);
             editor.apply();
 
-            // Update the coach
-            ChessCoachManager.getInstance(this).setVoicePersona(selectedVoice);
+            // FIXED: Update the coach safely
+            try {
+                ChessCoachManager.getInstance(this).setVoicePersona(selectedVoice);
+            } catch (Exception e) {
+                // Service may not be initialized yet, that's OK
+            }
 
             Toast.makeText(this, "Voice set to: " + selectedVoice, Toast.LENGTH_SHORT).show();
         });
@@ -116,7 +120,12 @@ public class SettingsActivity extends AppCompatActivity {
             editor.putBoolean("use_premium_voice", isChecked);
             editor.apply();
 
-            ChessCoachManager.getInstance(this).setUseOpenAIVoice(isChecked);
+            // FIXED: Safe service access
+            try {
+                ChessCoachManager.getInstance(this).setUseOpenAIVoice(isChecked);
+            } catch (Exception e) {
+                // Service may not be initialized yet, that's OK
+            }
         });
 
         // Set up model quality selection (if your layout has this)
@@ -136,7 +145,12 @@ public class SettingsActivity extends AppCompatActivity {
                 editor.putString("tts_model", selectedModel);
                 editor.apply();
 
-                ChessCoachManager.getInstance(this).setTTSModel(selectedModel);
+                // FIXED: Safe service access
+                try {
+                    ChessCoachManager.getInstance(this).setTTSModel(selectedModel);
+                } catch (Exception e) {
+                    // Service may not be initialized yet, that's OK
+                }
             });
         }
 
@@ -159,8 +173,9 @@ public class SettingsActivity extends AppCompatActivity {
      * Updates the UI to display the currently selected chess master
      */
     private void updateChessMasterDisplay() {
-        // Get the current selected master
-        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+        // FIXED: Use SharedPreferences directly to avoid heavy service initialization
+        SharedPreferences prefs = getSharedPreferences("ChessFineTunedModels", MODE_PRIVATE);
+        String selectedMaster = prefs.getString("selected_master", "tal");
 
         // Get the display text view
         TextView chessMasterTextView = findViewById(R.id.text_selected_chess_master);
@@ -344,8 +359,12 @@ public class SettingsActivity extends AppCompatActivity {
         String voiceStyle = prefs.getString("voice_style", "auto");
         boolean usePersonality = prefs.getBoolean("use_master_personality", true);
 
-        // Update your TTS service
-        ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+        // FIXED: Safe service access
+        try {
+            ChessCoachManager.getInstance(this).updateTTSSettings(voiceStyle, usePersonality);
+        } catch (Exception e) {
+            // Service may not be initialized yet, that's OK - settings are saved to SharedPreferences
+        }
     }
 
     /**

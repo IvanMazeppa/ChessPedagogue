@@ -318,15 +318,14 @@ public class MainActivity extends AppCompatActivity {
         // Initialize game ViewModel with configuration
         gameViewModel = new ViewModelProvider(this).get(GameViewModel.class);
 
-        openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
-        com.example.chesspedagogue.OpenAIService.getInstance().init(this);
+        // FIXED: Initialize OpenAI service asynchronously to prevent ANR
+        initializeOpenAIServiceAsync();
 
         initializeChessMasterDatabase();
         
-        // NEW: Initialize Responses API services for enhanced challenge generation
-        integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
-        responsesManager = ChessMasterResponsesManager.getInstance(this);
-        Log.d(TAG, "✅ Responses API services initialized for challenge generation");
+        // FIXED: Initialize Responses API services asynchronously to prevent ANR
+        initializeResponsesAPIServicesAsync();
+        Log.d(TAG, "✅ Responses API services initializing asynchronously");
 
         Button debugButton = new Button(this);
         // Set up click listeners - this is what was missing!
@@ -1190,6 +1189,42 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "✅ Speech services pre-warmed");
             } catch (Exception e) {
                 Log.e(TAG, "Error pre-warming services", e);
+            }
+        });
+    }
+
+    /**
+     * ADDED: Async initialization for OpenAI service to prevent ANR
+     */
+    private void initializeOpenAIServiceAsync() {
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "🤖 Initializing OpenAI service asynchronously...");
+                openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
+                openAIService.init(this);
+                Log.d(TAG, "✅ OpenAI service initialized successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error initializing OpenAI service", e);
+            }
+        });
+    }
+
+    /**
+     * ADDED: Async initialization for Responses API services to prevent ANR
+     */
+    private void initializeResponsesAPIServicesAsync() {
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "📡 Initializing Responses API services asynchronously...");
+                integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
+                responsesManager = ChessMasterResponsesManager.getInstance(this);
+                Log.d(TAG, "✅ Responses API services initialized successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error initializing Responses API services", e);
+                // Initialize fallback services on UI thread if needed
+                mainHandler.post(() -> {
+                    Toast.makeText(this, "Some AI features may be limited", Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
@@ -2107,28 +2142,34 @@ public class MainActivity extends AppCompatActivity {
             speakButton.setOnClickListener(v -> {
                 Log.d(TAG, "Speak button clicked");
 
-                OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
-                
-                // Set context for main game screen (ultra-fast eleven_flash_v2_5)
-                TTSServiceManager.setUsageContext(this, "main_game");
-                
-                if (tts != null && tts.isSpeaking()) {
-                    tts.stopSpeech();
-                    tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
-                        @Override
-                        public void onSpeechCompleted(String text) {
-                            // Not used here
-                        }
+                // FIXED: Handle case where TTS service might not be initialized yet
+                try {
+                    OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
+                    
+                    // Set context for main game screen (ultra-fast eleven_flash_v2_5)
+                    TTSServiceManager.setUsageContext(this, "main_game");
+                    
+                    if (tts != null && tts.isSpeaking()) {
+                        tts.stopSpeech();
+                        tts.setSpeechCallback(new OpenAITTSService.SpeechCallback() {
+                            @Override
+                            public void onSpeechCompleted(String text) {
+                                // Not used here
+                            }
 
-                        @Override
-                        public void onSpeechInterrupted() {
-                            onSpeechInterrupted(); // Call our method
-                        }
-                    });
-                } else {
-                    // Normal recording flow
-                    showMicIndicator(true);
-                    startRecording();
+                            @Override
+                            public void onSpeechInterrupted() {
+                                onSpeechInterrupted(); // Call our method
+                            }
+                        });
+                    } else {
+                        // Normal recording flow
+                        showMicIndicator(true);
+                        startRecording();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "❌ Error in speak button handler", e);
+                    Toast.makeText(this, "Voice services starting up... Please try again in a moment", Toast.LENGTH_SHORT).show();
                 }
             });
         }

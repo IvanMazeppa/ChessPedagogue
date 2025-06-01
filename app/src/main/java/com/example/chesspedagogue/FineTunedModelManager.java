@@ -127,14 +127,30 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Private constructor with enhanced initialization
+     * Private constructor with enhanced initialization - FIXED: Non-blocking
      */
     private FineTunedModelManager(Context context) {
         this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.openAIService = OpenAIService.getInstance();
-        initializeEnhancedPersonalities();
-        Log.d(TAG, "✨ Enhanced personality system initialized with Fischer!");
+        // FIXED: Initialize personalities asynchronously to prevent ANR
+        initializeEnhancedPersonalitiesAsync();
+        Log.d(TAG, "✨ Enhanced personality system initializing asynchronously!");
+    }
+
+    /**
+     * ADDED: Async initialization to prevent ANR
+     */
+    private void initializeEnhancedPersonalitiesAsync() {
+        executorService.execute(() -> {
+            try {
+                Log.d(TAG, "🎭 Initializing personality profiles asynchronously...");
+                initializeEnhancedPersonalities();
+                Log.d(TAG, "✅ Personality profiles initialized successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error initializing personality profiles", e);
+            }
+        });
     }
 
     /**
@@ -379,7 +395,7 @@ public class FineTunedModelManager {
     }
 
     /**
-     * Set the selected chess master with enhanced logging
+     * Set the selected chess master with enhanced logging - FIXED: Safe access
      */
     public void setSelectedChessMaster(String master) {
         prefs.edit().putString(KEY_SELECTED_MASTER, master.toLowerCase()).apply();
@@ -389,9 +405,24 @@ public class FineTunedModelManager {
         recentContexts.clear();
         conversationTurn.clear();
 
-        EnhancedPersonalityProfile profile = personalityProfiles.get(master.toLowerCase());
+        // FIXED: Safe access to personality profiles (may not be loaded yet)
+        EnhancedPersonalityProfile profile = getPersonalityProfileSafe(master.toLowerCase());
         if (profile != null) {
             Log.d(TAG, "✨ Selected " + profile.displayName + " with " + profile.communicationStyle + " style");
+        } else {
+            Log.d(TAG, "✨ Selected " + master + " (personality profile loading...)");
+        }
+    }
+
+    /**
+     * ADDED: Safe access to personality profiles
+     */
+    private EnhancedPersonalityProfile getPersonalityProfileSafe(String master) {
+        try {
+            return personalityProfiles.get(master.toLowerCase());
+        } catch (Exception e) {
+            Log.w(TAG, "Personality profile not yet loaded for " + master);
+            return null;
         }
     }
 

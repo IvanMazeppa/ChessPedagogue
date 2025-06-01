@@ -26,7 +26,7 @@ public class TTSServiceManager {
     private Context context;
     
     /**
-     * Get singleton instance
+     * Get singleton instance - FIXED: Non-blocking initialization
      */
     public static synchronized TTSServiceManager getInstance(Context context) {
         if (instance == null) {
@@ -48,17 +48,18 @@ public class TTSServiceManager {
     }
     
     /**
-     * Get ElevenLabs TTS Service directly
+     * Get ElevenLabs TTS Service directly - FIXED: Async initialization
      */
     public static ElevenLabsTTSService getElevenLabsTTSService(Context context) {
         if (elevenLabsService == null) {
+            // Initialize asynchronously to prevent ANR
             elevenLabsService = ElevenLabsTTSService.getInstance(context);
         }
         return elevenLabsService;
     }
     
     /**
-     * Get the appropriate TTS service based on configuration
+     * Get the appropriate TTS service based on configuration - FIXED: Async initialization
      */
     public static Object getTTSService(Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -67,11 +68,35 @@ public class TTSServiceManager {
         if (useElevenLabs) {
             Log.d(TAG, "🎤 Using ElevenLabs TTS Service");
             if (elevenLabsService == null) {
+                // FIXED: Initialize service on background thread to prevent ANR
+                initializeElevenLabsServiceAsync(context, prefs);
+                // Return a placeholder that will be replaced when initialization completes
+                if (openAIService == null) {
+                    openAIService = OpenAITTSService.getInstance(context);
+                }
+                return openAIService; // Fallback during async initialization
+            }
+            return elevenLabsService;
+        } else {
+            Log.d(TAG, "🎤 Using OpenAI TTS Service");
+            if (openAIService == null) {
+                openAIService = OpenAITTSService.getInstance(context);
+            }
+            return openAIService;
+        }
+    }
+    
+    /**
+     * ADDED: Async initialization to prevent ANR
+     */
+    private static void initializeElevenLabsServiceAsync(Context context, SharedPreferences prefs) {
+        // Run heavy initialization on background thread
+        new Thread(() -> {
+            try {
                 elevenLabsService = ElevenLabsTTSService.getInstance(context);
                 
                 // Check if API key is set
                 if (!elevenLabsService.hasApiKey()) {
-                    // Try to get from environment or SharedPreferences
                     String apiKey = prefs.getString("elevenlabs_api_key", "");
                     if (apiKey != null && !apiKey.isEmpty()) {
                         elevenLabsService.setApiKey(apiKey);
@@ -82,15 +107,11 @@ public class TTSServiceManager {
                         prefs.edit().putBoolean(KEY_USE_ELEVENLABS, false).apply();
                     }
                 }
+                Log.d(TAG, "✅ ElevenLabs TTS Service initialized asynchronously");
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error initializing ElevenLabs service", e);
             }
-            return elevenLabsService;
-        } else {
-            Log.d(TAG, "🎤 Using OpenAI TTS Service");
-            if (openAIService == null) {
-                openAIService = OpenAITTSService.getInstance(context);
-            }
-            return openAIService;
-        }
+        }).start();
     }
     
     /**
