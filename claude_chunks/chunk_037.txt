@@ -1,0 +1,1248 @@
+# CHUNK 37 of 64
+# Files: 3, Characters: 48,487
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\network.cpp
+Lines: 464, Characters: 16,399
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "network.h"
+
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <optional>
+#include <type_traits>
+#include <vector>
+
+#define INCBIN_SILENCE_BITCODE_WARNING
+#include "../incbin/incbin.h"
+
+#include "../evaluate.h"
+#include "../memory.h"
+#include "../misc.h"
+#include "../position.h"
+#include "../types.h"
+#include "nnue_architecture.h"
+#include "nnue_common.h"
+#include "nnue_misc.h"
+
+// Macro to embed the default efficiently updatable neural network (NNUE) file
+// data in the engine binary (using incbin.h, by Dale Weiler).
+// This macro invocation will declare the following three variables
+//     const unsigned char        gEmbeddedNNUEData[];  // a pointer to the embedded data
+//     const unsigned char *const gEmbeddedNNUEEnd;     // a marker to the end
+//     const unsigned int         gEmbeddedNNUESize;    // the size of the embedded file
+// Note that this does not work in Microsoft Visual Studio.
+#if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
+INCBIN(EmbeddedNNUEBig, EvalFileDefaultNameBig);
+INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
+#else
+const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
+const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
+const unsigned int         gEmbeddedNNUEBigSize      = 1;
+const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
+const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
+const unsigned int         gEmbeddedNNUESmallSize    = 1;
+#endif
+
+namespace {
+
+struct EmbeddedNNUE {
+    EmbeddedNNUE(const unsigned char* embeddedData,
+                 const unsigned char* embeddedEnd,
+                 const unsigned int   embeddedSize) :
+        data(embeddedData),
+        end(embeddedEnd),
+        size(embeddedSize) {}
+    const unsigned char* data;
+    const unsigned char* end;
+    const unsigned int   size;
+};
+
+using namespace Stockfish::Eval::NNUE;
+
+EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
+    if (type == EmbeddedNNUEType::BIG)
+        return EmbeddedNNUE(gEmbeddedNNUEBigData, gEmbeddedNNUEBigEnd, gEmbeddedNNUEBigSize);
+    else
+        return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
+}
+
+}
+
+
+namespace Stockfish::Eval::NNUE {
+
+
+namespace Detail {
+
+// Read evaluation function parameters
+template<typename T>
+bool read_parameters(std::istream& stream, T& reference) {
+
+    std::uint32_t header;
+    header = read_little_endian<std::uint32_t>(stream);
+    if (!stream || header != T::get_hash_value())
+        return false;
+    return reference.read_parameters(stream);
+}
+
+// Write evaluation function parameters
+template<typename T>
+bool write_parameters(std::ostream& stream, T& reference) {
+
+    write_little_endian<std::uint32_t>(stream, T::get_hash_value());
+    return reference.write_parameters(stream);
+}
+
+}  // namespace Detail
+
+template<typename Arch, typename Transformer>
+Network<Arch, Transformer>::Network(const Network<Arch, Transformer>& other) :
+    evalFile(other.evalFile),
+    embeddedType(other.embeddedType) {
+
+    if (other.featureTransformer)
+        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+
+    network = make_unique_aligned<Arch[]>(LayerStacks);
+
+    if (!other.network)
+        return;
+
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+        network[i] = other.network[i];
+}
+
+template<typename Arch, typename Transformer>
+Network<Arch, Transformer>&
+Network<Arch, Transformer>::operator=(const Network<Arch, Transformer>& other) {
+    evalFile     = other.evalFile;
+    embeddedType = other.embeddedType;
+
+    if (other.featureTransformer)
+        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+
+    network = make_unique_aligned<Arch[]>(LayerStacks);
+
+    if (!other.network)
+        return *this;
+
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+        network[i] = other.network[i];
+
+    return *this;
+}
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::load(const std::string& rootDirectory, std::string evalfilePath) {
+#if defined(DEFAULT_NNUE_DIRECTORY)
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
+                                     stringify(DEFAULT_NNUE_DIRECTORY)};
+#else
+    std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
+#endif
+
+    if (evalfilePath.empty())
+        evalfilePath = evalFile.defaultName;
+
+    for (const auto& directory : dirs)
+    {
+        if (evalFile.current != evalfilePath)
+        {
+            if (directory != "<internal>")
+            {
+                load_user_net(directory, evalfilePath);
+            }
+
+            if (directory == "<internal>" && evalfilePath == evalFile.defaultName)
+            {
+                load_internal();
+            }
+        }
+    }
+}
+
+
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::save(const std::optional<std::string>& filename) const {
+    std::string actualFilename;
+    std::string msg;
+
+    if (filename.has_value())
+        actualFilename = filename.value();
+    else
+    {
+        if (evalFile.current != evalFile.defaultName)
+        {
+            msg = "Failed to export a net. "
+                  "A non-embedded net can only be saved if the filename is specified";
+
+            sync_cout << msg << sync_endl;
+            return false;
+        }
+
+        actualFilename = evalFile.defaultName;
+    }
+
+    std::ofstream stream(actualFilename, std::ios_base::binary);
+    bool          saved = save(stream, evalFile.current, evalFile.netDescription);
+
+    msg = saved ? "Network saved successfully to " + actualFilename : "Failed to export a net";
+
+    sync_cout << msg << sync_endl;
+    return saved;
+}
+
+
+template<typename Arch, typename Transformer>
+NetworkOutput
+Network<Arch, Transformer>::evaluate(const Position&                         pos,
+                                     AccumulatorStack&                       accumulatorStack,
+                                     AccumulatorCaches::Cache<FTDimensions>* cache) const {
+    // We manually align the arrays on the stack because with gcc < 9.3
+    // overaligning stack variables with alignas() doesn't work correctly.
+
+    constexpr uint64_t alignment = CacheLineSize;
+
+#if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
+    TransformedFeatureType
+      transformedFeaturesUnaligned[FeatureTransformer<FTDimensions, nullptr>::BufferSize
+                                   + alignment / sizeof(TransformedFeatureType)];
+
+    auto* transformedFeatures = align_ptr_up<alignment>(&transformedFeaturesUnaligned[0]);
+#else
+    alignas(alignment) TransformedFeatureType
+      transformedFeatures[FeatureTransformer<FTDimensions, nullptr>::BufferSize];
+#endif
+
+    ASSERT_ALIGNED(transformedFeatures, alignment);
+
+    const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const auto psqt =
+      featureTransformer->transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
+    const auto positional = network[bucket].propagate(transformedFeatures);
+    return {static_cast<Value>(psqt / OutputScale), static_cast<Value>(positional / OutputScale)};
+}
+
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::verify(std::string                                  evalfilePath,
+                                        const std::function<void(std::string_view)>& f) const {
+    if (evalfilePath.empty())
+        evalfilePath = evalFile.defaultName;
+
+    if (evalFile.current != evalfilePath)
+    {
+        if (f)
+        {
+            std::string msg1 =
+              "Network evaluation parameters compatible with the engine must be available.";
+            std::string msg2 = "The network file " + evalfilePath + " was not loaded successfully.";
+            std::string msg3 = "The UCI option EvalFile might need to specify the full path, "
+                               "including the directory name, to the network file.";
+            std::string msg4 = "The default net can be downloaded from: "
+                               "https://tests.stockfishchess.org/api/nn/"
+                             + evalFile.defaultName;
+            std::string msg5 = "The engine will be terminated now.";
+
+            std::string msg = "ERROR: " + msg1 + '\n' + "ERROR: " + msg2 + '\n' + "ERROR: " + msg3
+                            + '\n' + "ERROR: " + msg4 + '\n' + "ERROR: " + msg5 + '\n';
+
+            f(msg);
+        }
+
+        exit(EXIT_FAILURE);
+    }
+
+    if (f)
+    {
+        size_t size = sizeof(*featureTransformer) + sizeof(Arch) * LayerStacks;
+        f("NNUE evaluation using " + evalfilePath + " (" + std::to_string(size / (1024 * 1024))
+          + "MiB, (" + std::to_string(featureTransformer->InputDimensions) + ", "
+          + std::to_string(network[0].TransformedFeatureDimensions) + ", "
+          + std::to_string(network[0].FC_0_OUTPUTS) + ", " + std::to_string(network[0].FC_1_OUTPUTS)
+          + ", 1))");
+    }
+}
+
+
+template<typename Arch, typename Transformer>
+NnueEvalTrace
+Network<Arch, Transformer>::trace_evaluate(const Position&                         pos,
+                                           AccumulatorStack&                       accumulatorStack,
+                                           AccumulatorCaches::Cache<FTDimensions>* cache) const {
+    // We manually align the arrays on the stack because with gcc < 9.3
+    // overaligning stack variables with alignas() doesn't work correctly.
+    constexpr uint64_t alignment = CacheLineSize;
+
+#if defined(ALIGNAS_ON_STACK_VARIABLES_BROKEN)
+    TransformedFeatureType
+      transformedFeaturesUnaligned[FeatureTransformer<FTDimensions, nullptr>::BufferSize
+                                   + alignment / sizeof(TransformedFeatureType)];
+
+    auto* transformedFeatures = align_ptr_up<alignment>(&transformedFeaturesUnaligned[0]);
+#else
+    alignas(alignment) TransformedFeatureType
+      transformedFeatures[FeatureTransformer<FTDimensions, nullptr>::BufferSize];
+#endif
+
+    ASSERT_ALIGNED(transformedFeatures, alignment);
+
+    NnueEvalTrace t{};
+    t.correctBucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    for (IndexType bucket = 0; bucket < LayerStacks; ++bucket)
+    {
+        const auto materialist =
+          featureTransformer->transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
+        const auto positional = network[bucket].propagate(transformedFeatures);
+
+        t.psqt[bucket]       = static_cast<Value>(materialist / OutputScale);
+        t.positional[bucket] = static_cast<Value>(positional / OutputScale);
+    }
+
+    return t;
+}
+
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::load_user_net(const std::string& dir,
+                                               const std::string& evalfilePath) {
+    std::ifstream stream(dir + evalfilePath, std::ios::binary);
+    auto          description = load(stream);
+
+    if (description.has_value())
+    {
+        evalFile.current        = evalfilePath;
+        evalFile.netDescription = description.value();
+    }
+}
+
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::load_internal() {
+    // C++ way to prepare a buffer for a memory stream
+    class MemoryBuffer: public std::basic_streambuf<char> {
+       public:
+        MemoryBuffer(char* p, size_t n) {
+            setg(p, p, p + n);
+            setp(p, p + n);
+        }
+    };
+
+    const auto embedded = get_embedded(embeddedType);
+
+    MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(embedded.data)),
+                        size_t(embedded.size));
+
+    std::istream stream(&buffer);
+    auto         description = load(stream);
+
+    if (description.has_value())
+    {
+        evalFile.current        = evalFile.defaultName;
+        evalFile.netDescription = description.value();
+    }
+}
+
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::initialize() {
+    featureTransformer = make_unique_large_page<Transformer>();
+    network            = make_unique_aligned<Arch[]>(LayerStacks);
+}
+
+
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::save(std::ostream&      stream,
+                                      const std::string& name,
+                                      const std::string& netDescription) const {
+    if (name.empty() || name == "None")
+        return false;
+
+    return write_parameters(stream, netDescription);
+}
+
+
+template<typename Arch, typename Transformer>
+std::optional<std::string> Network<Arch, Transformer>::load(std::istream& stream) {
+    initialize();
+    std::string description;
+
+    return read_parameters(stream, description) ? std::make_optional(description) : std::nullopt;
+}
+
+
+// Read network header
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::read_header(std::istream&  stream,
+                                             std::uint32_t* hashValue,
+                                             std::string*   desc) const {
+    std::uint32_t version, size;
+
+    version    = read_little_endian<std::uint32_t>(stream);
+    *hashValue = read_little_endian<std::uint32_t>(stream);
+    size       = read_little_endian<std::uint32_t>(stream);
+    if (!stream || version != Version)
+        return false;
+    desc->resize(size);
+    stream.read(&(*desc)[0], size);
+    return !stream.fail();
+}
+
+
+// Write network header
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::write_header(std::ostream&      stream,
+                                              std::uint32_t      hashValue,
+                                              const std::string& desc) const {
+    write_little_endian<std::uint32_t>(stream, Version);
+    write_little_endian<std::uint32_t>(stream, hashValue);
+    write_little_endian<std::uint32_t>(stream, std::uint32_t(desc.size()));
+    stream.write(&desc[0], desc.size());
+    return !stream.fail();
+}
+
+
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
+                                                 std::string&  netDescription) const {
+    std::uint32_t hashValue;
+    if (!read_header(stream, &hashValue, &netDescription))
+        return false;
+    if (hashValue != Network::hash)
+        return false;
+    if (!Detail::read_parameters(stream, *featureTransformer))
+        return false;
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+    {
+        if (!Detail::read_parameters(stream, network[i]))
+            return false;
+    }
+    return stream && stream.peek() == std::ios::traits_type::eof();
+}
+
+
+template<typename Arch, typename Transformer>
+bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
+                                                  const std::string& netDescription) const {
+    if (!write_header(stream, Network::hash, netDescription))
+        return false;
+    if (!Detail::write_parameters(stream, *featureTransformer))
+        return false;
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+    {
+        if (!Detail::write_parameters(stream, network[i]))
+            return false;
+    }
+    return bool(stream);
+}
+
+// Explicit template instantiations
+
+template class Network<
+  NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>,
+  FeatureTransformer<TransformedFeatureDimensionsBig, &AccumulatorState::accumulatorBig>>;
+
+template class Network<
+  NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
+  FeatureTransformer<TransformedFeatureDimensionsSmall, &AccumulatorState::accumulatorSmall>>;
+
+}  // namespace Stockfish::Eval::NNUE
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\network.h
+Lines: 139, Characters: 4,401
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef NETWORK_H_INCLUDED
+#define NETWORK_H_INCLUDED
+
+#include <cstdint>
+#include <functional>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
+
+#include "../memory.h"
+#include "../types.h"
+#include "nnue_accumulator.h"
+#include "nnue_architecture.h"
+#include "nnue_feature_transformer.h"
+#include "nnue_misc.h"
+
+namespace Stockfish {
+class Position;
+}
+
+namespace Stockfish::Eval::NNUE {
+
+enum class EmbeddedNNUEType {
+    BIG,
+    SMALL,
+};
+
+using NetworkOutput = std::tuple<Value, Value>;
+
+template<typename Arch, typename Transformer>
+class Network {
+    static constexpr IndexType FTDimensions = Arch::TransformedFeatureDimensions;
+
+   public:
+    Network(EvalFile file, EmbeddedNNUEType type) :
+        evalFile(file),
+        embeddedType(type) {}
+
+    Network(const Network& other);
+    Network(Network&& other) = default;
+
+    Network& operator=(const Network& other);
+    Network& operator=(Network&& other) = default;
+
+    void load(const std::string& rootDirectory, std::string evalfilePath);
+    bool save(const std::optional<std::string>& filename) const;
+
+    NetworkOutput evaluate(const Position&                         pos,
+                           AccumulatorStack&                       accumulatorStack,
+                           AccumulatorCaches::Cache<FTDimensions>* cache) const;
+
+
+    void verify(std::string evalfilePath, const std::function<void(std::string_view)>&) const;
+    NnueEvalTrace trace_evaluate(const Position&                         pos,
+                                 AccumulatorStack&                       accumulatorStack,
+                                 AccumulatorCaches::Cache<FTDimensions>* cache) const;
+
+   private:
+    void load_user_net(const std::string&, const std::string&);
+    void load_internal();
+
+    void initialize();
+
+    bool                       save(std::ostream&, const std::string&, const std::string&) const;
+    std::optional<std::string> load(std::istream&);
+
+    bool read_header(std::istream&, std::uint32_t*, std::string*) const;
+    bool write_header(std::ostream&, std::uint32_t, const std::string&) const;
+
+    bool read_parameters(std::istream&, std::string&) const;
+    bool write_parameters(std::ostream&, const std::string&) const;
+
+    // Input feature converter
+    LargePagePtr<Transformer> featureTransformer;
+
+    // Evaluation function
+    AlignedPtr<Arch[]> network;
+
+    EvalFile         evalFile;
+    EmbeddedNNUEType embeddedType;
+
+    // Hash value of evaluation function structure
+    static constexpr std::uint32_t hash = Transformer::get_hash_value() ^ Arch::get_hash_value();
+
+    template<IndexType Size>
+    friend struct AccumulatorCaches::Cache;
+
+    friend class AccumulatorStack;
+};
+
+// Definitions of the network types
+using SmallFeatureTransformer =
+  FeatureTransformer<TransformedFeatureDimensionsSmall, &AccumulatorState::accumulatorSmall>;
+using SmallNetworkArchitecture =
+  NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>;
+
+using BigFeatureTransformer =
+  FeatureTransformer<TransformedFeatureDimensionsBig, &AccumulatorState::accumulatorBig>;
+using BigNetworkArchitecture = NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>;
+
+using NetworkBig   = Network<BigNetworkArchitecture, BigFeatureTransformer>;
+using NetworkSmall = Network<SmallNetworkArchitecture, SmallFeatureTransformer>;
+
+
+struct Networks {
+    Networks(NetworkBig&& nB, NetworkSmall&& nS) :
+        big(std::move(nB)),
+        small(std::move(nS)) {}
+
+    NetworkBig   big;
+    NetworkSmall small;
+};
+
+
+}  // namespace Stockfish
+
+#endif
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_accumulator.cpp
+Lines: 620, Characters: 27,687
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "nnue_accumulator.h"
+
+#include <cassert>
+#include <initializer_list>
+#include <memory>
+
+#include "../bitboard.h"
+#include "../position.h"
+#include "../types.h"
+#include "network.h"
+#include "nnue_architecture.h"
+#include "nnue_common.h"
+#include "nnue_feature_transformer.h"
+
+namespace Stockfish::Eval::NNUE {
+
+#if defined(__GNUC__) && !defined(__clang__)
+    #define sf_assume(cond) \
+        do \
+        { \
+            if (!(cond)) \
+                __builtin_unreachable(); \
+        } while (0)
+#else
+    // do nothing for other compilers
+    #define sf_assume(cond)
+#endif
+
+namespace {
+
+template<Color                                     Perspective,
+         IncUpdateDirection                        Direction = FORWARD,
+         IndexType                                 TransformedFeatureDimensions,
+         Accumulator<TransformedFeatureDimensions> AccumulatorState::*accPtr>
+void update_accumulator_incremental(
+  const FeatureTransformer<TransformedFeatureDimensions, accPtr>& featureTransformer,
+  const Square                                                    ksq,
+  AccumulatorState&                                               target_state,
+  const AccumulatorState&                                         computed);
+
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void update_accumulator_refresh_cache(
+  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+  const Position&                               pos,
+  AccumulatorState&                             accumulatorState,
+  AccumulatorCaches::Cache<Dimensions>&         cache);
+
+}
+
+void AccumulatorState::reset(const DirtyPiece& dp) noexcept {
+    dirtyPiece = dp;
+    accumulatorBig.computed.fill(false);
+    accumulatorSmall.computed.fill(false);
+}
+
+const AccumulatorState& AccumulatorStack::latest() const noexcept {
+    return m_accumulators[m_current_idx - 1];
+}
+
+AccumulatorState& AccumulatorStack::mut_latest() noexcept {
+    return m_accumulators[m_current_idx - 1];
+}
+
+void AccumulatorStack::reset(const Position&    rootPos,
+                             const Networks&    networks,
+                             AccumulatorCaches& caches) noexcept {
+    m_current_idx = 1;
+
+    update_accumulator_refresh_cache<WHITE, TransformedFeatureDimensionsBig,
+                                     &AccumulatorState::accumulatorBig>(
+      *networks.big.featureTransformer, rootPos, m_accumulators[0], caches.big);
+    update_accumulator_refresh_cache<BLACK, TransformedFeatureDimensionsBig,
+                                     &AccumulatorState::accumulatorBig>(
+      *networks.big.featureTransformer, rootPos, m_accumulators[0], caches.big);
+
+    update_accumulator_refresh_cache<WHITE, TransformedFeatureDimensionsSmall,
+                                     &AccumulatorState::accumulatorSmall>(
+      *networks.small.featureTransformer, rootPos, m_accumulators[0], caches.small);
+    update_accumulator_refresh_cache<BLACK, TransformedFeatureDimensionsSmall,
+                                     &AccumulatorState::accumulatorSmall>(
+      *networks.small.featureTransformer, rootPos, m_accumulators[0], caches.small);
+}
+
+void AccumulatorStack::push(const DirtyPiece& dirtyPiece) noexcept {
+    assert(m_current_idx + 1 < m_accumulators.size());
+    m_accumulators[m_current_idx].reset(dirtyPiece);
+    m_current_idx++;
+}
+
+void AccumulatorStack::pop() noexcept {
+    assert(m_current_idx > 1);
+    m_current_idx--;
+}
+
+template<IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void AccumulatorStack::evaluate(const Position&                               pos,
+                                const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+                                AccumulatorCaches::Cache<Dimensions>&         cache) noexcept {
+
+    evaluate_side<WHITE>(pos, featureTransformer, cache);
+    evaluate_side<BLACK>(pos, featureTransformer, cache);
+}
+
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void AccumulatorStack::evaluate_side(
+  const Position&                               pos,
+  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+  AccumulatorCaches::Cache<Dimensions>&         cache) noexcept {
+
+    const auto last_usable_accum = find_last_usable_accumulator<Perspective, Dimensions, accPtr>();
+
+    if ((m_accumulators[last_usable_accum].*accPtr).computed[Perspective])
+        forward_update_incremental<Perspective>(pos, featureTransformer, last_usable_accum);
+
+    else
+    {
+        update_accumulator_refresh_cache<Perspective>(featureTransformer, pos, mut_latest(), cache);
+        backward_update_incremental<Perspective>(pos, featureTransformer, last_usable_accum);
+    }
+}
+
+// Find the earliest usable accumulator, this can either be a computed accumulator or the accumulator
+// state just before a change that requires full refresh.
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+std::size_t AccumulatorStack::find_last_usable_accumulator() const noexcept {
+
+    for (std::size_t curr_idx = m_current_idx - 1; curr_idx > 0; curr_idx--)
+    {
+        if ((m_accumulators[curr_idx].*accPtr).computed[Perspective])
+            return curr_idx;
+
+        if (FeatureSet::requires_refresh(m_accumulators[curr_idx].dirtyPiece, Perspective))
+            return curr_idx;
+    }
+
+    return 0;
+}
+
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void AccumulatorStack::forward_update_incremental(
+  const Position&                               pos,
+  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+  const std::size_t                             begin) noexcept {
+
+    assert(begin < m_accumulators.size());
+    assert((m_accumulators[begin].*accPtr).computed[Perspective]);
+
+    const Square ksq = pos.square<KING>(Perspective);
+
+    for (std::size_t next = begin + 1; next < m_current_idx; next++)
+        update_accumulator_incremental<Perspective>(featureTransformer, ksq, m_accumulators[next],
+                                                    m_accumulators[next - 1]);
+
+    assert((latest().*accPtr).computed[Perspective]);
+}
+
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void AccumulatorStack::backward_update_incremental(
+  const Position&                               pos,
+  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+  const std::size_t                             end) noexcept {
+
+    assert(end < m_accumulators.size());
+    assert(end < m_current_idx);
+    assert((latest().*accPtr).computed[Perspective]);
+
+    const Square ksq = pos.square<KING>(Perspective);
+
+    for (std::size_t next = m_current_idx - 2; next >= end; next--)
+        update_accumulator_incremental<Perspective, BACKWARDS>(
+          featureTransformer, ksq, m_accumulators[next], m_accumulators[next + 1]);
+
+    assert((m_accumulators[end].*accPtr).computed[Perspective]);
+}
+
+// Explicit template instantiations
+template void
+AccumulatorStack::evaluate<TransformedFeatureDimensionsBig, &AccumulatorState::accumulatorBig>(
+  const Position& pos,
+  const FeatureTransformer<TransformedFeatureDimensionsBig, &AccumulatorState::accumulatorBig>&
+                                                             featureTransformer,
+  AccumulatorCaches::Cache<TransformedFeatureDimensionsBig>& cache) noexcept;
+template void
+AccumulatorStack::evaluate<TransformedFeatureDimensionsSmall, &AccumulatorState::accumulatorSmall>(
+  const Position& pos,
+  const FeatureTransformer<TransformedFeatureDimensionsSmall, &AccumulatorState::accumulatorSmall>&
+                                                               featureTransformer,
+  AccumulatorCaches::Cache<TransformedFeatureDimensionsSmall>& cache) noexcept;
+
+
+namespace {
+
+template<Color                                     Perspective,
+         IncUpdateDirection                        Direction,
+         IndexType                                 TransformedFeatureDimensions,
+         Accumulator<TransformedFeatureDimensions> AccumulatorState::*accPtr>
+void update_accumulator_incremental(
+  const FeatureTransformer<TransformedFeatureDimensions, accPtr>& featureTransformer,
+  const Square                                                    ksq,
+  AccumulatorState&                                               target_state,
+  const AccumulatorState&                                         computed) {
+    [[maybe_unused]] constexpr bool Forward   = Direction == FORWARD;
+    [[maybe_unused]] constexpr bool Backwards = Direction == BACKWARDS;
+
+    assert(Forward != Backwards);
+
+    assert((computed.*accPtr).computed[Perspective]);
+    assert(!(target_state.*accPtr).computed[Perspective]);
+
+    // The size must be enough to contain the largest possible update.
+    // That might depend on the feature set and generally relies on the
+    // feature set's update cost calculation to be correct and never allow
+    // updates with more added/removed features than MaxActiveDimensions.
+    // In this case, the maximum size of both feature addition and removal
+    // is 2, since we are incrementally updating one move at a time.
+    FeatureSet::IndexList removed, added;
+    if constexpr (Forward)
+        FeatureSet::append_changed_indices<Perspective>(ksq, target_state.dirtyPiece, removed,
+                                                        added);
+    else
+        FeatureSet::append_changed_indices<Perspective>(ksq, computed.dirtyPiece, added, removed);
+
+    if (removed.size() == 0 && added.size() == 0)
+    {
+        std::memcpy((target_state.*accPtr).accumulation[Perspective],
+                    (computed.*accPtr).accumulation[Perspective],
+                    TransformedFeatureDimensions * sizeof(BiasType));
+        std::memcpy((target_state.*accPtr).psqtAccumulation[Perspective],
+                    (computed.*accPtr).psqtAccumulation[Perspective],
+                    PSQTBuckets * sizeof(PSQTWeightType));
+    }
+    else
+    {
+        assert(added.size() == 1 || added.size() == 2);
+        assert(removed.size() == 1 || removed.size() == 2);
+
+        if (Forward)
+            assert(added.size() <= removed.size());
+        else
+            assert(removed.size() <= added.size());
+
+        // Workaround compiler warning for uninitialized variables, replicated on
+        // profile builds on windows with gcc 14.2.0.
+        // TODO remove once unneeded
+        sf_assume(added.size() == 1 || added.size() == 2);
+        sf_assume(removed.size() == 1 || removed.size() == 2);
+
+#ifdef VECTOR
+        auto* accIn =
+          reinterpret_cast<const vec_t*>(&(computed.*accPtr).accumulation[Perspective][0]);
+        auto* accOut =
+          reinterpret_cast<vec_t*>(&(target_state.*accPtr).accumulation[Perspective][0]);
+
+        const IndexType offsetA0 = TransformedFeatureDimensions * added[0];
+        auto* columnA0 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA0]);
+        const IndexType offsetR0 = TransformedFeatureDimensions * removed[0];
+        auto* columnR0 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR0]);
+
+        if ((Forward && removed.size() == 1) || (Backwards && added.size() == 1))
+        {
+            assert(added.size() == 1 && removed.size() == 1);
+            for (IndexType i = 0;
+                 i < TransformedFeatureDimensions * sizeof(WeightType) / sizeof(vec_t); ++i)
+                accOut[i] = vec_add_16(vec_sub_16(accIn[i], columnR0[i]), columnA0[i]);
+        }
+        else if (Forward && added.size() == 1)
+        {
+            assert(removed.size() == 2);
+            const IndexType offsetR1 = TransformedFeatureDimensions * removed[1];
+            auto* columnR1 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR1]);
+
+            for (IndexType i = 0;
+                 i < TransformedFeatureDimensions * sizeof(WeightType) / sizeof(vec_t); ++i)
+                accOut[i] = vec_sub_16(vec_add_16(accIn[i], columnA0[i]),
+                                       vec_add_16(columnR0[i], columnR1[i]));
+        }
+        else if (Backwards && removed.size() == 1)
+        {
+            assert(added.size() == 2);
+            const IndexType offsetA1 = TransformedFeatureDimensions * added[1];
+            auto* columnA1 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA1]);
+
+            for (IndexType i = 0;
+                 i < TransformedFeatureDimensions * sizeof(WeightType) / sizeof(vec_t); ++i)
+                accOut[i] = vec_add_16(vec_add_16(accIn[i], columnA0[i]),
+                                       vec_sub_16(columnA1[i], columnR0[i]));
+        }
+        else
+        {
+            assert(added.size() == 2 && removed.size() == 2);
+            const IndexType offsetA1 = TransformedFeatureDimensions * added[1];
+            auto* columnA1 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA1]);
+            const IndexType offsetR1 = TransformedFeatureDimensions * removed[1];
+            auto* columnR1 = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR1]);
+
+            for (IndexType i = 0;
+                 i < TransformedFeatureDimensions * sizeof(WeightType) / sizeof(vec_t); ++i)
+                accOut[i] = vec_add_16(accIn[i], vec_sub_16(vec_add_16(columnA0[i], columnA1[i]),
+                                                            vec_add_16(columnR0[i], columnR1[i])));
+        }
+
+        auto* accPsqtIn =
+          reinterpret_cast<const psqt_vec_t*>(&(computed.*accPtr).psqtAccumulation[Perspective][0]);
+        auto* accPsqtOut =
+          reinterpret_cast<psqt_vec_t*>(&(target_state.*accPtr).psqtAccumulation[Perspective][0]);
+
+        const IndexType offsetPsqtA0 = PSQTBuckets * added[0];
+        auto*           columnPsqtA0 =
+          reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtA0]);
+        const IndexType offsetPsqtR0 = PSQTBuckets * removed[0];
+        auto*           columnPsqtR0 =
+          reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtR0]);
+
+        if ((Forward && removed.size() == 1)
+            || (Backwards && added.size() == 1))  // added.size() == removed.size() == 1
+        {
+            for (std::size_t i = 0; i < PSQTBuckets * sizeof(PSQTWeightType) / sizeof(psqt_vec_t);
+                 ++i)
+                accPsqtOut[i] =
+                  vec_add_psqt_32(vec_sub_psqt_32(accPsqtIn[i], columnPsqtR0[i]), columnPsqtA0[i]);
+        }
+        else if (Forward && added.size() == 1)
+        {
+            const IndexType offsetPsqtR1 = PSQTBuckets * removed[1];
+            auto*           columnPsqtR1 =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtR1]);
+
+            for (std::size_t i = 0; i < PSQTBuckets * sizeof(PSQTWeightType) / sizeof(psqt_vec_t);
+                 ++i)
+                accPsqtOut[i] = vec_sub_psqt_32(vec_add_psqt_32(accPsqtIn[i], columnPsqtA0[i]),
+                                                vec_add_psqt_32(columnPsqtR0[i], columnPsqtR1[i]));
+        }
+        else if (Backwards && removed.size() == 1)
+        {
+            const IndexType offsetPsqtA1 = PSQTBuckets * added[1];
+            auto*           columnPsqtA1 =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtA1]);
+
+            for (std::size_t i = 0; i < PSQTBuckets * sizeof(PSQTWeightType) / sizeof(psqt_vec_t);
+                 ++i)
+                accPsqtOut[i] = vec_add_psqt_32(vec_add_psqt_32(accPsqtIn[i], columnPsqtA0[i]),
+                                                vec_sub_psqt_32(columnPsqtA1[i], columnPsqtR0[i]));
+        }
+        else
+        {
+            const IndexType offsetPsqtA1 = PSQTBuckets * added[1];
+            auto*           columnPsqtA1 =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtA1]);
+            const IndexType offsetPsqtR1 = PSQTBuckets * removed[1];
+            auto*           columnPsqtR1 =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offsetPsqtR1]);
+
+            for (std::size_t i = 0; i < PSQTBuckets * sizeof(PSQTWeightType) / sizeof(psqt_vec_t);
+                 ++i)
+                accPsqtOut[i] = vec_add_psqt_32(
+                  accPsqtIn[i], vec_sub_psqt_32(vec_add_psqt_32(columnPsqtA0[i], columnPsqtA1[i]),
+                                                vec_add_psqt_32(columnPsqtR0[i], columnPsqtR1[i])));
+        }
+#else
+        std::memcpy((target_state.*accPtr).accumulation[Perspective],
+                    (computed.*accPtr).accumulation[Perspective],
+                    TransformedFeatureDimensions * sizeof(BiasType));
+        std::memcpy((target_state.*accPtr).psqtAccumulation[Perspective],
+                    (computed.*accPtr).psqtAccumulation[Perspective],
+                    PSQTBuckets * sizeof(PSQTWeightType));
+
+        // Difference calculation for the deactivated features
+        for (const auto index : removed)
+        {
+            const IndexType offset = TransformedFeatureDimensions * index;
+            for (IndexType i = 0; i < TransformedFeatureDimensions; ++i)
+                (target_state.*accPtr).accumulation[Perspective][i] -=
+                  featureTransformer.weights[offset + i];
+
+            for (std::size_t i = 0; i < PSQTBuckets; ++i)
+                (target_state.*accPtr).psqtAccumulation[Perspective][i] -=
+                  featureTransformer.psqtWeights[index * PSQTBuckets + i];
+        }
+
+        // Difference calculation for the activated features
+        for (const auto index : added)
+        {
+            const IndexType offset = TransformedFeatureDimensions * index;
+            for (IndexType i = 0; i < TransformedFeatureDimensions; ++i)
+                (target_state.*accPtr).accumulation[Perspective][i] +=
+                  featureTransformer.weights[offset + i];
+
+            for (std::size_t i = 0; i < PSQTBuckets; ++i)
+                (target_state.*accPtr).psqtAccumulation[Perspective][i] +=
+                  featureTransformer.psqtWeights[index * PSQTBuckets + i];
+        }
+#endif
+    }
+
+    (target_state.*accPtr).computed[Perspective] = true;
+}
+
+template<Color Perspective, IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+void update_accumulator_refresh_cache(
+  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+  const Position&                               pos,
+  AccumulatorState&                             accumulatorState,
+  AccumulatorCaches::Cache<Dimensions>&         cache) {
+    using Tiling [[maybe_unused]] = SIMDTiling<Dimensions, Dimensions>;
+
+    const Square          ksq   = pos.square<KING>(Perspective);
+    auto&                 entry = cache[ksq][Perspective];
+    FeatureSet::IndexList removed, added;
+
+    for (Color c : {WHITE, BLACK})
+    {
+        for (PieceType pt = PAWN; pt <= KING; ++pt)
+        {
+            const Piece    piece    = make_piece(c, pt);
+            const Bitboard oldBB    = entry.byColorBB[c] & entry.byTypeBB[pt];
+            const Bitboard newBB    = pos.pieces(c, pt);
+            Bitboard       toRemove = oldBB & ~newBB;
+            Bitboard       toAdd    = newBB & ~oldBB;
+
+            while (toRemove)
+            {
+                Square sq = pop_lsb(toRemove);
+                removed.push_back(FeatureSet::make_index<Perspective>(sq, piece, ksq));
+            }
+            while (toAdd)
+            {
+                Square sq = pop_lsb(toAdd);
+                added.push_back(FeatureSet::make_index<Perspective>(sq, piece, ksq));
+            }
+        }
+    }
+
+    auto& accumulator                 = accumulatorState.*accPtr;
+    accumulator.computed[Perspective] = true;
+
+#ifdef VECTOR
+    const bool combineLast3 =
+      std::abs((int) removed.size() - (int) added.size()) == 1 && removed.size() + added.size() > 2;
+    vec_t      acc[Tiling::NumRegs];
+    psqt_vec_t psqt[Tiling::NumPsqtRegs];
+
+    for (IndexType j = 0; j < Dimensions / Tiling::TileHeight; ++j)
+    {
+        auto* accTile =
+          reinterpret_cast<vec_t*>(&accumulator.accumulation[Perspective][j * Tiling::TileHeight]);
+        auto* entryTile = reinterpret_cast<vec_t*>(&entry.accumulation[j * Tiling::TileHeight]);
+
+        for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+            acc[k] = entryTile[k];
+
+        std::size_t i = 0;
+        for (; i < std::min(removed.size(), added.size()) - combineLast3; ++i)
+        {
+            IndexType       indexR  = removed[i];
+            const IndexType offsetR = Dimensions * indexR + j * Tiling::TileHeight;
+            auto* columnR = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR]);
+            IndexType       indexA  = added[i];
+            const IndexType offsetA = Dimensions * indexA + j * Tiling::TileHeight;
+            auto* columnA = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA]);
+
+            for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+                acc[k] = vec_add_16(acc[k], vec_sub_16(columnA[k], columnR[k]));
+        }
+        if (combineLast3)
+        {
+            IndexType       indexR  = removed[i];
+            const IndexType offsetR = Dimensions * indexR + j * Tiling::TileHeight;
+            auto* columnR = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR]);
+            IndexType       indexA  = added[i];
+            const IndexType offsetA = Dimensions * indexA + j * Tiling::TileHeight;
+            auto* columnA = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA]);
+
+            if (removed.size() > added.size())
+            {
+                IndexType       indexR2  = removed[i + 1];
+                const IndexType offsetR2 = Dimensions * indexR2 + j * Tiling::TileHeight;
+                auto*           columnR2 =
+                  reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetR2]);
+
+                for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+                    acc[k] = vec_sub_16(vec_add_16(acc[k], columnA[k]),
+                                        vec_add_16(columnR[k], columnR2[k]));
+            }
+            else
+            {
+                IndexType       indexA2  = added[i + 1];
+                const IndexType offsetA2 = Dimensions * indexA2 + j * Tiling::TileHeight;
+                auto*           columnA2 =
+                  reinterpret_cast<const vec_t*>(&featureTransformer.weights[offsetA2]);
+
+                for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+                    acc[k] = vec_add_16(vec_sub_16(acc[k], columnR[k]),
+                                        vec_add_16(columnA[k], columnA2[k]));
+            }
+        }
+        else
+        {
+            for (; i < removed.size(); ++i)
+            {
+                IndexType       index  = removed[i];
+                const IndexType offset = Dimensions * index + j * Tiling::TileHeight;
+                auto* column = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offset]);
+
+                for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+                    acc[k] = vec_sub_16(acc[k], column[k]);
+            }
+            for (; i < added.size(); ++i)
+            {
+                IndexType       index  = added[i];
+                const IndexType offset = Dimensions * index + j * Tiling::TileHeight;
+                auto* column = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offset]);
+
+                for (IndexType k = 0; k < Tiling::NumRegs; ++k)
+                    acc[k] = vec_add_16(acc[k], column[k]);
+            }
+        }
+
+        for (IndexType k = 0; k < Tiling::NumRegs; k++)
+            vec_store(&entryTile[k], acc[k]);
+        for (IndexType k = 0; k < Tiling::NumRegs; k++)
+            vec_store(&accTile[k], acc[k]);
+    }
+
+    for (IndexType j = 0; j < PSQTBuckets / Tiling::PsqtTileHeight; ++j)
+    {
+        auto* accTilePsqt = reinterpret_cast<psqt_vec_t*>(
+          &accumulator.psqtAccumulation[Perspective][j * Tiling::PsqtTileHeight]);
+        auto* entryTilePsqt =
+          reinterpret_cast<psqt_vec_t*>(&entry.psqtAccumulation[j * Tiling::PsqtTileHeight]);
+
+        for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
+            psqt[k] = entryTilePsqt[k];
+
+        for (std::size_t i = 0; i < removed.size(); ++i)
+        {
+            IndexType       index  = removed[i];
+            const IndexType offset = PSQTBuckets * index + j * Tiling::PsqtTileHeight;
+            auto*           columnPsqt =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offset]);
+
+            for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
+                psqt[k] = vec_sub_psqt_32(psqt[k], columnPsqt[k]);
+        }
+        for (std::size_t i = 0; i < added.size(); ++i)
+        {
+            IndexType       index  = added[i];
+            const IndexType offset = PSQTBuckets * index + j * Tiling::PsqtTileHeight;
+            auto*           columnPsqt =
+              reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offset]);
+
+            for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
+                psqt[k] = vec_add_psqt_32(psqt[k], columnPsqt[k]);
+        }
+
+        for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
+            vec_store_psqt(&entryTilePsqt[k], psqt[k]);
+        for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
+            vec_store_psqt(&accTilePsqt[k], psqt[k]);
+    }
+
+#else
+
+    for (const auto index : removed)
+    {
+        const IndexType offset = Dimensions * index;
+        for (IndexType j = 0; j < Dimensions; ++j)
+            entry.accumulation[j] -= featureTransformer.weights[offset + j];
+
+        for (std::size_t k = 0; k < PSQTBuckets; ++k)
+            entry.psqtAccumulation[k] -= featureTransformer.psqtWeights[index * PSQTBuckets + k];
+    }
+    for (const auto index : added)
+    {
+        const IndexType offset = Dimensions * index;
+        for (IndexType j = 0; j < Dimensions; ++j)
+            entry.accumulation[j] += featureTransformer.weights[offset + j];
+
+        for (std::size_t k = 0; k < PSQTBuckets; ++k)
+            entry.psqtAccumulation[k] += featureTransformer.psqtWeights[index * PSQTBuckets + k];
+    }
+
+    // The accumulator of the refresh entry has been updated.
+    // Now copy its content to the actual accumulator we were refreshing.
+
+    std::memcpy(accumulator.accumulation[Perspective], entry.accumulation,
+                sizeof(BiasType) * Dimensions);
+
+    std::memcpy(accumulator.psqtAccumulation[Perspective], entry.psqtAccumulation,
+                sizeof(int32_t) * PSQTBuckets);
+#endif
+
+    for (Color c : {WHITE, BLACK})
+        entry.byColorBB[c] = pos.pieces(c);
+
+    for (PieceType pt = PAWN; pt <= KING; ++pt)
+        entry.byTypeBB[pt] = pos.pieces(pt);
+}
+
+}
+
+}
+
+

@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/enhanced_wood_background"
+    android:padding="16dp">
+
+    <!-- Simple Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="16dp"
+        android:background="@drawable/rounded_panel_background"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ChessPedagogue"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose your battle configuration"
+            android:textSize="14sp"
+            android:textColor="@color/text_accent" />
+    </LinearLayout>
+
+    <!-- Color Selection - Prominent and Clean -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/rounded_panel_background"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choose Your Color"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupColor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <!-- White Selection - Simplified -->
+            <LinearLayout
+                android:id="@+id/whiteSelectionLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/side_selection_active_bg"
+                android:layout_marginEnd="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_white_king"
+                    android:layout_marginBottom="8dp" />
+
+                <RadioButton
+                    android:id="@+id/radioWhite"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="White"
+                    android:checked="true"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Black Selection - Simplified -->
+            <LinearLayout
+                android:id="@+id/blackSelectionLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="12dp"
+                android:background="@drawable/side_selection_bg"
+                android:layout_marginStart="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/ic_black_king"
+                    android:layout_marginBottom="8dp" />
+
+                <RadioButton
+                    android:id="@+id/radioBlack"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Black"
+                    android:textColor="@color/text_primary"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </RadioGroup>
+    </LinearLayout>
+
+    <!-- Engine Strength - Compact -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/rounded_panel_background"
+        android:padding="16dp"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Opponent Strength"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/textViewStrengthValue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Engine Strength: ~1750 Elo (Level 10)"
+            android:textSize="14sp"
+            android:textColor="@color/text_accent"
+            android:layout_gravity="center"
+            android:layout_marginBottom="12dp" />
+
+        <!-- Simplified Slider -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Easy"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginEnd="8dp" />
+
+            <SeekBar
+                android:id="@+id/seekBarStrength"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:max="20"
+                android:progress="10" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Super GM"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Flexible spacer to push button to bottom -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <!-- Start Button - Always Visible -->
+    <Button
+        android:id="@+id/buttonStartGame"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="BEGIN THE CHALLENGE"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/cream"
+        android:background="@drawable/enhanced_wood_button_bg"
+        android:drawableStart="@android:drawable/ic_media_play"
+        android:drawablePadding="8dp"
+        android:drawableTint="@color/cream"
+        android:gravity="center"
+        android:elevation="4dp" />
+
+</LinearLayout>

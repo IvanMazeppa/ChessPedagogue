@@ -1574,17 +1574,17 @@ public class MainActivity extends AppCompatActivity {
     private void startRecording() {
         if (isServiceBound && recordService != null) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
+                Log.e(TAG, "❌ RECORD_AUDIO permission not granted!");
+                Toast.makeText(this, "Microphone permission required for voice input", Toast.LENGTH_LONG).show();
+                ActivityCompat.requestPermissions(this, 
+                    new String[]{Manifest.permission.RECORD_AUDIO}, 
+                    PERMISSIONS_REQUEST_RECORD_AUDIO);
                 return;
             }
+            Log.d(TAG, "✅ RECORD_AUDIO permission granted, starting recording...");
             recordService.startRecording();
         } else {
+            Log.e(TAG, "❌ Voice service not ready - isServiceBound: " + isServiceBound + ", recordService: " + (recordService != null ? "not null" : "null"));
             Toast.makeText(this, "Voice service not ready", Toast.LENGTH_SHORT).show();
             bindRecordService();
         }

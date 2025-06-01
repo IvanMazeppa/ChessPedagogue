@@ -1,0 +1,40 @@
+{
+  "timestamp": "2025-06-01T14:45:46.994377",
+  "device_id": "adb-R5CW20BB3KT-VEDwWk._adb-tls-connect._tcp",
+  "test_type": "splash_color_selection",
+  "tests": {
+    "device_connection": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:47.234491"
+    },
+    "app_installed": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:47.445744"
+    },
+    "screen_dimensions": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:47.684032"
+    },
+    "launch_splash": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:52.118528"
+    },
+    "verify_elements": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:55.963068"
+    },
+    "test_white_selection": {
+      "success": true,
+      "timestamp": "2025-06-01T14:45:58.685700"
+    },
+    "test_black_selection": {
+      "success": true,
+      "timestamp": "2025-06-01T14:46:01.151120"
+    },
+    "test_start_button": {
+      "success": true,
+      "timestamp": "2025-06-01T14:46:06.164655"
+    }
+  },
+  "overall_success": true
+}

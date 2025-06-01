@@ -1,0 +1,1713 @@
+# CHUNK 28 of 64
+# Files: 6, Characters: 49,799
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\memory.cpp
+Lines: 269, Characters: 7,779
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "memory.h"
+
+#include <cstdlib>
+
+#if __has_include("features.h")
+    #include <features.h>
+#endif
+
+#if defined(__linux__) && !defined(__ANDROID__)
+    #include <sys/mman.h>
+#endif
+
+#if defined(__APPLE__) || defined(__ANDROID__) || defined(__OpenBSD__) \
+  || (defined(__GLIBCXX__) && !defined(_GLIBCXX_HAVE_ALIGNED_ALLOC) && !defined(_WIN32)) \
+  || defined(__e2k__)
+    #define POSIXALIGNEDALLOC
+    #include <stdlib.h>
+#endif
+
+#ifdef _WIN32
+    #if _WIN32_WINNT < 0x0601
+        #undef _WIN32_WINNT
+        #define _WIN32_WINNT 0x0601  // Force to include needed API prototypes
+    #endif
+
+    #ifndef NOMINMAX
+        #define NOMINMAX
+    #endif
+
+    #include <ios>       // std::hex, std::dec
+    #include <iostream>  // std::cerr
+    #include <ostream>   // std::endl
+    #include <windows.h>
+
+// The needed Windows API for processor groups could be missed from old Windows
+// versions, so instead of calling them directly (forcing the linker to resolve
+// the calls at compile time), try to load them at runtime. To do this we need
+// first to define the corresponding function pointers.
+
+extern "C" {
+using OpenProcessToken_t      = bool (*)(HANDLE, DWORD, PHANDLE);
+using LookupPrivilegeValueA_t = bool (*)(LPCSTR, LPCSTR, PLUID);
+using AdjustTokenPrivileges_t =
+  bool (*)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD);
+}
+#endif
+
+
+namespace Stockfish {
+
+// Wrappers for systems where the c++17 implementation does not guarantee the
+// availability of aligned_alloc(). Memory allocated with std_aligned_alloc()
+// must be freed with std_aligned_free().
+
+void* std_aligned_alloc(size_t alignment, size_t size) {
+#if defined(_ISOC11_SOURCE)
+    return aligned_alloc(alignment, size);
+#elif defined(POSIXALIGNEDALLOC)
+    void* mem = nullptr;
+    posix_memalign(&mem, alignment, size);
+    return mem;
+#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
+    return _mm_malloc(size, alignment);
+#elif defined(_WIN32)
+    return _aligned_malloc(size, alignment);
+#else
+    return std::aligned_alloc(alignment, size);
+#endif
+}
+
+void std_aligned_free(void* ptr) {
+
+#if defined(POSIXALIGNEDALLOC)
+    free(ptr);
+#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
+    _mm_free(ptr);
+#elif defined(_WIN32)
+    _aligned_free(ptr);
+#else
+    free(ptr);
+#endif
+}
+
+// aligned_large_pages_alloc() will return suitably aligned memory,
+// if possible using large pages.
+
+#if defined(_WIN32)
+
+static void* aligned_large_pages_alloc_windows([[maybe_unused]] size_t allocSize) {
+
+    #if !defined(_WIN64)
+    return nullptr;
+    #else
+
+    HANDLE hProcessToken{};
+    LUID   luid{};
+    void*  mem = nullptr;
+
+    const size_t largePageSize = GetLargePageMinimum();
+    if (!largePageSize)
+        return nullptr;
+
+    // Dynamically link OpenProcessToken, LookupPrivilegeValue and AdjustTokenPrivileges
+
+    HMODULE hAdvapi32 = GetModuleHandle(TEXT("advapi32.dll"));
+
+    if (!hAdvapi32)
+        hAdvapi32 = LoadLibrary(TEXT("advapi32.dll"));
+
+    auto OpenProcessToken_f =
+      OpenProcessToken_t((void (*)()) GetProcAddress(hAdvapi32, "OpenProcessToken"));
+    if (!OpenProcessToken_f)
+        return nullptr;
+    auto LookupPrivilegeValueA_f =
+      LookupPrivilegeValueA_t((void (*)()) GetProcAddress(hAdvapi32, "LookupPrivilegeValueA"));
+    if (!LookupPrivilegeValueA_f)
+        return nullptr;
+    auto AdjustTokenPrivileges_f =
+      AdjustTokenPrivileges_t((void (*)()) GetProcAddress(hAdvapi32, "AdjustTokenPrivileges"));
+    if (!AdjustTokenPrivileges_f)
+        return nullptr;
+
+    // We need SeLockMemoryPrivilege, so try to enable it for the process
+
+    if (!OpenProcessToken_f(  // OpenProcessToken()
+          GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hProcessToken))
+        return nullptr;
+
+    if (LookupPrivilegeValueA_f(nullptr, "SeLockMemoryPrivilege", &luid))
+    {
+        TOKEN_PRIVILEGES tp{};
+        TOKEN_PRIVILEGES prevTp{};
+        DWORD            prevTpLen = 0;
+
+        tp.PrivilegeCount           = 1;
+        tp.Privileges[0].Luid       = luid;
+        tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+        // Try to enable SeLockMemoryPrivilege. Note that even if AdjustTokenPrivileges()
+        // succeeds, we still need to query GetLastError() to ensure that the privileges
+        // were actually obtained.
+
+        if (AdjustTokenPrivileges_f(hProcessToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), &prevTp,
+                                    &prevTpLen)
+            && GetLastError() == ERROR_SUCCESS)
+        {
+            // Round up size to full pages and allocate
+            allocSize = (allocSize + largePageSize - 1) & ~size_t(largePageSize - 1);
+            mem       = VirtualAlloc(nullptr, allocSize, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES,
+                                     PAGE_READWRITE);
+
+            // Privilege no longer needed, restore previous state
+            AdjustTokenPrivileges_f(hProcessToken, FALSE, &prevTp, 0, nullptr, nullptr);
+        }
+    }
+
+    CloseHandle(hProcessToken);
+
+    return mem;
+
+    #endif
+}
+
+void* aligned_large_pages_alloc(size_t allocSize) {
+
+    // Try to allocate large pages
+    void* mem = aligned_large_pages_alloc_windows(allocSize);
+
+    // Fall back to regular, page-aligned, allocation if necessary
+    if (!mem)
+        mem = VirtualAlloc(nullptr, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+    return mem;
+}
+
+#else
+
+void* aligned_large_pages_alloc(size_t allocSize) {
+
+    #if defined(__linux__)
+    constexpr size_t alignment = 2 * 1024 * 1024;  // 2MB page size assumed
+    #else
+    constexpr size_t alignment = 4096;  // small page size assumed
+    #endif
+
+    // Round up to multiples of alignment
+    size_t size = ((allocSize + alignment - 1) / alignment) * alignment;
+    void*  mem  = std_aligned_alloc(alignment, size);
+    #if defined(MADV_HUGEPAGE)
+    madvise(mem, size, MADV_HUGEPAGE);
+    #endif
+    return mem;
+}
+
+#endif
+
+bool has_large_pages() {
+
+#if defined(_WIN32)
+
+    constexpr size_t page_size = 2 * 1024 * 1024;  // 2MB page size assumed
+    void*            mem       = aligned_large_pages_alloc_windows(page_size);
+    if (mem == nullptr)
+    {
+        return false;
+    }
+    else
+    {
+        aligned_large_pages_free(mem);
+        return true;
+    }
+
+#elif defined(__linux__)
+
+    #if defined(MADV_HUGEPAGE)
+    return true;
+    #else
+    return false;
+    #endif
+
+#else
+
+    return false;
+
+#endif
+}
+
+
+// aligned_large_pages_free() will free the previously memory allocated
+// by aligned_large_pages_alloc(). The effect is a nop if mem == nullptr.
+
+#if defined(_WIN32)
+
+void aligned_large_pages_free(void* mem) {
+
+    if (mem && !VirtualFree(mem, 0, MEM_RELEASE))
+    {
+        DWORD err = GetLastError();
+        std::cerr << "Failed to free large page memory. Error code: 0x" << std::hex << err
+                  << std::dec << std::endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+#else
+
+void aligned_large_pages_free(void* mem) { std_aligned_free(mem); }
+
+#endif
+}  // namespace Stockfish
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\memory.h
+Lines: 219, Characters: 7,242
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MEMORY_H_INCLUDED
+#define MEMORY_H_INCLUDED
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <new>
+#include <type_traits>
+#include <utility>
+
+#include "types.h"
+
+namespace Stockfish {
+
+void* std_aligned_alloc(size_t alignment, size_t size);
+void  std_aligned_free(void* ptr);
+
+// Memory aligned by page size, min alignment: 4096 bytes
+void* aligned_large_pages_alloc(size_t size);
+void  aligned_large_pages_free(void* mem);
+
+bool has_large_pages();
+
+// Frees memory which was placed there with placement new.
+// Works for both single objects and arrays of unknown bound.
+template<typename T, typename FREE_FUNC>
+void memory_deleter(T* ptr, FREE_FUNC free_func) {
+    if (!ptr)
+        return;
+
+    // Explicitly needed to call the destructor
+    if constexpr (!std::is_trivially_destructible_v<T>)
+        ptr->~T();
+
+    free_func(ptr);
+    return;
+}
+
+// Frees memory which was placed there with placement new.
+// Works for both single objects and arrays of unknown bound.
+template<typename T, typename FREE_FUNC>
+void memory_deleter_array(T* ptr, FREE_FUNC free_func) {
+    if (!ptr)
+        return;
+
+
+    // Move back on the pointer to where the size is allocated
+    const size_t array_offset = std::max(sizeof(size_t), alignof(T));
+    char*        raw_memory   = reinterpret_cast<char*>(ptr) - array_offset;
+
+    if constexpr (!std::is_trivially_destructible_v<T>)
+    {
+        const size_t size = *reinterpret_cast<size_t*>(raw_memory);
+
+        // Explicitly call the destructor for each element in reverse order
+        for (size_t i = size; i-- > 0;)
+            ptr[i].~T();
+    }
+
+    free_func(raw_memory);
+}
+
+// Allocates memory for a single object and places it there with placement new
+template<typename T, typename ALLOC_FUNC, typename... Args>
+inline std::enable_if_t<!std::is_array_v<T>, T*> memory_allocator(ALLOC_FUNC alloc_func,
+                                                                  Args&&... args) {
+    void* raw_memory = alloc_func(sizeof(T));
+    ASSERT_ALIGNED(raw_memory, alignof(T));
+    return new (raw_memory) T(std::forward<Args>(args)...);
+}
+
+// Allocates memory for an array of unknown bound and places it there with placement new
+template<typename T, typename ALLOC_FUNC>
+inline std::enable_if_t<std::is_array_v<T>, std::remove_extent_t<T>*>
+memory_allocator(ALLOC_FUNC alloc_func, size_t num) {
+    using ElementType = std::remove_extent_t<T>;
+
+    const size_t array_offset = std::max(sizeof(size_t), alignof(ElementType));
+
+    // Save the array size in the memory location
+    char* raw_memory =
+      reinterpret_cast<char*>(alloc_func(array_offset + num * sizeof(ElementType)));
+    ASSERT_ALIGNED(raw_memory, alignof(T));
+
+    new (raw_memory) size_t(num);
+
+    for (size_t i = 0; i < num; ++i)
+        new (raw_memory + array_offset + i * sizeof(ElementType)) ElementType();
+
+    // Need to return the pointer at the start of the array so that
+    // the indexing in unique_ptr<T[]> works.
+    return reinterpret_cast<ElementType*>(raw_memory + array_offset);
+}
+
+//
+//
+// aligned large page unique ptr
+//
+//
+
+template<typename T>
+struct LargePageDeleter {
+    void operator()(T* ptr) const { return memory_deleter<T>(ptr, aligned_large_pages_free); }
+};
+
+template<typename T>
+struct LargePageArrayDeleter {
+    void operator()(T* ptr) const { return memory_deleter_array<T>(ptr, aligned_large_pages_free); }
+};
+
+template<typename T>
+using LargePagePtr =
+  std::conditional_t<std::is_array_v<T>,
+                     std::unique_ptr<T, LargePageArrayDeleter<std::remove_extent_t<T>>>,
+                     std::unique_ptr<T, LargePageDeleter<T>>>;
+
+// make_unique_large_page for single objects
+template<typename T, typename... Args>
+std::enable_if_t<!std::is_array_v<T>, LargePagePtr<T>> make_unique_large_page(Args&&... args) {
+    static_assert(alignof(T) <= 4096,
+                  "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
+
+    T* obj = memory_allocator<T>(aligned_large_pages_alloc, std::forward<Args>(args)...);
+
+    return LargePagePtr<T>(obj);
+}
+
+// make_unique_large_page for arrays of unknown bound
+template<typename T>
+std::enable_if_t<std::is_array_v<T>, LargePagePtr<T>> make_unique_large_page(size_t num) {
+    using ElementType = std::remove_extent_t<T>;
+
+    static_assert(alignof(ElementType) <= 4096,
+                  "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
+
+    ElementType* memory = memory_allocator<T>(aligned_large_pages_alloc, num);
+
+    return LargePagePtr<T>(memory);
+}
+
+//
+//
+// aligned unique ptr
+//
+//
+
+template<typename T>
+struct AlignedDeleter {
+    void operator()(T* ptr) const { return memory_deleter<T>(ptr, std_aligned_free); }
+};
+
+template<typename T>
+struct AlignedArrayDeleter {
+    void operator()(T* ptr) const { return memory_deleter_array<T>(ptr, std_aligned_free); }
+};
+
+template<typename T>
+using AlignedPtr =
+  std::conditional_t<std::is_array_v<T>,
+                     std::unique_ptr<T, AlignedArrayDeleter<std::remove_extent_t<T>>>,
+                     std::unique_ptr<T, AlignedDeleter<T>>>;
+
+// make_unique_aligned for single objects
+template<typename T, typename... Args>
+std::enable_if_t<!std::is_array_v<T>, AlignedPtr<T>> make_unique_aligned(Args&&... args) {
+    const auto func = [](size_t size) { return std_aligned_alloc(alignof(T), size); };
+    T*         obj  = memory_allocator<T>(func, std::forward<Args>(args)...);
+
+    return AlignedPtr<T>(obj);
+}
+
+// make_unique_aligned for arrays of unknown bound
+template<typename T>
+std::enable_if_t<std::is_array_v<T>, AlignedPtr<T>> make_unique_aligned(size_t num) {
+    using ElementType = std::remove_extent_t<T>;
+
+    const auto   func   = [](size_t size) { return std_aligned_alloc(alignof(ElementType), size); };
+    ElementType* memory = memory_allocator<T>(func, num);
+
+    return AlignedPtr<T>(memory);
+}
+
+
+// Get the first aligned element of an array.
+// ptr must point to an array of size at least `sizeof(T) * N + alignment` bytes,
+// where N is the number of elements in the array.
+template<uintptr_t Alignment, typename T>
+T* align_ptr_up(T* ptr) {
+    static_assert(alignof(T) < Alignment);
+
+    const uintptr_t ptrint = reinterpret_cast<uintptr_t>(reinterpret_cast<char*>(ptr));
+    return reinterpret_cast<T*>(
+      reinterpret_cast<char*>((ptrint + (Alignment - 1)) / Alignment * Alignment));
+}
+
+
+}  // namespace Stockfish
+
+#endif  // #ifndef MEMORY_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\misc.cpp
+Lines: 525, Characters: 14,316
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "misc.h"
+
+#include <array>
+#include <atomic>
+#include <cassert>
+#include <cctype>
+#include <cmath>
+#include <cstdlib>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <limits>
+#include <mutex>
+#include <sstream>
+#include <string_view>
+
+#include "types.h"
+
+namespace Stockfish {
+
+namespace {
+
+// Version number or dev.
+constexpr std::string_view version = "17.1";
+
+// Our fancy logging facility. The trick here is to replace cin.rdbuf() and
+// cout.rdbuf() with two Tie objects that tie cin and cout to a file stream. We
+// can toggle the logging of std::cout and std:cin at runtime whilst preserving
+// usual I/O functionality, all without changing a single line of code!
+// Idea from http://groups.google.com/group/comp.lang.c++/msg/1d941c0f26ea0d81
+
+struct Tie: public std::streambuf {  // MSVC requires split streambuf for cin and cout
+
+    Tie(std::streambuf* b, std::streambuf* l) :
+        buf(b),
+        logBuf(l) {}
+
+    int sync() override { return logBuf->pubsync(), buf->pubsync(); }
+    int overflow(int c) override { return log(buf->sputc(char(c)), "<< "); }
+    int underflow() override { return buf->sgetc(); }
+    int uflow() override { return log(buf->sbumpc(), ">> "); }
+
+    std::streambuf *buf, *logBuf;
+
+    int log(int c, const char* prefix) {
+
+        static int last = '\n';  // Single log file
+
+        if (last == '\n')
+            logBuf->sputn(prefix, 3);
+
+        return last = logBuf->sputc(char(c));
+    }
+};
+
+class Logger {
+
+    Logger() :
+        in(std::cin.rdbuf(), file.rdbuf()),
+        out(std::cout.rdbuf(), file.rdbuf()) {}
+    ~Logger() { start(""); }
+
+    std::ofstream file;
+    Tie           in, out;
+
+   public:
+    static void start(const std::string& fname) {
+
+        static Logger l;
+
+        if (l.file.is_open())
+        {
+            std::cout.rdbuf(l.out.buf);
+            std::cin.rdbuf(l.in.buf);
+            l.file.close();
+        }
+
+        if (!fname.empty())
+        {
+            l.file.open(fname, std::ifstream::out);
+
+            if (!l.file.is_open())
+            {
+                std::cerr << "Unable to open debug log file " << fname << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            std::cin.rdbuf(&l.in);
+            std::cout.rdbuf(&l.out);
+        }
+    }
+};
+
+}  // namespace
+
+
+// Returns the full name of the current Stockfish version.
+//
+// For local dev compiles we try to append the commit SHA and
+// commit date from git. If that fails only the local compilation
+// date is set and "nogit" is specified:
+//      Stockfish dev-YYYYMMDD-SHA
+//      or
+//      Stockfish dev-YYYYMMDD-nogit
+//
+// For releases (non-dev builds) we only include the version number:
+//      Stockfish version
+std::string engine_version_info() {
+    std::stringstream ss;
+    ss << "Stockfish " << version << std::setfill('0');
+
+    if constexpr (version == "dev")
+    {
+        ss << "-";
+#ifdef GIT_DATE
+        ss << stringify(GIT_DATE);
+#else
+        constexpr std::string_view months("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec");
+
+        std::string       month, day, year;
+        std::stringstream date(__DATE__);  // From compiler, format is "Sep 21 2008"
+
+        date >> month >> day >> year;
+        ss << year << std::setw(2) << std::setfill('0') << (1 + months.find(month) / 4)
+           << std::setw(2) << std::setfill('0') << day;
+#endif
+
+        ss << "-";
+
+#ifdef GIT_SHA
+        ss << stringify(GIT_SHA);
+#else
+        ss << "nogit";
+#endif
+    }
+
+    return ss.str();
+}
+
+std::string engine_info(bool to_uci) {
+    return engine_version_info() + (to_uci ? "\nid author " : " by ")
+         + "the Stockfish developers (see AUTHORS file)";
+}
+
+
+// Returns a string trying to describe the compiler we use
+std::string compiler_info() {
+
+#define make_version_string(major, minor, patch) \
+    stringify(major) "." stringify(minor) "." stringify(patch)
+
+    // Predefined macros hell:
+    //
+    // __GNUC__                Compiler is GCC, Clang or ICX
+    // __clang__               Compiler is Clang or ICX
+    // __INTEL_LLVM_COMPILER   Compiler is ICX
+    // _MSC_VER                Compiler is MSVC
+    // _WIN32                  Building on Windows (any)
+    // _WIN64                  Building on Windows 64 bit
+
+    std::string compiler = "\nCompiled by                : ";
+
+#if defined(__INTEL_LLVM_COMPILER)
+    compiler += "ICX ";
+    compiler += stringify(__INTEL_LLVM_COMPILER);
+#elif defined(__clang__)
+    compiler += "clang++ ";
+    compiler += make_version_string(__clang_major__, __clang_minor__, __clang_patchlevel__);
+#elif _MSC_VER
+    compiler += "MSVC ";
+    compiler += "(version ";
+    compiler += stringify(_MSC_FULL_VER) "." stringify(_MSC_BUILD);
+    compiler += ")";
+#elif defined(__e2k__) && defined(__LCC__)
+    #define dot_ver2(n) \
+        compiler += char('.'); \
+        compiler += char('0' + (n) / 10); \
+        compiler += char('0' + (n) % 10);
+
+    compiler += "MCST LCC ";
+    compiler += "(version ";
+    compiler += std::to_string(__LCC__ / 100);
+    dot_ver2(__LCC__ % 100) dot_ver2(__LCC_MINOR__) compiler += ")";
+#elif __GNUC__
+    compiler += "g++ (GNUC) ";
+    compiler += make_version_string(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#else
+    compiler += "Unknown compiler ";
+    compiler += "(unknown version)";
+#endif
+
+#if defined(__APPLE__)
+    compiler += " on Apple";
+#elif defined(__CYGWIN__)
+    compiler += " on Cygwin";
+#elif defined(__MINGW64__)
+    compiler += " on MinGW64";
+#elif defined(__MINGW32__)
+    compiler += " on MinGW32";
+#elif defined(__ANDROID__)
+    compiler += " on Android";
+#elif defined(__linux__)
+    compiler += " on Linux";
+#elif defined(_WIN64)
+    compiler += " on Microsoft Windows 64-bit";
+#elif defined(_WIN32)
+    compiler += " on Microsoft Windows 32-bit";
+#else
+    compiler += " on unknown system";
+#endif
+
+    compiler += "\nCompilation architecture   : ";
+#if defined(ARCH)
+    compiler += stringify(ARCH);
+#else
+    compiler += "(undefined architecture)";
+#endif
+
+    compiler += "\nCompilation settings       : ";
+    compiler += (Is64Bit ? "64bit" : "32bit");
+#if defined(USE_VNNI)
+    compiler += " VNNI";
+#endif
+#if defined(USE_AVX512)
+    compiler += " AVX512";
+#endif
+    compiler += (HasPext ? " BMI2" : "");
+#if defined(USE_AVX2)
+    compiler += " AVX2";
+#endif
+#if defined(USE_SSE41)
+    compiler += " SSE41";
+#endif
+#if defined(USE_SSSE3)
+    compiler += " SSSE3";
+#endif
+#if defined(USE_SSE2)
+    compiler += " SSE2";
+#endif
+    compiler += (HasPopCnt ? " POPCNT" : "");
+#if defined(USE_NEON_DOTPROD)
+    compiler += " NEON_DOTPROD";
+#elif defined(USE_NEON)
+    compiler += " NEON";
+#endif
+
+#if !defined(NDEBUG)
+    compiler += " DEBUG";
+#endif
+
+    compiler += "\nCompiler __VERSION__ macro : ";
+#ifdef __VERSION__
+    compiler += __VERSION__;
+#else
+    compiler += "(undefined macro)";
+#endif
+
+    compiler += "\n";
+
+    return compiler;
+}
+
+
+// Debug functions used mainly to collect run-time statistics
+constexpr int MaxDebugSlots = 32;
+
+namespace {
+
+template<size_t N>
+struct DebugInfo {
+    std::array<std::atomic<int64_t>, N> data = {0};
+
+    [[nodiscard]] constexpr std::atomic<int64_t>& operator[](size_t index) {
+        assert(index < N);
+        return data[index];
+    }
+
+    constexpr DebugInfo& operator=(const DebugInfo& other) {
+        for (size_t i = 0; i < N; i++)
+            data[i].store(other.data[i].load());
+        return *this;
+    }
+};
+
+struct DebugExtremes: public DebugInfo<3> {
+    DebugExtremes() {
+        data[1] = std::numeric_limits<int64_t>::min();
+        data[2] = std::numeric_limits<int64_t>::max();
+    }
+};
+
+std::array<DebugInfo<2>, MaxDebugSlots>  hit;
+std::array<DebugInfo<2>, MaxDebugSlots>  mean;
+std::array<DebugInfo<3>, MaxDebugSlots>  stdev;
+std::array<DebugInfo<6>, MaxDebugSlots>  correl;
+std::array<DebugExtremes, MaxDebugSlots> extremes;
+
+}  // namespace
+
+void dbg_hit_on(bool cond, int slot) {
+
+    ++hit.at(slot)[0];
+    if (cond)
+        ++hit.at(slot)[1];
+}
+
+void dbg_mean_of(int64_t value, int slot) {
+
+    ++mean.at(slot)[0];
+    mean.at(slot)[1] += value;
+}
+
+void dbg_stdev_of(int64_t value, int slot) {
+
+    ++stdev.at(slot)[0];
+    stdev.at(slot)[1] += value;
+    stdev.at(slot)[2] += value * value;
+}
+
+void dbg_extremes_of(int64_t value, int slot) {
+    ++extremes.at(slot)[0];
+
+    int64_t current_max = extremes.at(slot)[1].load();
+    while (current_max < value && !extremes.at(slot)[1].compare_exchange_weak(current_max, value))
+    {}
+
+    int64_t current_min = extremes.at(slot)[2].load();
+    while (current_min > value && !extremes.at(slot)[2].compare_exchange_weak(current_min, value))
+    {}
+}
+
+void dbg_correl_of(int64_t value1, int64_t value2, int slot) {
+
+    ++correl.at(slot)[0];
+    correl.at(slot)[1] += value1;
+    correl.at(slot)[2] += value1 * value1;
+    correl.at(slot)[3] += value2;
+    correl.at(slot)[4] += value2 * value2;
+    correl.at(slot)[5] += value1 * value2;
+}
+
+void dbg_print() {
+
+    int64_t n;
+    auto    E   = [&n](int64_t x) { return double(x) / n; };
+    auto    sqr = [](double x) { return x * x; };
+
+    for (int i = 0; i < MaxDebugSlots; ++i)
+        if ((n = hit[i][0]))
+            std::cerr << "Hit #" << i << ": Total " << n << " Hits " << hit[i][1]
+                      << " Hit Rate (%) " << 100.0 * E(hit[i][1]) << std::endl;
+
+    for (int i = 0; i < MaxDebugSlots; ++i)
+        if ((n = mean[i][0]))
+        {
+            std::cerr << "Mean #" << i << ": Total " << n << " Mean " << E(mean[i][1]) << std::endl;
+        }
+
+    for (int i = 0; i < MaxDebugSlots; ++i)
+        if ((n = stdev[i][0]))
+        {
+            double r = sqrt(E(stdev[i][2]) - sqr(E(stdev[i][1])));
+            std::cerr << "Stdev #" << i << ": Total " << n << " Stdev " << r << std::endl;
+        }
+
+    for (int i = 0; i < MaxDebugSlots; ++i)
+        if ((n = extremes[i][0]))
+        {
+            std::cerr << "Extremity #" << i << ": Total " << n << " Min " << extremes[i][2]
+                      << " Max " << extremes[i][1] << std::endl;
+        }
+
+    for (int i = 0; i < MaxDebugSlots; ++i)
+        if ((n = correl[i][0]))
+        {
+            double r = (E(correl[i][5]) - E(correl[i][1]) * E(correl[i][3]))
+                     / (sqrt(E(correl[i][2]) - sqr(E(correl[i][1])))
+                        * sqrt(E(correl[i][4]) - sqr(E(correl[i][3]))));
+            std::cerr << "Correl. #" << i << ": Total " << n << " Coefficient " << r << std::endl;
+        }
+}
+
+void dbg_clear() {
+    hit.fill({});
+    mean.fill({});
+    stdev.fill({});
+    correl.fill({});
+    extremes.fill({});
+}
+
+// Used to serialize access to std::cout
+// to avoid multiple threads writing at the same time.
+std::ostream& operator<<(std::ostream& os, SyncCout sc) {
+
+    static std::mutex m;
+
+    if (sc == IO_LOCK)
+        m.lock();
+
+    if (sc == IO_UNLOCK)
+        m.unlock();
+
+    return os;
+}
+
+void sync_cout_start() { std::cout << IO_LOCK; }
+void sync_cout_end() { std::cout << IO_UNLOCK; }
+
+// Trampoline helper to avoid moving Logger to misc.h
+void start_logger(const std::string& fname) { Logger::start(fname); }
+
+
+#ifdef NO_PREFETCH
+
+void prefetch(const void*) {}
+
+#else
+
+void prefetch(const void* addr) {
+
+    #if defined(_MSC_VER)
+    _mm_prefetch((char const*) addr, _MM_HINT_T0);
+    #else
+    __builtin_prefetch(addr);
+    #endif
+}
+
+#endif
+
+#ifdef _WIN32
+    #include <direct.h>
+    #define GETCWD _getcwd
+#else
+    #include <unistd.h>
+    #define GETCWD getcwd
+#endif
+
+size_t str_to_size_t(const std::string& s) {
+    unsigned long long value = std::stoull(s);
+    if (value > std::numeric_limits<size_t>::max())
+        std::exit(EXIT_FAILURE);
+    return static_cast<size_t>(value);
+}
+
+std::optional<std::string> read_file_to_string(const std::string& path) {
+    std::ifstream f(path, std::ios_base::binary);
+    if (!f)
+        return std::nullopt;
+    return std::string(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
+}
+
+void remove_whitespace(std::string& s) {
+    s.erase(std::remove_if(s.begin(), s.end(), [](char c) { return std::isspace(c); }), s.end());
+}
+
+bool is_whitespace(std::string_view s) {
+    return std::all_of(s.begin(), s.end(), [](char c) { return std::isspace(c); });
+}
+
+std::string CommandLine::get_binary_directory(std::string argv0) {
+    std::string pathSeparator;
+
+#ifdef _WIN32
+    pathSeparator = "\\";
+    #ifdef _MSC_VER
+    // Under windows argv[0] may not have the extension. Also _get_pgmptr() had
+    // issues in some Windows 10 versions, so check returned values carefully.
+    char* pgmptr = nullptr;
+    if (!_get_pgmptr(&pgmptr) && pgmptr != nullptr && *pgmptr)
+        argv0 = pgmptr;
+    #endif
+#else
+    pathSeparator = "/";
+#endif
+
+    // Extract the working directory
+    auto workingDirectory = CommandLine::get_working_directory();
+
+    // Extract the binary directory path from argv0
+    auto   binaryDirectory = argv0;
+    size_t pos             = binaryDirectory.find_last_of("\\/");
+    if (pos == std::string::npos)
+        binaryDirectory = "." + pathSeparator;
+    else
+        binaryDirectory.resize(pos + 1);
+
+    // Pattern replacement: "./" at the start of path is replaced by the working directory
+    if (binaryDirectory.find("." + pathSeparator) == 0)
+        binaryDirectory.replace(0, 1, workingDirectory);
+
+    return binaryDirectory;
+}
+
+std::string CommandLine::get_working_directory() {
+    std::string workingDirectory = "";
+    char        buff[40000];
+    char*       cwd = GETCWD(buff, 40000);
+    if (cwd)
+        workingDirectory = cwd;
+
+    return workingDirectory;
+}
+
+
+}  // namespace Stockfish
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\misc.h
+Lines: 323, Characters: 10,017
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MISC_H_INCLUDED
+#define MISC_H_INCLUDED
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <iosfwd>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
+
+#define stringify2(x) #x
+#define stringify(x) stringify2(x)
+
+namespace Stockfish {
+
+std::string engine_version_info();
+std::string engine_info(bool to_uci = false);
+std::string compiler_info();
+
+// Preloads the given address in L1/L2 cache. This is a non-blocking
+// function that doesn't stall the CPU waiting for data to be loaded from memory,
+// which can be quite slow.
+void prefetch(const void* addr);
+
+void start_logger(const std::string& fname);
+
+size_t str_to_size_t(const std::string& s);
+
+#if defined(__linux__)
+
+struct PipeDeleter {
+    void operator()(FILE* file) const {
+        if (file != nullptr)
+        {
+            pclose(file);
+        }
+    }
+};
+
+#endif
+
+// Reads the file as bytes.
+// Returns std::nullopt if the file does not exist.
+std::optional<std::string> read_file_to_string(const std::string& path);
+
+void dbg_hit_on(bool cond, int slot = 0);
+void dbg_mean_of(int64_t value, int slot = 0);
+void dbg_stdev_of(int64_t value, int slot = 0);
+void dbg_extremes_of(int64_t value, int slot = 0);
+void dbg_correl_of(int64_t value1, int64_t value2, int slot = 0);
+void dbg_print();
+void dbg_clear();
+
+using TimePoint = std::chrono::milliseconds::rep;  // A value in milliseconds
+static_assert(sizeof(TimePoint) == sizeof(int64_t), "TimePoint should be 64 bits");
+inline TimePoint now() {
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+             std::chrono::steady_clock::now().time_since_epoch())
+      .count();
+}
+
+inline std::vector<std::string_view> split(std::string_view s, std::string_view delimiter) {
+    std::vector<std::string_view> res;
+
+    if (s.empty())
+        return res;
+
+    size_t begin = 0;
+    for (;;)
+    {
+        const size_t end = s.find(delimiter, begin);
+        if (end == std::string::npos)
+            break;
+
+        res.emplace_back(s.substr(begin, end - begin));
+        begin = end + delimiter.size();
+    }
+
+    res.emplace_back(s.substr(begin));
+
+    return res;
+}
+
+void remove_whitespace(std::string& s);
+bool is_whitespace(std::string_view s);
+
+enum SyncCout {
+    IO_LOCK,
+    IO_UNLOCK
+};
+std::ostream& operator<<(std::ostream&, SyncCout);
+
+#define sync_cout std::cout << IO_LOCK
+#define sync_endl std::endl << IO_UNLOCK
+
+void sync_cout_start();
+void sync_cout_end();
+
+// True if and only if the binary is compiled on a little-endian machine
+static inline const std::uint16_t Le             = 1;
+static inline const bool          IsLittleEndian = *reinterpret_cast<const char*>(&Le) == 1;
+
+
+template<typename T, std::size_t MaxSize>
+class ValueList {
+
+   public:
+    std::size_t size() const { return size_; }
+    void        push_back(const T& value) { values_[size_++] = value; }
+    const T*    begin() const { return values_; }
+    const T*    end() const { return values_ + size_; }
+    const T&    operator[](int index) const { return values_[index]; }
+
+   private:
+    T           values_[MaxSize];
+    std::size_t size_ = 0;
+};
+
+
+template<typename T, std::size_t Size, std::size_t... Sizes>
+class MultiArray;
+
+namespace Detail {
+
+template<typename T, std::size_t Size, std::size_t... Sizes>
+struct MultiArrayHelper {
+    using ChildType = MultiArray<T, Sizes...>;
+};
+
+template<typename T, std::size_t Size>
+struct MultiArrayHelper<T, Size> {
+    using ChildType = T;
+};
+
+template<typename To, typename From>
+constexpr bool is_strictly_assignable_v =
+  std::is_assignable_v<To&, From> && (std::is_same_v<To, From> || !std::is_convertible_v<From, To>);
+
+}
+
+// MultiArray is a generic N-dimensional array.
+// The template parameters (Size and Sizes) encode the dimensions of the array.
+template<typename T, std::size_t Size, std::size_t... Sizes>
+class MultiArray {
+    using ChildType = typename Detail::MultiArrayHelper<T, Size, Sizes...>::ChildType;
+    using ArrayType = std::array<ChildType, Size>;
+    ArrayType data_;
+
+   public:
+    using value_type             = typename ArrayType::value_type;
+    using size_type              = typename ArrayType::size_type;
+    using difference_type        = typename ArrayType::difference_type;
+    using reference              = typename ArrayType::reference;
+    using const_reference        = typename ArrayType::const_reference;
+    using pointer                = typename ArrayType::pointer;
+    using const_pointer          = typename ArrayType::const_pointer;
+    using iterator               = typename ArrayType::iterator;
+    using const_iterator         = typename ArrayType::const_iterator;
+    using reverse_iterator       = typename ArrayType::reverse_iterator;
+    using const_reverse_iterator = typename ArrayType::const_reverse_iterator;
+
+    constexpr auto&       at(size_type index) noexcept { return data_.at(index); }
+    constexpr const auto& at(size_type index) const noexcept { return data_.at(index); }
+
+    constexpr auto&       operator[](size_type index) noexcept { return data_[index]; }
+    constexpr const auto& operator[](size_type index) const noexcept { return data_[index]; }
+
+    constexpr auto&       front() noexcept { return data_.front(); }
+    constexpr const auto& front() const noexcept { return data_.front(); }
+    constexpr auto&       back() noexcept { return data_.back(); }
+    constexpr const auto& back() const noexcept { return data_.back(); }
+
+    auto*       data() { return data_.data(); }
+    const auto* data() const { return data_.data(); }
+
+    constexpr auto begin() noexcept { return data_.begin(); }
+    constexpr auto end() noexcept { return data_.end(); }
+    constexpr auto begin() const noexcept { return data_.begin(); }
+    constexpr auto end() const noexcept { return data_.end(); }
+    constexpr auto cbegin() const noexcept { return data_.cbegin(); }
+    constexpr auto cend() const noexcept { return data_.cend(); }
+
+    constexpr auto rbegin() noexcept { return data_.rbegin(); }
+    constexpr auto rend() noexcept { return data_.rend(); }
+    constexpr auto rbegin() const noexcept { return data_.rbegin(); }
+    constexpr auto rend() const noexcept { return data_.rend(); }
+    constexpr auto crbegin() const noexcept { return data_.crbegin(); }
+    constexpr auto crend() const noexcept { return data_.crend(); }
+
+    constexpr bool      empty() const noexcept { return data_.empty(); }
+    constexpr size_type size() const noexcept { return data_.size(); }
+    constexpr size_type max_size() const noexcept { return data_.max_size(); }
+
+    template<typename U>
+    void fill(const U& v) {
+        static_assert(Detail::is_strictly_assignable_v<T, U>,
+                      "Cannot assign fill value to entry type");
+        for (auto& ele : data_)
+        {
+            if constexpr (sizeof...(Sizes) == 0)
+                ele = v;
+            else
+                ele.fill(v);
+        }
+    }
+
+    constexpr void swap(MultiArray<T, Size, Sizes...>& other) noexcept { data_.swap(other.data_); }
+};
+
+
+// xorshift64star Pseudo-Random Number Generator
+// This class is based on original code written and dedicated
+// to the public domain by Sebastiano Vigna (2014).
+// It has the following characteristics:
+//
+//  -  Outputs 64-bit numbers
+//  -  Passes Dieharder and SmallCrush test batteries
+//  -  Does not require warm-up, no zeroland to escape
+//  -  Internal state is a single 64-bit integer
+//  -  Period is 2^64 - 1
+//  -  Speed: 1.60 ns/call (Core i7 @3.40GHz)
+//
+// For further analysis see
+//   <http://vigna.di.unimi.it/ftp/papers/xorshift.pdf>
+
+class PRNG {
+
+    uint64_t s;
+
+    uint64_t rand64() {
+
+        s ^= s >> 12, s ^= s << 25, s ^= s >> 27;
+        return s * 2685821657736338717LL;
+    }
+
+   public:
+    PRNG(uint64_t seed) :
+        s(seed) {
+        assert(seed);
+    }
+
+    template<typename T>
+    T rand() {
+        return T(rand64());
+    }
+
+    // Special generator used to fast init magic numbers.
+    // Output values only have 1/8th of their bits set on average.
+    template<typename T>
+    T sparse_rand() {
+        return T(rand64() & rand64() & rand64());
+    }
+};
+
+inline uint64_t mul_hi64(uint64_t a, uint64_t b) {
+#if defined(__GNUC__) && defined(IS_64BIT)
+    __extension__ using uint128 = unsigned __int128;
+    return (uint128(a) * uint128(b)) >> 64;
+#else
+    uint64_t aL = uint32_t(a), aH = a >> 32;
+    uint64_t bL = uint32_t(b), bH = b >> 32;
+    uint64_t c1 = (aL * bL) >> 32;
+    uint64_t c2 = aH * bL + c1;
+    uint64_t c3 = aL * bH + uint32_t(c2);
+    return aH * bH + (c2 >> 32) + (c3 >> 32);
+#endif
+}
+
+
+struct CommandLine {
+   public:
+    CommandLine(int _argc, char** _argv) :
+        argc(_argc),
+        argv(_argv) {}
+
+    static std::string get_binary_directory(std::string argv0);
+    static std::string get_working_directory();
+
+    int    argc;
+    char** argv;
+};
+
+namespace Utility {
+
+template<typename T, typename Predicate>
+void move_to_front(std::vector<T>& vec, Predicate pred) {
+    auto it = std::find_if(vec.begin(), vec.end(), pred);
+
+    if (it != vec.end())
+    {
+        std::rotate(vec.begin(), it, it + 1);
+    }
+}
+}
+
+}  // namespace Stockfish
+
+#endif  // #ifndef MISC_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\movegen.cpp
+Lines: 257, Characters: 8,293
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "movegen.h"
+
+#include <cassert>
+#include <initializer_list>
+
+#include "bitboard.h"
+#include "position.h"
+
+namespace Stockfish {
+
+namespace {
+
+template<GenType Type, Direction D, bool Enemy>
+ExtMove* make_promotions(ExtMove* moveList, [[maybe_unused]] Square to) {
+
+    constexpr bool all = Type == EVASIONS || Type == NON_EVASIONS;
+
+    if constexpr (Type == CAPTURES || all)
+        *moveList++ = Move::make<PROMOTION>(to - D, to, QUEEN);
+
+    if constexpr ((Type == CAPTURES && Enemy) || (Type == QUIETS && !Enemy) || all)
+    {
+        *moveList++ = Move::make<PROMOTION>(to - D, to, ROOK);
+        *moveList++ = Move::make<PROMOTION>(to - D, to, BISHOP);
+        *moveList++ = Move::make<PROMOTION>(to - D, to, KNIGHT);
+    }
+
+    return moveList;
+}
+
+
+template<Color Us, GenType Type>
+ExtMove* generate_pawn_moves(const Position& pos, ExtMove* moveList, Bitboard target) {
+
+    constexpr Color     Them     = ~Us;
+    constexpr Bitboard  TRank7BB = (Us == WHITE ? Rank7BB : Rank2BB);
+    constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
+    constexpr Direction Up       = pawn_push(Us);
+    constexpr Direction UpRight  = (Us == WHITE ? NORTH_EAST : SOUTH_WEST);
+    constexpr Direction UpLeft   = (Us == WHITE ? NORTH_WEST : SOUTH_EAST);
+
+    const Bitboard emptySquares = ~pos.pieces();
+    const Bitboard enemies      = Type == EVASIONS ? pos.checkers() : pos.pieces(Them);
+
+    Bitboard pawnsOn7    = pos.pieces(Us, PAWN) & TRank7BB;
+    Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & ~TRank7BB;
+
+    // Single and double pawn pushes, no promotions
+    if constexpr (Type != CAPTURES)
+    {
+        Bitboard b1 = shift<Up>(pawnsNotOn7) & emptySquares;
+        Bitboard b2 = shift<Up>(b1 & TRank3BB) & emptySquares;
+
+        if constexpr (Type == EVASIONS)  // Consider only blocking squares
+        {
+            b1 &= target;
+            b2 &= target;
+        }
+
+        while (b1)
+        {
+            Square to   = pop_lsb(b1);
+            *moveList++ = Move(to - Up, to);
+        }
+
+        while (b2)
+        {
+            Square to   = pop_lsb(b2);
+            *moveList++ = Move(to - Up - Up, to);
+        }
+    }
+
+    // Promotions and underpromotions
+    if (pawnsOn7)
+    {
+        Bitboard b1 = shift<UpRight>(pawnsOn7) & enemies;
+        Bitboard b2 = shift<UpLeft>(pawnsOn7) & enemies;
+        Bitboard b3 = shift<Up>(pawnsOn7) & emptySquares;
+
+        if constexpr (Type == EVASIONS)
+            b3 &= target;
+
+        while (b1)
+            moveList = make_promotions<Type, UpRight, true>(moveList, pop_lsb(b1));
+
+        while (b2)
+            moveList = make_promotions<Type, UpLeft, true>(moveList, pop_lsb(b2));
+
+        while (b3)
+            moveList = make_promotions<Type, Up, false>(moveList, pop_lsb(b3));
+    }
+
+    // Standard and en passant captures
+    if constexpr (Type == CAPTURES || Type == EVASIONS || Type == NON_EVASIONS)
+    {
+        Bitboard b1 = shift<UpRight>(pawnsNotOn7) & enemies;
+        Bitboard b2 = shift<UpLeft>(pawnsNotOn7) & enemies;
+
+        while (b1)
+        {
+            Square to   = pop_lsb(b1);
+            *moveList++ = Move(to - UpRight, to);
+        }
+
+        while (b2)
+        {
+            Square to   = pop_lsb(b2);
+            *moveList++ = Move(to - UpLeft, to);
+        }
+
+        if (pos.ep_square() != SQ_NONE)
+        {
+            assert(rank_of(pos.ep_square()) == relative_rank(Us, RANK_6));
+
+            // An en passant capture cannot resolve a discovered check
+            if (Type == EVASIONS && (target & (pos.ep_square() + Up)))
+                return moveList;
+
+            b1 = pawnsNotOn7 & pawn_attacks_bb(Them, pos.ep_square());
+
+            assert(b1);
+
+            while (b1)
+                *moveList++ = Move::make<EN_PASSANT>(pop_lsb(b1), pos.ep_square());
+        }
+    }
+
+    return moveList;
+}
+
+
+template<Color Us, PieceType Pt>
+ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target) {
+
+    static_assert(Pt != KING && Pt != PAWN, "Unsupported piece type in generate_moves()");
+
+    Bitboard bb = pos.pieces(Us, Pt);
+
+    while (bb)
+    {
+        Square   from = pop_lsb(bb);
+        Bitboard b    = attacks_bb<Pt>(from, pos.pieces()) & target;
+
+        while (b)
+            *moveList++ = Move(from, pop_lsb(b));
+    }
+
+    return moveList;
+}
+
+
+template<Color Us, GenType Type>
+ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
+
+    static_assert(Type != LEGAL, "Unsupported type in generate_all()");
+
+    const Square ksq = pos.square<KING>(Us);
+    Bitboard     target;
+
+    // Skip generating non-king moves when in double check
+    if (Type != EVASIONS || !more_than_one(pos.checkers()))
+    {
+        target = Type == EVASIONS     ? between_bb(ksq, lsb(pos.checkers()))
+               : Type == NON_EVASIONS ? ~pos.pieces(Us)
+               : Type == CAPTURES     ? pos.pieces(~Us)
+                                      : ~pos.pieces();  // QUIETS
+
+        moveList = generate_pawn_moves<Us, Type>(pos, moveList, target);
+        moveList = generate_moves<Us, KNIGHT>(pos, moveList, target);
+        moveList = generate_moves<Us, BISHOP>(pos, moveList, target);
+        moveList = generate_moves<Us, ROOK>(pos, moveList, target);
+        moveList = generate_moves<Us, QUEEN>(pos, moveList, target);
+    }
+
+    Bitboard b = attacks_bb<KING>(ksq) & (Type == EVASIONS ? ~pos.pieces(Us) : target);
+
+    while (b)
+        *moveList++ = Move(ksq, pop_lsb(b));
+
+    if ((Type == QUIETS || Type == NON_EVASIONS) && pos.can_castle(Us & ANY_CASTLING))
+        for (CastlingRights cr : {Us & KING_SIDE, Us & QUEEN_SIDE})
+            if (!pos.castling_impeded(cr) && pos.can_castle(cr))
+                *moveList++ = Move::make<CASTLING>(ksq, pos.castling_rook_square(cr));
+
+    return moveList;
+}
+
+}  // namespace
+
+
+// <CAPTURES>     Generates all pseudo-legal captures plus queen promotions
+// <QUIETS>       Generates all pseudo-legal non-captures and underpromotions
+// <EVASIONS>     Generates all pseudo-legal check evasions
+// <NON_EVASIONS> Generates all pseudo-legal captures and non-captures
+//
+// Returns a pointer to the end of the move list.
+template<GenType Type>
+ExtMove* generate(const Position& pos, ExtMove* moveList) {
+
+    static_assert(Type != LEGAL, "Unsupported type in generate()");
+    assert((Type == EVASIONS) == bool(pos.checkers()));
+
+    Color us = pos.side_to_move();
+
+    return us == WHITE ? generate_all<WHITE, Type>(pos, moveList)
+                       : generate_all<BLACK, Type>(pos, moveList);
+}
+
+// Explicit template instantiations
+template ExtMove* generate<CAPTURES>(const Position&, ExtMove*);
+template ExtMove* generate<QUIETS>(const Position&, ExtMove*);
+template ExtMove* generate<EVASIONS>(const Position&, ExtMove*);
+template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
+
+
+// generate<LEGAL> generates all the legal moves in the given position
+
+template<>
+ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
+
+    Color    us     = pos.side_to_move();
+    Bitboard pinned = pos.blockers_for_king(us) & pos.pieces(us);
+    Square   ksq    = pos.square<KING>(us);
+    ExtMove* cur    = moveList;
+
+    moveList =
+      pos.checkers() ? generate<EVASIONS>(pos, moveList) : generate<NON_EVASIONS>(pos, moveList);
+    while (cur != moveList)
+        if (((pinned & cur->from_sq()) || cur->from_sq() == ksq || cur->type_of() == EN_PASSANT)
+            && !pos.legal(*cur))
+            *cur = *(--moveList);
+        else
+            ++cur;
+
+    return moveList;
+}
+
+}  // namespace Stockfish
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\movegen.h
+Lines: 74, Characters: 2,152
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef MOVEGEN_H_INCLUDED
+#define MOVEGEN_H_INCLUDED
+
+#include <algorithm>  // IWYU pragma: keep
+#include <cstddef>
+
+#include "types.h"
+
+namespace Stockfish {
+
+class Position;
+
+enum GenType {
+    CAPTURES,
+    QUIETS,
+    EVASIONS,
+    NON_EVASIONS,
+    LEGAL
+};
+
+struct ExtMove: public Move {
+    int value;
+
+    void operator=(Move m) { data = m.raw(); }
+
+    // Inhibit unwanted implicit conversions to Move
+    // with an ambiguity that yields to a compile error.
+    operator float() const = delete;
+};
+
+inline bool operator<(const ExtMove& f, const ExtMove& s) { return f.value < s.value; }
+
+template<GenType>
+ExtMove* generate(const Position& pos, ExtMove* moveList);
+
+// The MoveList struct wraps the generate() function and returns a convenient
+// list of moves. Using MoveList is sometimes preferable to directly calling
+// the lower level generate() function.
+template<GenType T>
+struct MoveList {
+
+    explicit MoveList(const Position& pos) :
+        last(generate<T>(pos, moveList)) {}
+    const ExtMove* begin() const { return moveList; }
+    const ExtMove* end() const { return last; }
+    size_t         size() const { return last - moveList; }
+    bool           contains(Move move) const { return std::find(begin(), end(), move) != end(); }
+
+   private:
+    ExtMove moveList[MAX_MOVES], *last;
+};
+
+}  // namespace Stockfish
+
+#endif  // #ifndef MOVEGEN_H_INCLUDED
+
+

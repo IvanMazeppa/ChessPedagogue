@@ -1,0 +1,1390 @@
+# CHUNK 38 of 64
+# Files: 6, Characters: 48,624
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_accumulator.h
+Lines: 184, Characters: 6,705
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Class for difference calculation of NNUE evaluation function
+
+#ifndef NNUE_ACCUMULATOR_H_INCLUDED
+#define NNUE_ACCUMULATOR_H_INCLUDED
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
+#include "../types.h"
+#include "nnue_architecture.h"
+#include "nnue_common.h"
+
+namespace Stockfish {
+class Position;
+}
+
+namespace Stockfish::Eval::NNUE {
+
+using BiasType       = std::int16_t;
+using PSQTWeightType = std::int32_t;
+using IndexType      = std::uint32_t;
+
+struct Networks;
+
+template<IndexType Size>
+struct alignas(CacheLineSize) Accumulator;
+
+struct AccumulatorState;
+
+template<IndexType                                 TransformedFeatureDimensions,
+         Accumulator<TransformedFeatureDimensions> AccumulatorState::*accPtr>
+class FeatureTransformer;
+
+// Class that holds the result of affine transformation of input features
+template<IndexType Size>
+struct alignas(CacheLineSize) Accumulator {
+    std::int16_t               accumulation[COLOR_NB][Size];
+    std::int32_t               psqtAccumulation[COLOR_NB][PSQTBuckets];
+    std::array<bool, COLOR_NB> computed;
+};
+
+
+// AccumulatorCaches struct provides per-thread accumulator caches, where each
+// cache contains multiple entries for each of the possible king squares.
+// When the accumulator needs to be refreshed, the cached entry is used to more
+// efficiently update the accumulator, instead of rebuilding it from scratch.
+// This idea, was first described by Luecx (author of Koivisto) and
+// is commonly referred to as "Finny Tables".
+struct AccumulatorCaches {
+
+    template<typename Networks>
+    AccumulatorCaches(const Networks& networks) {
+        clear(networks);
+    }
+
+    template<IndexType Size>
+    struct alignas(CacheLineSize) Cache {
+
+        struct alignas(CacheLineSize) Entry {
+            BiasType       accumulation[Size];
+            PSQTWeightType psqtAccumulation[PSQTBuckets];
+            Bitboard       byColorBB[COLOR_NB];
+            Bitboard       byTypeBB[PIECE_TYPE_NB];
+
+            // To initialize a refresh entry, we set all its bitboards empty,
+            // so we put the biases in the accumulation, without any weights on top
+            void clear(const BiasType* biases) {
+
+                std::memcpy(accumulation, biases, sizeof(accumulation));
+                std::memset((uint8_t*) this + offsetof(Entry, psqtAccumulation), 0,
+                            sizeof(Entry) - offsetof(Entry, psqtAccumulation));
+            }
+        };
+
+        template<typename Network>
+        void clear(const Network& network) {
+            for (auto& entries1D : entries)
+                for (auto& entry : entries1D)
+                    entry.clear(network.featureTransformer->biases);
+        }
+
+        std::array<Entry, COLOR_NB>& operator[](Square sq) { return entries[sq]; }
+
+        std::array<std::array<Entry, COLOR_NB>, SQUARE_NB> entries;
+    };
+
+    template<typename Networks>
+    void clear(const Networks& networks) {
+        big.clear(networks.big);
+        small.clear(networks.small);
+    }
+
+    Cache<TransformedFeatureDimensionsBig>   big;
+    Cache<TransformedFeatureDimensionsSmall> small;
+};
+
+
+struct AccumulatorState {
+    Accumulator<TransformedFeatureDimensionsBig>   accumulatorBig;
+    Accumulator<TransformedFeatureDimensionsSmall> accumulatorSmall;
+    DirtyPiece                                     dirtyPiece;
+
+    void reset(const DirtyPiece& dp) noexcept;
+};
+
+
+class AccumulatorStack {
+   public:
+    AccumulatorStack() :
+        m_accumulators(MAX_PLY + 1),
+        m_current_idx{} {}
+
+    [[nodiscard]] const AccumulatorState& latest() const noexcept;
+
+    void
+    reset(const Position& rootPos, const Networks& networks, AccumulatorCaches& caches) noexcept;
+    void push(const DirtyPiece& dirtyPiece) noexcept;
+    void pop() noexcept;
+
+    template<IndexType Dimensions, Accumulator<Dimensions> AccumulatorState::*accPtr>
+    void evaluate(const Position&                               pos,
+                  const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+                  AccumulatorCaches::Cache<Dimensions>&         cache) noexcept;
+
+   private:
+    [[nodiscard]] AccumulatorState& mut_latest() noexcept;
+
+    template<Color                   Perspective,
+             IndexType               Dimensions,
+             Accumulator<Dimensions> AccumulatorState::*accPtr>
+    void evaluate_side(const Position&                               pos,
+                       const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+                       AccumulatorCaches::Cache<Dimensions>&         cache) noexcept;
+
+    template<Color                   Perspective,
+             IndexType               Dimensions,
+             Accumulator<Dimensions> AccumulatorState::*accPtr>
+    [[nodiscard]] std::size_t find_last_usable_accumulator() const noexcept;
+
+    template<Color                   Perspective,
+             IndexType               Dimensions,
+             Accumulator<Dimensions> AccumulatorState::*accPtr>
+    void
+    forward_update_incremental(const Position&                               pos,
+                               const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+                               const std::size_t                             begin) noexcept;
+
+    template<Color                   Perspective,
+             IndexType               Dimensions,
+             Accumulator<Dimensions> AccumulatorState::*accPtr>
+    void
+    backward_update_incremental(const Position&                               pos,
+                                const FeatureTransformer<Dimensions, accPtr>& featureTransformer,
+                                const std::size_t                             end) noexcept;
+
+    std::vector<AccumulatorState> m_accumulators;
+    std::size_t                   m_current_idx;
+};
+
+}  // namespace Stockfish::Eval::NNUE
+
+#endif  // NNUE_ACCUMULATOR_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_architecture.h
+Lines: 138, Characters: 5,913
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Input features and network structure used in NNUE evaluation function
+
+#ifndef NNUE_ARCHITECTURE_H_INCLUDED
+#define NNUE_ARCHITECTURE_H_INCLUDED
+
+#include <cstdint>
+#include <cstring>
+#include <iosfwd>
+
+#include "features/half_ka_v2_hm.h"
+#include "layers/affine_transform.h"
+#include "layers/affine_transform_sparse_input.h"
+#include "layers/clipped_relu.h"
+#include "layers/sqr_clipped_relu.h"
+#include "nnue_common.h"
+
+namespace Stockfish::Eval::NNUE {
+
+// Input features used in evaluation function
+using FeatureSet = Features::HalfKAv2_hm;
+
+// Number of input feature dimensions after conversion
+constexpr IndexType TransformedFeatureDimensionsBig = 3072;
+constexpr int       L2Big                           = 15;
+constexpr int       L3Big                           = 32;
+
+constexpr IndexType TransformedFeatureDimensionsSmall = 128;
+constexpr int       L2Small                           = 15;
+constexpr int       L3Small                           = 32;
+
+constexpr IndexType PSQTBuckets = 8;
+constexpr IndexType LayerStacks = 8;
+
+template<IndexType L1, int L2, int L3>
+struct NetworkArchitecture {
+    static constexpr IndexType TransformedFeatureDimensions = L1;
+    static constexpr int       FC_0_OUTPUTS                 = L2;
+    static constexpr int       FC_1_OUTPUTS                 = L3;
+
+    Layers::AffineTransformSparseInput<TransformedFeatureDimensions, FC_0_OUTPUTS + 1> fc_0;
+    Layers::SqrClippedReLU<FC_0_OUTPUTS + 1>                                           ac_sqr_0;
+    Layers::ClippedReLU<FC_0_OUTPUTS + 1>                                              ac_0;
+    Layers::AffineTransform<FC_0_OUTPUTS * 2, FC_1_OUTPUTS>                            fc_1;
+    Layers::ClippedReLU<FC_1_OUTPUTS>                                                  ac_1;
+    Layers::AffineTransform<FC_1_OUTPUTS, 1>                                           fc_2;
+
+    // Hash value embedded in the evaluation file
+    static constexpr std::uint32_t get_hash_value() {
+        // input slice hash
+        std::uint32_t hashValue = 0xEC42E90Du;
+        hashValue ^= TransformedFeatureDimensions * 2;
+
+        hashValue = decltype(fc_0)::get_hash_value(hashValue);
+        hashValue = decltype(ac_0)::get_hash_value(hashValue);
+        hashValue = decltype(fc_1)::get_hash_value(hashValue);
+        hashValue = decltype(ac_1)::get_hash_value(hashValue);
+        hashValue = decltype(fc_2)::get_hash_value(hashValue);
+
+        return hashValue;
+    }
+
+    // Read network parameters
+    bool read_parameters(std::istream& stream) {
+        return fc_0.read_parameters(stream) && ac_0.read_parameters(stream)
+            && fc_1.read_parameters(stream) && ac_1.read_parameters(stream)
+            && fc_2.read_parameters(stream);
+    }
+
+    // Write network parameters
+    bool write_parameters(std::ostream& stream) const {
+        return fc_0.write_parameters(stream) && ac_0.write_parameters(stream)
+            && fc_1.write_parameters(stream) && ac_1.write_parameters(stream)
+            && fc_2.write_parameters(stream);
+    }
+
+    std::int32_t propagate(const TransformedFeatureType* transformedFeatures) {
+        struct alignas(CacheLineSize) Buffer {
+            alignas(CacheLineSize) typename decltype(fc_0)::OutputBuffer fc_0_out;
+            alignas(CacheLineSize) typename decltype(ac_sqr_0)::OutputType
+              ac_sqr_0_out[ceil_to_multiple<IndexType>(FC_0_OUTPUTS * 2, 32)];
+            alignas(CacheLineSize) typename decltype(ac_0)::OutputBuffer ac_0_out;
+            alignas(CacheLineSize) typename decltype(fc_1)::OutputBuffer fc_1_out;
+            alignas(CacheLineSize) typename decltype(ac_1)::OutputBuffer ac_1_out;
+            alignas(CacheLineSize) typename decltype(fc_2)::OutputBuffer fc_2_out;
+
+            Buffer() { std::memset(this, 0, sizeof(*this)); }
+        };
+
+#if defined(__clang__) && (__APPLE__)
+        // workaround for a bug reported with xcode 12
+        static thread_local auto tlsBuffer = std::make_unique<Buffer>();
+        // Access TLS only once, cache result.
+        Buffer& buffer = *tlsBuffer;
+#else
+        alignas(CacheLineSize) static thread_local Buffer buffer;
+#endif
+
+        fc_0.propagate(transformedFeatures, buffer.fc_0_out);
+        ac_sqr_0.propagate(buffer.fc_0_out, buffer.ac_sqr_0_out);
+        ac_0.propagate(buffer.fc_0_out, buffer.ac_0_out);
+        std::memcpy(buffer.ac_sqr_0_out + FC_0_OUTPUTS, buffer.ac_0_out,
+                    FC_0_OUTPUTS * sizeof(typename decltype(ac_0)::OutputType));
+        fc_1.propagate(buffer.ac_sqr_0_out, buffer.fc_1_out);
+        ac_1.propagate(buffer.fc_1_out, buffer.ac_1_out);
+        fc_2.propagate(buffer.ac_1_out, buffer.fc_2_out);
+
+        // buffer.fc_0_out[FC_0_OUTPUTS] is such that 1.0 is equal to 127*(1<<WeightScaleBits) in
+        // quantized form, but we want 1.0 to be equal to 600*OutputScale
+        std::int32_t fwdOut =
+          (buffer.fc_0_out[FC_0_OUTPUTS]) * (600 * OutputScale) / (127 * (1 << WeightScaleBits));
+        std::int32_t outputValue = buffer.fc_2_out[0] + fwdOut;
+
+        return outputValue;
+    }
+};
+
+}  // namespace Stockfish::Eval::NNUE
+
+#endif  // #ifndef NNUE_ARCHITECTURE_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_common.h
+Lines: 290, Characters: 8,644
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Constants used in NNUE evaluation function
+
+#ifndef NNUE_COMMON_H_INCLUDED
+#define NNUE_COMMON_H_INCLUDED
+
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+#include <type_traits>
+
+#include "../misc.h"
+
+#if defined(USE_AVX2)
+    #include <immintrin.h>
+
+#elif defined(USE_SSE41)
+    #include <smmintrin.h>
+
+#elif defined(USE_SSSE3)
+    #include <tmmintrin.h>
+
+#elif defined(USE_SSE2)
+    #include <emmintrin.h>
+
+#elif defined(USE_NEON)
+    #include <arm_neon.h>
+#endif
+
+namespace Stockfish::Eval::NNUE {
+
+// Version of the evaluation file
+constexpr std::uint32_t Version = 0x7AF32F20u;
+
+// Constant used in evaluation value calculation
+constexpr int OutputScale     = 16;
+constexpr int WeightScaleBits = 6;
+
+// Size of cache line (in bytes)
+constexpr std::size_t CacheLineSize = 64;
+
+constexpr const char        Leb128MagicString[]   = "COMPRESSED_LEB128";
+constexpr const std::size_t Leb128MagicStringSize = sizeof(Leb128MagicString) - 1;
+
+// SIMD width (in bytes)
+#if defined(USE_AVX2)
+constexpr std::size_t SimdWidth = 32;
+
+#elif defined(USE_SSE2)
+constexpr std::size_t SimdWidth = 16;
+
+#elif defined(USE_NEON)
+constexpr std::size_t SimdWidth = 16;
+#endif
+
+constexpr std::size_t MaxSimdWidth = 32;
+
+// Type of input feature after conversion
+using TransformedFeatureType = std::uint8_t;
+using IndexType              = std::uint32_t;
+
+// Round n up to be a multiple of base
+template<typename IntType>
+constexpr IntType ceil_to_multiple(IntType n, IntType base) {
+    return (n + base - 1) / base * base;
+}
+
+
+// Utility to read an integer (signed or unsigned, any size)
+// from a stream in little-endian order. We swap the byte order after the read if
+// necessary to return a result with the byte ordering of the compiling machine.
+template<typename IntType>
+inline IntType read_little_endian(std::istream& stream) {
+    IntType result;
+
+    if (IsLittleEndian)
+        stream.read(reinterpret_cast<char*>(&result), sizeof(IntType));
+    else
+    {
+        std::uint8_t                  u[sizeof(IntType)];
+        std::make_unsigned_t<IntType> v = 0;
+
+        stream.read(reinterpret_cast<char*>(u), sizeof(IntType));
+        for (std::size_t i = 0; i < sizeof(IntType); ++i)
+            v = (v << 8) | u[sizeof(IntType) - i - 1];
+
+        std::memcpy(&result, &v, sizeof(IntType));
+    }
+
+    return result;
+}
+
+
+// Utility to write an integer (signed or unsigned, any size)
+// to a stream in little-endian order. We swap the byte order before the write if
+// necessary to always write in little-endian order, independently of the byte
+// ordering of the compiling machine.
+template<typename IntType>
+inline void write_little_endian(std::ostream& stream, IntType value) {
+
+    if (IsLittleEndian)
+        stream.write(reinterpret_cast<const char*>(&value), sizeof(IntType));
+    else
+    {
+        std::uint8_t                  u[sizeof(IntType)];
+        std::make_unsigned_t<IntType> v = value;
+
+        std::size_t i = 0;
+        // if constexpr to silence the warning about shift by 8
+        if constexpr (sizeof(IntType) > 1)
+        {
+            for (; i + 1 < sizeof(IntType); ++i)
+            {
+                u[i] = std::uint8_t(v);
+                v >>= 8;
+            }
+        }
+        u[i] = std::uint8_t(v);
+
+        stream.write(reinterpret_cast<char*>(u), sizeof(IntType));
+    }
+}
+
+
+// Read integers in bulk from a little-endian stream.
+// This reads N integers from stream s and puts them in array out.
+template<typename IntType>
+inline void read_little_endian(std::istream& stream, IntType* out, std::size_t count) {
+    if (IsLittleEndian)
+        stream.read(reinterpret_cast<char*>(out), sizeof(IntType) * count);
+    else
+        for (std::size_t i = 0; i < count; ++i)
+            out[i] = read_little_endian<IntType>(stream);
+}
+
+
+// Write integers in bulk to a little-endian stream.
+// This takes N integers from array values and writes them on stream s.
+template<typename IntType>
+inline void write_little_endian(std::ostream& stream, const IntType* values, std::size_t count) {
+    if (IsLittleEndian)
+        stream.write(reinterpret_cast<const char*>(values), sizeof(IntType) * count);
+    else
+        for (std::size_t i = 0; i < count; ++i)
+            write_little_endian<IntType>(stream, values[i]);
+}
+
+
+// Read N signed integers from the stream s, putting them in the array out.
+// The stream is assumed to be compressed using the signed LEB128 format.
+// See https://en.wikipedia.org/wiki/LEB128 for a description of the compression scheme.
+template<typename IntType>
+inline void read_leb_128(std::istream& stream, IntType* out, std::size_t count) {
+
+    // Check the presence of our LEB128 magic string
+    char leb128MagicString[Leb128MagicStringSize];
+    stream.read(leb128MagicString, Leb128MagicStringSize);
+    assert(strncmp(Leb128MagicString, leb128MagicString, Leb128MagicStringSize) == 0);
+
+    static_assert(std::is_signed_v<IntType>, "Not implemented for unsigned types");
+
+    const std::uint32_t BUF_SIZE = 4096;
+    std::uint8_t        buf[BUF_SIZE];
+
+    auto bytes_left = read_little_endian<std::uint32_t>(stream);
+
+    std::uint32_t buf_pos = BUF_SIZE;
+    for (std::size_t i = 0; i < count; ++i)
+    {
+        IntType result = 0;
+        size_t  shift  = 0;
+        do
+        {
+            if (buf_pos == BUF_SIZE)
+            {
+                stream.read(reinterpret_cast<char*>(buf), std::min(bytes_left, BUF_SIZE));
+                buf_pos = 0;
+            }
+
+            std::uint8_t byte = buf[buf_pos++];
+            --bytes_left;
+            result |= (byte & 0x7f) << shift;
+            shift += 7;
+
+            if ((byte & 0x80) == 0)
+            {
+                out[i] = (sizeof(IntType) * 8 <= shift || (byte & 0x40) == 0)
+                         ? result
+                         : result | ~((1 << shift) - 1);
+                break;
+            }
+        } while (shift < sizeof(IntType) * 8);
+    }
+
+    assert(bytes_left == 0);
+}
+
+
+// Write signed integers to a stream with LEB128 compression.
+// This takes N integers from array values, compresses them with
+// the LEB128 algorithm and writes the result on the stream s.
+// See https://en.wikipedia.org/wiki/LEB128 for a description of the compression scheme.
+template<typename IntType>
+inline void write_leb_128(std::ostream& stream, const IntType* values, std::size_t count) {
+
+    // Write our LEB128 magic string
+    stream.write(Leb128MagicString, Leb128MagicStringSize);
+
+    static_assert(std::is_signed_v<IntType>, "Not implemented for unsigned types");
+
+    std::uint32_t byte_count = 0;
+    for (std::size_t i = 0; i < count; ++i)
+    {
+        IntType      value = values[i];
+        std::uint8_t byte;
+        do
+        {
+            byte = value & 0x7f;
+            value >>= 7;
+            ++byte_count;
+        } while ((byte & 0x40) == 0 ? value != 0 : value != -1);
+    }
+
+    write_little_endian(stream, byte_count);
+
+    const std::uint32_t BUF_SIZE = 4096;
+    std::uint8_t        buf[BUF_SIZE];
+    std::uint32_t       buf_pos = 0;
+
+    auto flush = [&]() {
+        if (buf_pos > 0)
+        {
+            stream.write(reinterpret_cast<char*>(buf), buf_pos);
+            buf_pos = 0;
+        }
+    };
+
+    auto write = [&](std::uint8_t byte) {
+        buf[buf_pos++] = byte;
+        if (buf_pos == BUF_SIZE)
+            flush();
+    };
+
+    for (std::size_t i = 0; i < count; ++i)
+    {
+        IntType value = values[i];
+        while (true)
+        {
+            std::uint8_t byte = value & 0x7f;
+            value >>= 7;
+            if ((byte & 0x40) == 0 ? value == 0 : value == -1)
+            {
+                write(byte);
+                break;
+            }
+            write(byte | 0x80);
+        }
+    }
+
+    flush();
+}
+
+enum IncUpdateDirection {
+    FORWARD,
+    BACKWARDS
+};
+
+}  // namespace Stockfish::Eval::NNUE
+
+#endif  // #ifndef NNUE_COMMON_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_feature_transformer.h
+Lines: 475, Characters: 19,342
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// A class that converts the input features of the NNUE evaluation function
+
+#ifndef NNUE_FEATURE_TRANSFORMER_H_INCLUDED
+#define NNUE_FEATURE_TRANSFORMER_H_INCLUDED
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <iosfwd>
+
+#include "../position.h"
+#include "../types.h"
+#include "nnue_accumulator.h"
+#include "nnue_architecture.h"
+#include "nnue_common.h"
+
+namespace Stockfish::Eval::NNUE {
+
+using BiasType       = std::int16_t;
+using WeightType     = std::int16_t;
+using PSQTWeightType = std::int32_t;
+
+// If vector instructions are enabled, we update and refresh the
+// accumulator tile by tile such that each tile fits in the CPU's
+// vector registers.
+#define VECTOR
+
+static_assert(PSQTBuckets % 8 == 0,
+              "Per feature PSQT values cannot be processed at granularity lower than 8 at a time.");
+
+#ifdef USE_AVX512
+using vec_t      = __m512i;
+using psqt_vec_t = __m256i;
+    #define vec_load(a) _mm512_load_si512(a)
+    #define vec_store(a, b) _mm512_store_si512(a, b)
+    #define vec_add_16(a, b) _mm512_add_epi16(a, b)
+    #define vec_sub_16(a, b) _mm512_sub_epi16(a, b)
+    #define vec_mulhi_16(a, b) _mm512_mulhi_epi16(a, b)
+    #define vec_zero() _mm512_setzero_epi32()
+    #define vec_set_16(a) _mm512_set1_epi16(a)
+    #define vec_max_16(a, b) _mm512_max_epi16(a, b)
+    #define vec_min_16(a, b) _mm512_min_epi16(a, b)
+    #define vec_slli_16(a, b) _mm512_slli_epi16(a, b)
+    // Inverse permuted at load time
+    #define vec_packus_16(a, b) _mm512_packus_epi16(a, b)
+    #define vec_load_psqt(a) _mm256_load_si256(a)
+    #define vec_store_psqt(a, b) _mm256_store_si256(a, b)
+    #define vec_add_psqt_32(a, b) _mm256_add_epi32(a, b)
+    #define vec_sub_psqt_32(a, b) _mm256_sub_epi32(a, b)
+    #define vec_zero_psqt() _mm256_setzero_si256()
+    #define NumRegistersSIMD 16
+    #define MaxChunkSize 64
+
+#elif USE_AVX2
+using vec_t      = __m256i;
+using psqt_vec_t = __m256i;
+    #define vec_load(a) _mm256_load_si256(a)
+    #define vec_store(a, b) _mm256_store_si256(a, b)
+    #define vec_add_16(a, b) _mm256_add_epi16(a, b)
+    #define vec_sub_16(a, b) _mm256_sub_epi16(a, b)
+    #define vec_mulhi_16(a, b) _mm256_mulhi_epi16(a, b)
+    #define vec_zero() _mm256_setzero_si256()
+    #define vec_set_16(a) _mm256_set1_epi16(a)
+    #define vec_max_16(a, b) _mm256_max_epi16(a, b)
+    #define vec_min_16(a, b) _mm256_min_epi16(a, b)
+    #define vec_slli_16(a, b) _mm256_slli_epi16(a, b)
+    // Inverse permuted at load time
+    #define vec_packus_16(a, b) _mm256_packus_epi16(a, b)
+    #define vec_load_psqt(a) _mm256_load_si256(a)
+    #define vec_store_psqt(a, b) _mm256_store_si256(a, b)
+    #define vec_add_psqt_32(a, b) _mm256_add_epi32(a, b)
+    #define vec_sub_psqt_32(a, b) _mm256_sub_epi32(a, b)
+    #define vec_zero_psqt() _mm256_setzero_si256()
+    #define NumRegistersSIMD 16
+    #define MaxChunkSize 32
+
+#elif USE_SSE2
+using vec_t      = __m128i;
+using psqt_vec_t = __m128i;
+    #define vec_load(a) (*(a))
+    #define vec_store(a, b) *(a) = (b)
+    #define vec_add_16(a, b) _mm_add_epi16(a, b)
+    #define vec_sub_16(a, b) _mm_sub_epi16(a, b)
+    #define vec_mulhi_16(a, b) _mm_mulhi_epi16(a, b)
+    #define vec_zero() _mm_setzero_si128()
+    #define vec_set_16(a) _mm_set1_epi16(a)
+    #define vec_max_16(a, b) _mm_max_epi16(a, b)
+    #define vec_min_16(a, b) _mm_min_epi16(a, b)
+    #define vec_slli_16(a, b) _mm_slli_epi16(a, b)
+    #define vec_packus_16(a, b) _mm_packus_epi16(a, b)
+    #define vec_load_psqt(a) (*(a))
+    #define vec_store_psqt(a, b) *(a) = (b)
+    #define vec_add_psqt_32(a, b) _mm_add_epi32(a, b)
+    #define vec_sub_psqt_32(a, b) _mm_sub_epi32(a, b)
+    #define vec_zero_psqt() _mm_setzero_si128()
+    #define NumRegistersSIMD (Is64Bit ? 16 : 8)
+    #define MaxChunkSize 16
+
+#elif USE_NEON
+using vec_t      = int16x8_t;
+using psqt_vec_t = int32x4_t;
+    #define vec_load(a) (*(a))
+    #define vec_store(a, b) *(a) = (b)
+    #define vec_add_16(a, b) vaddq_s16(a, b)
+    #define vec_sub_16(a, b) vsubq_s16(a, b)
+    #define vec_mulhi_16(a, b) vqdmulhq_s16(a, b)
+    #define vec_zero() \
+        vec_t { 0 }
+    #define vec_set_16(a) vdupq_n_s16(a)
+    #define vec_max_16(a, b) vmaxq_s16(a, b)
+    #define vec_min_16(a, b) vminq_s16(a, b)
+    #define vec_slli_16(a, b) vshlq_s16(a, vec_set_16(b))
+    #define vec_packus_16(a, b) reinterpret_cast<vec_t>(vcombine_u8(vqmovun_s16(a), vqmovun_s16(b)))
+    #define vec_load_psqt(a) (*(a))
+    #define vec_store_psqt(a, b) *(a) = (b)
+    #define vec_add_psqt_32(a, b) vaddq_s32(a, b)
+    #define vec_sub_psqt_32(a, b) vsubq_s32(a, b)
+    #define vec_zero_psqt() \
+        psqt_vec_t { 0 }
+    #define NumRegistersSIMD 16
+    #define MaxChunkSize 16
+
+#else
+    #undef VECTOR
+
+#endif
+
+// Returns the inverse of a permutation
+template<std::size_t Len>
+constexpr std::array<std::size_t, Len>
+invert_permutation(const std::array<std::size_t, Len>& order) {
+    std::array<std::size_t, Len> inverse{};
+    for (std::size_t i = 0; i < order.size(); i++)
+        inverse[order[i]] = i;
+    return inverse;
+}
+
+// Divide a byte region of size TotalSize to chunks of size
+// BlockSize, and permute the blocks by a given order
+template<std::size_t BlockSize, typename T, std::size_t N, std::size_t OrderSize>
+void permute(T (&data)[N], const std::array<std::size_t, OrderSize>& order) {
+    constexpr std::size_t TotalSize = N * sizeof(T);
+
+    static_assert(TotalSize % (BlockSize * OrderSize) == 0,
+                  "ChunkSize * OrderSize must perfectly divide TotalSize");
+
+    constexpr std::size_t ProcessChunkSize = BlockSize * OrderSize;
+
+    std::array<std::byte, ProcessChunkSize> buffer{};
+
+    std::byte* const bytes = reinterpret_cast<std::byte*>(data);
+
+    for (std::size_t i = 0; i < TotalSize; i += ProcessChunkSize)
+    {
+        std::byte* const values = &bytes[i];
+
+        for (std::size_t j = 0; j < OrderSize; j++)
+        {
+            auto* const buffer_chunk = &buffer[j * BlockSize];
+            auto* const value_chunk  = &values[order[j] * BlockSize];
+
+            std::copy(value_chunk, value_chunk + BlockSize, buffer_chunk);
+        }
+
+        std::copy(std::begin(buffer), std::end(buffer), values);
+    }
+}
+
+// Compute optimal SIMD register count for feature transformer accumulation.
+template<IndexType TransformedFeatureWidth, IndexType HalfDimensions>
+class SIMDTiling {
+#ifdef VECTOR
+    // We use __m* types as template arguments, which causes GCC to emit warnings
+    // about losing some attribute information. This is irrelevant to us as we
+    // only take their size, so the following pragma are harmless.
+    #if defined(__GNUC__)
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wignored-attributes"
+    #endif
+
+    template<typename SIMDRegisterType, typename LaneType, int NumLanes, int MaxRegisters>
+    static constexpr int BestRegisterCount() {
+        constexpr std::size_t RegisterSize = sizeof(SIMDRegisterType);
+        constexpr std::size_t LaneSize     = sizeof(LaneType);
+
+        static_assert(RegisterSize >= LaneSize);
+        static_assert(MaxRegisters <= NumRegistersSIMD);
+        static_assert(MaxRegisters > 0);
+        static_assert(NumRegistersSIMD > 0);
+        static_assert(RegisterSize % LaneSize == 0);
+        static_assert((NumLanes * LaneSize) % RegisterSize == 0);
+
+        const int ideal = (NumLanes * LaneSize) / RegisterSize;
+        if (ideal <= MaxRegisters)
+            return ideal;
+
+        // Look for the largest divisor of the ideal register count that is smaller than MaxRegisters
+        for (int divisor = MaxRegisters; divisor > 1; --divisor)
+            if (ideal % divisor == 0)
+                return divisor;
+
+        return 1;
+    }
+
+    #if defined(__GNUC__)
+        #pragma GCC diagnostic pop
+    #endif
+
+   public:
+    static constexpr int NumRegs =
+      BestRegisterCount<vec_t, WeightType, TransformedFeatureWidth, NumRegistersSIMD>();
+    static constexpr int NumPsqtRegs =
+      BestRegisterCount<psqt_vec_t, PSQTWeightType, PSQTBuckets, NumRegistersSIMD>();
+
+    static constexpr IndexType TileHeight     = NumRegs * sizeof(vec_t) / 2;
+    static constexpr IndexType PsqtTileHeight = NumPsqtRegs * sizeof(psqt_vec_t) / 4;
+
+    static_assert(HalfDimensions % TileHeight == 0, "TileHeight must divide HalfDimensions");
+    static_assert(PSQTBuckets % PsqtTileHeight == 0, "PsqtTileHeight must divide PSQTBuckets");
+#endif
+};
+
+
+// Input feature converter
+template<IndexType                                 TransformedFeatureDimensions,
+         Accumulator<TransformedFeatureDimensions> AccumulatorState::*accPtr>
+class FeatureTransformer {
+
+    // Number of output dimensions for one side
+    static constexpr IndexType HalfDimensions = TransformedFeatureDimensions;
+
+   public:
+    // Output type
+    using OutputType = TransformedFeatureType;
+
+    // Number of input/output dimensions
+    static constexpr IndexType InputDimensions  = FeatureSet::Dimensions;
+    static constexpr IndexType OutputDimensions = HalfDimensions;
+
+    // Size of forward propagation buffer
+    static constexpr std::size_t BufferSize = OutputDimensions * sizeof(OutputType);
+
+    // Store the order by which 128-bit blocks of a 1024-bit data must
+    // be permuted so that calling packus on adjacent vectors of 16-bit
+    // integers loaded from the data results in the pre-permutation order
+    static constexpr auto PackusEpi16Order = []() -> std::array<std::size_t, 8> {
+#if defined(USE_AVX512)
+        // _mm512_packus_epi16 after permutation:
+        // |   0   |   2   |   4   |   6   | // Vector 0
+        // |   1   |   3   |   5   |   7   | // Vector 1
+        // | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | // Packed Result
+        return {0, 2, 4, 6, 1, 3, 5, 7};
+#elif defined(USE_AVX2)
+        // _mm256_packus_epi16 after permutation:
+        // |   0   |   2   |  |   4   |   6   | // Vector 0, 2
+        // |   1   |   3   |  |   5   |   7   | // Vector 1, 3
+        // | 0 | 1 | 2 | 3 |  | 4 | 5 | 6 | 7 | // Packed Result
+        return {0, 2, 1, 3, 4, 6, 5, 7};
+#else
+        return {0, 1, 2, 3, 4, 5, 6, 7};
+#endif
+    }();
+
+    static constexpr auto InversePackusEpi16Order = invert_permutation(PackusEpi16Order);
+
+    // Hash value embedded in the evaluation file
+    static constexpr std::uint32_t get_hash_value() {
+        return FeatureSet::HashValue ^ (OutputDimensions * 2);
+    }
+
+    void permute_weights() {
+        permute<16>(biases, PackusEpi16Order);
+        permute<16>(weights, PackusEpi16Order);
+    }
+
+    void unpermute_weights() {
+        permute<16>(biases, InversePackusEpi16Order);
+        permute<16>(weights, InversePackusEpi16Order);
+    }
+
+    inline void scale_weights(bool read) {
+        for (IndexType j = 0; j < InputDimensions; ++j)
+        {
+            WeightType* w = &weights[j * HalfDimensions];
+            for (IndexType i = 0; i < HalfDimensions; ++i)
+                w[i] = read ? w[i] * 2 : w[i] / 2;
+        }
+
+        for (IndexType i = 0; i < HalfDimensions; ++i)
+            biases[i] = read ? biases[i] * 2 : biases[i] / 2;
+    }
+
+    // Read network parameters
+    bool read_parameters(std::istream& stream) {
+
+        read_leb_128<BiasType>(stream, biases, HalfDimensions);
+        read_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
+        read_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
+
+        permute_weights();
+        scale_weights(true);
+        return !stream.fail();
+    }
+
+    // Write network parameters
+    bool write_parameters(std::ostream& stream) {
+
+        unpermute_weights();
+        scale_weights(false);
+
+        write_leb_128<BiasType>(stream, biases, HalfDimensions);
+        write_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
+        write_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
+
+        permute_weights();
+        scale_weights(true);
+        return !stream.fail();
+    }
+
+    // Convert input features
+    std::int32_t transform(const Position&                           pos,
+                           AccumulatorStack&                         accumulatorStack,
+                           AccumulatorCaches::Cache<HalfDimensions>* cache,
+                           OutputType*                               output,
+                           int                                       bucket) const {
+
+        accumulatorStack.evaluate(pos, *this, *cache);
+        const auto& accumulatorState = accumulatorStack.latest();
+
+        const Color perspectives[2]  = {pos.side_to_move(), ~pos.side_to_move()};
+        const auto& psqtAccumulation = (accumulatorState.*accPtr).psqtAccumulation;
+        const auto  psqt =
+          (psqtAccumulation[perspectives[0]][bucket] - psqtAccumulation[perspectives[1]][bucket])
+          / 2;
+
+        const auto& accumulation = (accumulatorState.*accPtr).accumulation;
+
+        for (IndexType p = 0; p < 2; ++p)
+        {
+            const IndexType offset = (HalfDimensions / 2) * p;
+
+#if defined(VECTOR)
+
+            constexpr IndexType OutputChunkSize = MaxChunkSize;
+            static_assert((HalfDimensions / 2) % OutputChunkSize == 0);
+            constexpr IndexType NumOutputChunks = HalfDimensions / 2 / OutputChunkSize;
+
+            const vec_t Zero = vec_zero();
+            const vec_t One  = vec_set_16(127 * 2);
+
+            const vec_t* in0 = reinterpret_cast<const vec_t*>(&(accumulation[perspectives[p]][0]));
+            const vec_t* in1 =
+              reinterpret_cast<const vec_t*>(&(accumulation[perspectives[p]][HalfDimensions / 2]));
+            vec_t* out = reinterpret_cast<vec_t*>(output + offset);
+
+            // Per the NNUE architecture, here we want to multiply pairs of
+            // clipped elements and divide the product by 128. To do this,
+            // we can naively perform min/max operation to clip each of the
+            // four int16 vectors, mullo pairs together, then pack them into
+            // one int8 vector. However, there exists a faster way.
+
+            // The idea here is to use the implicit clipping from packus to
+            // save us two vec_max_16 instructions. This clipping works due
+            // to the fact that any int16 integer below zero will be zeroed
+            // on packus.
+
+            // Consider the case where the second element is negative.
+            // If we do standard clipping, that element will be zero, which
+            // means our pairwise product is zero. If we perform packus and
+            // remove the lower-side clip for the second element, then our
+            // product before packus will be negative, and is zeroed on pack.
+            // The two operation produce equivalent results, but the second
+            // one (using packus) saves one max operation per pair.
+
+            // But here we run into a problem: mullo does not preserve the
+            // sign of the multiplication. We can get around this by doing
+            // mulhi, which keeps the sign. But that requires an additional
+            // tweak.
+
+            // mulhi cuts off the last 16 bits of the resulting product,
+            // which is the same as performing a rightward shift of 16 bits.
+            // We can use this to our advantage. Recall that we want to
+            // divide the final product by 128, which is equivalent to a
+            // 7-bit right shift. Intuitively, if we shift the clipped
+            // value left by 9, and perform mulhi, which shifts the product
+            // right by 16 bits, then we will net a right shift of 7 bits.
+            // However, this won't work as intended. Since we clip the
+            // values to have a maximum value of 127, shifting it by 9 bits
+            // might occupy the signed bit, resulting in some positive
+            // values being interpreted as negative after the shift.
+
+            // There is a way, however, to get around this limitation. When
+            // loading the network, scale accumulator weights and biases by
+            // 2. To get the same pairwise multiplication result as before,
+            // we need to divide the product by 128 * 2 * 2 = 512, which
+            // amounts to a right shift of 9 bits. So now we only have to
+            // shift left by 7 bits, perform mulhi (shifts right by 16 bits)
+            // and net a 9 bit right shift. Since we scaled everything by
+            // two, the values are clipped at 127 * 2 = 254, which occupies
+            // 8 bits. Shifting it by 7 bits left will no longer occupy the
+            // signed bit, so we are safe.
+
+            // Note that on NEON processors, we shift left by 6 instead
+            // because the instruction "vqdmulhq_s16" also doubles the
+            // return value after the multiplication, adding an extra shift
+            // to the left by 1, so we compensate by shifting less before
+            // the multiplication.
+
+            constexpr int shift =
+    #if defined(USE_SSE2)
+              7;
+    #else
+              6;
+    #endif
+
+            for (IndexType j = 0; j < NumOutputChunks; ++j)
+            {
+                const vec_t sum0a =
+                  vec_slli_16(vec_max_16(vec_min_16(in0[j * 2 + 0], One), Zero), shift);
+                const vec_t sum0b =
+                  vec_slli_16(vec_max_16(vec_min_16(in0[j * 2 + 1], One), Zero), shift);
+                const vec_t sum1a = vec_min_16(in1[j * 2 + 0], One);
+                const vec_t sum1b = vec_min_16(in1[j * 2 + 1], One);
+
+                const vec_t pa = vec_mulhi_16(sum0a, sum1a);
+                const vec_t pb = vec_mulhi_16(sum0b, sum1b);
+
+                out[j] = vec_packus_16(pa, pb);
+            }
+
+#else
+
+            for (IndexType j = 0; j < HalfDimensions / 2; ++j)
+            {
+                BiasType sum0 = accumulation[static_cast<int>(perspectives[p])][j + 0];
+                BiasType sum1 =
+                  accumulation[static_cast<int>(perspectives[p])][j + HalfDimensions / 2];
+                sum0               = std::clamp<BiasType>(sum0, 0, 127 * 2);
+                sum1               = std::clamp<BiasType>(sum1, 0, 127 * 2);
+                output[offset + j] = static_cast<OutputType>(unsigned(sum0 * sum1) / 512);
+            }
+
+#endif
+        }
+
+        return psqt;
+    }  // end of function transform()
+
+    alignas(CacheLineSize) BiasType biases[HalfDimensions];
+    alignas(CacheLineSize) WeightType weights[HalfDimensions * InputDimensions];
+    alignas(CacheLineSize) PSQTWeightType psqtWeights[InputDimensions * PSQTBuckets];
+};
+
+}  // namespace Stockfish::Eval::NNUE
+
+#endif  // #ifndef NNUE_FEATURE_TRANSFORMER_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_misc.cpp
+Lines: 195, Characters: 6,295
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+// Code for calculating NNUE evaluation function
+
+#include "nnue_misc.h"
+
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
+#include <iomanip>
+#include <iosfwd>
+#include <iostream>
+#include <sstream>
+#include <string_view>
+#include <tuple>
+
+#include "../position.h"
+#include "../types.h"
+#include "../uci.h"
+#include "network.h"
+#include "nnue_accumulator.h"
+
+namespace Stockfish::Eval::NNUE {
+
+
+constexpr std::string_view PieceToChar(" PNBRQK  pnbrqk");
+
+
+namespace {
+// Converts a Value into (centi)pawns and writes it in a buffer.
+// The buffer must have capacity for at least 5 chars.
+void format_cp_compact(Value v, char* buffer, const Position& pos) {
+
+    buffer[0] = (v < 0 ? '-' : v > 0 ? '+' : ' ');
+
+    int cp = std::abs(UCIEngine::to_cp(v, pos));
+    if (cp >= 10000)
+    {
+        buffer[1] = '0' + cp / 10000;
+        cp %= 10000;
+        buffer[2] = '0' + cp / 1000;
+        cp %= 1000;
+        buffer[3] = '0' + cp / 100;
+        buffer[4] = ' ';
+    }
+    else if (cp >= 1000)
+    {
+        buffer[1] = '0' + cp / 1000;
+        cp %= 1000;
+        buffer[2] = '0' + cp / 100;
+        cp %= 100;
+        buffer[3] = '.';
+        buffer[4] = '0' + cp / 10;
+    }
+    else
+    {
+        buffer[1] = '0' + cp / 100;
+        cp %= 100;
+        buffer[2] = '.';
+        buffer[3] = '0' + cp / 10;
+        cp %= 10;
+        buffer[4] = '0' + cp / 1;
+    }
+}
+
+
+// Converts a Value into pawns, always keeping two decimals
+void format_cp_aligned_dot(Value v, std::stringstream& stream, const Position& pos) {
+
+    const double pawns = std::abs(0.01 * UCIEngine::to_cp(v, pos));
+
+    stream << (v < 0   ? '-'
+               : v > 0 ? '+'
+                       : ' ')
+           << std::setiosflags(std::ios::fixed) << std::setw(6) << std::setprecision(2) << pawns;
+}
+}
+
+
+// Returns a string with the value of each piece on a board,
+// and a table for (PSQT, Layers) values bucket by bucket.
+std::string
+trace(Position& pos, const Eval::NNUE::Networks& networks, Eval::NNUE::AccumulatorCaches& caches) {
+
+    std::stringstream ss;
+
+    char board[3 * 8 + 1][8 * 8 + 2];
+    std::memset(board, ' ', sizeof(board));
+    for (int row = 0; row < 3 * 8 + 1; ++row)
+        board[row][8 * 8 + 1] = '\0';
+
+    // A lambda to output one box of the board
+    auto writeSquare = [&board, &pos](File file, Rank rank, Piece pc, Value value) {
+        const int x = int(file) * 8;
+        const int y = (7 - int(rank)) * 3;
+        for (int i = 1; i < 8; ++i)
+            board[y][x + i] = board[y + 3][x + i] = '-';
+        for (int i = 1; i < 3; ++i)
+            board[y + i][x] = board[y + i][x + 8] = '|';
+        board[y][x] = board[y][x + 8] = board[y + 3][x + 8] = board[y + 3][x] = '+';
+        if (pc != NO_PIECE)
+            board[y + 1][x + 4] = PieceToChar[pc];
+        if (is_valid(value))
+            format_cp_compact(value, &board[y + 2][x + 2], pos);
+    };
+
+    AccumulatorStack accumulators;
+    accumulators.reset(pos, networks, caches);
+
+    // We estimate the value of each piece by doing a differential evaluation from
+    // the current base eval, simulating the removal of the piece from its square.
+    auto [psqt, positional] = networks.big.evaluate(pos, accumulators, &caches.big);
+    Value base              = psqt + positional;
+    base                    = pos.side_to_move() == WHITE ? base : -base;
+
+    for (File f = FILE_A; f <= FILE_H; ++f)
+        for (Rank r = RANK_1; r <= RANK_8; ++r)
+        {
+            Square sq = make_square(f, r);
+            Piece  pc = pos.piece_on(sq);
+            Value  v  = VALUE_NONE;
+
+            if (pc != NO_PIECE && type_of(pc) != KING)
+            {
+                pos.remove_piece(sq);
+
+                accumulators.reset(pos, networks, caches);
+                std::tie(psqt, positional) = networks.big.evaluate(pos, accumulators, &caches.big);
+                Value eval                 = psqt + positional;
+                eval                       = pos.side_to_move() == WHITE ? eval : -eval;
+                v                          = base - eval;
+
+                pos.put_piece(pc, sq);
+            }
+
+            writeSquare(f, r, pc, v);
+        }
+
+    ss << " NNUE derived piece values:\n";
+    for (int row = 0; row < 3 * 8 + 1; ++row)
+        ss << board[row] << '\n';
+    ss << '\n';
+
+    accumulators.reset(pos, networks, caches);
+    auto t = networks.big.trace_evaluate(pos, accumulators, &caches.big);
+
+    ss << " NNUE network contributions "
+       << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)") << std::endl
+       << "+------------+------------+------------+------------+\n"
+       << "|   Bucket   |  Material  | Positional |   Total    |\n"
+       << "|            |   (PSQT)   |  (Layers)  |            |\n"
+       << "+------------+------------+------------+------------+\n";
+
+    for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket)
+    {
+        ss << "|  " << bucket << "        "  //
+           << " |  ";
+        format_cp_aligned_dot(t.psqt[bucket], ss, pos);
+        ss << "  "  //
+           << " |  ";
+        format_cp_aligned_dot(t.positional[bucket], ss, pos);
+        ss << "  "  //
+           << " |  ";
+        format_cp_aligned_dot(t.psqt[bucket] + t.positional[bucket], ss, pos);
+        ss << "  "  //
+           << " |";
+        if (bucket == t.correctBucket)
+            ss << " <-- this bucket is used";
+        ss << '\n';
+    }
+
+    ss << "+------------+------------+------------+------------+\n";
+
+    return ss.str();
+}
+
+
+}  // namespace Stockfish::Eval::NNUE
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\nnue\nnue_misc.h
+Lines: 62, Characters: 1,725
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef NNUE_MISC_H_INCLUDED
+#define NNUE_MISC_H_INCLUDED
+
+#include <cstddef>
+#include <string>
+
+#include "../types.h"
+#include "nnue_architecture.h"
+
+namespace Stockfish {
+
+class Position;
+
+namespace Eval::NNUE {
+
+struct EvalFile {
+    // Default net name, will use one of the EvalFileDefaultName* macros defined
+    // in evaluate.h
+    std::string defaultName;
+    // Selected net name, either via uci option or default
+    std::string current;
+    // Net description extracted from the net file
+    std::string netDescription;
+};
+
+
+struct NnueEvalTrace {
+    static_assert(LayerStacks == PSQTBuckets);
+
+    Value       psqt[LayerStacks];
+    Value       positional[LayerStacks];
+    std::size_t correctBucket;
+};
+
+struct Networks;
+struct AccumulatorCaches;
+
+std::string trace(Position& pos, const Networks& networks, AccumulatorCaches& caches);
+
+}  // namespace Stockfish::Eval::NNUE
+}  // namespace Stockfish
+
+#endif  // #ifndef NNUE_MISC_H_INCLUDED
+
+

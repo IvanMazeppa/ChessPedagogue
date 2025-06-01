@@ -1,0 +1,1585 @@
+# CHUNK 36 of 64
+# Files: 5, Characters: 49,600
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\uci.cpp
+Lines: 668, Characters: 21,778
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "uci.h"
+
+#include <algorithm>
+#include <cctype>
+#include <cmath>
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <sstream>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+#include "benchmark.h"
+#include "engine.h"
+#include "memory.h"
+#include "movegen.h"
+#include "position.h"
+#include "score.h"
+#include "search.h"
+#include "types.h"
+#include "ucioption.h"
+
+namespace Stockfish {
+
+constexpr auto BenchmarkCommand = "speedtest";
+
+constexpr auto StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+template<typename... Ts>
+struct overload: Ts... {
+    using Ts::operator()...;
+};
+
+template<typename... Ts>
+overload(Ts...) -> overload<Ts...>;
+
+void UCIEngine::print_info_string(std::string_view str) {
+    sync_cout_start();
+    for (auto& line : split(str, "\n"))
+    {
+        if (!is_whitespace(line))
+        {
+            std::cout << "info string " << line << '\n';
+        }
+    }
+    sync_cout_end();
+}
+
+UCIEngine::UCIEngine(int argc, char** argv) :
+    engine(argv[0]),
+    cli(argc, argv) {
+
+    engine.get_options().add_info_listener([](const std::optional<std::string>& str) {
+        if (str.has_value())
+            print_info_string(*str);
+    });
+
+    init_search_update_listeners();
+}
+
+void UCIEngine::init_search_update_listeners() {
+    engine.set_on_iter([](const auto& i) { on_iter(i); });
+    engine.set_on_update_no_moves([](const auto& i) { on_update_no_moves(i); });
+    engine.set_on_update_full(
+      [this](const auto& i) { on_update_full(i, engine.get_options()["UCI_ShowWDL"]); });
+    engine.set_on_bestmove([](const auto& bm, const auto& p) { on_bestmove(bm, p); });
+    engine.set_on_verify_networks([](const auto& s) { print_info_string(s); });
+}
+
+void UCIEngine::loop() {
+    std::string token, cmd;
+
+    for (int i = 1; i < cli.argc; ++i)
+        cmd += std::string(cli.argv[i]) + " ";
+
+    do
+    {
+        if (cli.argc == 1
+            && !getline(std::cin, cmd))  // Wait for an input or an end-of-file (EOF) indication
+            cmd = "quit";
+
+        std::istringstream is(cmd);
+
+        token.clear();  // Avoid a stale if getline() returns nothing or a blank line
+        is >> std::skipws >> token;
+
+        if (token == "quit" || token == "stop")
+            engine.stop();
+
+        // The GUI sends 'ponderhit' to tell that the user has played the expected move.
+        // So, 'ponderhit' is sent if pondering was done on the same move that the user
+        // has played. The search should continue, but should also switch from pondering
+        // to the normal search.
+        else if (token == "ponderhit")
+            engine.set_ponderhit(false);
+
+        else if (token == "uci")
+        {
+            sync_cout << "id name " << engine_info(true) << "\n"
+                      << engine.get_options() << sync_endl;
+
+            sync_cout << "uciok" << sync_endl;
+        }
+
+        else if (token == "setoption")
+            setoption(is);
+        else if (token == "go")
+        {
+            // send info strings after the go command is sent for old GUIs and python-chess
+            print_info_string(engine.numa_config_information_as_string());
+            print_info_string(engine.thread_allocation_information_as_string());
+            go(is);
+        }
+        else if (token == "position")
+            position(is);
+        else if (token == "ucinewgame")
+            engine.search_clear();
+        else if (token == "isready")
+            sync_cout << "readyok" << sync_endl;
+
+        // Add custom non-UCI commands, mainly for debugging purposes.
+        // These commands must not be used during a search!
+        else if (token == "flip")
+            engine.flip();
+        else if (token == "bench")
+            bench(is);
+        else if (token == BenchmarkCommand)
+            benchmark(is);
+        else if (token == "d")
+            sync_cout << engine.visualize() << sync_endl;
+        else if (token == "eval")
+            engine.trace_eval();
+        else if (token == "compiler")
+            sync_cout << compiler_info() << sync_endl;
+        else if (token == "export_net")
+        {
+            std::pair<std::optional<std::string>, std::string> files[2];
+
+            if (is >> std::skipws >> files[0].second)
+                files[0].first = files[0].second;
+
+            if (is >> std::skipws >> files[1].second)
+                files[1].first = files[1].second;
+
+            engine.save_network(files);
+        }
+        else if (token == "--help" || token == "help" || token == "--license" || token == "license")
+            sync_cout
+              << "\nStockfish is a powerful chess engine for playing and analyzing."
+                 "\nIt is released as free software licensed under the GNU GPLv3 License."
+                 "\nStockfish is normally used with a graphical user interface (GUI) and implements"
+                 "\nthe Universal Chess Interface (UCI) protocol to communicate with a GUI, an API, etc."
+                 "\nFor any further information, visit https://github.com/official-stockfish/Stockfish#readme"
+                 "\nor read the corresponding README.md and Copying.txt files distributed along with this program.\n"
+              << sync_endl;
+        else if (!token.empty() && token[0] != '#')
+            sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
+                      << sync_endl;
+
+    } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
+}
+
+Search::LimitsType UCIEngine::parse_limits(std::istream& is) {
+    Search::LimitsType limits;
+    std::string        token;
+
+    limits.startTime = now();  // The search starts as early as possible
+
+    while (is >> token)
+        if (token == "searchmoves")  // Needs to be the last command on the line
+            while (is >> token)
+                limits.searchmoves.push_back(to_lower(token));
+
+        else if (token == "wtime")
+            is >> limits.time[WHITE];
+        else if (token == "btime")
+            is >> limits.time[BLACK];
+        else if (token == "winc")
+            is >> limits.inc[WHITE];
+        else if (token == "binc")
+            is >> limits.inc[BLACK];
+        else if (token == "movestogo")
+            is >> limits.movestogo;
+        else if (token == "depth")
+            is >> limits.depth;
+        else if (token == "nodes")
+            is >> limits.nodes;
+        else if (token == "movetime")
+            is >> limits.movetime;
+        else if (token == "mate")
+            is >> limits.mate;
+        else if (token == "perft")
+            is >> limits.perft;
+        else if (token == "infinite")
+            limits.infinite = 1;
+        else if (token == "ponder")
+            limits.ponderMode = true;
+
+    return limits;
+}
+
+void UCIEngine::go(std::istringstream& is) {
+
+    Search::LimitsType limits = parse_limits(is);
+
+    if (limits.perft)
+        perft(limits);
+    else
+        engine.go(limits);
+}
+
+void UCIEngine::bench(std::istream& args) {
+    std::string token;
+    uint64_t    num, nodes = 0, cnt = 1;
+    uint64_t    nodesSearched = 0;
+    const auto& options       = engine.get_options();
+
+    engine.set_on_update_full([&](const auto& i) {
+        nodesSearched = i.nodes;
+        on_update_full(i, options["UCI_ShowWDL"]);
+    });
+
+    std::vector<std::string> list = Benchmark::setup_bench(engine.fen(), args);
+
+    num = count_if(list.begin(), list.end(),
+                   [](const std::string& s) { return s.find("go ") == 0 || s.find("eval") == 0; });
+
+    TimePoint elapsed = now();
+
+    for (const auto& cmd : list)
+    {
+        std::istringstream is(cmd);
+        is >> std::skipws >> token;
+
+        if (token == "go" || token == "eval")
+        {
+            std::cerr << "\nPosition: " << cnt++ << '/' << num << " (" << engine.fen() << ")"
+                      << std::endl;
+            if (token == "go")
+            {
+                Search::LimitsType limits = parse_limits(is);
+
+                if (limits.perft)
+                    nodesSearched = perft(limits);
+                else
+                {
+                    engine.go(limits);
+                    engine.wait_for_search_finished();
+                }
+
+                nodes += nodesSearched;
+                nodesSearched = 0;
+            }
+            else
+                engine.trace_eval();
+        }
+        else if (token == "setoption")
+            setoption(is);
+        else if (token == "position")
+            position(is);
+        else if (token == "ucinewgame")
+        {
+            engine.search_clear();  // search_clear may take a while
+            elapsed = now();
+        }
+    }
+
+    elapsed = now() - elapsed + 1;  // Ensure positivity to avoid a 'divide by zero'
+
+    dbg_print();
+
+    std::cerr << "\n==========================="    //
+              << "\nTotal time (ms) : " << elapsed  //
+              << "\nNodes searched  : " << nodes    //
+              << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
+
+    // reset callback, to not capture a dangling reference to nodesSearched
+    engine.set_on_update_full([&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
+}
+
+void UCIEngine::benchmark(std::istream& args) {
+    // Probably not very important for a test this long, but include for completeness and sanity.
+    static constexpr int NUM_WARMUP_POSITIONS = 3;
+
+    std::string token;
+    uint64_t    nodes = 0, cnt = 1;
+    uint64_t    nodesSearched = 0;
+
+    engine.set_on_update_full([&](const Engine::InfoFull& i) { nodesSearched = i.nodes; });
+
+    engine.set_on_iter([](const auto&) {});
+    engine.set_on_update_no_moves([](const auto&) {});
+    engine.set_on_bestmove([](const auto&, const auto&) {});
+    engine.set_on_verify_networks([](const auto&) {});
+
+    Benchmark::BenchmarkSetup setup = Benchmark::setup_benchmark(args);
+
+    const int numGoCommands = count_if(setup.commands.begin(), setup.commands.end(),
+                                       [](const std::string& s) { return s.find("go ") == 0; });
+
+    TimePoint totalTime = 0;
+
+    // Set options once at the start.
+    auto ss = std::istringstream("name Threads value " + std::to_string(setup.threads));
+    setoption(ss);
+    ss = std::istringstream("name Hash value " + std::to_string(setup.ttSize));
+    setoption(ss);
+    ss = std::istringstream("name UCI_Chess960 value false");
+    setoption(ss);
+
+    // Warmup
+    for (const auto& cmd : setup.commands)
+    {
+        std::istringstream is(cmd);
+        is >> std::skipws >> token;
+
+        if (token == "go")
+        {
+            // One new line is produced by the search, so omit it here
+            std::cerr << "\rWarmup position " << cnt++ << '/' << NUM_WARMUP_POSITIONS;
+
+            Search::LimitsType limits = parse_limits(is);
+
+            TimePoint elapsed = now();
+
+            // Run with silenced network verification
+            engine.go(limits);
+            engine.wait_for_search_finished();
+
+            totalTime += now() - elapsed;
+
+            nodes += nodesSearched;
+            nodesSearched = 0;
+        }
+        else if (token == "position")
+            position(is);
+        else if (token == "ucinewgame")
+        {
+            engine.search_clear();  // search_clear may take a while
+        }
+
+        if (cnt > NUM_WARMUP_POSITIONS)
+            break;
+    }
+
+    std::cerr << "\n";
+
+    cnt   = 1;
+    nodes = 0;
+
+    int           numHashfullReadings = 0;
+    constexpr int hashfullAges[]      = {0, 999};  // Only normal hashfull and touched hash.
+    int           totalHashfull[std::size(hashfullAges)] = {0};
+    int           maxHashfull[std::size(hashfullAges)]   = {0};
+
+    auto updateHashfullReadings = [&]() {
+        numHashfullReadings += 1;
+
+        for (int i = 0; i < static_cast<int>(std::size(hashfullAges)); ++i)
+        {
+            const int hashfull = engine.get_hashfull(hashfullAges[i]);
+            maxHashfull[i]     = std::max(maxHashfull[i], hashfull);
+            totalHashfull[i] += hashfull;
+        }
+    };
+
+    engine.search_clear();  // search_clear may take a while
+
+    for (const auto& cmd : setup.commands)
+    {
+        std::istringstream is(cmd);
+        is >> std::skipws >> token;
+
+        if (token == "go")
+        {
+            // One new line is produced by the search, so omit it here
+            std::cerr << "\rPosition " << cnt++ << '/' << numGoCommands;
+
+            Search::LimitsType limits = parse_limits(is);
+
+            TimePoint elapsed = now();
+
+            // Run with silenced network verification
+            engine.go(limits);
+            engine.wait_for_search_finished();
+
+            totalTime += now() - elapsed;
+
+            updateHashfullReadings();
+
+            nodes += nodesSearched;
+            nodesSearched = 0;
+        }
+        else if (token == "position")
+            position(is);
+        else if (token == "ucinewgame")
+        {
+            engine.search_clear();  // search_clear may take a while
+        }
+    }
+
+    totalTime = std::max<TimePoint>(totalTime, 1);  // Ensure positivity to avoid a 'divide by zero'
+
+    dbg_print();
+
+    std::cerr << "\n";
+
+    static_assert(
+      std::size(hashfullAges) == 2 && hashfullAges[0] == 0 && hashfullAges[1] == 999,
+      "Hardcoded for display. Would complicate the code needlessly in the current state.");
+
+    std::string threadBinding = engine.thread_binding_information_as_string();
+    if (threadBinding.empty())
+        threadBinding = "none";
+
+    // clang-format off
+
+    std::cerr << "==========================="
+              << "\nVersion                    : "
+              << engine_version_info()
+              // "\nCompiled by                : "
+              << compiler_info()
+              << "Large pages                : " << (has_large_pages() ? "yes" : "no")
+              << "\nUser invocation            : " << BenchmarkCommand << " "
+              << setup.originalInvocation << "\nFilled invocation          : " << BenchmarkCommand
+              << " " << setup.filledInvocation
+              << "\nAvailable processors       : " << engine.get_numa_config_as_string()
+              << "\nThread count               : " << setup.threads
+              << "\nThread binding             : " << threadBinding
+              << "\nTT size [MiB]              : " << setup.ttSize
+              << "\nHash max, avg [per mille]  : "
+              << "\n    single search          : " << maxHashfull[0] << ", "
+              << totalHashfull[0] / numHashfullReadings
+              << "\n    single game            : " << maxHashfull[1] << ", "
+              << totalHashfull[1] / numHashfullReadings
+              << "\nTotal nodes searched       : " << nodes
+              << "\nTotal search time [s]      : " << totalTime / 1000.0
+              << "\nNodes/second               : " << 1000 * nodes / totalTime << std::endl;
+
+    // clang-format on
+
+    init_search_update_listeners();
+}
+
+void UCIEngine::setoption(std::istringstream& is) {
+    engine.wait_for_search_finished();
+    engine.get_options().setoption(is);
+}
+
+std::uint64_t UCIEngine::perft(const Search::LimitsType& limits) {
+    auto nodes = engine.perft(engine.fen(), limits.perft, engine.get_options()["UCI_Chess960"]);
+    sync_cout << "\nNodes searched: " << nodes << "\n" << sync_endl;
+    return nodes;
+}
+
+void UCIEngine::position(std::istringstream& is) {
+    std::string token, fen;
+
+    is >> token;
+
+    if (token == "startpos")
+    {
+        fen = StartFEN;
+        is >> token;  // Consume the "moves" token, if any
+    }
+    else if (token == "fen")
+        while (is >> token && token != "moves")
+            fen += token + " ";
+    else
+        return;
+
+    std::vector<std::string> moves;
+
+    while (is >> token)
+    {
+        moves.push_back(token);
+    }
+
+    engine.set_position(fen, moves);
+}
+
+namespace {
+
+struct WinRateParams {
+    double a;
+    double b;
+};
+
+WinRateParams win_rate_params(const Position& pos) {
+
+    int material = pos.count<PAWN>() + 3 * pos.count<KNIGHT>() + 3 * pos.count<BISHOP>()
+                 + 5 * pos.count<ROOK>() + 9 * pos.count<QUEEN>();
+
+    // The fitted model only uses data for material counts in [17, 78], and is anchored at count 58.
+    double m = std::clamp(material, 17, 78) / 58.0;
+
+    // Return a = p_a(material) and b = p_b(material), see github.com/official-stockfish/WDL_model
+    constexpr double as[] = {-13.50030198, 40.92780883, -36.82753545, 386.83004070};
+    constexpr double bs[] = {96.53354896, -165.79058388, 90.89679019, 49.29561889};
+
+    double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
+    double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
+
+    return {a, b};
+}
+
+// The win rate model is 1 / (1 + exp((a - eval) / b)), where a = p_a(material) and b = p_b(material).
+// It fits the LTC fishtest statistics rather accurately.
+int win_rate_model(Value v, const Position& pos) {
+
+    auto [a, b] = win_rate_params(pos);
+
+    // Return the win rate in per mille units, rounded to the nearest integer.
+    return int(0.5 + 1000 / (1 + std::exp((a - double(v)) / b)));
+}
+}
+
+std::string UCIEngine::format_score(const Score& s) {
+    constexpr int TB_CP = 20000;
+    const auto    format =
+      overload{[](Score::Mate mate) -> std::string {
+                   auto m = (mate.plies > 0 ? (mate.plies + 1) : mate.plies) / 2;
+                   return std::string("mate ") + std::to_string(m);
+               },
+               [](Score::Tablebase tb) -> std::string {
+                   return std::string("cp ")
+                        + std::to_string((tb.win ? TB_CP - tb.plies : -TB_CP - tb.plies));
+               },
+               [](Score::InternalUnits units) -> std::string {
+                   return std::string("cp ") + std::to_string(units.value);
+               }};
+
+    return s.visit(format);
+}
+
+// Turns a Value to an integer centipawn number,
+// without treatment of mate and similar special scores.
+int UCIEngine::to_cp(Value v, const Position& pos) {
+
+    // In general, the score can be defined via the WDL as
+    // (log(1/L - 1) - log(1/W - 1)) / (log(1/L - 1) + log(1/W - 1)).
+    // Based on our win_rate_model, this simply yields v / a.
+
+    auto [a, b] = win_rate_params(pos);
+
+    return std::round(100 * int(v) / a);
+}
+
+std::string UCIEngine::wdl(Value v, const Position& pos) {
+    std::stringstream ss;
+
+    int wdl_w = win_rate_model(v, pos);
+    int wdl_l = win_rate_model(-v, pos);
+    int wdl_d = 1000 - wdl_w - wdl_l;
+    ss << wdl_w << " " << wdl_d << " " << wdl_l;
+
+    return ss.str();
+}
+
+std::string UCIEngine::square(Square s) {
+    return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
+}
+
+std::string UCIEngine::move(Move m, bool chess960) {
+    if (m == Move::none())
+        return "(none)";
+
+    if (m == Move::null())
+        return "0000";
+
+    Square from = m.from_sq();
+    Square to   = m.to_sq();
+
+    if (m.type_of() == CASTLING && !chess960)
+        to = make_square(to > from ? FILE_G : FILE_C, rank_of(from));
+
+    std::string move = square(from) + square(to);
+
+    if (m.type_of() == PROMOTION)
+        move += " pnbrqk"[m.promotion_type()];
+
+    return move;
+}
+
+
+std::string UCIEngine::to_lower(std::string str) {
+    std::transform(str.begin(), str.end(), str.begin(), [](auto c) { return std::tolower(c); });
+
+    return str;
+}
+
+Move UCIEngine::to_move(const Position& pos, std::string str) {
+    str = to_lower(str);
+
+    for (const auto& m : MoveList<LEGAL>(pos))
+        if (str == move(m, pos.is_chess960()))
+            return m;
+
+    return Move::none();
+}
+
+void UCIEngine::on_update_no_moves(const Engine::InfoShort& info) {
+    sync_cout << "info depth " << info.depth << " score " << format_score(info.score) << sync_endl;
+}
+
+void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
+    std::stringstream ss;
+
+    ss << "info";
+    ss << " depth " << info.depth                 //
+       << " seldepth " << info.selDepth           //
+       << " multipv " << info.multiPV             //
+       << " score " << format_score(info.score);  //
+
+    if (showWDL)
+        ss << " wdl " << info.wdl;
+
+    if (!info.bound.empty())
+        ss << " " << info.bound;
+
+    ss << " nodes " << info.nodes        //
+       << " nps " << info.nps            //
+       << " hashfull " << info.hashfull  //
+       << " tbhits " << info.tbHits      //
+       << " time " << info.timeMs        //
+       << " pv " << info.pv;             //
+
+    sync_cout << ss.str() << sync_endl;
+}
+
+void UCIEngine::on_iter(const Engine::InfoIter& info) {
+    std::stringstream ss;
+
+    ss << "info";
+    ss << " depth " << info.depth                     //
+       << " currmove " << info.currmove               //
+       << " currmovenumber " << info.currmovenumber;  //
+
+    sync_cout << ss.str() << sync_endl;
+}
+
+void UCIEngine::on_bestmove(std::string_view bestmove, std::string_view ponder) {
+    sync_cout << "bestmove " << bestmove;
+    if (!ponder.empty())
+        std::cout << " ponder " << ponder;
+    std::cout << sync_endl;
+}
+
+}  // namespace Stockfish
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\uci.h
+Lines: 81, Characters: 2,455
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef UCI_H_INCLUDED
+#define UCI_H_INCLUDED
+
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <string_view>
+
+#include "engine.h"
+#include "misc.h"
+#include "search.h"
+
+namespace Stockfish {
+
+class Position;
+class Move;
+class Score;
+enum Square : int;
+using Value = int;
+
+class UCIEngine {
+   public:
+    UCIEngine(int argc, char** argv);
+
+    void loop();
+
+    static int         to_cp(Value v, const Position& pos);
+    static std::string format_score(const Score& s);
+    static std::string square(Square s);
+    static std::string move(Move m, bool chess960);
+    static std::string wdl(Value v, const Position& pos);
+    static std::string to_lower(std::string str);
+    static Move        to_move(const Position& pos, std::string str);
+
+    static Search::LimitsType parse_limits(std::istream& is);
+
+    auto& engine_options() { return engine.get_options(); }
+
+   private:
+    Engine      engine;
+    CommandLine cli;
+
+    static void print_info_string(std::string_view str);
+
+    void          go(std::istringstream& is);
+    void          bench(std::istream& args);
+    void          benchmark(std::istream& args);
+    void          position(std::istringstream& is);
+    void          setoption(std::istringstream& is);
+    std::uint64_t perft(const Search::LimitsType&);
+
+    static void on_update_no_moves(const Engine::InfoShort& info);
+    static void on_update_full(const Engine::InfoFull& info, bool showWDL);
+    static void on_iter(const Engine::InfoIter& info);
+    static void on_bestmove(std::string_view bestmove, std::string_view ponder);
+
+    void init_search_update_listeners();
+};
+
+}  // namespace Stockfish
+
+#endif  // #ifndef UCI_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\ucioption.cpp
+Lines: 214, Characters: 6,124
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "ucioption.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <cstdlib>
+#include <iostream>
+#include <sstream>
+#include <utility>
+
+#include "misc.h"
+
+namespace Stockfish {
+
+bool CaseInsensitiveLess::operator()(const std::string& s1, const std::string& s2) const {
+
+    return std::lexicographical_compare(
+      s1.begin(), s1.end(), s2.begin(), s2.end(),
+      [](char c1, char c2) { return std::tolower(c1) < std::tolower(c2); });
+}
+
+void OptionsMap::add_info_listener(InfoListener&& message_func) { info = std::move(message_func); }
+
+void OptionsMap::setoption(std::istringstream& is) {
+    std::string token, name, value;
+
+    is >> token;  // Consume the "name" token
+
+    // Read the option name (can contain spaces)
+    while (is >> token && token != "value")
+        name += (name.empty() ? "" : " ") + token;
+
+    // Read the option value (can contain spaces)
+    while (is >> token)
+        value += (value.empty() ? "" : " ") + token;
+
+    if (options_map.count(name))
+        options_map[name] = value;
+    else
+        sync_cout << "No such option: " << name << sync_endl;
+}
+
+const Option& OptionsMap::operator[](const std::string& name) const {
+    auto it = options_map.find(name);
+    assert(it != options_map.end());
+    return it->second;
+}
+
+// Inits options and assigns idx in the correct printing order
+void OptionsMap::add(const std::string& name, const Option& option) {
+    if (!options_map.count(name))
+    {
+        static size_t insert_order = 0;
+
+        options_map[name] = option;
+
+        options_map[name].parent = this;
+        options_map[name].idx    = insert_order++;
+    }
+    else
+    {
+        std::cerr << "Option \"" << name << "\" was already added!" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+}
+
+
+std::size_t OptionsMap::count(const std::string& name) const { return options_map.count(name); }
+
+Option::Option(const OptionsMap* map) :
+    parent(map) {}
+
+Option::Option(const char* v, OnChange f) :
+    type("string"),
+    min(0),
+    max(0),
+    on_change(std::move(f)) {
+    defaultValue = currentValue = v;
+}
+
+Option::Option(bool v, OnChange f) :
+    type("check"),
+    min(0),
+    max(0),
+    on_change(std::move(f)) {
+    defaultValue = currentValue = (v ? "true" : "false");
+}
+
+Option::Option(OnChange f) :
+    type("button"),
+    min(0),
+    max(0),
+    on_change(std::move(f)) {}
+
+Option::Option(double v, int minv, int maxv, OnChange f) :
+    type("spin"),
+    min(minv),
+    max(maxv),
+    on_change(std::move(f)) {
+    defaultValue = currentValue = std::to_string(v);
+}
+
+Option::Option(const char* v, const char* cur, OnChange f) :
+    type("combo"),
+    min(0),
+    max(0),
+    on_change(std::move(f)) {
+    defaultValue = v;
+    currentValue = cur;
+}
+
+Option::operator int() const {
+    assert(type == "check" || type == "spin");
+    return (type == "spin" ? std::stoi(currentValue) : currentValue == "true");
+}
+
+Option::operator std::string() const {
+    assert(type == "string");
+    return currentValue;
+}
+
+bool Option::operator==(const char* s) const {
+    assert(type == "combo");
+    return !CaseInsensitiveLess()(currentValue, s) && !CaseInsensitiveLess()(s, currentValue);
+}
+
+bool Option::operator!=(const char* s) const { return !(*this == s); }
+
+
+// Updates currentValue and triggers on_change() action. It's up to
+// the GUI to check for option's limits, but we could receive the new value
+// from the user by console window, so let's check the bounds anyway.
+Option& Option::operator=(const std::string& v) {
+
+    assert(!type.empty());
+
+    if ((type != "button" && type != "string" && v.empty())
+        || (type == "check" && v != "true" && v != "false")
+        || (type == "spin" && (std::stof(v) < min || std::stof(v) > max)))
+        return *this;
+
+    if (type == "combo")
+    {
+        OptionsMap         comboMap;  // To have case insensitive compare
+        std::string        token;
+        std::istringstream ss(defaultValue);
+        while (ss >> token)
+            comboMap.add(token, Option());
+        if (!comboMap.count(v) || v == "var")
+            return *this;
+    }
+
+    if (type == "string")
+        currentValue = v == "<empty>" ? "" : v;
+    else if (type != "button")
+        currentValue = v;
+
+    if (on_change)
+    {
+        const auto ret = on_change(*this);
+
+        if (ret && parent != nullptr && parent->info != nullptr)
+            parent->info(ret);
+    }
+
+    return *this;
+}
+
+std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
+    for (size_t idx = 0; idx < om.options_map.size(); ++idx)
+        for (const auto& it : om.options_map)
+            if (it.second.idx == idx)
+            {
+                const Option& o = it.second;
+                os << "\noption name " << it.first << " type " << o.type;
+
+                if (o.type == "check" || o.type == "combo")
+                    os << " default " << o.defaultValue;
+
+                else if (o.type == "string")
+                {
+                    std::string defaultValue = o.defaultValue.empty() ? "<empty>" : o.defaultValue;
+                    os << " default " << defaultValue;
+                }
+
+                else if (o.type == "spin")
+                    os << " default " << int(stof(o.defaultValue)) << " min " << o.min << " max "
+                       << o.max;
+
+                break;
+            }
+
+    return os;
+}
+}
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\ucioption.h
+Lines: 107, Characters: 3,207
+================================================================================
+
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2025 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#ifndef UCIOPTION_H_INCLUDED
+#define UCIOPTION_H_INCLUDED
+
+#include <cstddef>
+#include <functional>
+#include <iosfwd>
+#include <map>
+#include <optional>
+#include <string>
+
+namespace Stockfish {
+// Define a custom comparator, because the UCI options should be case-insensitive
+struct CaseInsensitiveLess {
+    bool operator()(const std::string&, const std::string&) const;
+};
+
+class OptionsMap;
+
+// The Option class implements each option as specified by the UCI protocol
+class Option {
+   public:
+    using OnChange = std::function<std::optional<std::string>(const Option&)>;
+
+    Option(const OptionsMap*);
+    Option(OnChange = nullptr);
+    Option(bool v, OnChange = nullptr);
+    Option(const char* v, OnChange = nullptr);
+    Option(double v, int minv, int maxv, OnChange = nullptr);
+    Option(const char* v, const char* cur, OnChange = nullptr);
+
+    Option& operator=(const std::string&);
+    operator int() const;
+    operator std::string() const;
+    bool operator==(const char*) const;
+    bool operator!=(const char*) const;
+
+    friend std::ostream& operator<<(std::ostream&, const OptionsMap&);
+
+    int operator<<(const Option&) = delete;
+
+   private:
+    friend class OptionsMap;
+    friend class Engine;
+    friend class Tune;
+
+
+    std::string       defaultValue, currentValue, type;
+    int               min, max;
+    size_t            idx;
+    OnChange          on_change;
+    const OptionsMap* parent = nullptr;
+};
+
+class OptionsMap {
+   public:
+    using InfoListener = std::function<void(std::optional<std::string>)>;
+
+    OptionsMap()                             = default;
+    OptionsMap(const OptionsMap&)            = delete;
+    OptionsMap(OptionsMap&&)                 = delete;
+    OptionsMap& operator=(const OptionsMap&) = delete;
+    OptionsMap& operator=(OptionsMap&&)      = delete;
+
+    void add_info_listener(InfoListener&&);
+
+    void setoption(std::istringstream&);
+
+    const Option& operator[](const std::string&) const;
+
+    void add(const std::string&, const Option& option);
+
+    std::size_t count(const std::string&) const;
+
+   private:
+    friend class Engine;
+    friend class Option;
+
+    friend std::ostream& operator<<(std::ostream&, const OptionsMap&);
+
+    // The options container is defined as a std::map
+    using OptionsStore = std::map<std::string, Option, CaseInsensitiveLess>;
+
+    OptionsStore options_map;
+    InfoListener info;
+};
+
+}
+#endif  // #ifndef UCIOPTION_H_INCLUDED
+
+
+
+================================================================================
+FILE: app\src\main\cpp\stockfish\incbin\incbin.h
+Lines: 476, Characters: 16,036
+================================================================================
+
+/**
+ * @file incbin.h
+ * @author Dale Weiler
+ * @brief Utility for including binary files
+ *
+ * Facilities for including binary files into the current translation unit and
+ * making use from them externally in other translation units.
+ */
+#ifndef INCBIN_HDR
+#define INCBIN_HDR
+#include <limits.h>
+#if   defined(__AVX512BW__) || \
+      defined(__AVX512CD__) || \
+      defined(__AVX512DQ__) || \
+      defined(__AVX512ER__) || \
+      defined(__AVX512PF__) || \
+      defined(__AVX512VL__) || \
+      defined(__AVX512F__)
+# define INCBIN_ALIGNMENT_INDEX 6
+#elif defined(__AVX__)      || \
+      defined(__AVX2__)
+# define INCBIN_ALIGNMENT_INDEX 5
+#elif defined(__SSE__)      || \
+      defined(__SSE2__)     || \
+      defined(__SSE3__)     || \
+      defined(__SSSE3__)    || \
+      defined(__SSE4_1__)   || \
+      defined(__SSE4_2__)   || \
+      defined(__neon__)     || \
+      defined(__ARM_NEON)   || \
+      defined(__ALTIVEC__)
+# define INCBIN_ALIGNMENT_INDEX 4
+#elif ULONG_MAX != 0xffffffffu
+# define INCBIN_ALIGNMENT_INDEX 3
+# else
+# define INCBIN_ALIGNMENT_INDEX 2
+#endif
+
+/* Lookup table of (1 << n) where `n' is `INCBIN_ALIGNMENT_INDEX' */
+#define INCBIN_ALIGN_SHIFT_0 1
+#define INCBIN_ALIGN_SHIFT_1 2
+#define INCBIN_ALIGN_SHIFT_2 4
+#define INCBIN_ALIGN_SHIFT_3 8
+#define INCBIN_ALIGN_SHIFT_4 16
+#define INCBIN_ALIGN_SHIFT_5 32
+#define INCBIN_ALIGN_SHIFT_6 64
+
+/* Actual alignment value */
+#define INCBIN_ALIGNMENT \
+    INCBIN_CONCATENATE( \
+        INCBIN_CONCATENATE(INCBIN_ALIGN_SHIFT, _), \
+        INCBIN_ALIGNMENT_INDEX)
+
+/* Stringize */
+#define INCBIN_STR(X) \
+    #X
+#define INCBIN_STRINGIZE(X) \
+    INCBIN_STR(X)
+/* Concatenate */
+#define INCBIN_CAT(X, Y) \
+    X ## Y
+#define INCBIN_CONCATENATE(X, Y) \
+    INCBIN_CAT(X, Y)
+/* Deferred macro expansion */
+#define INCBIN_EVAL(X) \
+    X
+#define INCBIN_INVOKE(N, ...) \
+    INCBIN_EVAL(N(__VA_ARGS__))
+/* Variable argument count for overloading by arity */
+#define INCBIN_VA_ARG_COUNTER(_1, _2, _3, N, ...) N
+#define INCBIN_VA_ARGC(...) INCBIN_VA_ARG_COUNTER(__VA_ARGS__, 3, 2, 1, 0)
+
+/* Green Hills uses a different directive for including binary data */
+#if defined(__ghs__)
+#  if (__ghs_asm == 2)
+#    define INCBIN_MACRO ".file"
+/* Or consider the ".myrawdata" entry in the ld file */
+#  else
+#    define INCBIN_MACRO "\tINCBIN"
+#  endif
+#else
+#  define INCBIN_MACRO ".incbin"
+#endif
+
+#ifndef _MSC_VER
+#  define INCBIN_ALIGN \
+    __attribute__((aligned(INCBIN_ALIGNMENT)))
+#else
+#  define INCBIN_ALIGN __declspec(align(INCBIN_ALIGNMENT))
+#endif
+
+#if defined(__arm__) || /* GNU C and RealView */ \
+    defined(__arm) || /* Diab */ \
+    defined(_ARM) /* ImageCraft */
+#  define INCBIN_ARM
+#endif
+
+#ifdef __GNUC__
+/* Utilize .balign where supported */
+#  define INCBIN_ALIGN_HOST ".balign " INCBIN_STRINGIZE(INCBIN_ALIGNMENT) "\n"
+#  define INCBIN_ALIGN_BYTE ".balign 1\n"
+#elif defined(INCBIN_ARM)
+/*
+ * On arm assemblers, the alignment value is calculated as (1 << n) where `n' is
+ * the shift count. This is the value passed to `.align'
+ */
+#  define INCBIN_ALIGN_HOST ".align " INCBIN_STRINGIZE(INCBIN_ALIGNMENT_INDEX) "\n"
+#  define INCBIN_ALIGN_BYTE ".align 0\n"
+#else
+/* We assume other inline assembler's treat `.align' as `.balign' */
+#  define INCBIN_ALIGN_HOST ".align " INCBIN_STRINGIZE(INCBIN_ALIGNMENT) "\n"
+#  define INCBIN_ALIGN_BYTE ".align 1\n"
+#endif
+
+/* INCBIN_CONST is used by incbin.c generated files */
+#if defined(__cplusplus)
+#  define INCBIN_EXTERNAL extern "C"
+#  define INCBIN_CONST    extern const
+#else
+#  define INCBIN_EXTERNAL extern
+#  define INCBIN_CONST    const
+#endif
+
+/**
+ * @brief Optionally override the linker section into which size and data is
+ * emitted.
+ * 
+ * @warning If you use this facility, you might have to deal with
+ * platform-specific linker output section naming on your own.
+ */
+#if !defined(INCBIN_OUTPUT_SECTION)
+#  if defined(__APPLE__)
+#    define INCBIN_OUTPUT_SECTION ".const_data"
+#  else
+#    define INCBIN_OUTPUT_SECTION ".rodata"
+#  endif
+#endif
+
+/**
+ * @brief Optionally override the linker section into which data is emitted.
+ *
+ * @warning If you use this facility, you might have to deal with
+ * platform-specific linker output section naming on your own.
+ */
+#if !defined(INCBIN_OUTPUT_DATA_SECTION)
+#  define INCBIN_OUTPUT_DATA_SECTION INCBIN_OUTPUT_SECTION
+#endif
+
+/**
+ * @brief Optionally override the linker section into which size is emitted.
+ *
+ * @warning If you use this facility, you might have to deal with
+ * platform-specific linker output section naming on your own.
+ * 
+ * @note This is useful for Harvard architectures where program memory cannot
+ * be directly read from the program without special instructions. With this you
+ * can chose to put the size variable in RAM rather than ROM.
+ */
+#if !defined(INCBIN_OUTPUT_SIZE_SECTION)
+#  define INCBIN_OUTPUT_SIZE_SECTION INCBIN_OUTPUT_SECTION
+#endif
+
+#if defined(__APPLE__)
+#  include "TargetConditionals.h"
+#  if defined(TARGET_OS_IPHONE) && !defined(INCBIN_SILENCE_BITCODE_WARNING)
+#    warning "incbin is incompatible with bitcode. Using the library will break upload to App Store if you have bitcode enabled. Add `#define INCBIN_SILENCE_BITCODE_WARNING` before including this header to silence this warning."
+#  endif
+/* The directives are different for Apple branded compilers */
+#  define INCBIN_SECTION         INCBIN_OUTPUT_SECTION "\n"
+#  define INCBIN_GLOBAL(NAME)    ".globl " INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME "\n"
+#  define INCBIN_INT             ".long "
+#  define INCBIN_MANGLE          "_"
+#  define INCBIN_BYTE            ".byte "
+#  define INCBIN_TYPE(...)
+#else
+#  define INCBIN_SECTION         ".section " INCBIN_OUTPUT_SECTION "\n"
+#  define INCBIN_GLOBAL(NAME)    ".global " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME "\n"
+#  if defined(__ghs__)
+#    define INCBIN_INT           ".word "
+#  else
+#    define INCBIN_INT           ".int "
+#  endif
+#  if defined(__USER_LABEL_PREFIX__)
+#    define INCBIN_MANGLE        INCBIN_STRINGIZE(__USER_LABEL_PREFIX__)
+#  else
+#    define INCBIN_MANGLE        ""
+#  endif
+#  if defined(INCBIN_ARM)
+/* On arm assemblers, `@' is used as a line comment token */
+#    define INCBIN_TYPE(NAME)    ".type " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME ", %object\n"
+#  elif defined(__MINGW32__) || defined(__MINGW64__)
+/* Mingw doesn't support this directive either */
+#    define INCBIN_TYPE(NAME)
+#  else
+/* It's safe to use `@' on other architectures */
+#    define INCBIN_TYPE(NAME)    ".type " INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME ", @object\n"
+#  endif
+#  define INCBIN_BYTE            ".byte "
+#endif
+
+/* List of style types used for symbol names */
+#define INCBIN_STYLE_CAMEL 0
+#define INCBIN_STYLE_SNAKE 1
+
+/**
+ * @brief Specify the prefix to use for symbol names.
+ *
+ * @note By default this is "g".
+ *
+ * @code
+ * #define INCBIN_PREFIX incbin
+ * #include "incbin.h"
+ * INCBIN(Foo, "foo.txt");
+ *
+ * // Now you have the following symbols instead:
+ * // const unsigned char incbinFoo<data>[];
+ * // const unsigned char *const incbinFoo<end>;
+ * // const unsigned int incbinFoo<size>;
+ * @endcode
+ */
+#if !defined(INCBIN_PREFIX)
+#  define INCBIN_PREFIX g
+#endif
+
+/**
+ * @brief Specify the style used for symbol names.
+ *
+ * Possible options are
+ * - INCBIN_STYLE_CAMEL "CamelCase"
+ * - INCBIN_STYLE_SNAKE "snake_case"
+ *
+ * @note By default this is INCBIN_STYLE_CAMEL
+ *
+ * @code
+ * #define INCBIN_STYLE INCBIN_STYLE_SNAKE
+ * #include "incbin.h"
+ * INCBIN(foo, "foo.txt");
+ *
+ * // Now you have the following symbols:
+ * // const unsigned char <prefix>foo_data[];
+ * // const unsigned char *const <prefix>foo_end;
+ * // const unsigned int <prefix>foo_size;
+ * @endcode
+ */
+#if !defined(INCBIN_STYLE)
+#  define INCBIN_STYLE INCBIN_STYLE_CAMEL
+#endif
+
+/* Style lookup tables */
+#define INCBIN_STYLE_0_DATA Data
+#define INCBIN_STYLE_0_END End
+#define INCBIN_STYLE_0_SIZE Size
+#define INCBIN_STYLE_1_DATA _data
+#define INCBIN_STYLE_1_END _end
+#define INCBIN_STYLE_1_SIZE _size
+
+/* Style lookup: returning identifier */
+#define INCBIN_STYLE_IDENT(TYPE) \
+    INCBIN_CONCATENATE( \
+        INCBIN_STYLE_, \
+        INCBIN_CONCATENATE( \
+            INCBIN_EVAL(INCBIN_STYLE), \
+            INCBIN_CONCATENATE(_, TYPE)))
+
+/* Style lookup: returning string literal */
+#define INCBIN_STYLE_STRING(TYPE) \
+    INCBIN_STRINGIZE( \
+        INCBIN_STYLE_IDENT(TYPE)) \
+
+/* Generate the global labels by indirectly invoking the macro with our style
+ * type and concatenating the name against them. */
+#define INCBIN_GLOBAL_LABELS(NAME, TYPE) \
+    INCBIN_INVOKE( \
+        INCBIN_GLOBAL, \
+        INCBIN_CONCATENATE( \
+            NAME, \
+            INCBIN_INVOKE( \
+                INCBIN_STYLE_IDENT, \
+                TYPE))) \
+    INCBIN_INVOKE( \
+        INCBIN_TYPE, \
+        INCBIN_CONCATENATE( \
+            NAME, \
+            INCBIN_INVOKE( \
+                INCBIN_STYLE_IDENT, \
+                TYPE)))
+
+/**
+ * @brief Externally reference binary data included in another translation unit.
+ *
+ * Produces three external symbols that reference the binary data included in
+ * another translation unit.
+ *
+ * The symbol names are a concatenation of `INCBIN_PREFIX' before *NAME*; with
+ * "Data", as well as "End" and "Size" after. An example is provided below.
+ *
+ * @param TYPE Optional array type. Omitting this picks a default of `unsigned char`.
+ * @param NAME The name given for the binary data
+ *
+ * @code
+ * INCBIN_EXTERN(Foo);
+ *
+ * // Now you have the following symbols:
+ * // extern const unsigned char <prefix>Foo<data>[];
+ * // extern const unsigned char *const <prefix>Foo<end>;
+ * // extern const unsigned int <prefix>Foo<size>;
+ * @endcode
+ * 
+ * You may specify a custom optional data type as well as the first argument.
+ * @code
+ * INCBIN_EXTERN(custom_type, Foo);
+ * 
+ * // Now you have the following symbols:
+ * // extern const custom_type <prefix>Foo<data>[];
+ * // extern const custom_type *const <prefix>Foo<end>;
+ * // extern const unsigned int <prefix>Foo<size>;
+ * @endcode
+ */
+#define INCBIN_EXTERN(...) \
+    INCBIN_CONCATENATE(INCBIN_EXTERN_, INCBIN_VA_ARGC(__VA_ARGS__))(__VA_ARGS__)
+#define INCBIN_EXTERN_1(NAME, ...) \
+    INCBIN_EXTERN_2(unsigned char, NAME)
+#define INCBIN_EXTERN_2(TYPE, NAME) \
+    INCBIN_EXTERNAL const INCBIN_ALIGN TYPE \
+        INCBIN_CONCATENATE( \
+            INCBIN_CONCATENATE(INCBIN_PREFIX, NAME), \
+            INCBIN_STYLE_IDENT(DATA))[]; \
+    INCBIN_EXTERNAL const INCBIN_ALIGN TYPE *const \
+    INCBIN_CONCATENATE( \
+        INCBIN_CONCATENATE(INCBIN_PREFIX, NAME), \
+        INCBIN_STYLE_IDENT(END)); \
+    INCBIN_EXTERNAL const unsigned int \
+        INCBIN_CONCATENATE( \
+            INCBIN_CONCATENATE(INCBIN_PREFIX, NAME), \
+            INCBIN_STYLE_IDENT(SIZE))
+
+/**
+ * @brief Externally reference textual data included in another translation unit.
+ *
+ * Produces three external symbols that reference the textual data included in
+ * another translation unit.
+ *
+ * The symbol names are a concatenation of `INCBIN_PREFIX' before *NAME*; with
+ * "Data", as well as "End" and "Size" after. An example is provided below.
+ *
+ * @param NAME The name given for the textual data
+ *
+ * @code
+ * INCBIN_EXTERN(Foo);
+ *
+ * // Now you have the following symbols:
+ * // extern const char <prefix>Foo<data>[];
+ * // extern const char *const <prefix>Foo<end>;
+ * // extern const unsigned int <prefix>Foo<size>;
+ * @endcode
+ */
+#define INCTXT_EXTERN(NAME) \
+    INCBIN_EXTERN_2(char, NAME)
+
+/**
+ * @brief Include a binary file into the current translation unit.
+ *
+ * Includes a binary file into the current translation unit, producing three symbols
+ * for objects that encode the data and size respectively.
+ *
+ * The symbol names are a concatenation of `INCBIN_PREFIX' before *NAME*; with
+ * "Data", as well as "End" and "Size" after. An example is provided below.
+ *
+ * @param TYPE Optional array type. Omitting this picks a default of `unsigned char`.
+ * @param NAME The name to associate with this binary data (as an identifier.)
+ * @param FILENAME The file to include (as a string literal.)
+ *
+ * @code
+ * INCBIN(Icon, "icon.png");
+ *
+ * // Now you have the following symbols:
+ * // const unsigned char <prefix>Icon<data>[];
+ * // const unsigned char *const <prefix>Icon<end>;
+ * // const unsigned int <prefix>Icon<size>;
+ * @endcode
+ * 
+ * You may specify a custom optional data type as well as the first argument.
+ * These macros are specialized by arity.
+ * @code
+ * INCBIN(custom_type, Icon, "icon.png");
+ *
+ * // Now you have the following symbols:
+ * // const custom_type <prefix>Icon<data>[];
+ * // const custom_type *const <prefix>Icon<end>;
+ * // const unsigned int <prefix>Icon<size>;
+ * @endcode
+ *
+ * @warning This must be used in global scope
+ * @warning The identifiers may be different if INCBIN_STYLE is not default
+ *
+ * To externally reference the data included by this in another translation unit
+ * please @see INCBIN_EXTERN.
+ */
+#ifdef _MSC_VER
+#  define INCBIN(NAME, FILENAME) \
+      INCBIN_EXTERN(NAME)
+#else
+#  define INCBIN(...) \
+     INCBIN_CONCATENATE(INCBIN_, INCBIN_VA_ARGC(__VA_ARGS__))(__VA_ARGS__)
+#  if defined(__GNUC__)
+#    define INCBIN_1(...) _Pragma("GCC error \"Single argument INCBIN not allowed\"")
+#  elif defined(__clang__)
+#    define INCBIN_1(...) _Pragma("clang error \"Single argument INCBIN not allowed\"")
+#  else
+#    define INCBIN_1(...) /* Cannot do anything here */
+#  endif
+#  define INCBIN_2(NAME, FILENAME) \
+      INCBIN_3(unsigned char, NAME, FILENAME)
+#  define INCBIN_3(TYPE, NAME, FILENAME) INCBIN_COMMON(TYPE, NAME, FILENAME, /* No terminator for binary data */)
+#  define INCBIN_COMMON(TYPE, NAME, FILENAME, TERMINATOR) \
+    __asm__(INCBIN_SECTION \
+            INCBIN_GLOBAL_LABELS(NAME, DATA) \
+            INCBIN_ALIGN_HOST \
+            INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME INCBIN_STYLE_STRING(DATA) ":\n" \
+            INCBIN_MACRO " \"" FILENAME "\"\n" \
+                TERMINATOR \
+            INCBIN_GLOBAL_LABELS(NAME, END) \
+            INCBIN_ALIGN_BYTE \
+            INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME INCBIN_STYLE_STRING(END) ":\n" \
+                INCBIN_BYTE "1\n" \
+            INCBIN_GLOBAL_LABELS(NAME, SIZE) \
+            INCBIN_ALIGN_HOST \
+            INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME INCBIN_STYLE_STRING(SIZE) ":\n" \
+                INCBIN_INT INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME INCBIN_STYLE_STRING(END) " - " \
+                           INCBIN_MANGLE INCBIN_STRINGIZE(INCBIN_PREFIX) #NAME INCBIN_STYLE_STRING(DATA) "\n" \
+            INCBIN_ALIGN_HOST \
+            ".text\n" \
+    ); \
+    INCBIN_EXTERN(TYPE, NAME)
+#endif
+
+/**
+ * @brief Include a textual file into the current translation unit.
+ * 
+ * This behaves the same as INCBIN except it produces char compatible arrays
+ * and implicitly adds a null-terminator byte, thus the size of data included
+ * by this is one byte larger than that of INCBIN.
+ *
+ * Includes a textual file into the current translation unit, producing three
+ * symbols for objects that encode the data and size respectively.
+ *
+ * The symbol names are a concatenation of `INCBIN_PREFIX' before *NAME*; with
+ * "Data", as well as "End" and "Size" after. An example is provided below.
+ *
+ * @param NAME The name to associate with this binary data (as an identifier.)
+ * @param FILENAME The file to include (as a string literal.)
+ *
+ * @code
+ * INCTXT(Readme, "readme.txt");
+ *
+ * // Now you have the following symbols:
+ * // const char <prefix>Readme<data>[];
+ * // const char *const <prefix>Readme<end>;
+ * // const unsigned int <prefix>Readme<size>;
+ * @endcode
+ *
+ * @warning This must be used in global scope
+ * @warning The identifiers may be different if INCBIN_STYLE is not default
+ *
+ * To externally reference the data included by this in another translation unit
+ * please @see INCBIN_EXTERN.
+ */
+#if defined(_MSC_VER)
+#  define INCTXT(NAME, FILENAME) \
+     INCBIN_EXTERN(NAME)
+#else
+#  define INCTXT(NAME, FILENAME) \
+     INCBIN_COMMON(char, NAME, FILENAME, INCBIN_BYTE "0\n")
+#endif
+
+#endif
+

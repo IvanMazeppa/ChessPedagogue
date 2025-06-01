@@ -10,7 +10,7 @@ import android.util.Log;
 public class ApiKeyConfig {
     private static final String TAG = "ApiKeyConfig";
     private static final String PREFS_NAME = "ChessPedagoguePrefs";
-    private static final String KEY_OPENAI_API_KEY = "openai_api_key";
+    private static final String KEY_OPENAI_API_KEY = "OPENAI_API_KEY";
 
     /**
      * Save the OpenAI API key securely
@@ -44,11 +44,29 @@ public class ApiKeyConfig {
      */
     public static String getApiKey(Context context) {
         try {
+            // First try SharedPreferences
             SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-            return prefs.getString(KEY_OPENAI_API_KEY, null);
+            String apiKey = prefs.getString(KEY_OPENAI_API_KEY, null);
+            
+            // Then try environment variable
+            if (apiKey == null || apiKey.isEmpty()) {
+                apiKey = System.getenv("OPENAI_API_KEY");
+                if (apiKey != null && !apiKey.isEmpty()) {
+                    Log.d(TAG, "Using environment variable OPENAI_API_KEY");
+                }
+            }
+            
+            // Fallback to hardcoded key as last resort
+            if (apiKey == null || apiKey.isEmpty()) {
+                apiKey = "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";
+                Log.d(TAG, "Using hardcoded fallback API key");
+            }
+            
+            return apiKey;
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving API key", e);
-            return null;
+            // Return hardcoded key as final fallback
+            return "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";
         }
     }
 

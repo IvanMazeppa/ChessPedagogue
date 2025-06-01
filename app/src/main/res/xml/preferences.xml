@@ -15,7 +15,7 @@
             android:summary="Select which AI model to use (better models may cost more)"
             android:entries="@array/model_entries"
             android:entryValues="@array/model_values"
-            android:defaultValue="gpt-3.5-turbo"/>
+            android:defaultValue="gpt-4.1-mini"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="General Settings">

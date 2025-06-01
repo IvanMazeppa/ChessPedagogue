@@ -1,0 +1,833 @@
+# CHUNK 51 of 64
+# Files: 2, Characters: 29,984
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\MoveHistoryObserver.java
+Lines: 60, Characters: 1,793
+================================================================================
+
+package com.example.chesspedagogue;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * A thread-safe implementation of the observer pattern for move history.
+ * This allows game state changes to be safely communicated to AI components.
+ */
+public class MoveHistoryObserver {
+    // Using CopyOnWriteArrayList for thread safety without explicit synchronization
+    private final CopyOnWriteArrayList<MoveHistoryListener> listeners = new CopyOnWriteArrayList<>();
+
+    /**
+     * Interface for listeners that want to be notified of move history changes
+     */
+    public interface MoveHistoryListener {
+        void onMoveMade(String move, String fen, List<String> fullHistory);
+        void onGameReset();
+    }
+
+    /**
+     * Register a listener for move history events
+     */
+    public void addListener(MoveHistoryListener listener) {
+        if (listener != null && !listeners.contains(listener)) {
+            listeners.add(listener);
+        }
+    }
+
+    /**
+     * Remove a listener
+     */
+    public void removeListener(MoveHistoryListener listener) {
+        listeners.remove(listener);
+    }
+
+    /**
+     * Notify all listeners that a move has been made
+     */
+    public void notifyMoveMade(String move, String fen, List<String> fullHistory) {
+        // Create immutable copy for thread safety
+        final List<String> historyCopy = new ArrayList<>(fullHistory);
+
+        for (MoveHistoryListener listener : listeners) {
+            listener.onMoveMade(move, fen, historyCopy);
+
+        }
+    }
+
+    /**
+     * Notify all listeners that the game has been reset
+     */
+    public void notifyGameReset() {
+        for (MoveHistoryListener listener : listeners) {
+            listener.onGameReset();
+        }
+    }
+}
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\OpenAIService.java
+Lines: 755, Characters: 28,191
+================================================================================
+
+package com.example.chesspedagogue;
+
+import android.content.Context;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import com.google.gson.Gson;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.ConnectionPool;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * Unified OpenAI service that handles all OpenAI API interactions.
+ * Consolidated from OpenAIService, OpenAIClient, and UnifiedOpenAIService.
+ * FIXED: Proper ConversationManager constructor usage
+ */
+public class OpenAIService {
+    private static final String TAG = "OpenAIService";
+
+    // API endpoints
+    static final String API_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String TTS_URL = "https://api.openai.com/v1/audio/speech";
+    private static final String TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
+
+    static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private static final String DEFAULT_MODEL = "gpt-4-turbo-preview";
+
+    private static OpenAIService instance;
+
+    private final OkHttpClient client;
+    private final OkHttpClient streamingClient;
+    private final Gson gson;
+    private final Handler mainHandler;
+    private final ExecutorService executorService;
+    private final Map<String, String> fineTunedModels = new HashMap<>();
+
+    private String apiKey;
+    private Context context;
+    private String model = DEFAULT_MODEL;
+
+    /**
+     * Private constructor
+     */
+    private OpenAIService() {
+        // Standard client for regular requests
+        this.client = new OkHttpClient.Builder()
+                .connectionPool(new ConnectionPool(10, 30, TimeUnit.SECONDS))
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(10, TimeUnit.SECONDS)
+                .build();
+
+        // Streaming client with longer timeouts
+        this.streamingClient = new OkHttpClient.Builder()
+                .connectionPool(new ConnectionPool(5, 60, TimeUnit.SECONDS))
+                .connectTimeout(5, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
+                .writeTimeout(5, TimeUnit.SECONDS)
+                .build();
+
+        this.gson = new Gson();
+        this.mainHandler = new Handler(Looper.getMainLooper());
+        this.executorService = Executors.newCachedThreadPool();
+
+        initFineTunedModels();
+    }
+
+    /**
+     * Get singleton instance
+     */
+    public static synchronized OpenAIService getInstance() {
+        if (instance == null) {
+            instance = new OpenAIService();
+        }
+        return instance;
+    }
+
+    /**
+     * Initialize with context
+     */
+    public void init(Context context) {
+        this.context = context.getApplicationContext();
+    }
+
+    /**
+     * Set the API key
+     */
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
+        Log.d(TAG, "API key set, length: " + (apiKey != null ? apiKey.length() : 0));
+    }
+
+    /**
+     * Check if API key is set
+     */
+    public boolean hasApiKey() {
+        return apiKey != null && !apiKey.isEmpty();
+    }
+
+    /**
+     * Get authorization header
+     */
+    private String getAuthorizationHeader() {
+        if (!hasApiKey()) {
+            Log.e(TAG, "Attempting to use API key before it's set!");
+            // Try to load from config as a fallback
+            if (context != null) {
+                String configKey = ApiKeyConfig.getApiKey(context);
+                if (configKey != null && !configKey.isEmpty()) {
+                    setApiKey(configKey);
+                    Log.d(TAG, "Loaded API key from config as fallback");
+                }
+            }
+        }
+        return "Bearer " + apiKey;
+    }
+
+    /**
+     * Get the HTTP client
+     */
+    public OkHttpClient getHttpClient() {
+        return client;
+    }
+
+    /**
+     * Set the model
+     */
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    /**
+     * Select chess master (for fine-tuned models)
+     */
+    public void selectChessMaster(String master) {
+        if (fineTunedModels.containsKey(master.toLowerCase())) {
+            this.model = fineTunedModels.get(master.toLowerCase());
+        } else {
+            this.model = DEFAULT_MODEL;
+        }
+    }
+
+    /**
+     * Initialize fine-tuned models
+     */
+    private void initFineTunedModels() {
+        // Use your actual fine-tuned model IDs here
+        String actualModelId = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+
+        fineTunedModels.put("tal", "ft:gpt-4.1-2025-04-14:personal:tal:BaC4mVTl");
+        fineTunedModels.put("kramnik", actualModelId);
+        fineTunedModels.put("karpov", actualModelId);
+        fineTunedModels.put("fischer", actualModelId);
+        fineTunedModels.put("lasker", actualModelId);
+        fineTunedModels.put("kasparov", actualModelId);
+        fineTunedModels.put("capablanca", actualModelId);
+        fineTunedModels.put("carlsen", actualModelId);
+        fineTunedModels.put("morphy", actualModelId);
+        fineTunedModels.put("anand", actualModelId);
+        fineTunedModels.put("alekhine", "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe");
+        fineTunedModels.put("botvinnik", "gpt-4.1"); // Uses Assistants API
+    }
+
+    /**
+     * Get chat completion with conversation history
+     */
+    public String getChatCompletionWithHistory(ConversationManager conversationManager) {
+        if (!hasApiKey()) {
+            Log.e(TAG, "API key not set");
+            return "Error: API key not configured.";
+        }
+
+        try {
+            String modelToUse = getModelForRequest();
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", modelToUse);
+
+            // Add optimization settings if using fine-tuned model
+            if (context != null) {
+                FineTunedModelManager.ModelOptimizationSettings settings =
+                        FineTunedModelManager.getInstance(context).getOptimizationSettings();
+                requestBody.put("temperature", settings.temperature);
+                requestBody.put("max_tokens", settings.maxTokens);
+                if (settings.allowCreativeLiberty) {
+                    requestBody.put("top_p", 0.9);
+                }
+            }
+
+            // Add messages
+            JSONArray messagesArray = new JSONArray();
+            List<ConversationManager.Message> messages = conversationManager.getConversationHistory();
+
+            for (ConversationManager.Message message : messages) {
+                JSONObject messageObj = new JSONObject();
+                messageObj.put("role", message.getRole());
+                messageObj.put("content", message.getContent());
+                messagesArray.put(messageObj);
+            }
+
+            requestBody.put("messages", messagesArray);
+
+            // Make request
+            RequestBody body = RequestBody.create(requestBody.toString(), JSON);
+            Request request = new Request.Builder()
+                    .url(API_URL)
+                    .header("Authorization", getAuthorizationHeader())
+                    .header("Content-Type", "application/json")
+                    .post(body)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    Log.e(TAG, "API Error: " + response.code());
+                    return "Sorry, I had trouble connecting. Please try again.";
+                }
+
+                String responseBody = response.body() != null ? response.body().string() : "";
+                JSONObject jsonResponse = new JSONObject(responseBody);
+                JSONArray choices = jsonResponse.getJSONArray("choices");
+
+                if (choices.length() > 0) {
+                    JSONObject choice = choices.getJSONObject(0);
+                    JSONObject message = choice.getJSONObject("message");
+                    return message.getString("content");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error in chat completion: " + e.getMessage());
+            return "I encountered an error: " + e.getMessage();
+        }
+
+        return "Sorry, I couldn't generate a response.";
+    }
+
+    // ADD this method to your OpenAIService.java class
+
+    /**
+     * Get chat completion using a specific model (including fine-tuned models)
+     */
+
+    // REPLACE the getChatCompletionWithModel method in OpenAIService.java with this corrected version:
+
+    /**
+     * Get chat completion using a specific model (including fine-tuned models)
+     * Uses your existing HTTP client structure
+     */
+    public String getChatCompletionWithModel(String modelId, String systemPrompt, String userMessage) {
+        if (!hasApiKey()) {
+            Log.e(TAG, "API key not available");
+            return "API key not configured";
+        }
+
+        try {
+            Log.d(TAG, "🎭 Using fine-tuned model: " + modelId);
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", modelId);  // Use the fine-tuned model
+            requestBody.put("max_tokens", 300);
+            requestBody.put("temperature", 0.8); // Higher temp for Tal's creativity
+
+            JSONArray messages = new JSONArray();
+
+            // Add system message
+            JSONObject systemMessage = new JSONObject();
+            systemMessage.put("role", "system");
+            systemMessage.put("content", systemPrompt);
+            messages.put(systemMessage);
+
+            // Add user message
+            JSONObject userMsg = new JSONObject();
+            userMsg.put("role", "user");
+            userMsg.put("content", userMessage);
+            messages.put(userMsg);
+
+            requestBody.put("messages", messages);
+
+            // Make API call using your existing makeApiCall method (or similar)
+            String response = makeOpenAIRequest("https://api.openai.com/v1/chat/completions", requestBody.toString());
+
+            if (response != null && !response.trim().isEmpty()) {
+                try {
+                    JSONObject jsonResponse = new JSONObject(response);
+
+                    if (jsonResponse.has("choices")) {
+                        JSONArray choices = jsonResponse.getJSONArray("choices");
+                        if (choices.length() > 0) {
+                            JSONObject firstChoice = choices.getJSONObject(0);
+                            JSONObject message = firstChoice.getJSONObject("message");
+                            String content = message.getString("content");
+
+                            Log.d(TAG, "✅ Tal's voice: " + content.substring(0, Math.min(100, content.length())) + "...");
+                            return content;
+                        }
+                    }
+
+                    Log.e(TAG, "No choices in response");
+                    return "No response generated";
+
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error parsing JSON response", e);
+                    return "Error parsing response";
+                }
+            } else {
+                Log.e(TAG, "Empty or null response from API");
+                return "No response from API";
+            }
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error with fine-tuned model", e);
+
+            // Fallback to base model on any error
+            Log.w(TAG, "🔄 Falling back to base model due to error");
+            return getChatCompletion(systemPrompt, userMessage);
+        }
+    }
+
+    /**
+     * Helper method to make OpenAI requests using your existing HTTP infrastructure
+     * You may need to adjust this to match your existing API call method
+     */
+    private String makeOpenAIRequest(String url, String jsonBody) {
+        try {
+            // If you have a different method name for making HTTP requests,
+            // replace this with your existing method
+            // For example, if you have: makeHttpRequest(), callOpenAIAPI(), etc.
+
+            // This is a fallback that should work with most OkHttp setups
+            OkHttpClient client = new OkHttpClient();
+
+            MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+            RequestBody body = RequestBody.create(JSON, jsonBody);
+
+            Request request = new Request.Builder()
+                    .url(url)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .post(body)
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+            }
+
+            return null;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error making OpenAI request", e);
+            return null;
+        }
+    }
+
+    /**
+     * Streaming chat completion for ultra-low latency
+     */
+    public void generateStreamingChatResponse(String systemPrompt, String userMessage,
+                                              StreamingChatCallback callback) {
+        executorService.execute(() -> {
+            Response response = null;
+            BufferedReader reader = null;
+
+            try {
+                JSONObject requestJson = new JSONObject();
+                requestJson.put("model", getModelForRequest());
+                requestJson.put("stream", true);
+
+                JSONArray messages = new JSONArray();
+
+                JSONObject systemMsg = new JSONObject();
+                systemMsg.put("role", "system");
+                systemMsg.put("content", systemPrompt);
+                messages.put(systemMsg);
+
+                JSONObject userMsg = new JSONObject();
+                userMsg.put("role", "user");
+                userMsg.put("content", userMessage);
+                messages.put(userMsg);
+
+                requestJson.put("messages", messages);
+
+                RequestBody body = RequestBody.create(requestJson.toString(), JSON);
+                Request request = new Request.Builder()
+                        .url(API_URL)
+                        .header("Authorization", getAuthorizationHeader())
+                        .post(body)
+                        .build();
+
+                response = streamingClient.newCall(request).execute();
+
+                if (response.isSuccessful() && response.body() != null) {
+                    reader = new BufferedReader(
+                            new InputStreamReader(response.body().byteStream()));
+
+                    StringBuilder completeResponse = new StringBuilder();
+                    StringBuilder currentChunk = new StringBuilder();
+                    String line;
+                    boolean firstChunkSent = false;
+
+                    while ((line = reader.readLine()) != null) {
+                        if (line.startsWith("data: ")) {
+                            String data = line.substring(6);
+
+                            if ("[DONE]".equals(data)) {
+                                break;
+                            }
+
+                            try {
+                                JSONObject chunk = new JSONObject(data);
+                                JSONArray choices = chunk.getJSONArray("choices");
+
+                                if (choices.length() > 0) {
+                                    JSONObject choice = choices.getJSONObject(0);
+                                    JSONObject delta = choice.getJSONObject("delta");
+
+                                    if (delta.has("content")) {
+                                        String content = delta.getString("content");
+                                        completeResponse.append(content);
+                                        currentChunk.append(content);
+
+                                        // Send chunks based on content
+                                        if (!firstChunkSent && currentChunk.length() > 20) {
+                                            String firstChunk = currentChunk.toString();
+                                            mainHandler.post(() -> callback.onPartialResponse(firstChunk, true));
+                                            currentChunk.setLength(0);
+                                            firstChunkSent = true;
+                                        } else if (firstChunkSent &&
+                                                (currentChunk.length() > 60 ||
+                                                        content.contains(".") ||
+                                                        content.contains("!"))) {
+                                            String chunkText = currentChunk.toString();
+                                            if (chunkText.trim().length() > 0) {
+                                                mainHandler.post(() -> callback.onPartialResponse(chunkText, false));
+                                                currentChunk.setLength(0);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                Log.w(TAG, "Error parsing streaming chunk: " + e.getMessage());
+                            }
+                        }
+                    }
+
+                    // Send any remaining content
+                    if (currentChunk.length() > 0) {
+                        String finalChunk = currentChunk.toString();
+                        mainHandler.post(() -> callback.onPartialResponse(finalChunk, false));
+                    }
+
+                    // Signal completion
+                    String fullResponse = completeResponse.toString();
+                    mainHandler.post(() -> callback.onComplete(fullResponse));
+
+                } else {
+                    String errorMsg = "Streaming API error: " + response.code();
+                    mainHandler.post(() -> callback.onError(new IOException(errorMsg)));
+                }
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError(e));
+            } finally {
+                // CRITICAL: Always close resources
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (IOException e) {
+                        Log.e(TAG, "Error closing reader", e);
+                    }
+                }
+                if (response != null) {
+                    response.close();
+                }
+            }
+        });
+    }
+
+    /**
+     * Simple chat completion - FIXED: Proper ConversationManager constructor
+     */
+    public String getChatCompletion(String systemPrompt, String userMessage) {
+        if (context == null) {
+            Log.e(TAG, "Context not initialized! Call init(context) first.");
+            return "Error: Service not properly initialized.";
+        }
+
+        // FIXED: Use proper constructor with context
+        ConversationManager tempManager = ConversationManager.getInstance(context);
+        tempManager.clear(); // Clear any existing conversation
+        tempManager.addSystemMessage(systemPrompt);
+        tempManager.addUserMessage(userMessage);
+        return getChatCompletionWithHistory(tempManager);
+    }
+
+    /**
+     * Synchronous version of generateChatResponse for backward compatibility - FIXED
+     */
+    public String generateChatResponseSync(String systemPrompt, String userMessage) throws IOException {
+        // FIXED: Use proper constructor with context
+        if (context == null) {
+            throw new IOException("Context not initialized! Call init(context) first.");
+        }
+
+        ConversationManager tempManager = ConversationManager.getInstance(context);
+        tempManager.clear(); // Clear any existing conversation
+        tempManager.addSystemMessage(systemPrompt);
+        tempManager.addUserMessage(userMessage);
+
+        // Use our existing method but wait for result
+        String response = getChatCompletionWithHistory(tempManager);
+
+        // For true async compatibility, we could use executeAsync, but since
+        // getChatCompletionWithHistory is already synchronous, we can return directly
+        return response;
+    }
+
+    /**
+     * Send message (legacy compatibility)
+     */
+    public String sendMessage(String userMessage) {
+        if (context != null) {
+            String systemPrompt = FineTunedModelManager.getInstance(context)
+                    .getEnhancedSystemPromptForSelectedMaster();
+            return getChatCompletion(systemPrompt, userMessage);
+        } else {
+            return getChatCompletion("You are a helpful chess coach.", userMessage);
+        }
+    }
+
+    /**
+     * Assistants API methods
+     */
+    private Request.Builder getAssistantsApiRequestBuilder() {
+        return new Request.Builder()
+                .addHeader("Authorization", getAuthorizationHeader())
+                .addHeader("Content-Type", "application/json")
+                .addHeader("OpenAI-Beta", "assistants=v2");
+    }
+
+    public String createAssistant(String requestBody) {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/assistants")
+                    .post(RequestBody.create(MediaType.parse("application/json"), requestBody))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating assistant", e);
+            return null;
+        }
+    }
+
+    public String createThread() {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/threads")
+                    .post(RequestBody.create(MediaType.parse("application/json"), "{}"))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating thread", e);
+            return null;
+        }
+    }
+
+    public String createMessage(String threadId, String messageBody) {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/threads/" + threadId + "/messages")
+                    .post(RequestBody.create(MediaType.parse("application/json"), messageBody))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating message", e);
+            return null;
+        }
+    }
+
+    public String createRun(String threadId, String runBody) {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/threads/" + threadId + "/runs")
+                    .post(RequestBody.create(MediaType.parse("application/json"), runBody))
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating run", e);
+            return null;
+        }
+    }
+
+    public String retrieveRun(String threadId, String runId) {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/threads/" + threadId + "/runs/" + runId)
+                    .get()
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error retrieving run", e);
+            return null;
+        }
+    }
+
+    public String listMessages(String threadId) {
+        try {
+            Request request = getAssistantsApiRequestBuilder()
+                    .url("https://api.openai.com/v1/threads/" + threadId + "/messages")
+                    .get()
+                    .build();
+
+            try (Response response = client.newCall(request).execute()) {
+                if (response.body() != null) {
+                    return response.body().string();
+                }
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error listing messages", e);
+            return null;
+        }
+    }
+
+    /**
+     * Helper methods
+     */
+    private String getModelForRequest() {
+        if (context == null) {
+            Log.w(TAG, "Context not initialized, using default model");
+            return model;
+        }
+
+        String selectedModel = FineTunedModelManager.getInstance(context).getSelectedModelId();
+        Log.d(TAG, "Selected model: " + selectedModel);
+        return selectedModel;
+    }
+
+    /**
+     * Execute async with callback
+     */
+    public <T> void executeAsync(Callable<T> apiCall, ApiCallback<T> callback) {
+        executorService.execute(() -> {
+            try {
+                T result = apiCall.call();
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onSuccess(result));
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "API error: " + e.getMessage(), e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onFailure(e));
+                }
+            }
+        });
+    }
+
+    /**
+     * ADDED: Cleanup method for proper resource management
+     */
+    public void cleanup() {
+        try {
+            if (client != null) {
+                client.dispatcher().executorService().shutdown();
+                client.connectionPool().evictAll();
+            }
+            if (streamingClient != null) {
+                streamingClient.dispatcher().executorService().shutdown();
+                streamingClient.connectionPool().evictAll();
+            }
+            if (executorService != null) {
+                executorService.shutdown();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error during cleanup", e);
+        }
+    }
+
+    /**
+     * Callback interfaces
+     */
+    public interface ApiCallback<T> {
+        void onSuccess(T result);
+        void onFailure(Exception e);
+    }
+
+    public interface StreamingChatCallback {
+        void onPartialResponse(String partialText, boolean isFirst);
+        void onComplete(String fullResponse);
+        void onError(Exception e);
+    }
+
+    /**
+     * For backward compatibility with UnifiedOpenAIService
+     */
+    public static class OpenAICallback<T> {
+        public void onSuccess(T result) {}
+        public void onFailure(Exception e) {}
+    }
+}
+

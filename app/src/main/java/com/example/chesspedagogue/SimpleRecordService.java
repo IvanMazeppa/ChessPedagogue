@@ -52,7 +52,7 @@ import okhttp3.Response;
 
 public class SimpleRecordService extends Service {
     private static final String TAG = "SimpleRecordService";
-    private static final String groqApiKey = "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";
+    private static final String groqApiKey = "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";
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
@@ -72,7 +72,7 @@ public class SimpleRecordService extends Service {
     private String currentThreadId = null;
     private ConversationManager conversationManager;
     private OpenAIService openAIService;
-    private String apiKey;
+    private String apiKey = "OPENAI_API_KEY";
 
     // UI references - Using WeakReferences to prevent memory leaks
     private TextView responseTextView;

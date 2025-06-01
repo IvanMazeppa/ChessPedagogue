@@ -1,0 +1,42 @@
+{
+  "timestamp": "2025-06-01T15:10:00.008273",
+  "device": "emulator-5554",
+  "test_type": "color_selection_with_logging",
+  "steps": {
+    "check_emulator": {
+      "success": true,
+      "timestamp": "2025-06-01T15:10:01.179261"
+    },
+    "install_apk": {
+      "success": false,
+      "timestamp": "2025-06-01T15:10:01.240458"
+    },
+    "launch_splash": {
+      "success": true,
+      "timestamp": "2025-06-01T15:10:05.488058"
+    },
+    "test_white_selection": {
+      "success": true,
+      "timestamp": "2025-06-01T15:10:09.561954"
+    },
+    "test_black_selection": {
+      "success": true,
+      "timestamp": "2025-06-01T15:10:13.630258"
+    },
+    "test_start_button": {
+      "success": true,
+      "timestamp": "2025-06-01T15:10:18.700422"
+    }
+  },
+  "logs_captured": [],
+  "analysis": {
+    "total_logs": 0,
+    "color_mentions": [],
+    "selection_events": [],
+    "configuration_logs": [],
+    "issues_found": [
+      "No selection events detected - click listeners may not be working"
+    ]
+  },
+  "overall_success": false
+}

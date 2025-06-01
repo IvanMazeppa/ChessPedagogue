@@ -39,13 +39,27 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
 
     // Groq API endpoint
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
-    private static final String GROQ_MODEL = "distil-whisper-large-v3-en";
-    private static final String GROQ_API_KEY = "GROQ_API_KEY";
+    private static final String GROQ_MODEL = "whisper-large-v3-turbo";
+    private static final String GROQ_API_KEY_FALLBACK = "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";
 
     private final Context context;
     private final ExecutorService executorService;
     private final Handler mainHandler;
     private final OkHttpClient httpClient;
+    
+    /**
+     * Get Groq API key from environment variable or fallback to hardcoded
+     */
+    private String getGroqApiKey() {
+        String apiKey = System.getenv("GROQ_API_KEY");
+        if (apiKey != null && !apiKey.isEmpty()) {
+            Log.d(TAG, "Using environment variable GROQ_API_KEY");
+            return apiKey;
+        } else {
+            Log.d(TAG, "Using hardcoded fallback GROQ_API_KEY");
+            return GROQ_API_KEY_FALLBACK;
+        }
+    }
 
     private AudioRecord audioRecord;
     private boolean isRecording = false;
@@ -102,7 +116,8 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
             return;
         }
 
-        if (GROQ_API_KEY == null || GROQ_API_KEY.isEmpty()) {
+        String apiKey = getGroqApiKey();
+        if (apiKey == null || apiKey.isEmpty()) {
             if (callback != null) {
                 mainHandler.post(() -> callback.onError("Groq API key not configured"));
             }
@@ -190,7 +205,7 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
 
             Request request = new Request.Builder()
                     .url(GROQ_API_URL)
-                    .header("Authorization", "Bearer " + GROQ_API_KEY)
+                    .header("Authorization", "Bearer " + getGroqApiKey())
                     .post(requestBody)
                     .build();
 

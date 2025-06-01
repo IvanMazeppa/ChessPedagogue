@@ -1,0 +1,474 @@
+PROJECT STRUCTURE
+========================================
+
+└── 
+    ├── app
+    │   ├── src
+    │   │   ├── androidTest
+    │   │   │   └── java
+    │   │   │       └── com
+    │   │   │           └── example
+    │   │   │               └── chesspedagogue
+    │   │   │                   └── ExampleInstrumentedTest.kt
+    │   │   ├── main
+    │   │   │   ├── assets
+    │   │   │   │   ├── fischer_positions.json
+    │   │   │   │   ├── kasparov_positions.json
+    │   │   │   │   ├── stockfish
+    │   │   │   │   └── tal_positions.json
+    │   │   │   ├── cpp
+    │   │   │   │   ├── stockfish
+    │   │   │   │   │   ├── incbin
+    │   │   │   │   │   │   ├── incbin.h
+    │   │   │   │   │   │   └── UNLICENCE
+    │   │   │   │   │   ├── nnue
+    │   │   │   │   │   │   ├── features
+    │   │   │   │   │   │   │   ├── half_ka_v2_hm.cpp
+    │   │   │   │   │   │   │   └── half_ka_v2_hm.h
+    │   │   │   │   │   │   ├── layers
+    │   │   │   │   │   │   │   ├── affine_transform.h
+    │   │   │   │   │   │   │   ├── affine_transform_sparse_input.h
+    │   │   │   │   │   │   │   ├── clipped_relu.h
+    │   │   │   │   │   │   │   ├── simd.h
+    │   │   │   │   │   │   │   └── sqr_clipped_relu.h
+    │   │   │   │   │   │   ├── network.cpp
+    │   │   │   │   │   │   ├── network.h
+    │   │   │   │   │   │   ├── nnue_accumulator.cpp
+    │   │   │   │   │   │   ├── nnue_accumulator.h
+    │   │   │   │   │   │   ├── nnue_architecture.h
+    │   │   │   │   │   │   ├── nnue_common.h
+    │   │   │   │   │   │   ├── nnue_feature_transformer.h
+    │   │   │   │   │   │   ├── nnue_misc.cpp
+    │   │   │   │   │   │   └── nnue_misc.h
+    │   │   │   │   │   ├── syzygy
+    │   │   │   │   │   │   ├── tbprobe.cpp
+    │   │   │   │   │   │   └── tbprobe.h
+    │   │   │   │   │   ├── benchmark.cpp
+    │   │   │   │   │   ├── benchmark.h
+    │   │   │   │   │   ├── bitboard.cpp
+    │   │   │   │   │   ├── bitboard.h
+    │   │   │   │   │   ├── engine.cpp
+    │   │   │   │   │   ├── engine.h
+    │   │   │   │   │   ├── evaluate.cpp
+    │   │   │   │   │   ├── evaluate.h
+    │   │   │   │   │   ├── history.h
+    │   │   │   │   │   ├── jstockfish_Uci.cpp
+    │   │   │   │   │   ├── main.cpp
+    │   │   │   │   │   ├── Makefile
+    │   │   │   │   │   ├── memory.cpp
+    │   │   │   │   │   ├── memory.h
+    │   │   │   │   │   ├── misc.cpp
+    │   │   │   │   │   ├── misc.h
+    │   │   │   │   │   ├── movegen.cpp
+    │   │   │   │   │   ├── movegen.h
+    │   │   │   │   │   ├── movepick.cpp
+    │   │   │   │   │   ├── movepick.h
+    │   │   │   │   │   ├── numa.h
+    │   │   │   │   │   ├── perft.h
+    │   │   │   │   │   ├── position.cpp
+    │   │   │   │   │   ├── position.h
+    │   │   │   │   │   ├── score.cpp
+    │   │   │   │   │   ├── score.h
+    │   │   │   │   │   ├── search.cpp
+    │   │   │   │   │   ├── search.h
+    │   │   │   │   │   ├── stockfish_wrapper.cpp
+    │   │   │   │   │   ├── thread.cpp
+    │   │   │   │   │   ├── thread.h
+    │   │   │   │   │   ├── thread_win32_osx.h
+    │   │   │   │   │   ├── timeman.cpp
+    │   │   │   │   │   ├── timeman.h
+    │   │   │   │   │   ├── tt.cpp
+    │   │   │   │   │   ├── tt.h
+    │   │   │   │   │   ├── tune.cpp
+    │   │   │   │   │   ├── tune.h
+    │   │   │   │   │   ├── types.h
+    │   │   │   │   │   ├── uci.cpp
+    │   │   │   │   │   ├── uci.h
+    │   │   │   │   │   ├── ucioption.cpp
+    │   │   │   │   │   └── ucioption.h
+    │   │   │   │   ├── arch_compatibility.h
+    │   │   │   │   ├── CMakeLists.txt
+    │   │   │   │   ├── native_bridge.cpp
+    │   │   │   │   ├── stockfish_adapter.cpp
+    │   │   │   │   ├── stockfish_wrapper.cpp
+    │   │   │   │   └── stockfish_wrapper.h
+    │   │   │   ├── java
+    │   │   │   │   └── com
+    │   │   │   │       └── example
+    │   │   │   │           └── chesspedagogue
+    │   │   │   │               ├── model
+    │   │   │   │               │   └── GameState.java
+    │   │   │   │               ├── repository
+    │   │   │   │               │   └── GameRepository.java
+    │   │   │   │               ├── ui
+    │   │   │   │               │   └── theme
+    │   │   │   │               │       ├── Color.kt
+    │   │   │   │               │       ├── Theme.kt
+    │   │   │   │               │       └── Type.kt
+    │   │   │   │               ├── util
+    │   │   │   │               ├── viewmodel
+    │   │   │   │               │   └── GameViewModel.java
+    │   │   │   │               ├── AIDialogueManager.java
+    │   │   │   │               ├── AIvsAIGameManager.java
+    │   │   │   │               ├── ApiKeyConfig.java
+    │   │   │   │               ├── ChallengeData.java
+    │   │   │   │               ├── ChatAdapter.java
+    │   │   │   │               ├── ChatMessage.java
+    │   │   │   │               ├── ChatService.java
+    │   │   │   │               ├── ChessBoardManager.java
+    │   │   │   │               ├── ChessBoardView.java
+    │   │   │   │               ├── ChessCoachManager.java
+    │   │   │   │               ├── ChessConversationActivity.java
+    │   │   │   │               ├── ChessMasterRatings.java
+    │   │   │   │               ├── ChessMasterSelectionActivity.java
+    │   │   │   │               ├── ConversationManager.java
+    │   │   │   │               ├── EvaluationBarView.java
+    │   │   │   │               ├── EvaluationTracker.java
+    │   │   │   │               ├── FineTunedModelManager.java
+    │   │   │   │               ├── GameAnalysisActivity.java
+    │   │   │   │               ├── GameDatabaseHelper.java
+    │   │   │   │               ├── GameHistoryManager.java
+    │   │   │   │               ├── GameStateInfo.java
+    │   │   │   │               ├── GameStateRepository.java
+    │   │   │   │               ├── GroqSpeechRecognizer.java
+    │   │   │   │               ├── MainActivity.java
+    │   │   │   │               ├── MoveHistoryObserver.java
+    │   │   │   │               ├── OpenAIService.java
+    │   │   │   │               ├── OpenAITTSService.java
+    │   │   │   │               ├── PersonalityEngine.java
+    │   │   │   │               ├── SavedGamesActivity.java
+    │   │   │   │               ├── SettingsActivity.java
+    │   │   │   │               ├── SimpleRecordService.java
+    │   │   │   │               ├── SpectatorGameActivity.java
+    │   │   │   │               ├── SpectatorGameViewModel.java
+    │   │   │   │               ├── SpeechRecognitionManager.java
+    │   │   │   │               ├── SpeechRecognizer.java
+    │   │   │   │               ├── SpeechToTextService.java
+    │   │   │   │               ├── SplashActivity.java
+    │   │   │   │               ├── SquareHighlight.java
+    │   │   │   │               ├── StockfishManager.java
+    │   │   │   │               ├── TextToSpeechService.java
+    │   │   │   │               ├── ThreeStageResponseManager.java
+    │   │   │   │               └── Utils.java
+    │   │   │   ├── jniLibs
+    │   │   │   │   ├── arm64-v8a
+    │   │   │   │   │   └── libstockfish.so
+    │   │   │   │   └── armeabi-v7a
+    │   │   │   │       └── libstockfish.so
+    │   │   │   ├── res
+    │   │   │   │   ├── anim
+    │   │   │   │   │   ├── card_hover.xml
+    │   │   │   │   │   ├── fade_in.xml
+    │   │   │   │   │   ├── gentle_pulse.xml
+    │   │   │   │   │   ├── pulse.xml
+    │   │   │   │   │   ├── scale_bounce.xml
+    │   │   │   │   │   ├── slide_down.xml
+    │   │   │   │   │   └── slide_up.xml
+    │   │   │   │   ├── animator
+    │   │   │   │   │   └── pulse.xml
+    │   │   │   │   ├── drawable
+    │   │   │   │   │   ├── bg_message_coach.xml
+    │   │   │   │   │   ├── bg_message_user.xml
+    │   │   │   │   │   ├── ic_android_icon_main.png
+    │   │   │   │   │   ├── ic_android_icon_main_round.png
+    │   │   │   │   │   ├── ic_arrow_back.xml
+    │   │   │   │   │   ├── ic_black_bishop.xml
+    │   │   │   │   │   ├── ic_black_king.xml
+    │   │   │   │   │   ├── ic_black_knight.xml
+    │   │   │   │   │   ├── ic_black_pawn.xml
+    │   │   │   │   │   ├── ic_black_queen.xml
+    │   │   │   │   │   ├── ic_black_rook.xml
+    │   │   │   │   │   ├── ic_chess_puzzle.png
+    │   │   │   │   │   ├── ic_game_analysis.webp
+    │   │   │   │   │   ├── ic_launcher_background.xml
+    │   │   │   │   │   ├── ic_launcher_foreground.xml
+    │   │   │   │   │   ├── ic_microphone.xml
+    │   │   │   │   │   ├── ic_speak_to_coach.png
+    │   │   │   │   │   ├── ic_start_conversation.xml
+    │   │   │   │   │   ├── ic_stop_conversation.xml
+    │   │   │   │   │   ├── ic_white_bishop.xml
+    │   │   │   │   │   ├── ic_white_king.xml
+    │   │   │   │   │   ├── ic_white_knight.xml
+    │   │   │   │   │   ├── ic_white_pawn.xml
+    │   │   │   │   │   ├── ic_white_queen.xml
+    │   │   │   │   │   ├── ic_white_rook.xml
+    │   │   │   │   │   ├── listening_animation.xml
+    │   │   │   │   │   ├── portrait_frame.xml
+    │   │   │   │   │   ├── rounded_panel_background.xml
+    │   │   │   │   │   ├── status_error_bg.xml
+    │   │   │   │   │   ├── status_success_bg.xml
+    │   │   │   │   │   ├── status_warning_bg.xml
+    │   │   │   │   │   ├── wood_background.xml
+    │   │   │   │   │   ├── wood_button_bg.xml
+    │   │   │   │   │   └── wood_panel_bg.xml
+    │   │   │   │   ├── drawable-hdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-mdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xxhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xxxhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── font
+    │   │   │   │   ├── layout
+    │   │   │   │   │   ├── activity_chess_conversation.xml
+    │   │   │   │   │   ├── activity_chess_master_selection.xml
+    │   │   │   │   │   ├── activity_game_analysis.xml
+    │   │   │   │   │   ├── activity_main.xml
+    │   │   │   │   │   ├── activity_saved_games.xml
+    │   │   │   │   │   ├── activity_settings.xml
+    │   │   │   │   │   ├── activity_spectator_game.xml
+    │   │   │   │   │   ├── activity_splash.xml
+    │   │   │   │   │   ├── activity_test_voice.xml
+    │   │   │   │   │   ├── activity_voice_test.xml
+    │   │   │   │   │   ├── challenge_panel.xml
+    │   │   │   │   │   ├── chat_panel_layout.xml
+    │   │   │   │   │   ├── item_message_coach.xml
+    │   │   │   │   │   └── item_message_user.xml
+    │   │   │   │   ├── menu
+    │   │   │   │   │   └── main_menu.xml
+    │   │   │   │   ├── mipmap-anydpi
+    │   │   │   │   ├── mipmap-anydpi-v26
+    │   │   │   │   │   ├── ic_launcher.xml
+    │   │   │   │   │   └── ic_launcher_round.xml
+    │   │   │   │   ├── mipmap-hdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-mdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xxhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xxxhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── raw
+    │   │   │   │   │   ├── capture.mp3
+    │   │   │   │   │   ├── check.mp3
+    │   │   │   │   │   ├── move.mp3
+    │   │   │   │   │   └── thinking_sound.mp3
+    │   │   │   │   ├── values
+    │   │   │   │   │   ├── colors.xml
+    │   │   │   │   │   ├── ic_launcher_foreground.xml
+    │   │   │   │   │   ├── ic_launcher_round_foreground.xml
+    │   │   │   │   │   ├── strings.xml
+    │   │   │   │   │   ├── styles.xml
+    │   │   │   │   │   └── themes.xml
+    │   │   │   │   ├── values-night
+    │   │   │   │   │   └── themes.xml
+    │   │   │   │   └── xml
+    │   │   │   │       ├── backup_rules.xml
+    │   │   │   │       ├── data_extraction_rules.xml
+    │   │   │   │       └── preferences.xml
+    │   │   │   ├── AndroidManifest.xml
+    │   │   │   └── ic_launcher-playstore.png
+    │   │   └── test
+    │   │       └── java
+    │   │           └── com
+    │   │               └── example
+    │   │                   └── chesspedagogue
+    │   │                       ├── repository
+    │   │                       ├── viewmodel
+    │   │                       └── ExampleUnitTest.kt
+    │   ├── .gitignore
+    │   ├── build.gradle
+    │   ├── google-services.json
+    │   └── proguard-rules.pro
+    ├── claude_chunks
+    │   ├── chunk_001.txt
+    │   ├── chunk_002.txt
+    │   ├── chunk_003.txt
+    │   ├── chunk_004.txt
+    │   ├── chunk_005.txt
+    │   ├── chunk_006.txt
+    │   ├── chunk_007.txt
+    │   ├── chunk_008.txt
+    │   ├── chunk_009.txt
+    │   ├── chunk_010.txt
+    │   ├── chunk_011.txt
+    │   ├── chunk_012.txt
+    │   ├── chunk_013.txt
+    │   ├── chunk_014.txt
+    │   ├── chunk_015.txt
+    │   ├── chunk_016.txt
+    │   ├── chunk_017.txt
+    │   ├── chunk_018.txt
+    │   ├── chunk_019.txt
+    │   ├── chunk_020.txt
+    │   ├── chunk_021.txt
+    │   ├── chunk_022.txt
+    │   ├── chunk_023.txt
+    │   ├── chunk_024.txt
+    │   ├── chunk_025.txt
+    │   ├── chunk_026.txt
+    │   ├── chunk_027.txt
+    │   ├── chunk_028.txt
+    │   ├── chunk_029.txt
+    │   ├── chunk_030.txt
+    │   ├── chunk_031.txt
+    │   ├── chunk_032.txt
+    │   ├── chunk_033.txt
+    │   ├── chunk_034.txt
+    │   ├── chunk_035.txt
+    │   ├── chunk_036.txt
+    │   ├── chunk_037.txt
+    │   ├── chunk_038.txt
+    │   ├── chunk_039.txt
+    │   ├── chunk_040.txt
+    │   ├── chunk_041.txt
+    │   ├── chunk_042.txt
+    │   ├── chunk_043.txt
+    │   ├── chunk_044.txt
+    │   ├── chunk_045.txt
+    │   ├── chunk_046.txt
+    │   ├── chunk_047.txt
+    │   ├── chunk_048.txt
+    │   ├── chunk_049.txt
+    │   ├── chunk_050.txt
+    │   ├── chunk_051.txt
+    │   ├── chunk_052.txt
+    │   ├── chunk_053.txt
+    │   ├── chunk_054.txt
+    │   ├── chunk_055.txt
+    │   ├── chunk_056.txt
+    │   ├── chunk_057.txt
+    │   ├── chunk_058.txt
+    │   ├── chunk_059.txt
+    │   ├── chunk_060.txt
+    │   ├── chunk_061.txt
+    │   ├── chunk_062.txt
+    │   ├── chunk_063.txt
+    │   ├── chunk_064.txt
+    │   ├── chunks_summary.json
+    │   └── README.txt
+    ├── .gitignore
+    ├── build.gradle
+    ├── chunk_project.py
+    ├── CLAUDE.md
+    ├── gradle.properties
+    ├── gradlew
+    ├── gradlew.bat
+    ├── local.properties
+    ├── README.md
+    └── settings.gradle

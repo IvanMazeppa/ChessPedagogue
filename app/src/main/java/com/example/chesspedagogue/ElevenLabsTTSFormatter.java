@@ -1,9 +1,5 @@
 package com.example.chesspedagogue;
 
-import android.util.Log;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
  * Formats text for ElevenLabs TTS with appropriate controls for better speech output
  * Based on ElevenLabs best practices: https://elevenlabs.io/docs/best-practices/prompting/controls

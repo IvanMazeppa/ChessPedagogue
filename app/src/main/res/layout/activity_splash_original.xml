@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/enhanced_wood_background">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <!-- Enhanced Header with Better Spacing -->
+            <androidx.cardview.widget.CardView
+                style="@style/WoodCard.Elevated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                app:cardBackgroundColor="@color/card_elevated"
+                app:cardElevation="12dp"
+                app:cardCornerRadius="20dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="28dp"
+                    android:gravity="center">
+
+                    <!-- Coach Portrait with Enhanced Frame -->
+                    <ImageView
+                        style="@style/CoachPortrait.Large"
+                        android:src="@drawable/portrait_speaking_tal"
+                        android:background="@drawable/enhanced_portrait_frame"
+                        android:layout_marginBottom="16dp"
+                        android:contentDescription="Chess Master Portrait" />
+
+                    <!-- Enhanced Typography -->
+                    <TextView
+                        style="@style/WoodHeading.Large"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Prepare for Battle"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="8dp"
+                        android:gravity="center" />
+
+                    <TextView
+                        style="@style/WoodSubheading"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Configure your chess challenge"
+                        android:textColor="@color/text_accent"
+                        android:gravity="center" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Enhanced Side Selection Card -->
+            <androidx.cardview.widget.CardView
+                style="@style/WoodCard.Interactive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                app:cardBackgroundColor="@color/card_surface"
+                app:cardElevation="8dp"
+                app:cardCornerRadius="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <TextView
+                        style="@style/WoodHeading"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Choose Your Side"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="20dp"
+                        android:gravity="center"
+                        android:layout_gravity="center" />
+
+                    <RadioGroup
+                        android:id="@+id/radioGroupColor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center">
+
+                        <!-- Enhanced White Side Selection -->
+                        <LinearLayout
+                            android:id="@+id/whiteSelectionLayout"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="16dp"
+                            android:background="@drawable/side_selection_bg"
+                            android:layout_marginEnd="12dp"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <ImageView
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:src="@drawable/ic_white_king"
+                                android:layout_marginBottom="12dp"
+                                android:background="@drawable/enhanced_portrait_frame"
+                                android:padding="8dp" />
+
+                            <RadioButton
+                                android:id="@+id/radioWhite"
+                                style="@style/WoodRadio"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="White"
+                                android:checked="true"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Enhanced Black Side Selection -->
+                        <LinearLayout
+                            android:id="@+id/blackSelectionLayout"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:padding="16dp"
+                            android:background="@drawable/side_selection_bg"
+                            android:layout_marginStart="12dp"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <ImageView
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:src="@drawable/ic_black_king"
+                                android:layout_marginBottom="12dp"
+                                android:background="@drawable/enhanced_portrait_frame"
+                                android:padding="8dp" />
+
+                            <RadioButton
+                                android:id="@+id/radioBlack"
+                                style="@style/WoodRadio"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Black"
+                                android:textColor="@color/text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </RadioGroup>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Enhanced Engine Strength Card -->
+            <androidx.cardview.widget.CardView
+                style="@style/WoodCard.Interactive"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                app:cardBackgroundColor="@color/card_surface"
+                app:cardElevation="8dp"
+                app:cardCornerRadius="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="24dp">
+
+                    <TextView
+                        style="@style/WoodHeading"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Opponent Strength"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp"
+                        android:gravity="center"
+                        android:layout_gravity="center" />
+
+                    <TextView
+                        android:id="@+id/textViewStrengthValue"
+                        style="@style/WoodSubheading"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Engine Strength: ~1750 Elo (Level 10)"
+                        android:textColor="@color/text_accent"
+                        android:layout_marginBottom="20dp"
+                        android:gravity="center"
+                        android:layout_gravity="center" />
+
+                    <!-- Enhanced Slider Container -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/side_selection_bg"
+                        android:padding="16dp">
+
+                        <TextView
+                            style="@style/WoodCaptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Beginner"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginEnd="12dp" />
+
+                        <SeekBar
+                            android:id="@+id/seekBarStrength"
+                            style="@style/WoodSeekBar"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="20"
+                            android:progress="10" />
+
+                        <TextView
+                            style="@style/WoodCaptionText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="Super GM"
+                            android:textColor="@color/text_secondary" />
+                    </LinearLayout>
+
+                    <!-- Enhanced Strength Description -->
+                    <TextView
+                        android:id="@+id/strengthDescription"
+                        style="@style/WoodBodyText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="A balanced challenge for intermediate players"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Enhanced Start Game Button -->
+            <Button
+                android:id="@+id/buttonStartGame"
+                style="@style/WoodButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="BEGIN THE CHALLENGE"
+                android:textStyle="bold"
+                android:drawableStart="@android:drawable/ic_media_play"
+                android:drawablePadding="12dp"
+                android:drawableTint="@color/cream"
+                android:gravity="center" />
+
+        </LinearLayout>
+    </ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

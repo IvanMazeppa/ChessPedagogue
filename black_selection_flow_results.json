@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-06-01T14:48:21.766633",
+  "test_type": "black_selection_main_game_flow",
+  "steps": {
+    "launch_splash": {
+      "success": true,
+      "timestamp": "2025-06-01T14:48:26.220033"
+    },
+    "select_black": {
+      "success": true,
+      "timestamp": "2025-06-01T14:48:29.373363"
+    },
+    "find_challenge_button": {
+      "success": true,
+      "timestamp": "2025-06-01T14:48:38.870908"
+    },
+    "verify_main_game": {
+      "success": true,
+      "timestamp": "2025-06-01T14:48:44.783459"
+    },
+    "check_configuration": {
+      "success": true,
+      "timestamp": "2025-06-01T14:48:47.861375"
+    }
+  },
+  "overall_success": true
+}

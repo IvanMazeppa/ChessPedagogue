@@ -1,7 +1,6 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Log;
 
 import java.util.HashMap;
