@@ -379,6 +379,21 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                     if (!result.isMate) {
                         currentEvaluation.setValue(result.evaluation);
                         Log.d(TAG, "📊 Evaluation updated: " + result.evaluation);
+                        
+                        // CRITICAL FIX: Feed evaluation data to EvaluationTracker for emotional intelligence
+                        try {
+                            EvaluationTracker evaluationTracker = EvaluationTracker.getInstance(getApplication());
+                            String currentFen = currentFEN.getValue();
+                            List<String> history = moveHistory.getValue();
+                            String lastMove = (history != null && !history.isEmpty()) ? 
+                                history.get(history.size() - 1) : null;
+                            
+                            Log.d(TAG, "🎭 FEEDING EVALUATION TO TRACKER: eval=" + result.evaluation + ", move=" + lastMove);
+                            evaluationTracker.trackEvaluation(result, currentFen, lastMove);
+                            Log.d(TAG, "✅ EvaluationTracker.trackEvaluation() called successfully");
+                        } catch (Exception e) {
+                            Log.e(TAG, "❌ Error feeding evaluation to tracker", e);
+                        }
                     }
                 });
             }

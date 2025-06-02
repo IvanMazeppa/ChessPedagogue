@@ -341,28 +341,30 @@ public class EmotionalIntelligenceManager {
         boolean isPositiveChange = evalChange > 0;
         
         if (isPositiveChange) {
-            if (absChange > 4.0f || currentEval > 5.0f) {
-                return EmotionalState.ECSTATIC;
-            } else if (absChange > 2.5f || currentEval > 3.0f) {
-                return EmotionalState.THRILLED;
-            } else if (absChange > 1.5f || currentEval > 1.5f) {
-                return EmotionalState.EXCITED;
-            } else if (absChange > 0.8f) {
-                return EmotionalState.PLEASED;
-            } else if (absChange > 0.3f) {
-                return EmotionalState.CONTENT;
+            // Realistic chess evaluation thresholds (0.1 = slight advantage)
+            if (absChange > 2.0f || currentEval > 3.0f) {
+                return EmotionalState.ECSTATIC;     // Major swing or winning
+            } else if (absChange > 1.0f || currentEval > 2.0f) {
+                return EmotionalState.THRILLED;     // Significant advantage
+            } else if (absChange > 0.5f || currentEval > 1.0f) {
+                return EmotionalState.EXCITED;      // Clear advantage
+            } else if (absChange > 0.25f || currentEval > 0.5f) {
+                return EmotionalState.PLEASED;      // Good position
+            } else if (absChange > 0.1f || currentEval > 0.2f) {
+                return EmotionalState.CONTENT;      // Small improvement
             }
         } else {
-            if (absChange > 4.0f || currentEval < -5.0f) {
-                return EmotionalState.DEVASTATED;
-            } else if (absChange > 2.5f || currentEval < -3.0f) {
-                return EmotionalState.FRUSTRATED;
-            } else if (absChange > 1.5f || currentEval < -1.5f) {
-                return EmotionalState.CONCERNED;
-            } else if (absChange > 0.8f) {
-                return EmotionalState.UNEASY;
-            } else if (absChange > 0.3f) {
-                return EmotionalState.FOCUSED;
+            // Negative evaluation changes (getting worse)
+            if (absChange > 2.0f || currentEval < -3.0f) {
+                return EmotionalState.DEVASTATED;   // Major loss or losing
+            } else if (absChange > 1.0f || currentEval < -2.0f) {
+                return EmotionalState.FRUSTRATED;   // Significant disadvantage
+            } else if (absChange > 0.5f || currentEval < -1.0f) {
+                return EmotionalState.CONCERNED;    // Clear disadvantage
+            } else if (absChange > 0.25f || currentEval < -0.5f) {
+                return EmotionalState.UNEASY;       // Poor position
+            } else if (absChange > 0.1f || currentEval < -0.2f) {
+                return EmotionalState.FOCUSED;      // Small decline
             }
         }
         

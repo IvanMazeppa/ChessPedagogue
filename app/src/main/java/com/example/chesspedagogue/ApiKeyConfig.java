@@ -10,7 +10,7 @@ import android.util.Log;
 public class ApiKeyConfig {
     private static final String TAG = "ApiKeyConfig";
     private static final String PREFS_NAME = "ChessPedagoguePrefs";
-    private static final String KEY_OPENAI_API_KEY = "OPENAI_API_KEY";
+    private static final String KEY_OPENAI_API_KEY = "sk-pr-";
 
     /**
      * Save the OpenAI API key securely
