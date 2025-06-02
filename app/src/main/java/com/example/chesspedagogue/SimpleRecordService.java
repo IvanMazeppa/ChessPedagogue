@@ -1263,7 +1263,11 @@ public class SimpleRecordService extends Service {
             Log.e(TAG, "❌ API Key is empty or null! Check your ApiKeyConfig class.");
             SharedPreferences prefs = getSharedPreferences("api_prefs", MODE_PRIVATE);
             apiKey = prefs.getString("openai_api_key", null);
-            Log.d(TAG, "Fallback API key retrieved, length: " + apiKey.length());
+            if (apiKey != null) {
+                Log.d(TAG, "Fallback API key retrieved, length: " + apiKey.length());
+            } else {
+                Log.w(TAG, "No API key found in SharedPreferences either");
+            }
         }
 
         return apiKey;
