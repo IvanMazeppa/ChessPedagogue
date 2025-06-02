@@ -32,6 +32,7 @@ public class EvaluationTracker {
 
     private final Context context;
     private final List<EvaluationSnapshot> evaluationHistory;
+    private EmotionalIntelligenceManager emotionalIntelligence; // Lazy-initialized to avoid circular dependency
 
     // Current tracking state
     private EvaluationSnapshot lastEvaluation;
@@ -147,6 +148,8 @@ public class EvaluationTracker {
     private EvaluationTracker(Context context) {
         this.context = context.getApplicationContext();
         this.evaluationHistory = new ArrayList<>();
+        // Don't initialize EmotionalIntelligenceManager here to avoid circular dependency
+        this.emotionalIntelligence = null;
 
         this.executorService = Executors.newSingleThreadExecutor();
         Log.d(TAG, "🎯 EvaluationTracker initialized - ready to detect brilliancies and blunders!");
@@ -198,6 +201,9 @@ public class EvaluationTracker {
 
                     // LAMBDA FIX: Create final reference for use in inner lambda
                     final EvaluationSwing finalSwing = swing;
+
+                    // 🎭 NEW: Trigger emotional analysis for the swing
+                    triggerEmotionalAnalysisForSwing(finalSwing);
 
                     // Check if enough time has passed since last commentary
                     long now = System.currentTimeMillis();
@@ -428,6 +434,129 @@ public class EvaluationTracker {
         prompt.append(" Keep your response to 1-2 sentences - this is automatic commentary during play.");
 
         return prompt.toString();
+    }
+
+    /**
+     * 🎭 NEW: Trigger emotional analysis for evaluation swings
+     * This analyzes how chess masters would emotionally react to blunders, brilliancies, etc.
+     */
+    private void triggerEmotionalAnalysisForSwing(EvaluationSwing swing) {
+        try {
+            // Lazy initialization of EmotionalIntelligenceManager to avoid circular dependency
+            if (emotionalIntelligence == null) {
+                emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
+            }
+            
+            // Get current master from preferences
+            String currentMaster = getCurrentSelectedMaster();
+            
+            // Build emotional context for the swing
+            String gameContext = buildSwingGameContext(swing);
+            String conversationContext = buildSwingConversationContext(swing);
+            
+            // Analyze emotional response using EmotionalIntelligenceManager
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
+                emotionalIntelligence.analyzeEmotionalState(
+                    currentMaster,
+                    gameContext,
+                    conversationContext,
+                    swing.currentEval.getEffectiveEvaluation(),
+                    swing.swingAmount
+                );
+            
+            Log.d(TAG, String.format("🎭 Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)", 
+                  currentMaster, swing.quality.shortDescription, emotionalResult.emotion.name, 
+                  emotionalResult.intensity, emotionalResult.momentum));
+            
+            // Update emotional state for the master
+            // This helps track emotional momentum over the course of the game
+            if (emotionalResult.intensity > 0.3f) {
+                Log.d(TAG, String.format("🎭 Significant emotional response: %s is %s about the %s", 
+                      currentMaster, emotionalResult.emotion.name, swing.quality.shortDescription.toLowerCase()));
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error in emotional analysis for evaluation swing", e);
+        }
+    }
+    
+    /**
+     * Build game context for emotional analysis of evaluation swings
+     */
+    private String buildSwingGameContext(EvaluationSwing swing) {
+        StringBuilder context = new StringBuilder();
+        
+        switch (swing.quality) {
+            case BRILLIANT:
+                context.append("brilliant_move_made");
+                break;
+            case EXCELLENT:
+                context.append("excellent_move_made");
+                break;
+            case GOOD:
+                context.append("good_move_made");
+                break;
+            case BLUNDER:
+                context.append("blunder_made");
+                break;
+            case MISTAKE:
+                context.append("mistake_made");
+                break;
+            case INACCURACY:
+                context.append("inaccuracy_made");
+                break;
+            default:
+                context.append("position_change");
+                break;
+        }
+        
+        // Add magnitude context
+        float absSwing = Math.abs(swing.swingAmount);
+        if (absSwing > 3.0f) {
+            context.append("_major");
+        } else if (absSwing > 1.5f) {
+            context.append("_significant");
+        } else {
+            context.append("_minor");
+        }
+        
+        return context.toString();
+    }
+    
+    /**
+     * Build conversation context for emotional analysis
+     */
+    private String buildSwingConversationContext(EvaluationSwing swing) {
+        StringBuilder context = new StringBuilder("evaluation_swing");
+        
+        // Add timing context
+        if (swing.currentEval.moveNumber < 10) {
+            context.append("_opening");
+        } else if (swing.currentEval.moveNumber < 30) {
+            context.append("_middlegame");
+        } else {
+            context.append("_endgame");
+        }
+        
+        // Add positional context
+        float currentEval = swing.currentEval.getEffectiveEvaluation();
+        if (Math.abs(currentEval) > 5.0f) {
+            context.append("_decisive");
+        } else if (Math.abs(currentEval) > 2.0f) {
+            context.append("_advantage");
+        } else {
+            context.append("_balanced");
+        }
+        
+        return context.toString();
+    }
+    
+    /**
+     * Get the currently selected chess master from preferences
+     */
+    private String getCurrentSelectedMaster() {
+        android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        return prefs.getString("selected_master", "tal");
     }
 
     /**

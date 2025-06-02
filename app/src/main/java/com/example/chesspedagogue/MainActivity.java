@@ -20,7 +20,6 @@ import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
@@ -36,13 +35,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.lifecycle.Observer;
 
-import com.example.chesspedagogue.repository.GameRepository;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +50,7 @@ import java.util.regex.Pattern;
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
+    private static final int REQUEST_CHESS_SET_SELECTION = 1002;
 
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -68,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     
     // NEW: Responses API integration for enhanced challenge generation
     private ResponsesAPIIntegrationHelper integrationHelper;
-    private ChessMasterResponsesManager responsesManager;
+    private ChessMasterResponseManager responsesManager;
     
     private String selectedSquare = null;
     private boolean isSpeaking = false;
@@ -1141,13 +1138,13 @@ public class MainActivity extends AppCompatActivity {
             displayNames[i] = FineTunedModelManager.getInstance(this).getMasterDisplayName(masters[i]);
         }
 
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Select White Player");
         builder.setItems(displayNames, (dialog, which) -> {
             String whitePlayer = masters[which];
 
             // Now select black player
-            androidx.appcompat.app.AlertDialog.Builder builder2 = new androidx.appcompat.app.AlertDialog.Builder(this);
+            AlertDialog.Builder builder2 = new AlertDialog.Builder(this);
             builder2.setTitle("Select Black Player");
             builder2.setItems(displayNames, (dialog2, which2) -> {
                 String blackPlayer = masters[which2];
@@ -1200,7 +1197,7 @@ public class MainActivity extends AppCompatActivity {
         executorService.execute(() -> {
             try {
                 Log.d(TAG, "🤖 Initializing OpenAI service asynchronously...");
-                openAIService = com.example.chesspedagogue.OpenAIService.getInstance();
+                openAIService = OpenAIService.getInstance();
                 openAIService.init(this);
                 Log.d(TAG, "✅ OpenAI service initialized successfully");
             } catch (Exception e) {
@@ -1217,7 +1214,7 @@ public class MainActivity extends AppCompatActivity {
             try {
                 Log.d(TAG, "📡 Initializing Responses API services asynchronously...");
                 integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
-                responsesManager = ChessMasterResponsesManager.getInstance(this);
+                responsesManager = ChessMasterResponseManager.getInstance(this);
                 Log.d(TAG, "✅ Responses API services initialized successfully");
             } catch (Exception e) {
                 Log.e(TAG, "❌ Error initializing Responses API services", e);
@@ -1282,6 +1279,12 @@ public class MainActivity extends AppCompatActivity {
         } else if (itemId == R.id.action_about) {
             showAboutDialog();
             return true;
+
+        } else if (itemId == R.id.action_chess_set_selection) {
+            Log.d(TAG, "🎨 Opening chess set selection");
+            Intent intent = new Intent(this, ChessSetSelectionActivity.class);
+            startActivityForResult(intent, REQUEST_CHESS_SET_SELECTION);
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -1289,7 +1292,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Add this helper method for the about dialog
     private void showAboutDialog() {
-        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("About ChessPedagogue")
                 .setMessage("ChessPedagogue - Revolutionary AI Chess Learning\n\n" +
                         "Features:\n" +
@@ -1652,13 +1655,13 @@ public class MainActivity extends AppCompatActivity {
                 
                 // Create a session for challenge generation
                 responsesManager.createResponseSession(masterName, "challenge_generation",
-                    new ChessMasterResponsesManager.ResponseCallback() {
+                    new ChessMasterResponseManager.ResponseCallback() {
                         @Override
                         public void onResponseStart(String sessionId) {
                             Log.d(TAG, "✅ Challenge session created: " + sessionId);
                             // Send the challenge prompt
                             responsesManager.sendMessage(sessionId, prompt, gameContext,
-                                new ChessMasterResponsesManager.ResponseCallback() {
+                                new ChessMasterResponseManager.ResponseCallback() {
                                     private StringBuilder challengeResponse = new StringBuilder();
                                     
                                     @Override
@@ -1972,7 +1975,7 @@ public class MainActivity extends AppCompatActivity {
             bindRecordService();
 
             // Schedule a retry after a short delay
-            new android.os.Handler().postDelayed(() -> {
+            new Handler().postDelayed(() -> {
                 if (isServiceBound && recordService != null) {
                     startVoiceRecording();
                 } else {
@@ -2474,6 +2477,24 @@ public class MainActivity extends AppCompatActivity {
                 // Permission denied
                 Toast.makeText(this, "Microphone permission is required for voice interaction",
                         Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        
+        if (requestCode == REQUEST_CHESS_SET_SELECTION) {
+            if (resultCode == RESULT_OK) {
+                Log.d(TAG, "🎨 Chess set selection completed successfully");
+                // Clear the piece cache to force redraw with new chess set
+                if (chessBoardView != null) {
+                    chessBoardView.clearPieceCache();
+                }
+                Toast.makeText(this, "Chess set updated! ♛", Toast.LENGTH_SHORT).show();
+            } else {
+                Log.d(TAG, "🎨 Chess set selection cancelled");
             }
         }
     }

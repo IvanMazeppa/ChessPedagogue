@@ -152,17 +152,10 @@ public class ThreeStageResponseManager {
      * DISABLED IN SPECTATOR MODE: SpectatorConversationOrchestrator uses Responses API exclusively
      */
     public void processThreeStageResponse(String userInput, String gameContext, ThreeStageCallback callback) {
-        // CRITICAL FIX: Disable ThreeStageResponseManager entirely in spectator mode
-        android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        // ThreeStageResponseManager now works in both main game and spectator mode
+        SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
         boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
-        
-        if (isSpectatorMode) {
-            Log.d(TAG, "🎭 BLOCKED: ThreeStageResponseManager disabled in spectator mode - Responses API handles all dialogue");
-            if (callback != null) {
-                callback.onStageError(ResponseStage.STAGE_1_QUICK, "Disabled in spectator mode - using Responses API");
-            }
-            return;
-        }
+        Log.d(TAG, "🎮 ThreeStageResponseManager called - Spectator mode: " + isSpectatorMode);
 
         ResponseMode userMode = getUserResponseMode();
         Log.d(TAG, "🎮 RESPONSE MODE: " + userMode + " for user input: '" + userInput.substring(0, Math.min(50, userInput.length())) + "'");
@@ -285,19 +278,11 @@ public class ThreeStageResponseManager {
      */
     public void processThreeStageResponse(String userInput, String gameContext,
                                           ResponseMode mode, ThreeStageCallback callback) {
-        // CRITICAL FIX: Disable ThreeStageResponseManager entirely in spectator mode
-        // The Responses API via SpectatorConversationOrchestrator handles all dialogue with proper context
-        android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+        // ThreeStageResponseManager now works in both main game and spectator mode
+        // Uses Responses API for supported masters, with fallbacks as needed
+        SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
         boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
-        
-        if (isSpectatorMode) {
-            Log.d(TAG, "🎭 BLOCKED: ThreeStageResponseManager disabled in spectator mode - Responses API handles all dialogue");
-            // Don't create Chat Completions calls that lack position context and say "Show me the position"
-            if (callback != null) {
-                callback.onStageError(ResponseStage.STAGE_1_QUICK, "Disabled in spectator mode - using Responses API");
-            }
-            return;
-        }
+        Log.d(TAG, "🎮 ThreeStageResponseManager called - Spectator mode: " + isSpectatorMode);
 
         int responseId = currentResponseId.incrementAndGet();
         Log.d(TAG, "🚀 Starting PARALLEL 3-stage response #" + responseId + " in " + mode + " mode");
@@ -1254,7 +1239,18 @@ public class ThreeStageResponseManager {
                         Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
                         
                         // Now that session is created, send the message
-                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
+                        Log.d(TAG, "🚨 ABOUT TO CALL sendMessage with sessionId: " + sessionId);
+                        Log.d(TAG, "🚨 responsesManager instance: " + responsesManager);
+                        Log.d(TAG, "🚨 contextualMessage length: " + (contextualMessage != null ? contextualMessage.length() : "null"));
+                        
+                        // DEBUG: Test static method call first
+                        Log.d(TAG, "🔧 TESTING: Calling static debugTest method...");
+                        ChessMasterResponsesManager.debugTest();
+                        Log.d(TAG, "🔧 TESTING: Static debugTest call completed");
+                        
+                        // DEBUG: Test alternative method name
+                        Log.d(TAG, "🔧 TESTING: Calling sendMessageAlternative...");
+                        responsesManager.sendMessageAlternative(sessionId, contextualMessage, gameContext,
                             new ChessMasterResponsesManager.ResponseCallback() {
                                 private StringBuilder response = new StringBuilder();
                                 
@@ -1324,8 +1320,18 @@ public class ThreeStageResponseManager {
                                 
                                 @Override
                                 public void onError(String error) {
-                                    Log.w(TAG, "⚠️ Responses API message error: " + error);
-                                    handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+                                    Log.e(TAG, "❌ Responses API error: " + error);
+                                    // Use emergency response instead of fallback to ChatCompletions
+                                    final String errorResponse = getEmergencyQuickResponse(masterName);
+                                    final long duration = System.currentTimeMillis() - startTime;
+                                    
+                                    mainHandler.post(() -> {
+                                        if (callback != null) {
+                                            callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                                            callback.onStageResponse(ResponseStage.STAGE_1_QUICK, errorResponse, false);
+                                        }
+                                        startOptimizedTTS(errorResponse, 1, responseId);
+                                    });
                                 }
                             });
                     }
@@ -1348,70 +1354,36 @@ public class ThreeStageResponseManager {
                     @Override
                     public void onError(String error) {
                         Log.e(TAG, "❌ Session creation error: " + error);
-                        handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+                        // Use emergency response instead of fallback to ChatCompletions
+                        final String errorResponse = getEmergencyQuickResponse(masterName);
+                        final long duration = System.currentTimeMillis() - startTime;
+                        
+                        mainHandler.post(() -> {
+                            if (callback != null) {
+                                callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                                callback.onStageResponse(ResponseStage.STAGE_1_QUICK, errorResponse, false);
+                            }
+                            startOptimizedTTS(errorResponse, 1, responseId);
+                        });
                     }
                 });
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error in async Responses API Stage 1: " + e.getMessage(), e);
-            handleResponsesAPIFallback(masterName, userInput, gameContext, responseId, startTime, callback);
+            // Use emergency response instead of fallback to ChatCompletions
+            final String errorResponse = getEmergencyQuickResponse(masterName);
+            final long duration = System.currentTimeMillis() - startTime;
+            
+            mainHandler.post(() -> {
+                if (callback != null) {
+                    callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
+                    callback.onStageResponse(ResponseStage.STAGE_1_QUICK, errorResponse, false);
+                }
+                startOptimizedTTS(errorResponse, 1, responseId);
+            });
         }
     }
     
-    /**
-     * Handle fallback when Responses API fails
-     */
-    private void handleResponsesAPIFallback(String masterName, String userInput, String gameContext,
-                                          int responseId, long startTime, ThreeStageCallback callback) {
-        Log.d(TAG, "🔄 Falling back to Chat Completions for " + masterName);
-        
-        executorService.execute(() -> {
-            try {
-                // Get context for fallback
-                List<Map<String, String>> context = contextManager.getContextForApiCall(masterName, "");
-                
-                // Add minimal user message
-                Map<String, String> userMsg = new HashMap<>();
-                userMsg.put("role", "user");
-                userMsg.put("content", userInput);
-                context.add(userMsg);
-                
-                // Use Chat Completions as fallback
-                String fallbackResponse = openAIService.getChatCompletionWithEnhancedContext(context, null);
-                
-                if (fallbackResponse == null || fallbackResponse.trim().isEmpty()) {
-                    fallbackResponse = getEmergencyQuickResponse(masterName);
-                }
-                
-                // Add to context manager
-                contextManager.addConversationTurn(masterName, fallbackResponse, "stage1_fallback");
-                
-                final String finalResponse = fallbackResponse.trim();
-                final long duration = System.currentTimeMillis() - startTime;
-                
-                mainHandler.post(() -> {
-                    if (callback != null) {
-                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
-                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, finalResponse, false);
-                    }
-                    startOptimizedTTS(finalResponse, 1, responseId);
-                });
-                
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Fallback also failed", e);
-                final String errorResponse = getEmergencyQuickResponse(masterName);
-                final long duration = System.currentTimeMillis() - startTime;
-                
-                mainHandler.post(() -> {
-                    if (callback != null) {
-                        callback.onPerformanceMetric(ResponseStage.STAGE_1_QUICK, duration);
-                        callback.onStageResponse(ResponseStage.STAGE_1_QUICK, errorResponse, false);
-                    }
-                    startOptimizedTTS(errorResponse, 1, responseId);
-                });
-            }
-        });
-    }
     
     /**
      * OLD: Process Stage 1 using Responses API for enhanced performance and state management

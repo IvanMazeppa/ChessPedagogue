@@ -153,7 +153,7 @@ public class ChessCoachManager {
         }
 
         // Set API key
-        com.example.chesspedagogue.OpenAIService.getInstance().setApiKey(apiKey);
+        OpenAIService.getInstance().setApiKey(apiKey);
 
         // Use a background thread for API calls
         new Thread(() -> {
@@ -187,7 +187,7 @@ public class ChessCoachManager {
                 } else {
                     // Use traditional fine-tuned model approach
                     Log.d(TAG, "Using fine-tuned model with master: " + currentMaster);
-                    response = com.example.chesspedagogue.OpenAIService.getInstance().sendMessage(text);
+                    response = OpenAIService.getInstance().sendMessage(text);
                 }
 
                 // Speak the response if needed

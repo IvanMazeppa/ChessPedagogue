@@ -2,7 +2,6 @@ package com.example.chesspedagogue;
 
 import android.os.Bundle;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,7 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 public class ResponsesAPITestActivity extends AppCompatActivity {
     private static final String TAG = "ResponsesAPITest";
     
-    private ChessMasterResponsesManager responsesManager;
+    private ChessMasterResponseManager responsesManager;
     private ResponsesAPIIntegrationHelper integrationHelper;
     private TextView statusText;
     private TextView responseText;
@@ -30,7 +29,7 @@ public class ResponsesAPITestActivity extends AppCompatActivity {
         setContentView(R.layout.activity_responses_api_test);
         
         // Initialize components
-        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        responsesManager = ChessMasterResponseManager.getInstance(this);
         integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
         
         // Initialize views
@@ -79,7 +78,7 @@ public class ResponsesAPITestActivity extends AppCompatActivity {
     
     private void testResponsesAPI(String masterName, String prompt) {
         responsesManager.createResponseSession(masterName, "test_game", 
-            new ChessMasterResponsesManager.ResponseCallback() {
+            new ChessMasterResponseManager.ResponseCallback() {
                 private StringBuilder response = new StringBuilder();
                 
                 @Override

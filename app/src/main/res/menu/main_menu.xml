@@ -42,6 +42,12 @@
         android:icon="@android:drawable/ic_menu_gallery"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_chess_set_selection"
+        android:title="Choose Chess Set"
+        android:icon="@drawable/ic_chess_puzzle"
+        app:showAsAction="never" />
+
     <!-- Settings -->
     <item
         android:id="@+id/action_settings"

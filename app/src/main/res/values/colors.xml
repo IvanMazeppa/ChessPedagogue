@@ -72,6 +72,7 @@
     <color name="button_secondary_pressed">#A0522D</color>
     <color name="card_elevated">#FFFFFF</color>
     <color name="card_surface">#F8F6F3</color>
+    <color name="card_selected">#FFF8DC</color>
 
     <!-- Dialogue backgrounds -->
     <color name="user_interaction_bg">#E8F4FD</color>

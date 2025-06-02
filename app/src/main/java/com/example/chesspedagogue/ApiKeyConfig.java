@@ -58,7 +58,7 @@ public class ApiKeyConfig {
             
             // Fallback to hardcoded key as last resort
             if (apiKey == null || apiKey.isEmpty()) {
-                apiKey = "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";
+                Log.w(TAG, "No API key found in SharedPreferences or environment - check your configuration");
                 Log.d(TAG, "Using hardcoded fallback API key");
             }
             
@@ -66,7 +66,7 @@ public class ApiKeyConfig {
         } catch (Exception e) {
             Log.e(TAG, "Error retrieving API key", e);
             // Return hardcoded key as final fallback
-            return "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";
+            return null;
         }
     }
 

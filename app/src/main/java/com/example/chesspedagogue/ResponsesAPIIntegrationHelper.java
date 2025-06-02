@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.util.Log;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -27,14 +26,14 @@ public class ResponsesAPIIntegrationHelper {
     
     // Services
     private final OpenAIService openAIService;
-    private final ChessMasterResponsesManager responsesManager;
+    private final ChessMasterResponseManager responsesManager;
     private final SpectatorConversationOrchestrator conversationOrchestrator;
     
     private ResponsesAPIIntegrationHelper(Context context) {
         this.context = context.getApplicationContext();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         this.openAIService = OpenAIService.getInstance();
-        this.responsesManager = ChessMasterResponsesManager.getInstance(context);
+        this.responsesManager = ChessMasterResponseManager.getInstance(context);
         this.conversationOrchestrator = SpectatorConversationOrchestrator.getInstance(context);
         
         // Load migration settings - default to true for Responses API
@@ -126,7 +125,7 @@ public class ResponsesAPIIntegrationHelper {
             Log.d(TAG, "🚀 Using Responses API for " + masterName);
             
             responsesManager.createResponseSession(masterName, context, 
-                new ChessMasterResponsesManager.ResponseCallback() {
+                new ChessMasterResponseManager.ResponseCallback() {
                     private StringBuilder responseBuilder = new StringBuilder();
                     
                     @Override

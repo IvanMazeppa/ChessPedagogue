@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/wood_background">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        style="@style/WoodToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        app:title="Choose Your Chess Set"
+        app:titleTextColor="@color/cream" />
+
+    <!-- Elegant Header Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/wood_panel_bg"
+        android:layout_margin="16dp"
+        android:padding="20dp">
+
+        <TextView
+            style="@style/WoodHeading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select Your Chess Pieces"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            style="@style/WoodSubheading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Each set brings its own character to your game"
+            android:gravity="center"
+            android:textColor="@color/text_on_light" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="12dp"
+        android:scrollbars="none">
+
+        <GridLayout
+            android:id="@+id/chessSetsGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="1"
+            android:rowCount="0"
+            android:orientation="vertical" />
+
+    </ScrollView>
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="@drawable/wood_panel_bg">
+
+        <Button
+            android:id="@+id/buttonCancel"
+            style="@style/WoodButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:text="Cancel"
+            android:textSize="16sp"
+            android:backgroundTint="@color/button_secondary" />
+
+        <Button
+            android:id="@+id/buttonApplyChessSet"
+            style="@style/WoodButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="Apply Chess Set"
+            android:textSize="16sp"
+            android:backgroundTint="@color/button_primary" />
+    </LinearLayout>
+
+</LinearLayout>

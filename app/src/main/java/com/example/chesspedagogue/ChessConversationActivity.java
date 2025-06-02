@@ -31,7 +31,7 @@ public class ChessConversationActivity extends AppCompatActivity {
     private SpeechRecognitionManager speechRecognitionManager;
     
     // NEW: Responses API integration for better responses
-    private ChessMasterResponsesManager responsesManager;
+    private ChessMasterResponseManager responsesManager;
     private ResponsesAPIIntegrationHelper integrationHelper;
     private String currentSessionId = null;
 
@@ -78,7 +78,7 @@ public class ChessConversationActivity extends AppCompatActivity {
         speechRecognitionManager = new SpeechRecognitionManager(this);
         
         // NEW: Initialize Responses API integration for enhanced conversations
-        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        responsesManager = ChessMasterResponseManager.getInstance(this);
         integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
 
         // Set up click listeners
@@ -132,7 +132,7 @@ public class ChessConversationActivity extends AppCompatActivity {
         if (currentSessionId == null) {
             // Create new session first
             responsesManager.createResponseSession(masterName, "conversation", 
-                new ChessMasterResponsesManager.ResponseCallback() {
+                new ChessMasterResponseManager.ResponseCallback() {
                     @Override
                     public void onResponseStart(String sessionId) {
                         currentSessionId = sessionId;
@@ -174,7 +174,7 @@ public class ChessConversationActivity extends AppCompatActivity {
      */
     private void sendMessageToSession(String sessionId, String userMessage, String gameContext) {
         responsesManager.sendMessage(sessionId, userMessage, gameContext,
-            new ChessMasterResponsesManager.ResponseCallback() {
+            new ChessMasterResponseManager.ResponseCallback() {
                 private StringBuilder fullResponse = new StringBuilder();
                 
                 @Override

@@ -280,44 +280,6 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         try {
             Log.d(TAG, "⚡ Database FEN lookup for " + masterName + " (will be cached)...");
-            
-            // 🚨 DEBUG: Check total positions first
-            String countQuery = "SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS;
-            Cursor countCursor = db.rawQuery(countQuery, null);
-            int totalPositions = 0;
-            if (countCursor.moveToFirst()) {
-                totalPositions = countCursor.getInt(0);
-            }
-            countCursor.close();
-            Log.d(TAG, "📊 Total positions in database: " + totalPositions);
-            
-            // 🚨 DEBUG: Check positions for this master
-            String masterCountQuery = "SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = ?";
-            Cursor masterCountCursor = db.rawQuery(masterCountQuery, new String[]{masterName});
-            int masterPositions = 0;
-            if (masterCountCursor.moveToFirst()) {
-                masterPositions = masterCountCursor.getInt(0);
-            }
-            masterCountCursor.close();
-            Log.d(TAG, "📊 Positions for " + masterName + ": " + masterPositions);
-            
-            if (totalPositions == 0) {
-                Log.e(TAG, "❌ CRITICAL: Database is completely empty! Import failed.");
-                return results;
-            }
-            
-            if (masterPositions == 0) {
-                Log.e(TAG, "❌ No positions found for master: '" + masterName + "' - checking all masters...");
-                String allMastersQuery = "SELECT DISTINCT " + COLUMN_MASTER_NAME + " FROM " + TABLE_MASTER_POSITIONS;
-                Cursor allMastersCursor = db.rawQuery(allMastersQuery, null);
-                List<String> availableMasters = new ArrayList<>();
-                while (allMastersCursor.moveToNext()) {
-                    availableMasters.add(allMastersCursor.getString(0));
-                }
-                allMastersCursor.close();
-                Log.d(TAG, "📋 Available masters in database: " + availableMasters.toString());
-                return results;
-            }
 
             // First try exact FEN match for the specific master
             String exactQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
@@ -474,7 +436,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 values.put(COLUMN_MOVE_NUMBER, chunk.optInt("move_number", 0));
                 values.put(COLUMN_ANNOTATION, chunk.optString("annotation", ""));
                 // 🚨 SAFE: Handle potentially null tags array
-                org.json.JSONArray tagsArray = chunk.optJSONArray("tags");
+                JSONArray tagsArray = chunk.optJSONArray("tags");
                 if (tagsArray != null) {
                     values.put(COLUMN_TAGS, tagsArray.toString());
                 } else {
@@ -530,8 +492,30 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     /**
      * Check if we have master data (used by PersonalityEngine)
+     * OPTIMIZED: Quick existence check without detailed logging
      */
     public boolean hasMasterData(String masterName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        try {
+            String query = "SELECT 1 FROM " + TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = ? LIMIT 1";
+            Cursor cursor = db.rawQuery(query, new String[]{masterName});
+
+            boolean hasData = cursor.moveToFirst();
+            cursor.close();
+            return hasData;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking master data", e);
+        }
+
+        return false;
+    }
+
+    /**
+     * Get detailed position count for a specific master (for debugging only)
+     */
+    public int getMasterPositionCount(String masterName) {
         SQLiteDatabase db = this.getReadableDatabase();
 
         try {
@@ -541,17 +525,16 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             if (cursor.moveToFirst()) {
                 int count = cursor.getInt(0);
                 cursor.close();
-                Log.d(TAG, "📊 " + masterName + " has " + count + " positions in database");
-                return count > 0;
+                return count;
             }
 
             cursor.close();
 
         } catch (Exception e) {
-            Log.e(TAG, "Error checking master data", e);
+            Log.e(TAG, "Error getting master position count", e);
         }
 
-        return false;
+        return 0;
     }
     
     /**

@@ -608,12 +608,16 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             // Trigger enhanced emotional conversation using the orchestrator
             String gameContext = String.format("Emotional response to evaluation change: %.2f\nContext: %s", 
                 evalChange, emotionalContext);
-            conversationOrchestrator.startConversation(
+            
+            // 🎭 CRITICAL FIX: Use enhanced method with evaluation data
+            conversationOrchestrator.startConversationWithEvaluation(
                     "emotional_response",
                     whitePlayer,
                     blackPlayer,
                     gameContext,
-                    new EnhancedConversationCallback("emotional"));
+                    new EnhancedConversationCallback("emotional"),
+                    currentEval,
+                    lastEvaluationForEmotions);
         }
     }
 
@@ -670,7 +674,8 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             
             String gameContext = gameContextBuilder.toString();
                 
-            conversationOrchestrator.startConversation(
+            // 🎭 CRITICAL FIX: Use enhanced method with evaluation data for emotional analysis
+            conversationOrchestrator.startConversationWithEvaluation(
                     "brilliant_move",
                     whitePlayerName,
                     blackPlayerName,
@@ -712,7 +717,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                         public void onError(String error) {
                             Log.e(TAG, "❌ Enhanced dialogue error: " + error);
                         }
-                    }
+                    },
+                    currentEval,
+                    lastEvaluationForEmotions
             );
 
             // 🎭 UPDATE: Store current evaluation for next emotional comparison

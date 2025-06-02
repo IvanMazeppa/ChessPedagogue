@@ -128,51 +128,143 @@ public class ChessMasterResponsesManager {
     }
     
     /**
+     * DEBUG: Static test method to verify class loading
+     */
+    public static void debugTest() {
+        Log.e(TAG, "🔧 DEBUG: ChessMasterResponsesManager.debugTest() CALLED SUCCESSFULLY!");
+    }
+    
+    /**
+     * DEBUG: Alternative method name to test if method resolution is the issue
+     */
+    public void sendMessageAlternative(String sessionId, String message, String conversationContext, ResponseCallback callback) {
+        // The method IS being called - the custom error message proves this
+        // Now let's implement a working version to bypass the original sendMessage
+        
+        executorService.execute(() -> {
+            try {
+                Log.e(TAG, "🚀 ALTERNATIVE: Method executing in background thread");
+                
+                ResponseSession session = activeSessions.get(sessionId);
+                if (session == null) {
+                    Log.e(TAG, "❌ ALTERNATIVE: Invalid session ID: " + sessionId);
+                    callback.onError("Invalid session ID");
+                    return;
+                }
+                
+                // Create simple request for testing
+                String systemPrompt = buildSystemPromptForMaster(session.masterName);
+                String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
+                
+                Log.e(TAG, "🚀 ALTERNATIVE: About to test Responses API call");
+                
+                // Test with Chat Completions instead to verify the method works
+                try {
+                    String quickResponse = openAIService.getChatCompletion(systemPrompt, enhancedInput);
+                    if (quickResponse != null && !quickResponse.trim().isEmpty()) {
+                        Log.e(TAG, "🚀 ALTERNATIVE: Chat completion successful!");
+                        callback.onResponseComplete(quickResponse.trim());
+                    } else {
+                        Log.e(TAG, "🚀 ALTERNATIVE: Empty response from Chat completion");
+                        callback.onError("Empty response");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "🚀 ALTERNATIVE: Chat completion error: " + e.getMessage());
+                    callback.onError("Chat completion error: " + e.getMessage());
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "🚀 ALTERNATIVE: Exception in method: " + e.getMessage(), e);
+                callback.onError("Alternative method error: " + e.getMessage());
+            }
+        });
+    }
+    
+    /**
      * Send a message and get streaming response
      */
     public void sendMessage(String sessionId, String message, String conversationContext, ResponseCallback callback) {
+        // FORCE LOG IMMEDIATELY - NO TRY-CATCH TO AVOID SUPPRESSION
+        Log.e(TAG, "🚨🚨🚨 SENDMESSAGE ENTRY CRITICAL DEBUG 🚨🚨🚨");
+        Log.e(TAG, "🔧 METHOD SIGNATURE CHECK:");
+        Log.e(TAG, "🔧   sessionId type: " + (sessionId != null ? sessionId.getClass().getSimpleName() : "null"));
+        Log.e(TAG, "🔧   message type: " + (message != null ? message.getClass().getSimpleName() : "null"));
+        Log.e(TAG, "🔧   conversationContext type: " + (conversationContext != null ? conversationContext.getClass().getSimpleName() : "null"));
+        Log.e(TAG, "🔧   callback type: " + (callback != null ? callback.getClass().getSimpleName() : "null"));
+        Log.e(TAG, "🚨 SENDMESSAGE ENTRY: sessionId=" + sessionId + ", message=" + (message != null ? message.substring(0, Math.min(50, message.length())) + "..." : "null"));
+        
         // Validate callback to prevent NullPointerException
         if (callback == null) {
             Log.e(TAG, "❌ sendMessage called with null callback for session: " + sessionId);
             return;
         }
         
+        Log.d(TAG, "🚨 SENDMESSAGE: Starting executor task...");
         executorService.execute(() -> {
+            Log.d(TAG, "🚨 SENDMESSAGE: Inside executor task");
             ResponseSession session = activeSessions.get(sessionId);
+            Log.d(TAG, "🚨 SENDMESSAGE: Session lookup result: " + (session != null ? "FOUND" : "NOT_FOUND"));
             if (session == null) {
                 Log.e(TAG, "❌ Invalid session ID: " + sessionId + " (available sessions: " + activeSessions.keySet() + ")");
                 callback.onError("Invalid session ID");
                 return;
             }
             
+            Log.d(TAG, "🚨 SENDMESSAGE: About to enter try block");
+            
             try {
                 // Create enhanced input with master personality
                 String systemPrompt = buildSystemPromptForMaster(session.masterName);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
-                // Build combined input with system context for Responses API
-                String combinedInput = systemPrompt + "\n\n" + enhancedInput;
-                
-                // Create response request using Responses API format
+                // Create response request using CORRECT Responses API format for fine-tuned models
                 JSONObject requestBody = new JSONObject();
                 requestBody.put("model", getModelForMaster(session.masterName));
-                requestBody.put("input", combinedInput);  // Use 'input' parameter as API requires
                 requestBody.put("stream", true);
+                
+                // CORRECT: Use "input" as array of message objects for fine-tuned models
+                // DO NOT use "instructions" field when using array format
+                JSONArray inputArray = new JSONArray();
+                
+                // Add system message as first item in input array
+                JSONObject systemMessage = new JSONObject();
+                systemMessage.put("role", "system");
+                JSONArray systemContent = new JSONArray();
+                JSONObject systemTextContent = new JSONObject();
+                systemTextContent.put("type", "input_text");
+                systemTextContent.put("text", systemPrompt);
+                systemContent.put(systemTextContent);
+                systemMessage.put("content", systemContent);
+                inputArray.put(systemMessage);
+                
+                // Add user message
+                JSONObject userMessage = new JSONObject();
+                userMessage.put("role", "user");
+                JSONArray userContent = new JSONArray();
+                JSONObject userTextContent = new JSONObject();
+                userTextContent.put("type", "input_text");
+                userTextContent.put("text", enhancedInput);
+                userContent.put(userTextContent);
+                userMessage.put("content", userContent);
+                inputArray.put(userMessage);
+                
+                requestBody.put("input", inputArray);
+                
+                // NOTE: Do NOT add "instructions" field when using array format
                 
                 // Add previous response ID for stateful conversation
                 if (session.previousResponseId != null) {
                     requestBody.put("previous_response_id", session.previousResponseId);
                 }
                 
-                // Add tools if needed (file_search for vector stores)
-                // Only add file_search tool if we have a valid vector store ID
+                // Add tools with vector store IDs (per RESPONSES_API_INTEGRATION_COMPLETE.md)
                 String vectorStoreId = getVectorStoreIdForMaster(session.masterName);
                 if (vectorStoreId != null && !vectorStoreId.isEmpty()) {
                     JSONArray tools = new JSONArray();
                     JSONObject fileTool = new JSONObject();
                     fileTool.put("type", "file_search");
                     
-                    // Add vector_store_ids as required by the API
+                    // Add vector store IDs as per working format
                     JSONArray vectorStoreIds = new JSONArray();
                     vectorStoreIds.put(vectorStoreId);
                     fileTool.put("vector_store_ids", vectorStoreIds);
@@ -180,6 +272,19 @@ public class ChessMasterResponsesManager {
                     tools.put(fileTool);
                     requestBody.put("tools", tools);
                 }
+                
+                // Add required text format for Responses API
+                JSONObject textFormat = new JSONObject();
+                JSONObject formatType = new JSONObject();
+                formatType.put("type", "text");
+                textFormat.put("format", formatType);
+                requestBody.put("text", textFormat);
+                
+                // Add other required parameters
+                requestBody.put("temperature", 1);
+                requestBody.put("max_output_tokens", 2048);
+                requestBody.put("top_p", 1);
+                requestBody.put("store", true);
                 
                 // Add metadata for conversation context
                 if (conversationContext != null && !conversationContext.isEmpty()) {
@@ -191,11 +296,19 @@ public class ChessMasterResponsesManager {
                 
                 // Don't store messages in request body - will extract from input if needed for fallback
                 
-                // Log the request for debugging
-                Log.d(TAG, "📋 Responses API Request: " + requestBody.toString(2));
+                // Log the CORRECTED request for debugging
+                Log.d(TAG, "📋 CORRECTED Responses API Request: " + requestBody.toString(2));
+                Log.d(TAG, "🌐 Sending to URL: " + RESPONSES_API_BASE);
+                Log.d(TAG, "🔑 Using API key length: " + (openAIService.getApiKey() != null ? openAIService.getApiKey().length() : "null"));
+                Log.d(TAG, "🔍 Request keys: " + requestBody.keys().toString());
+                Log.d(TAG, "🎯 Model: " + getModelForMaster(session.masterName));
+                Log.d(TAG, "📝 Input length: " + enhancedInput.length());
+                Log.d(TAG, "📋 Instructions length: " + systemPrompt.length());
                 
+                Log.d(TAG, "🚨 SENDMESSAGE: About to call streamResponseWithRetry");
                 // Make streaming request with retry logic
                 streamResponseWithRetry(session, requestBody, callback, 0);
+                Log.d(TAG, "🚨 SENDMESSAGE: streamResponseWithRetry call completed");
                 
             } catch (Exception e) {
                 Log.e(TAG, "Error sending message", e);
@@ -261,9 +374,19 @@ public class ChessMasterResponsesManager {
             // Validate API key
             String apiKey = openAIService.getApiKey();
             if (apiKey == null || apiKey.trim().isEmpty()) {
+                Log.e(TAG, "❌ API key validation failed: null or empty");
                 callback.onError("OpenAI API key not configured");
                 return;
             }
+            
+            // Enhanced API key validation for Responses API
+            if (!apiKey.startsWith("sk-")) {
+                Log.e(TAG, "❌ API key validation failed: invalid format");
+                callback.onError("Invalid OpenAI API key format");
+                return;
+            }
+            
+            Log.d(TAG, "✅ API key validated successfully (length: " + apiKey.length() + ")");
             
             String url = RESPONSES_API_BASE;
             Log.d(TAG, "🚀 Streaming to URL: " + url);
@@ -271,13 +394,25 @@ public class ChessMasterResponsesManager {
             // Store requestBody as final for use in inner class
             final JSONObject finalRequestBody = requestBody;
             
+            // Debug the exact request being sent
+            String requestJson = requestBody.toString();
+            Log.d(TAG, "🚨 FINAL REQUEST DEBUG:");
+            Log.d(TAG, "🌐 URL: " + url);
+            Log.d(TAG, "🔑 Auth Header: Bearer " + apiKey.substring(0, Math.min(20, apiKey.length())) + "...");
+            Log.d(TAG, "📝 Content-Type: application/json");
+            Log.d(TAG, "📡 Accept: text/event-stream");
+            Log.d(TAG, "📋 JSON Body: " + requestJson);
+            Log.d(TAG, "📐 Body Length: " + requestJson.length());
+            
             Request request = new Request.Builder()
                 .url(url)
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .header("Accept", "text/event-stream")
-                .post(RequestBody.create(requestBody.toString(), JSON))
+                .post(RequestBody.create(requestJson, JSON))
                 .build();
+                
+            Log.d(TAG, "🚀 HTTP Request built successfully, about to send...");
             
             // Create a custom listener class to track state
             class ResponseListener extends EventSourceListener {
@@ -324,8 +459,8 @@ public class ChessMasterResponsesManager {
                                 callback.onResponseComplete(fullResponse);
                                 callback.onConversationTurn(session.masterName, fullResponse);
                             } else {
-                                Log.w(TAG, "⚠️ Empty response received, falling back");
-                                fallbackToChatCompletions(session, finalRequestBody, callback);
+                                Log.w(TAG, "⚠️ Empty response received from Responses API");
+                                callback.onError("Empty response from Responses API");
                             }
                             return;
                         }
@@ -377,8 +512,8 @@ public class ChessMasterResponsesManager {
                                     callback.onConversationTurn(session.masterName, fullResponse);
                                 });
                             } else {
-                                Log.w(TAG, "⚠️ Empty response in done event, falling back");
-                                fallbackToChatCompletions(session, finalRequestBody, callback);
+                                Log.w(TAG, "⚠️ Empty response in done event from Responses API");
+                                callback.onError("Empty response in done event from Responses API");
                             }
                         } else {
                             // Log any other event types we might be missing
@@ -428,13 +563,11 @@ public class ChessMasterResponsesManager {
                 @Override
                 public void onFailure(EventSource eventSource, Throwable t, Response response) {
                     String errorMessage = "Unknown streaming error";
-                    boolean shouldFallback = false;
                     
                     // Check if we timed out without receiving content
                     long elapsed = System.currentTimeMillis() - startTime;
                     if (!hasReceivedContent && elapsed > 5000) {
-                        Log.w(TAG, "⏱️ No content received after 5 seconds, forcing fallback");
-                        shouldFallback = true;
+                        Log.w(TAG, "⏱️ No content received after 5 seconds from Responses API");
                     }
                     
                     if (t != null) {
@@ -455,20 +588,18 @@ public class ChessMasterResponsesManager {
                             Log.e(TAG, "Failed to read error body", e);
                         }
                         
-                        // If we get 404, 400, or 500+ errors, fall back to Chat Completions
-                        if (response.code() == 404 || response.code() == 400 || response.code() >= 500) {
-                            shouldFallback = true;
-                            Log.w(TAG, "⚠️ Responses API error (HTTP " + response.code() + "), falling back to Chat Completions");
+                        // Log HTTP errors for debugging but don't fallback
+                        if (response.code() == 401) {
+                            Log.e(TAG, "🔑 HTTP 401 Unauthorized - API key issue detected!");
+                            Log.e(TAG, "🔍 API key length: " + (openAIService.getApiKey() != null ? openAIService.getApiKey().length() : "null"));
+                            Log.e(TAG, "🔍 This suggests the API key is invalid, expired, or lacks Responses API access");
+                        } else if (response.code() == 404 || response.code() == 400 || response.code() >= 500) {
+                            Log.w(TAG, "⚠️ Responses API error (HTTP " + response.code() + ")");
                         }
                     }
                     
-                    if (shouldFallback) {
-                        // Fallback to Chat Completions API
-                        fallbackToChatCompletions(session, finalRequestBody, callback);
-                    } else {
-                        // Include HTTP error code in the error message for retry logic
-                        callback.onError(errorMessage);
-                    }
+                    // Always report errors directly - no fallbacks
+                    callback.onError(errorMessage);
                 }
             }
             
@@ -476,12 +607,12 @@ public class ChessMasterResponsesManager {
             EventSource eventSource = EventSources.createFactory(httpClient)
                 .newEventSource(request, listener);
             
-            // Set up a timeout to fallback if no response is received
+            // Set up a timeout to detect unresponsive API
             mainHandler.postDelayed(() -> {
                 if (!listener.hasReceivedContent && session.lastActivityTime < System.currentTimeMillis() - 8000) {
-                    Log.w(TAG, "⏰ Timeout: No response received from Responses API after 8 seconds, forcing fallback");
+                    Log.w(TAG, "⏰ Timeout: No response received from Responses API after 8 seconds");
                     eventSource.cancel();
-                    fallbackToChatCompletions(session, requestBody, callback);
+                    callback.onError("Timeout: No response received from Responses API");
                 }
             }, 8000); // 8 second timeout
                 
@@ -516,9 +647,18 @@ public class ChessMasterResponsesManager {
     private String getModelForMaster(String masterName) {
         // Get the specific fine-tuned model for this master
         String modelId = modelManager.getModelIdForMaster(masterName);
+        Log.d(TAG, "🔍 Model lookup for " + masterName + ": " + modelId);
+        
         if (modelId != null && !modelId.equals("gpt-4.1")) {
             Log.d(TAG, "🎯 Using fine-tuned model for " + masterName + ": " + modelId);
             return modelId;
+        }
+        
+        // TEMPORARY: Force Carlsen's fine-tuned model if not found
+        if ("carlsen".equals(masterName.toLowerCase())) {
+            String carlsenModel = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
+            Log.d(TAG, "🔧 FORCING Carlsen model: " + carlsenModel);
+            return carlsenModel;
         }
         
         // Fallback to gpt-4o-mini for Responses API
@@ -551,94 +691,6 @@ public class ChessMasterResponsesManager {
         return input.toString();
     }
     
-    /**
-     * Fallback to Chat Completions API when Responses API is not available
-     * FIXED: Now includes proper game context (FEN, move history) so masters can see the position
-     */
-    private void fallbackToChatCompletions(ResponseSession session, JSONObject originalRequest, ResponseCallback callback) {
-        Log.d(TAG, "🔄 Using fallback for " + session.masterName + " with FULL GAME CONTEXT");
-        
-        executorService.execute(() -> {
-            try {
-                // FIXED: Extract the FULL input including game context, not just user message
-                String fullInput = "";
-                String gameContext = "";
-                if (originalRequest.has("input")) {
-                    fullInput = originalRequest.getString("input");
-                    Log.d(TAG, "📋 Fallback preserving full input: " + fullInput.substring(0, Math.min(200, fullInput.length())) + "...");
-                }
-                
-                // FIXED: Extract metadata for additional context
-                if (originalRequest.has("metadata")) {
-                    try {
-                        JSONObject metadata = originalRequest.getJSONObject("metadata");
-                        if (metadata.has("context")) {
-                            gameContext = metadata.getString("context");
-                            Log.d(TAG, "📋 Fallback found game context: " + gameContext);
-                        }
-                    } catch (Exception e) {
-                        Log.w(TAG, "Could not extract metadata: " + e.getMessage());
-                    }
-                }
-                
-                // Check if this master has an assistant configured
-                if (session.assistantId != null && hasAssistantSupport(session.masterName)) {
-                    Log.d(TAG, "🤖 Using Assistant API for " + session.masterName + " with full context");
-                    fallbackToAssistantAPI(session, fullInput, callback);
-                } else {
-                    Log.d(TAG, "💬 Using Chat Completions for " + session.masterName + " with POSITION CONTEXT");
-                    
-                    // FIXED: Build enhanced conversation context with game state
-                    ConversationManager conversationManager = ConversationManager.getInstance(context);
-                    
-                    // FIXED: Create enhanced system message that includes context awareness
-                    String enhancedSystemPrompt = buildSystemPromptForMaster(session.masterName) + 
-                        "\n\nIMPORTANT: You have full access to the current chess position and game context. " +
-                        "Never say 'Show me the position' or 'I need to see the position' - you can see everything needed to analyze.";
-                    
-                    conversationManager.setSystemMessage(enhancedSystemPrompt);
-                    
-                    // FIXED: Add the FULL input with game context, not just user message
-                    String contextualMessage = fullInput;
-                    if (!gameContext.isEmpty()) {
-                        contextualMessage = "Game Context: " + gameContext + "\n\n" + fullInput;
-                    }
-                    
-                    conversationManager.addUserMessage(contextualMessage);
-                    Log.d(TAG, "📋 Chat Completions fallback message includes: " + 
-                        (contextualMessage.contains("FEN:") ? "✅ FEN position" : "❌ NO FEN") + ", " +
-                        (contextualMessage.contains("Recent moves:") ? "✅ Move history" : "❌ NO MOVES") + ", " +
-                        (contextualMessage.contains("Game Context:") ? "✅ Game context" : "❌ NO CONTEXT"));
-                    
-                    // Set the master in the model manager to use the correct model
-                    modelManager.setSelectedChessMaster(session.masterName);
-                    
-                    // Use the synchronous method
-                    String response = openAIService.getChatCompletionWithHistory(conversationManager);
-                    
-                    if (response != null && !response.isEmpty()) {
-                        // FIXED: Log successful fallback with context
-                        Log.d(TAG, "✅ Chat Completions fallback SUCCESS with context for " + session.masterName);
-                        
-                        // Simulate streaming callbacks on main thread
-                        mainHandler.post(() -> {
-                            callback.onResponseChunk(response, true);
-                            callback.onResponseComplete(response);
-                            callback.onConversationTurn(session.masterName, response);
-                        });
-                        
-                        session.lastActivityTime = System.currentTimeMillis();
-                    } else {
-                        mainHandler.post(() -> callback.onError("Empty response from Chat Completions API"));
-                    }
-                }
-                
-            } catch (Exception e) {
-                Log.e(TAG, "Error in fallback", e);
-                mainHandler.post(() -> callback.onError("Fallback failed: " + e.getMessage()));
-            }
-        });
-    }
     
     /**
      * Build system prompt for a chess master
@@ -761,80 +813,7 @@ public class ChessMasterResponsesManager {
         }
     }
     
-    /**
-     * Check if a master has assistant support
-     */
-    private boolean hasAssistantSupport(String masterName) {
-        switch (masterName.toLowerCase()) {
-            case "tal":
-            case "fischer":
-            case "carlsen":
-            case "anand":
-                return true;
-            default:
-                return false;
-        }
-    }
     
-    /**
-     * Fallback to Assistant API for masters with assistants
-     * FIXED: Now receives full input with game context (FEN, move history)
-     */
-    private void fallbackToAssistantAPI(ResponseSession session, String input, ResponseCallback callback) {
-        Log.d(TAG, "🤖 Assistant API fallback for " + session.masterName + " with FULL CONTEXT");
-        Log.d(TAG, "📋 Assistant fallback input includes: " + 
-            (input.contains("FEN:") ? "✅ FEN position" : "❌ NO FEN") + ", " +
-            (input.contains("Recent moves:") ? "✅ Move history" : "❌ NO MOVES") + ", " +
-            (input.contains("Game context:") ? "✅ Game context" : "❌ NO CONTEXT"));
-        
-        // Set the selected master first
-        modelManager.setSelectedChessMaster(session.masterName);
-        
-        // Use the three-stage response manager for assistant-supported masters
-        ThreeStageResponseManager threeStageManager = ThreeStageResponseManager.getInstance(context);
-        
-        // FIXED: Pass full input with game context to assistant
-        Map<String, String> contextMap = new HashMap<>();
-        contextMap.put("prompt", input); // Now contains full context including FEN and moves
-        contextMap.put("master", session.masterName);
-        
-        threeStageManager.processThreeStageResponse(
-            input, // Full input with position context
-            input, // Use same full input as gameContext - contains FEN, moves, etc.
-            ThreeStageResponseManager.ResponseMode.ADAPTIVE,
-            new ThreeStageResponseManager.ThreeStageCallback() {
-                private StringBuilder fullResponse = new StringBuilder();
-                
-                @Override
-                public void onStageResponse(ThreeStageResponseManager.ResponseStage stage, String response, boolean isFinal) {
-                    if (stage == ThreeStageResponseManager.ResponseStage.STAGE_1_QUICK) {
-                        mainHandler.post(() -> {
-                            callback.onResponseChunk(response, true);
-                            callback.onResponseComplete(response);
-                            callback.onConversationTurn(session.masterName, response);
-                        });
-                        fullResponse.append(response);
-                    } else if (isFinal) {
-                        // Use the enhanced response if available
-                        mainHandler.post(() -> {
-                            callback.onResponseComplete(response);
-                            callback.onConversationTurn(session.masterName, response);
-                        });
-                    }
-                }
-                
-                @Override
-                public void onStageError(ThreeStageResponseManager.ResponseStage stage, String error) {
-                    Log.e(TAG, "Stage " + stage + " error: " + error);
-                }
-                
-                @Override
-                public void onAllStagesComplete(String finalResponse) {
-                    session.lastActivityTime = System.currentTimeMillis();
-                }
-            }
-        );
-    }
     
     /**
      * Close a response session

@@ -587,20 +587,45 @@ public class ChessBoardView extends View {
         checkKingPosition[1] = col;
         invalidate(); // Request redraw
     }
+    
+    /**
+     * Clear piece drawable cache - call when chess set changes
+     */
+    public void clearPieceCache() {
+        pieceDrawableCache.clear();
+        invalidate(); // Redraw with new pieces
+        Log.d("ChessBoardView", "🎨 Piece cache cleared for new chess set");
+    }
 
     /**
      * Get cached drawable for a piece - avoids repeated resource loading
+     * Now integrates with ChessSetManager for personalized piece selection
      */
     private Drawable getCachedPieceDrawable(char piece) {
         Drawable cached = pieceDrawableCache.get(piece);
         if (cached == null) {
-            int resourceId = getDrawableForPiece(piece);
-            if (resourceId != 0) {
-                cached = ContextCompat.getDrawable(getContext(), resourceId);
-                if (cached != null) {
-                    // Clone the drawable so each piece has its own instance
+            // Use ChessSetManager for personalized piece selection
+            ChessSetManager chessSetManager = ChessSetManager.getInstance(getContext());
+            cached = chessSetManager.getPieceDrawable(piece);
+            
+            if (cached != null) {
+                // Clone the drawable so each piece has its own instance
+                try {
                     cached = cached.getConstantState().newDrawable().mutate();
-                    pieceDrawableCache.put(piece, cached);
+                } catch (Exception e) {
+                    // For custom drawables that might not support mutate()
+                    Log.w("ChessBoardView", "Could not mutate drawable for piece: " + piece);
+                }
+                pieceDrawableCache.put(piece, cached);
+            } else {
+                // Fallback to hardcoded resources if ChessSetManager fails
+                int resourceId = getDrawableForPiece(piece);
+                if (resourceId != 0) {
+                    cached = ContextCompat.getDrawable(getContext(), resourceId);
+                    if (cached != null) {
+                        cached = cached.getConstantState().newDrawable().mutate();
+                        pieceDrawableCache.put(piece, cached);
+                    }
                 }
             }
         }
