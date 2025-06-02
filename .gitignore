@@ -45,3 +45,6 @@ captures/
 # External native build folder
 .externalNativeBuild
 .cxx/
+
+# API Keys - NEVER commit these!
+app/src/main/java/com/example/chesspedagogue/ApiKeys.java

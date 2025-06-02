@@ -9,8 +9,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Helper class to facilitate migration from Chat Completions to Responses API
- * Provides fallback mechanisms and gradual migration support
+ * Helper class for Responses API integration
+ * Manages chess master response sessions and conversation orchestration
  */
 public class ResponsesAPIIntegrationHelper {
     private static final String TAG = "ResponsesAPIIntegrationHelper";
@@ -48,9 +48,9 @@ public class ResponsesAPIIntegrationHelper {
             enableResponsesAPIForMaster("anand", true);
             
             // FUTURE: Enable for other masters when assistants are created
-            // For now, these masters will fallback to Chat Completions with enhanced context
+            // These masters need proper Responses API assistant configuration
             Log.d(TAG, "🚀 Enabled Responses API by default for masters with assistants: Tal, Fischer, Carlsen, Anand");
-            Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) will use enhanced Chat Completions fallback");
+            Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) need Responses API configuration");
         }
         
         // IMPORTANT: Enable for main game mode by setting a preference flag
@@ -150,9 +150,8 @@ public class ResponsesAPIIntegrationHelper {
                     
                     @Override
                     public void onError(String error) {
-                        Log.e(TAG, "Responses API error, falling back: " + error);
-                        // Fallback to Chat Completions
-                        fallbackToChatCompletions(masterName, context, message, originalCallback);
+                        Log.e(TAG, "❌ Responses API error (no fallback): " + error);
+                        originalCallback.onError("Responses API failed: " + error);
                     }
                 });
             
@@ -161,9 +160,9 @@ public class ResponsesAPIIntegrationHelper {
                 message, context, null);
             
         } else {
-            // Use existing Chat Completions
-            Log.d(TAG, "📝 Using Chat Completions for " + masterName);
-            fallbackToChatCompletions(masterName, context, message, originalCallback);
+            // Responses API not enabled for this master
+            Log.w(TAG, "⚠️ Responses API not enabled for " + masterName + " - no fallback available");
+            originalCallback.onError("Responses API not available for " + masterName);
         }
     }
     
@@ -210,28 +209,7 @@ public class ResponsesAPIIntegrationHelper {
         }
     }
     
-    /**
-     * Fallback to Chat Completions API
-     */
-    private void fallbackToChatCompletions(String masterName, String context, String message,
-                                          AIDialogueManager.DialogueCallback callback) {
-        try {
-            // Select the chess master
-            openAIService.selectChessMaster(masterName);
-            
-            // Generate response using existing method
-            String response = openAIService.getChatCompletion(
-                getSystemPromptForMaster(masterName, context),
-                message
-            );
-            
-            callback.onDialogueGenerated(masterName, response);
-            
-        } catch (Exception e) {
-            Log.e(TAG, "Error in chat completion fallback", e);
-            callback.onError("Failed to generate response: " + e.getMessage());
-        }
-    }
+    // Fallback to Chat Completions removed - using Responses API only
     
     /**
      * Check if master has assistant configured

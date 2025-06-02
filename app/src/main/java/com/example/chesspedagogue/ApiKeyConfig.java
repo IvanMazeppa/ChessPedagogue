@@ -56,10 +56,18 @@ public class ApiKeyConfig {
                 }
             }
             
-            // Fallback to hardcoded key as last resort
+            // Fallback to hardcoded key from ApiKeys class
             if (apiKey == null || apiKey.isEmpty()) {
-                Log.w(TAG, "No API key found in SharedPreferences or environment - check your configuration");
-                Log.d(TAG, "Using hardcoded fallback API key");
+                try {
+                    if (ApiKeys.isConfigured()) {
+                        apiKey = ApiKeys.getOpenAIKey();
+                        Log.d(TAG, "Using API key from ApiKeys class");
+                    } else {
+                        Log.w(TAG, "No API key found - check SharedPreferences, environment, or ApiKeys.java");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "Error accessing ApiKeys class: " + e.getMessage());
+                }
             }
             
             return apiKey;

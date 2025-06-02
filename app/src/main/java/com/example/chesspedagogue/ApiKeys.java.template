@@ -1,0 +1,45 @@
+package com.example.chesspedagogue;
+
+/**
+ * API Keys configuration template
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Copy this file to ApiKeys.java (same directory)
+ * 2. Replace the placeholder values with your actual API keys
+ * 3. DO NOT commit ApiKeys.java to git (it's in .gitignore)
+ * 
+ * cp ApiKeys.java.template ApiKeys.java
+ * # Then edit ApiKeys.java with your real keys
+ */
+public class ApiKeys {
+    
+    // OpenAI API Key for Responses API and Chat Completions
+    // Get from: https://platform.openai.com/api-keys
+    public static final String OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
+    
+    // ElevenLabs API Key for TTS (optional)
+    // Get from: https://elevenlabs.io/
+    public static final String ELEVENLABS_API_KEY = "YOUR_ELEVENLABS_API_KEY_HERE";
+    
+    // Groq API Key for Speech Recognition (optional)
+    // Get from: https://console.groq.com/
+    public static final String GROQ_API_KEY = "YOUR_GROQ_API_KEY_HERE";
+    
+    /**
+     * Validate that API keys are properly configured
+     */
+    public static boolean isConfigured() {
+        return !OPENAI_API_KEY.equals("YOUR_OPENAI_API_KEY_HERE") && 
+               !OPENAI_API_KEY.trim().isEmpty();
+    }
+    
+    /**
+     * Get OpenAI API key with validation
+     */
+    public static String getOpenAIKey() {
+        if (!isConfigured()) {
+            throw new IllegalStateException("OpenAI API key not configured in ApiKeys.java");
+        }
+        return OPENAI_API_KEY;
+    }
+}
