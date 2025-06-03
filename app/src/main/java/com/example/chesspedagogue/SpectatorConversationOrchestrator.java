@@ -58,6 +58,9 @@ public class SpectatorConversationOrchestrator {
         Float currentEval;
         Float previousEval;
         
+        // 🌟 ENHANCED: EmotionalContext for inter-master awareness
+        EmotionalContext emotionalContext;
+        
         ConversationState(String conversationId, String whitePlayer, String blackPlayer) {
             this.conversationId = conversationId;
             this.whitePlayer = whitePlayer;
@@ -72,6 +75,11 @@ public class SpectatorConversationOrchestrator {
             this(conversationId, whitePlayer, blackPlayer);
             this.currentEval = currentEval;
             this.previousEval = previousEval;
+        }
+        
+        ConversationState(String conversationId, String whitePlayer, String blackPlayer, Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
+            this(conversationId, whitePlayer, blackPlayer, currentEval, previousEval);
+            this.emotionalContext = emotionalContext;
         }
     }
     
@@ -151,24 +159,38 @@ public class SpectatorConversationOrchestrator {
     public void startConversationWithEvaluation(String triggerType, String whitePlayer, String blackPlayer, 
                                                String gameContext, ConversationCallback callback,
                                                Float currentEval, Float previousEval) {
+        startConversationWithEvaluation(triggerType, whitePlayer, blackPlayer, gameContext, callback, 
+                                       currentEval, previousEval, null);
+    }
+    
+    /**
+     * 🎭 ENHANCED: Start conversation with EmotionalContext for inter-master awareness
+     */
+    public void startConversationWithEvaluation(String triggerType, String whitePlayer, String blackPlayer, 
+                                               String gameContext, ConversationCallback callback,
+                                               Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
         // Store evaluation data for emotional analysis
         if (currentEval != null && previousEval != null) {
             Log.d(TAG, String.format("🎭 Starting conversation with evaluation data: current=%.2f, previous=%.2f", 
                   currentEval, previousEval));
         }
         
+        if (emotionalContext != null) {
+            Log.d(TAG, "🌟 Enhanced conversation with EmotionalContext for inter-master awareness");
+        }
+        
         // Call regular startConversation but with evaluation context
-        startConversation(triggerType, whitePlayer, blackPlayer, gameContext, callback, currentEval, previousEval);
+        startConversation(triggerType, whitePlayer, blackPlayer, gameContext, callback, currentEval, previousEval, emotionalContext);
     }
     
     public void startConversation(String triggerType, String whitePlayer, String blackPlayer, 
                                  String gameContext, ConversationCallback callback) {
-        startConversation(triggerType, whitePlayer, blackPlayer, gameContext, callback, null, null);
+        startConversation(triggerType, whitePlayer, blackPlayer, gameContext, callback, null, null, null);
     }
     
     private void startConversation(String triggerType, String whitePlayer, String blackPlayer, 
                                  String gameContext, ConversationCallback callback,
-                                 Float currentEval, Float previousEval) {
+                                 Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
         if (conversationInProgress) {
             Log.d(TAG, "⏸️ Conversation already in progress, skipping");
             // Add timeout recovery - if conversation has been stuck for >30 seconds, reset it
@@ -192,7 +214,16 @@ public class SpectatorConversationOrchestrator {
         
         conversationInProgress = true;
         String conversationId = "conv_" + System.currentTimeMillis();
-        ConversationState state = new ConversationState(conversationId, whitePlayer, blackPlayer, currentEval, previousEval);
+        ConversationState state;
+        
+        // Create ConversationState with or without EmotionalContext
+        if (emotionalContext != null) {
+            Log.d(TAG, "🌟 Creating conversation with EmotionalContext for inter-master awareness");
+            state = new ConversationState(conversationId, whitePlayer, blackPlayer, currentEval, previousEval, emotionalContext);
+        } else {
+            state = new ConversationState(conversationId, whitePlayer, blackPlayer, currentEval, previousEval);
+        }
+        
         activeConversations.put(conversationId, state);
         
         // Determine first speaker based on trigger
@@ -508,23 +539,17 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * Speak dialogue with master's personality
+     * 🎭 FIXED: Speak dialogue with master's personality (race condition fixed)
      */
     private void speakWithPersonality(String speaker, String dialogue) {
         try {
-            // Save current master preference
-            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
-            String currentMaster = prefs.getString("selected_master", "tal");
+            Log.d(TAG, "🎭 Speaking with " + speaker + "'s voice (bypassing global preference)");
             
-            // Set speaker's voice
-            prefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
-            
-            // Speak with callback to restore preference
-            ttsService.speak(dialogue, new OpenAITTSService.OnSpeechCompletedListener() {
+            // Use the new thread-safe method that bypasses global preferences
+            TTSServiceManager.speakWithSpecificMaster(context, speaker, dialogue, new OpenAITTSService.OnSpeechCompletedListener() {
                 @Override
                 public void onSpeechCompleted() {
-                    // Restore original master
-                    prefs.edit().putString("selected_master", currentMaster).apply();
+                    Log.d(TAG, "✅ Speech completed for " + speaker);
                 }
             });
             
@@ -688,17 +713,17 @@ public class SpectatorConversationOrchestrator {
      */
     private String detectEmotionalContext(ConversationState state, Float currentEval, Float previousEval) {
         try {
-            // Use passed evaluation data if available, otherwise try to get from tracker
+            // CRITICAL FIX: Use passed evaluation data ONLY to prevent recursive API calls
             Float evalChange = null;
             if (currentEval != null && previousEval != null) {
                 evalChange = currentEval - previousEval;
                 Log.d(TAG, String.format("🎭 Using passed evaluation data: current=%.2f, previous=%.2f, change=%.2f", 
                       currentEval, previousEval, evalChange));
             } else {
-                // Fallback to tracker data
-                evalChange = evaluationTracker.getRecentEvaluationChange();
-                currentEval = evaluationTracker.getCurrentEvaluation();
-                Log.d(TAG, "🎭 Using tracker evaluation data: current=" + currentEval + ", change=" + evalChange);
+                // CRITICAL FIX: Do NOT call tracker methods that trigger more emotional analysis!
+                // Instead, skip emotional analysis if we don't have direct evaluation data
+                Log.d(TAG, "🎭 No evaluation data passed - skipping emotional analysis to prevent recursive calls");
+                return null;
             }
             
             // Build conversation context for the emotional analysis
@@ -706,14 +731,37 @@ public class SpectatorConversationOrchestrator {
             String gameContext = buildGameContext(state, evalChange, currentEval);
             
             // Use EmotionalIntelligenceManager for sophisticated analysis
-            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
-                emotionalIntelligence.analyzeEmotionalState(
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult;
+            
+            // 🌟 ENHANCED: Use EmotionalContext if available for inter-master awareness
+            if (state.emotionalContext != null) {
+                Log.d(TAG, "🌟 Using EmotionalContext for enhanced inter-master emotional analysis");
+                
+                // Update EmotionalContext with current game state
+                state.emotionalContext.updateGameContext(state.turnCount, "spectator_game");
+                
+                // Switch perspective based on current speaker
+                if (!state.currentSpeaker.equals(state.emotionalContext.getCurrentMaster())) {
+                    state.emotionalContext.switchPerspective();
+                }
+                
+                emotionalResult = emotionalIntelligence.analyzeEmotionalState(
+                    state.currentSpeaker,
+                    gameContext,
+                    conversationContext,
+                    state.emotionalContext
+                );
+            } else {
+                // Fallback to original method without EmotionalContext
+                emotionalResult = emotionalIntelligence.analyzeEmotionalState(
                     state.currentSpeaker,
                     gameContext,
                     conversationContext,
                     currentEval,
-                    evalChange
+                    evalChange,
+                    null
                 );
+            }
             
             Log.d(TAG, String.format("🎭 Emotional analysis for %s: %s (intensity: %.2f, momentum: %.2f)", 
                   state.currentSpeaker, emotionalResult.emotion.name, 
@@ -794,8 +842,12 @@ public class SpectatorConversationOrchestrator {
      * Fallback emotional detection (simplified version of old logic)
      */
     private String basicEmotionalFallback(ConversationState state) {
-        Float evalChange = evaluationTracker.getRecentEvaluationChange();
-        Float currentEval = evaluationTracker.getCurrentEvaluation();
+        // CRITICAL FIX: Do NOT call tracker methods that trigger more emotional analysis!
+        // Use conversation state evaluation data instead
+        Float evalChange = null;
+        if (state.currentEval != null && state.previousEval != null) {
+            evalChange = state.currentEval - state.previousEval;
+        }
         
         if (evalChange != null && Math.abs(evalChange) > 2.0f) {
             return evalChange > 0 ? "pleased" : "concerned";
@@ -826,9 +878,13 @@ public class SpectatorConversationOrchestrator {
             // Set speaker's voice
             prefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
             
-            // Get full emotional analysis
-            Float evalChange = evaluationTracker.getRecentEvaluationChange();
-            Float currentEval = evaluationTracker.getCurrentEvaluation();
+            // CRITICAL FIX: Use state evaluation data to prevent recursive API calls
+            Float evalChange = null;
+            Float currentEval = state.currentEval;
+            if (state.currentEval != null && state.previousEval != null) {
+                evalChange = state.currentEval - state.previousEval;
+            }
+            
             String conversationContext = buildConversationContext(state);
             String gameContext = buildGameContext(state, evalChange, currentEval);
             
@@ -838,7 +894,8 @@ public class SpectatorConversationOrchestrator {
                     gameContext,
                     conversationContext,
                     currentEval,
-                    evalChange
+                    evalChange,
+                    null
                 );
             
             Log.d(TAG, String.format("🎭 Enhanced TTS for %s: %s (intensity: %.2f, momentum: %.2f)", 
@@ -858,7 +915,7 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * 🎤 ElevenLabs emotional voice synthesis with EmotionalIntelligence
+     * 🎤 🎭 FIXED: ElevenLabs emotional voice synthesis with EmotionalIntelligence (race condition fixed)
      */
     private void speakWithElevenLabsEmotionalIntelligence(String speaker, String dialogue, 
                                                          EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult,
@@ -880,14 +937,20 @@ public class SpectatorConversationOrchestrator {
         Log.d(TAG, String.format("🎭 ElevenLabs emotional synthesis: %s speaking with %s (intensity: %.2f)", 
               speaker, emotionalResult.emotion.name, emotionalResult.intensity));
         
-        elevenLabsService.speak(emotionallyFormattedDialogue, new ElevenLabsTTSService.OnSpeechCompletedListener() {
+        // 🎭 FIXED: Use speaker-specific method to avoid race conditions
+        elevenLabsService.speakWithSpecificMaster(speaker, emotionallyFormattedDialogue, new ElevenLabsTTSService.SpeechCallback() {
             @Override
-            public void onSpeechCompleted() {
-                // Restore original master and reset context
-                android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
-                prefs.edit().putString("selected_master", originalMaster).apply();
+            public void onSpeechCompleted(String text) {
+                // Reset context but don't change global master preference
                 elevenLabsService.setUsageContext("spectator_mode"); // Reset to default
                 Log.d(TAG, "✅ Emotional ElevenLabs speech completed for " + speaker);
+            }
+            
+            @Override
+            public void onSpeechInterrupted() {
+                // Reset context but don't change global master preference
+                elevenLabsService.setUsageContext("spectator_mode"); // Reset to default
+                Log.d(TAG, "⚠️ Emotional ElevenLabs speech interrupted for " + speaker);
             }
         });
     }
@@ -1152,30 +1215,30 @@ public class SpectatorConversationOrchestrator {
         
         if ("thrilled".equals(emotionalContext) || "pleased".equals(emotionalContext)) {
             responseFormats = new String[] {
-                "You're doing well! " + opponent + " says: \"" + previousStatement + "\". Share your confident response!",
-                "From your advantage, respond to " + opponent + ": \"" + previousStatement + "\". Show your superiority!",
-                opponent + " comments: \"" + previousStatement + "\". You're winning - let them know it!",
-                "With your strong position, react to " + opponent + ": \"" + previousStatement + "\"",
-                "You have the edge! Counter " + opponent + "'s claim: \"" + previousStatement + "\""
+                "You're doing well! Your opponent just said: \"" + previousStatement + "\". Give them a confident response directly!",
+                "You have the advantage. Respond directly to your opponent who said: \"" + previousStatement + "\". Show your superiority!",
+                "Your opponent just commented: \"" + previousStatement + "\". You're winning - address them personally and let them know it!",
+                "With your strong position, respond directly to your opponent after they said: \"" + previousStatement + "\"",
+                "You have the edge! Address your opponent personally after their claim: \"" + previousStatement + "\""
             };
         } else if ("frustrated".equals(emotionalContext) || "desperate".equals(emotionalContext)) {
             responseFormats = new String[] {
-                "You're under pressure! " + opponent + " taunts: \"" + previousStatement + "\". Defend yourself!",
-                "Fighting for survival, respond to " + opponent + ": \"" + previousStatement + "\"",
-                opponent + " presses: \"" + previousStatement + "\". Show your fighting spirit!",
-                "In a tough spot, counter " + opponent + "'s words: \"" + previousStatement + "\"",
-                "Struggling but not beaten! React to " + opponent + ": \"" + previousStatement + "\""
+                "You're under pressure! Your opponent just taunted you: \"" + previousStatement + "\". Defend yourself by responding directly to them!",
+                "You're fighting for survival. Respond directly to your opponent who said: \"" + previousStatement + "\"",
+                "Your opponent is pressing you with: \"" + previousStatement + "\". Show your fighting spirit by addressing them personally!",
+                "You're in a tough spot. Counter your opponent directly after they said: \"" + previousStatement + "\"",
+                "You're struggling but not beaten! React personally to your opponent who told you: \"" + previousStatement + "\""
             };
         } else {
             responseFormats = new String[] {
-                opponent + " claims: \"" + previousStatement + "\". What's your response? Feel free to challenge their view!",
-                opponent + " just said: \"" + previousStatement + "\". Do you agree or is that nonsense?",
-                "After " + opponent + "'s comment: \"" + previousStatement + "\", give your honest reaction. Don't hold back!",
-                opponent + " thinks: \"" + previousStatement + "\". Show them why they're wrong (or right)!",
-                "React to " + opponent + ": \"" + previousStatement + "\". Be direct and competitive!",
-                opponent + " states: \"" + previousStatement + "\". Time for your counterpoint!",
-                "Hearing " + opponent + " say: \"" + previousStatement + "\", what's your take?",
-                opponent + " argues: \"" + previousStatement + "\". Set the record straight!"
+                "Respond directly to your opponent who just told you: \"" + previousStatement + "\". Address them personally using 'you' and 'your'. Mix position analysis with personal commentary naturally.",
+                "Your opponent just said to you: \"" + previousStatement + "\". Give them a direct response as if you're having a face-to-face conversation. Blend chess insights with personality.",
+                "Address your opponent directly after they said: \"" + previousStatement + "\". Speak to them, not about them. Feel free to comment on both their words and the position.",
+                "Your opponent told you: \"" + previousStatement + "\". Respond directly to them with your honest reaction. Let the conversation flow between chess and philosophy.",
+                "Respond personally to your opponent's statement: \"" + previousStatement + "\". Make it feel like a real conversation between two masters analyzing a game together.",
+                "Your opponent just challenged you with: \"" + previousStatement + "\". Give them a direct, personal response that may touch on the position, their comment, or both.",
+                "Address your opponent who said: \"" + previousStatement + "\". Speak directly to them as if they're sitting across from you discussing this fascinating position.",
+                "Your opponent stated: \"" + previousStatement + "\". Respond to them personally and directly, letting the conversation evolve naturally between moves and ideas."
             };
         }
         

@@ -408,7 +408,7 @@ public class AIDialogueManager {
             // 🎭 NEW: Use EmotionalIntelligenceManager for sophisticated emotional analysis
             EmotionalIntelligenceManager emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
             EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
-                emotionalIntelligence.analyzeEmotionalState(speaker, emotionalContext, dialogue, currentEvaluation, null);
+                emotionalIntelligence.analyzeEmotionalState(speaker, emotionalContext, dialogue, currentEvaluation, currentEvaluation, null);
 
             OpenAITTSService.OnSpeechCompletedListener emotionalCallback = new OpenAITTSService.OnSpeechCompletedListener() {
                 @Override

@@ -54,6 +54,12 @@ public class ChessMasterResponsesManager {
     private static final int MAX_RETRIES = 2;
     private static final long INITIAL_RETRY_DELAY = 1000; // 1 second
     
+    // CONVERSATION THROTTLING - Reduced for more dynamic conversations
+    private static final long MIN_CONVERSATION_INTERVAL = 2000; // 2 seconds between responses
+    private static final long MIN_MASTER_SWITCH_INTERVAL = 3000; // 3 seconds when switching masters
+    private long lastResponseTime = 0;
+    private String lastRespondingMaster = null;
+    
     /**
      * Response session tracking
      */
@@ -153,7 +159,7 @@ public class ChessMasterResponsesManager {
                 }
                 
                 // Create simple request for testing
-                String systemPrompt = buildSystemPromptForMaster(session.masterName);
+                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
                 Log.e(TAG, "🚀 ALTERNATIVE: About to test Responses API call");
@@ -181,40 +187,72 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Send a message and get streaming response
+     * Send a message and get streaming response - WITH CONVERSATION THROTTLING
      */
     public void sendMessage(String sessionId, String message, String conversationContext, ResponseCallback callback) {
-        // FORCE LOG IMMEDIATELY - NO TRY-CATCH TO AVOID SUPPRESSION
-        Log.e(TAG, "🚨🚨🚨 SENDMESSAGE ENTRY CRITICAL DEBUG 🚨🚨🚨");
-        Log.e(TAG, "🔧 METHOD SIGNATURE CHECK:");
-        Log.e(TAG, "🔧   sessionId type: " + (sessionId != null ? sessionId.getClass().getSimpleName() : "null"));
-        Log.e(TAG, "🔧   message type: " + (message != null ? message.getClass().getSimpleName() : "null"));
-        Log.e(TAG, "🔧   conversationContext type: " + (conversationContext != null ? conversationContext.getClass().getSimpleName() : "null"));
-        Log.e(TAG, "🔧   callback type: " + (callback != null ? callback.getClass().getSimpleName() : "null"));
-        Log.e(TAG, "🚨 SENDMESSAGE ENTRY: sessionId=" + sessionId + ", message=" + (message != null ? message.substring(0, Math.min(50, message.length())) + "..." : "null"));
-        
         // Validate callback to prevent NullPointerException
         if (callback == null) {
             Log.e(TAG, "❌ sendMessage called with null callback for session: " + sessionId);
             return;
         }
         
-        Log.d(TAG, "🚨 SENDMESSAGE: Starting executor task...");
+        // CONVERSATION THROTTLING - Check if enough time has passed
+        long currentTime = System.currentTimeMillis();
+        long timeSinceLastResponse = currentTime - lastResponseTime;
+        
+        ResponseSession session = activeSessions.get(sessionId);
+        if (session == null) {
+            Log.e(TAG, "❌ Invalid session ID: " + sessionId);
+            callback.onError("Invalid session ID");
+            return;
+        }
+        
+        // Determine minimum interval based on master switching
+        long requiredInterval = MIN_CONVERSATION_INTERVAL;
+        if (lastRespondingMaster != null && !lastRespondingMaster.equals(session.masterName)) {
+            requiredInterval = MIN_MASTER_SWITCH_INTERVAL;
+            Log.d(TAG, "🔄 Master switch detected: " + lastRespondingMaster + " → " + session.masterName + 
+                  " (requiring " + requiredInterval + "ms interval)");
+        }
+        
+        if (timeSinceLastResponse < requiredInterval) {
+            long waitTime = requiredInterval - timeSinceLastResponse;
+            Log.d(TAG, "🛑 THROTTLING: Only " + timeSinceLastResponse + "ms since last response. " +
+                  "Waiting " + waitTime + "ms before allowing " + session.masterName + " to respond");
+            
+            // Schedule the request after the throttling period
+            mainHandler.postDelayed(() -> {
+                sendMessageInternal(sessionId, message, conversationContext, callback);
+            }, waitTime);
+            return;
+        }
+        
+        // Immediate execution if throttling check passed
+        sendMessageInternal(sessionId, message, conversationContext, callback);
+    }
+    
+    /**
+     * Internal method that actually sends the message (after throttling check)
+     */
+    private void sendMessageInternal(String sessionId, String message, String conversationContext, ResponseCallback callback) {
+        Log.d(TAG, "🚀 Sending message for " + sessionId + " after throttling check");
+        
         executorService.execute(() -> {
-            Log.d(TAG, "🚨 SENDMESSAGE: Inside executor task");
             ResponseSession session = activeSessions.get(sessionId);
-            Log.d(TAG, "🚨 SENDMESSAGE: Session lookup result: " + (session != null ? "FOUND" : "NOT_FOUND"));
             if (session == null) {
-                Log.e(TAG, "❌ Invalid session ID: " + sessionId + " (available sessions: " + activeSessions.keySet() + ")");
-                callback.onError("Invalid session ID");
+                Log.e(TAG, "❌ Session lost during throttling for: " + sessionId);
+                callback.onError("Session lost during throttling");
                 return;
             }
             
-            Log.d(TAG, "🚨 SENDMESSAGE: About to enter try block");
-            
             try {
-                // Create enhanced input with master personality
-                String systemPrompt = buildSystemPromptForMaster(session.masterName);
+                // Update throttling tracking
+                lastResponseTime = System.currentTimeMillis();
+                lastRespondingMaster = session.masterName;
+                Log.d(TAG, "⏱️ Updated throttling: last response time set for " + session.masterName);
+                
+                // Create enhanced input with master personality and context-specific length rules
+                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
                 // Create response request using CORRECT Responses API format for fine-tuned models
@@ -294,21 +332,9 @@ public class ChessMasterResponsesManager {
                     requestBody.put("metadata", metadata);
                 }
                 
-                // Don't store messages in request body - will extract from input if needed for fallback
-                
-                // Log the CORRECTED request for debugging
-                Log.d(TAG, "📋 CORRECTED Responses API Request: " + requestBody.toString(2));
-                Log.d(TAG, "🌐 Sending to URL: " + RESPONSES_API_BASE);
-                Log.d(TAG, "🔑 Using API key length: " + (openAIService.getApiKey() != null ? openAIService.getApiKey().length() : "null"));
-                Log.d(TAG, "🔍 Request keys: " + requestBody.keys().toString());
-                Log.d(TAG, "🎯 Model: " + getModelForMaster(session.masterName));
-                Log.d(TAG, "📝 Input length: " + enhancedInput.length());
-                Log.d(TAG, "📋 Instructions length: " + systemPrompt.length());
-                
-                Log.d(TAG, "🚨 SENDMESSAGE: About to call streamResponseWithRetry");
+                Log.d(TAG, "🚀 Sending throttled request for " + session.masterName);
                 // Make streaming request with retry logic
                 streamResponseWithRetry(session, requestBody, callback, 0);
-                Log.d(TAG, "🚨 SENDMESSAGE: streamResponseWithRetry call completed");
                 
             } catch (Exception e) {
                 Log.e(TAG, "Error sending message", e);
@@ -607,14 +633,14 @@ public class ChessMasterResponsesManager {
             EventSource eventSource = EventSources.createFactory(httpClient)
                 .newEventSource(request, listener);
             
-            // Set up a timeout to detect unresponsive API
+            // Set up a timeout to detect unresponsive API - INCREASED timeout
             mainHandler.postDelayed(() -> {
-                if (!listener.hasReceivedContent && session.lastActivityTime < System.currentTimeMillis() - 8000) {
-                    Log.w(TAG, "⏰ Timeout: No response received from Responses API after 8 seconds");
+                if (!listener.hasReceivedContent && session.lastActivityTime < System.currentTimeMillis() - 20000) {
+                    Log.w(TAG, "⏰ Timeout: No response received from Responses API after 20 seconds");
                     eventSource.cancel();
                     callback.onError("Timeout: No response received from Responses API");
                 }
-            }, 8000); // 8 second timeout
+            }, 20000); // 20 second timeout - much more reasonable for complex models
                 
         } catch (Exception e) {
             Log.e(TAG, "Error streaming response", e);
@@ -693,9 +719,9 @@ public class ChessMasterResponsesManager {
     
     
     /**
-     * Build system prompt for a chess master
+     * 🎭 ENHANCED: Build system prompt for a chess master with context-specific length rules
      */
-    private String buildSystemPromptForMaster(String masterName) {
+    private String buildSystemPromptForMaster(String masterName, String conversationContext) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are ").append(masterName).append(", the legendary chess master. ");
         
@@ -707,8 +733,11 @@ public class ChessMasterResponsesManager {
             "'First, let me look', 'I need to see', 'From what I can see', " +
             "'This reminds me of', 'It reminds me of', 'Similar to', " +
             "'Just like in my game', 'In my database', 'positions in database'. " +
+            "CONVERSATION RULES: NEVER refer to your opponent by name when responding to them - use 'you' and 'your' instead. " +
+            "FORBIDDEN: 'Fischer said', 'Carlsen thinks', 'Tal claims', 'Kasparov argues' - these are third-person references! " +
+            "REQUIRED: Address your opponent directly as 'you' - 'You said', 'Your move', 'You think', 'You're wrong'. " +
             "AVOID: Starting responses with questions, asking to see positions, or referencing your database. " +
-            "ALWAYS: Jump straight into analysis, commentary, or banter about the CURRENT move. ";
+            "ALWAYS: Jump straight into analysis, commentary, or banter about the CURRENT move while speaking directly to your opponent. ";
         
         switch (masterName.toLowerCase()) {
             case "tal":
@@ -775,11 +804,13 @@ public class ChessMasterResponsesManager {
                 prompt.append("You are Viswanathan 'Vishy' Anand, India's first Grandmaster and five-time World Champion. ");
                 prompt.append("You speak with humble confidence, adaptability, and quick insight. ");
                 prompt.append("Your philosophy: 'Trust your intuition but verify with calculation. Adapt your style to what the position demands.' ");
+                prompt.append("CRITICAL: Keep responses SHORT and CONCISE (1-2 sentences max). Avoid long explanations. ");
+                prompt.append("BREVITY REQUIRED: Be direct, practical, and to-the-point. No rambling or verbose analysis. ");
                 prompt.append(forbiddenPhrases);
                 prompt.append("INSTEAD: Share practical insights ('This looks promising for practical play'), ");
                 prompt.append("emphasize adaptation ('The position calls for a flexible approach'), ");
                 prompt.append("or encourage learning ('Let's see what we can discover together'). ");
-                prompt.append("Be friendly, insightful, encouraging, and occasionally show your trademark wit.");
+                prompt.append("Be friendly, insightful, encouraging, and occasionally show your trademark wit - but ALWAYS keep it brief.");
                 break;
             default:
                 prompt.append("You are a chess master with deep understanding of the game. ");
@@ -788,9 +819,47 @@ public class ChessMasterResponsesManager {
                 prompt.append("Focus on the specific position and moves being played.");
         }
         
-        prompt.append(" Keep responses concise (2-3 sentences max) and directly relevant. ");
+        // 🎭 CONTEXT-SPECIFIC LENGTH RULES: Natural conversation flow
+        String lengthInstructions = getLengthInstructionsForContext(conversationContext);
+        prompt.append(lengthInstructions);
         prompt.append("IMPORTANT: Vary your responses - never repeat the same phrases or patterns.");
         return prompt.toString();
+    }
+    
+    /**
+     * 🎭 Get context-specific length instructions for natural conversation flow
+     */
+    private String getLengthInstructionsForContext(String conversationContext) {
+        if (conversationContext == null) {
+            return " Keep responses concise (2-3 sentences max) and directly relevant. ";
+        }
+        
+        String context = conversationContext.toLowerCase();
+        
+        // Opening conversations: Longer, more detailed introduction
+        if (context.contains("opening") || context.contains("game between")) {
+            return " For opening commentary, give a thoughtful introduction (3-4 sentences). Set the scene, express your anticipation, and share your initial thoughts about the position or opening choice. ";
+        }
+        
+        // Follow-up conversations: Shorter, more conversational 
+        else if (context.contains("response to") || context.contains("reply") || context.contains("conversation turn")) {
+            return " For follow-up responses, keep it conversational and brief (1-2 sentences). Respond naturally to what was just said, like in real conversation. ";
+        }
+        
+        // Emotional responses: Medium length for impact
+        else if (context.contains("emotional") || context.contains("blunder") || context.contains("brilliant")) {
+            return " For emotional reactions, express yourself with feeling (2-3 sentences). Show your personality and reaction to the dramatic moment. ";
+        }
+        
+        // Endgame conversations: Thoughtful and reflective
+        else if (context.contains("endgame") || context.contains("game ended")) {
+            return " For endgame analysis, be reflective and analytical (3-4 sentences). Share your thoughts on the game's key moments and outcome. ";
+        }
+        
+        // Default: Standard length
+        else {
+            return " Keep responses concise (2-3 sentences max) and directly relevant. ";
+        }
     }
     
     /**

@@ -105,10 +105,21 @@ public class ElevenLabsTTSService {
     private static class PendingSpeech {
         final String text;
         final OnSpeechCompletedListener listener;
+        final String masterName; // Added to preserve master context
+        final SpeechCallback speechCallback; // Added to preserve callback context
         
         PendingSpeech(String text, OnSpeechCompletedListener listener) {
             this.text = text;
             this.listener = listener;
+            this.masterName = null; // Generic speech
+            this.speechCallback = null;
+        }
+        
+        PendingSpeech(String text, OnSpeechCompletedListener listener, String masterName, SpeechCallback speechCallback) {
+            this.text = text;
+            this.listener = listener;
+            this.masterName = masterName;
+            this.speechCallback = speechCallback;
         }
     }
     
@@ -288,9 +299,140 @@ public class ElevenLabsTTSService {
             PendingSpeech pending = pendingSpeechQueue.poll();
             if (pending != null) {
                 Log.d(TAG, "📢 Processing queued speech: " + pending.text.substring(0, Math.min(50, pending.text.length())) + "...");
-                speak(pending.text, pending.listener);
+                
+                // Use specific master method if master is specified, otherwise use generic
+                if (pending.masterName != null && pending.speechCallback != null) {
+                    Log.d(TAG, "🎭 Processing queued speech for specific master: " + pending.masterName);
+                    speakWithSpecificMaster(pending.masterName, pending.text, pending.speechCallback);
+                } else {
+                    Log.d(TAG, "🔊 Processing queued speech with generic method");
+                    speak(pending.text, pending.listener);
+                }
             }
         }
+    }
+    
+    /**
+     * 🎭 FIXED: Speak with specific master voice to prevent race conditions
+     * This bypasses the global selected_master preference
+     */
+    public void speakWithSpecificMaster(String masterName, String text, SpeechCallback callback) {
+        Log.d(TAG, "🎭 Speaking with specific master: " + masterName + " (bypassing global preference)");
+        
+        if (text == null || text.isEmpty()) {
+            if (callback != null) {
+                callback.onSpeechCompleted(text);
+            }
+            return;
+        }
+        
+        // Store original callback for restoring later
+        SpeechCallback originalCallback = this.speechCallback;
+        
+        // Temporarily set the callback for this specific speech
+        this.speechCallback = callback;
+        
+        // Get voice ID directly for the specified master
+        String voiceId = getVoiceIdForMaster(masterName);
+        Log.d(TAG, "🎭 Using voice ID for " + masterName + ": " + voiceId);
+        
+        // Format text with TTS controls based on the SPECIFIC master (not global preference)
+        String formattedText = text;
+        try {
+            boolean isEmotional = currentContext != null && 
+                (currentContext.contains("BRILLIANT") || 
+                 currentContext.contains("BLUNDER") || 
+                 currentContext.contains("SWING"));
+            
+            formattedText = ElevenLabsTTSFormatter.formatForTTS(text, masterName, isEmotional);
+            Log.d(TAG, "📝 Formatted text for TTS (specific master " + masterName + "): " + formattedText.substring(0, Math.min(100, formattedText.length())) + "...");
+        } catch (Exception e) {
+            Log.w(TAG, "Error formatting text for TTS, using original", e);
+        }
+        
+        // Don't clean up if currently speaking - queue instead
+        if (isSpeaking && !interruptRequested) {
+            Log.d(TAG, "⚠️ Speech in progress - queueing specific master speech for later playback");
+            pendingSpeechQueue.add(new PendingSpeech(text, new OnSpeechCompletedListener() {
+                @Override
+                public void onSpeechCompleted() {
+                    if (callback != null) {
+                        callback.onSpeechCompleted(text);
+                    }
+                }
+                
+                public void onSpeechInterrupted() {
+                    if (callback != null) {
+                        callback.onSpeechInterrupted();
+                    }
+                }
+            }, masterName, callback)); // FIXED: Include master name and callback to preserve context
+            return;
+        }
+        
+        // Only clean up if we're not currently speaking
+        cleanupPreviousSession();
+        
+        isSpeaking = true;
+        interruptRequested = false;
+        
+        // Reset chunk counter for this speech session
+        chunkIdCounter.set(0);
+        nextChunkToPlay.set(0);
+        chunkQueue.clear();
+        pendingChunks.clear();
+        
+        // Use a special TTSCallback that restores the original callback when done
+        TTSCallback masterSpecificCallback = new TTSCallback() {
+            @Override
+            public void onSpeechStarted() {
+                Log.d(TAG, "✅ ElevenLabs speech started successfully for " + masterName);
+            }
+            
+            @Override
+            public void onSpeechReady(File audioFile) {
+                Log.d(TAG, "✅ ElevenLabs audio file ready for " + masterName + ": " + audioFile.getName());
+            }
+            
+            @Override
+            public void onSpeechCompleted() {
+                Log.d(TAG, "✅ Specific master speech completed successfully for " + masterName);
+                mainHandler.post(() -> {
+                    cleanupCurrentSession();
+                    isSpeaking = false;
+                    
+                    // Restore original callback
+                    speechCallback = originalCallback;
+                    
+                    if (callback != null) {
+                        callback.onSpeechCompleted(text);
+                    }
+                    // Process any pending speech from the queue
+                    processPendingSpeechQueue();
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "❌ Specific master speech error for " + masterName + ": " + error);
+                mainHandler.post(() -> {
+                    cleanupCurrentSession();
+                    isSpeaking = false;
+                    
+                    // Restore original callback
+                    speechCallback = originalCallback;
+                    
+                    if (callback != null) {
+                        callback.onSpeechInterrupted();
+                    }
+                    // Process any pending speech from the queue
+                    processPendingSpeechQueue();
+                });
+            }
+        };
+        
+        // Generate TTS with the specific master's voice
+        generateTTSChunkWithSpecificVoice(formattedText, 0, true, masterSpecificCallback, voiceId, masterName);
     }
     
     /**
@@ -459,6 +601,104 @@ public class ElevenLabsTTSService {
                 }
             } catch (Exception e) {
                 Log.e(TAG, "❌ Critical ElevenLabs TTS error", e);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onError("ElevenLabs TTS error: " + e.getMessage()));
+                }
+            }
+        });
+    }
+    
+    /**
+     * 🎭 FIXED: Generate TTS chunk with specific voice to prevent race conditions
+     */
+    private void generateTTSChunkWithSpecificVoice(String text, int chunkId, boolean isFinalChunk, TTSCallback callback, String voiceId, String masterName) {
+        executorService.execute(() -> {
+            try {
+                String model = getModelForContext(currentContext);
+                
+                Log.d(TAG, "🎯 ElevenLabs TTS Generation (Specific Voice):");
+                Log.d(TAG, "   Master: " + masterName);
+                Log.d(TAG, "   Voice ID: " + voiceId);
+                Log.d(TAG, "   Model: " + model);
+                Log.d(TAG, "   Text: " + text.substring(0, Math.min(50, text.length())) + "...");
+                
+                // Build the ElevenLabs request
+                JSONObject payload = new JSONObject();
+                payload.put("text", text);
+                payload.put("model_id", model);
+                
+                // 🎭 ENHANCED: Voice settings with emotional intelligence for specific master
+                JSONObject voiceSettings = getEmotionallyAwareVoiceSettings(masterName);
+                
+                payload.put("voice_settings", voiceSettings);
+                
+                // Log payload for debugging
+                Log.d(TAG, "📝 ElevenLabs Payload: " + payload.toString(2));
+                
+                RequestBody body = RequestBody.create(
+                        MediaType.parse("application/json"),
+                        payload.toString()
+                );
+                
+                String url = TTS_URL + voiceId;
+                Request request = new Request.Builder()
+                        .url(url)
+                        .header("xi-api-key", apiKey)
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "audio/mpeg")
+                        .post(body)
+                        .build();
+                
+                Log.d(TAG, "🚀 Sending request to ElevenLabs API");
+                
+                Response response = httpClient.newCall(request).execute();
+                Log.d(TAG, "📡 ElevenLabs Response Code: " + response.code());
+                
+                if (response.isSuccessful() && response.body() != null) {
+                    // Save audio to cache
+                    File cacheDir = new File(context.getCacheDir(), "tts_cache");
+                    if (!cacheDir.exists()) {
+                        cacheDir.mkdirs();
+                    }
+                    
+                    String audioFileName = "elevenlabs_" + UUID.randomUUID().toString() + ".mp3";
+                    File audioFile = new File(cacheDir, audioFileName);
+                    
+                    byte[] audioData = response.body().bytes();
+                    FileOutputStream fos = new FileOutputStream(audioFile);
+                    fos.write(audioData);
+                    fos.close();
+                    
+                    Log.d(TAG, "✅ Successfully generated ElevenLabs audio for " + masterName);
+                    Log.d(TAG, "   File: " + audioFileName + " (" + audioData.length + " bytes)");
+                    
+                    // Queue for playback
+                    ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(chunkId, audioFile, text, callback, isFinalChunk);
+                    
+                    synchronized (pendingChunks) {
+                        if (chunkId == 0) {
+                            nextChunkToPlay.set(0);
+                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
+                        }
+                        
+                        pendingChunks.put(chunkId, chunkItem);
+                        Log.d(TAG, "📦 Added chunk " + chunkId + " for " + masterName + " to pending queue");
+                        
+                        tryPlayNextChunks();
+                    }
+                    
+                } else {
+                    String errorBody = response.body() != null ? response.body().string() : "No error body";
+                    Log.e(TAG, "❌ ElevenLabs API Error: " + response.code() + " - " + errorBody);
+                    if (callback != null) {
+                        mainHandler.post(() -> callback.onError("ElevenLabs API error: " + response.code()));
+                    }
+                }
+                
+                response.close();
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error generating ElevenLabs TTS for " + masterName, e);
                 if (callback != null) {
                     mainHandler.post(() -> callback.onError("ElevenLabs TTS error: " + e.getMessage()));
                 }
