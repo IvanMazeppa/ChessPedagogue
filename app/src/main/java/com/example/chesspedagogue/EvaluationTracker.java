@@ -461,7 +461,8 @@ public class EvaluationTracker {
                     gameContext,
                     conversationContext,
                     swing.currentEval.getEffectiveEvaluation(),
-                    swing.swingAmount
+                    swing.swingAmount,
+                    null
                 );
             
             Log.d(TAG, String.format("🎭 Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)", 

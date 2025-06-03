@@ -60,7 +60,7 @@ public class FineTunedModelManager {
     private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_ANAND = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_ANAND = "gpt-4o-mini"; // Changed from gpt-4.1 to reduce verbosity
     private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe";
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
@@ -1319,7 +1319,7 @@ public class FineTunedModelManager {
             case "tal":
             case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
-            case "anand": // 🏆 ANAND NOW USES ASSISTANTS API!
+            // case "anand": // 🚫 DISABLED ASSISTANTS API TO REDUCE VERBOSITY!
             case "botvinnik":
                 return true;
             default:

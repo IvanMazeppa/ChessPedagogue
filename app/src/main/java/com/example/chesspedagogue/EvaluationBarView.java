@@ -105,11 +105,11 @@ public class EvaluationBarView extends View {
             float ratio = (clampedEval + 5f) / 10f; // Maps -5..+5 to 0..1
             ratio = Math.max(0.02f, Math.min(0.98f, ratio)); // Ensure visibility
 
-            // For player perspective: if player is black, flip the display
-            // so their advantage appears at the bottom regardless of color
-            if (!isPlayerWhite) {
-                ratio = 1.0f - ratio;
-            }
+            // FIXED: Remove incorrect player perspective inversion
+            // The evaluation should always show the same thing regardless of player color:
+            // - White advantage = white section larger (top)
+            // - Black advantage = black section larger (bottom)
+            // The previous logic was causing the evaluation to appear inverted
 
             // Calculate split point (ratio determines white section size)
             // Higher ratio = more white at top, lower ratio = more black at bottom
@@ -211,12 +211,14 @@ public class EvaluationBarView extends View {
     }
 
     /**
-     * Set player color for proper orientation
+     * Set player color (kept for API compatibility)
+     * NOTE: Player color no longer affects display - evaluation bar always shows
+     * white advantage at top, black advantage at bottom for consistency
      */
     public void setPlayerColor(boolean isWhite) {
-        Log.d(TAG, "🎨 Player color: " + (isWhite ? "White" : "Black"));
+        Log.d(TAG, "🎨 Player color set: " + (isWhite ? "White" : "Black") + " (display not affected)");
         this.isPlayerWhite = isWhite;
-        invalidate();
+        // No need to invalidate since display logic no longer uses player color
     }
 
     /**

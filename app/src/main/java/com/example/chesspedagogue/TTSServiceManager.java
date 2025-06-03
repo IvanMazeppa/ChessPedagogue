@@ -184,6 +184,73 @@ public class TTSServiceManager {
     }
     
     /**
+     * 🎭 FIXED: Speak with specific master voice without global preference changes
+     * This prevents race conditions in spectator mode where multiple masters speak
+     */
+    public static void speakWithSpecificMaster(Context context, String masterName, String text, OpenAITTSService.OnSpeechCompletedListener listener) {
+        Log.d(TAG, "🎭 Speaking with specific master: " + masterName + " (bypassing global preference)");
+        
+        if (isUsingElevenLabs(context)) {
+            // Use ElevenLabs directly with specified master
+            if (elevenLabsService == null) {
+                elevenLabsService = ElevenLabsTTSService.getInstance(context);
+            }
+            
+            // 🎭 CRITICAL FIX: Get current emotional state and set it before speaking
+            EmotionalIntelligenceManager emotionalManager = EmotionalIntelligenceManager.getInstance(context);
+            EmotionalIntelligenceManager.EmotionalAnalysisResult currentEmotion = emotionalManager.getCurrentEmotionalAnalysis(masterName);
+            if (currentEmotion != null) {
+                Log.d(TAG, "🎭 Setting emotional state for " + masterName + ": " + currentEmotion.emotion.name + " (intensity: " + currentEmotion.intensity + ")");
+                elevenLabsService.setEmotionalState(currentEmotion);
+            }
+            
+            // Temporarily override the master voice selection
+            elevenLabsService.speakWithSpecificMaster(masterName, text, new ElevenLabsTTSService.SpeechCallback() {
+                @Override
+                public void onSpeechCompleted(String text) {
+                    if (listener != null) {
+                        listener.onSpeechCompleted();
+                    }
+                }
+                
+                @Override
+                public void onSpeechInterrupted() {
+                    if (listener != null) {
+                        listener.onSpeechCompleted(); // Use completed callback for interruption too
+                    }
+                }
+            });
+        } else {
+            // Fallback to OpenAI with temporary preference change
+            SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            String originalMaster = prefs.getString("selected_master", "tal");
+            
+            // Temporarily set master
+            prefs.edit().putString("selected_master", masterName.toLowerCase()).apply();
+            
+            OpenAITTSService service = getOpenAITTSService(context);
+            service.speak(text, new OpenAITTSService.OnSpeechCompletedListener() {
+                @Override
+                public void onSpeechCompleted() {
+                    // Restore original master
+                    prefs.edit().putString("selected_master", originalMaster).apply();
+                    if (listener != null) {
+                        listener.onSpeechCompleted();
+                    }
+                }
+                
+                public void onSpeechInterrupted() {
+                    // Restore original master
+                    prefs.edit().putString("selected_master", originalMaster).apply();
+                    if (listener != null) {
+                        listener.onSpeechCompleted(); // Use completed callback for interruption too
+                    }
+                }
+            });
+        }
+    }
+    
+    /**
      * Wrapper class that adapts ElevenLabs service to OpenAI interface
      * This allows seamless switching without changing all the calling code
      */

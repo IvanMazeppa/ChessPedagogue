@@ -38,6 +38,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private final Handler mainHandler;
     private final SpectatorConversationOrchestrator conversationOrchestrator;
     private final AIvsAIGameManager gameManager;
+    
+    // 🎭 EMOTIONAL CONTEXT: Inter-master awareness system
+    private EmotionalContext emotionalContext;
 
     // Game state with better tracking
     private final MutableLiveData<String> currentFEN = new MutableLiveData<>();
@@ -61,6 +64,11 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private int moveCount = 0;
     private boolean gameInProgress = false;
     private Float lastEvaluationForEmotions = null;
+    
+    // 🎭 CONVERSATION COOLDOWN: Prevent API spam while allowing emergent behavior
+    private long lastConversationTime = 0;
+    private static final long MIN_CONVERSATION_COOLDOWN = 8000; // 8 seconds between any conversations
+    private boolean conversationInProgress = false; // Prevent overlapping conversations
     
     // CRITICAL FIX: Prevent concurrent move requests
     private boolean moveRequestInProgress = false;
@@ -117,6 +125,10 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         // Store player information
         this.whitePlayer = whitePlayer;
         this.blackPlayer = blackPlayer;
+        
+        // 🎭 INITIALIZE EMOTIONAL CONTEXT for inter-master awareness
+        this.emotionalContext = new EmotionalContext(whitePlayer, blackPlayer);
+        Log.d(TAG, "🎭 EmotionalContext initialized for " + whitePlayer + " vs " + blackPlayer);
 
         // CRITICAL: Initialize the AI vs AI game manager
         Log.d(TAG, "🎮 Initializing AI vs AI game...");
@@ -136,8 +148,14 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         Log.d(TAG, "📊 Game status set to: " + gameStatus.getValue());
         Log.d(TAG, "🎯 Ready for first move request");
 
-        // Generate opening dialogue
-        generateEnhancedOpeningDialogue();
+        // Schedule opening dialogue AFTER game initialization to ensure proper state
+        mainHandler.postDelayed(() -> {
+            if (gameInProgress && "in_progress".equals(gameStatus.getValue())) {
+                Log.d(TAG, "🎬 Generating opening dialogue now that game is initialized...");
+                lastConversationTime = System.currentTimeMillis(); // Set opening as first conversation
+                generateEnhancedOpeningDialogue();
+            }
+        }, 500); // Short delay to ensure game state is ready
 
         // Schedule the first move with a small delay to let everything initialize
         mainHandler.postDelayed(() -> {
@@ -178,17 +196,32 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
                 // 🎭 EMOTIONAL: Check for evaluation changes that should trigger emotional responses
                 Float currentEval = currentEvaluation.getValue();
+                long currentTime = System.currentTimeMillis();
+                boolean cooldownPassed = (currentTime - lastConversationTime) >= MIN_CONVERSATION_COOLDOWN;
+                boolean canStartConversation = cooldownPassed && !conversationInProgress;
+                
                 if (shouldGenerateEmotionalDialogue(currentEval, lastEvaluationForEmotions)) {
-                    Log.d(TAG, "🎭 TRIGGERING EMOTIONAL DIALOGUE due to evaluation swing!");
-
-                    // Force emotional dialogue generation
-                    generateEnhancedMoveDialogue(move, history);
+                    if (canStartConversation) {
+                        Log.d(TAG, "🎭 TRIGGERING EMOTIONAL DIALOGUE due to evaluation swing!");
+                        lastConversationTime = currentTime;
+                        conversationInProgress = true;
+                        
+                        // Force emotional dialogue generation for emergent behavior
+                        generateEnhancedMoveDialogue(move, history);
+                    } else if (conversationInProgress) {
+                        Log.d(TAG, "🎭 EMOTIONAL DIALOGUE BLOCKED: Conversation already in progress");
+                    } else {
+                        long timeLeft = MIN_CONVERSATION_COOLDOWN - (currentTime - lastConversationTime);
+                        Log.d(TAG, "🎭 EMOTIONAL DIALOGUE COOLDOWN: " + timeLeft + "ms remaining");
+                    }
 
                 } else {
-                    // 🎯 Regular dialogue check
-                    if (shouldGenerateDialogue(history.size())) {
+                    // 🎯 Regular dialogue check (also respects cooldown and non-overlap)
+                    if (shouldGenerateDialogue(history.size()) && canStartConversation) {
                         Log.d(TAG, "🎬 Generating regular dialogue with emotional potential");
-                        generateEnhancedMoveDialogue(move, history);  // Still use enhanced version for emotional readiness
+                        lastConversationTime = currentTime;
+                        conversationInProgress = true;
+                        generateEnhancedMoveDialogue(move, history);
                     }
                 }
 
@@ -410,17 +443,52 @@ public class SpectatorGameViewModel extends AndroidViewModel {
      */
     protected void generateEnhancedOpeningDialogue() {
         Log.d(TAG, "🎬 Generating enhanced opening dialogue with conversation potential");
+        Log.d(TAG, "🔍 White Player: " + whitePlayer + ", Black Player: " + blackPlayer);
+        Log.d(TAG, "🎮 Game in progress: " + gameInProgress + ", Status: " + gameStatus.getValue());
+
+        // Check if we have valid players
+        if (whitePlayer == null || blackPlayer == null) {
+            Log.e(TAG, "❌ Cannot generate opening dialogue - players not set!");
+            return;
+        }
+
+        // Check conversation orchestrator
+        if (conversationOrchestrator == null) {
+            Log.e(TAG, "❌ Cannot generate opening dialogue - conversation orchestrator is null!");
+            return;
+        }
 
         // FIXED: Use proper game context with position for opening dialogue
         String currentFen = currentFEN.getValue();
         String gameContext = String.format("Opening game between %s and %s\nPOSITION: %s\nMove number: 1", 
             whitePlayer, blackPlayer, currentFen != null ? currentFen : "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-        conversationOrchestrator.startConversation(
-                "opening",
-                whitePlayer,
-                blackPlayer,
-                gameContext,
-                new EnhancedConversationCallback("opening"));
+        
+        Log.d(TAG, "🎭 About to call conversationOrchestrator.startConversation with context:");
+        Log.d(TAG, "   📄 Game Context: " + gameContext.substring(0, Math.min(100, gameContext.length())) + "...");
+        
+        try {
+            conversationOrchestrator.startConversation(
+                    "opening",
+                    whitePlayer,
+                    blackPlayer,
+                    gameContext,
+                    new EnhancedConversationCallback("opening"));
+            Log.d(TAG, "✅ Opening conversation startConversation() called successfully");
+            
+            // FALLBACK: If no conversation starts within 10 seconds, try a simple dialogue
+            mainHandler.postDelayed(() -> {
+                String currentDialogue = aiDialogue.getValue();
+                if (currentDialogue == null || currentDialogue.isEmpty()) {
+                    Log.w(TAG, "⚠️ FALLBACK: No opening conversation detected, generating simple greeting");
+                    generateSimpleFallbackGreeting();
+                }
+            }, 10000); // 10 second timeout
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error calling startConversation(): " + e.getMessage(), e);
+            // Immediate fallback
+            generateSimpleFallbackGreeting();
+        }
     }
 
     /**
@@ -467,7 +535,97 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     /**
-     * 🎭 ENHANCED: Dialogue callback that supports conversations
+     * 🎭 ENHANCED: Dialogue callback with EmotionalContext awareness
+     */
+    private class EnhancedEmotionalConversationCallback implements SpectatorConversationOrchestrator.ConversationCallback {
+        private final String context;
+
+        public EnhancedEmotionalConversationCallback(String context) {
+            this.context = context;
+        }
+
+        @Override
+        public void onConversationStart(String speaker1, String speaker2) {
+            Log.d(TAG, "🎬 Enhanced emotional conversation started: " + speaker1 + " vs " + speaker2);
+            // Update EmotionalContext with conversation start
+            if (emotionalContext != null) {
+                emotionalContext.setLastSpeaker(null); // Reset for new conversation
+            }
+        }
+
+        @Override
+        public void onDialogueGenerated(String speaker, String dialogue) {
+            Log.d(TAG, "🎭 Enhanced dialogue from " + speaker + ": " + dialogue);
+
+            // Update the UI with the dialogue
+            String speakerName = FineTunedModelManager.getInstance(getApplication())
+                    .getMasterDisplayName(speaker);
+            String formattedDialogue = speakerName + ": \"" + dialogue + "\"";
+
+            aiDialogue.setValue(formattedDialogue);
+            conversationSpeaker.setValue(speakerName);
+
+            // 🎭 UPDATE EMOTIONAL CONTEXT with speaker info
+            if (emotionalContext != null) {
+                emotionalContext.setLastSpeaker(speaker);
+            }
+
+            Log.d(TAG, "✅ Enhanced emotional dialogue displayed: " + formattedDialogue);
+        }
+
+        @Override
+        public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
+            Log.d(TAG, "😮 EMOTIONAL RESPONSE! " + speaker + " (" + emotion + "): " + dialogue);
+
+            // Handle emotional dialogue specially
+            String speakerName = FineTunedModelManager.getInstance(getApplication())
+                    .getMasterDisplayName(speaker);
+            String emotionalDialogue = speakerName + " (" + emotion + "): \"" + dialogue + "\"";
+            
+            aiDialogue.setValue(emotionalDialogue);
+            conversationSpeaker.setValue(speakerName);
+            
+            // 🎭 UPDATE EMOTIONAL CONTEXT with emotional response
+            if (emotionalContext != null) {
+                emotionalContext.setLastSpeaker(speaker);
+                // Note: The emotional state should already be updated by EmotionalIntelligenceManager
+            }
+        }
+
+        @Override
+        public void onConversationEnd(String finalSpeaker, String finalMessage) {
+            Log.d(TAG, "🎭 EMOTIONAL CONVERSATION ENDED with " + finalSpeaker + ": " + finalMessage);
+
+            // Update conversation state
+            conversationActive.postValue(false);
+            conversationInProgress = false; // Reset conversation lock
+
+            Log.d(TAG, "✅ Enhanced emotional conversation has ended naturally");
+        }
+
+        @Override
+        public void onError(String error) {
+            Log.e(TAG, "❌ Enhanced emotional dialogue error (" + context + "): " + error);
+            
+            // NO FALLBACK - Responses API only approach
+            // Just mark conversation as inactive and log the error
+            
+            // Check if we're still active before updating UI
+            if (!gameInProgress) {
+                Log.d(TAG, "⚠️ Game stopped, ignoring error callback");
+                return;
+            }
+            
+            conversationActive.setValue(false);
+            conversationInProgress = false; // CRITICAL: Reset conversation lock on error
+            
+            // Show that we're waiting for the next conversation attempt
+            Log.d(TAG, "⏳ Waiting for next conversation opportunity via Responses API");
+        }
+    }
+    
+    /**
+     * 🎭 LEGACY: Dialogue callback that supports conversations (keeping for compatibility)
      */
     private class EnhancedConversationCallback implements SpectatorConversationOrchestrator.ConversationCallback {
         private final String context;
@@ -526,16 +684,26 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         @Override
         public void onError(String error) {
             Log.e(TAG, "❌ Enhanced dialogue error (" + context + "): " + error);
-
-            // Fallback dialogue
-            String fallbackDialogue = "The chess masters continue their fascinating game!";
-            aiDialogue.setValue(fallbackDialogue);
+            
+            // NO FALLBACK - Responses API only approach
+            // Just mark conversation as inactive and log the error
+            
+            // Check if we're still active before updating UI
+            if (!gameInProgress) {
+                Log.d(TAG, "⚠️ Game stopped, ignoring error callback");
+                return;
+            }
+            
             conversationActive.setValue(false);
+            conversationInProgress = false; // CRITICAL: Reset conversation lock on error
+            
+            // Show that we're waiting for the next conversation attempt
+            Log.d(TAG, "⏳ Waiting for next conversation opportunity via Responses API");
         }
     }
 
     /**
-     * 🎭 FIXED: Much higher threshold for emotional dialogue to reduce API spam
+     * 🎭 SELECTIVE: Higher threshold for emotional dialogue - only major swings
      */
     private boolean shouldGenerateEmotionalDialogue(Float currentEval, Float previousEval) {
         if (currentEval == null || previousEval == null) {
@@ -544,9 +712,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
 
         float evalChange = Math.abs(currentEval - previousEval);
 
-        // FIXED: Only generate for MAJOR evaluation swings to reduce costs
-        if (evalChange > 2.0f) {  // INCREASED from 0.8f to 2.0f - major changes only
-            Log.d(TAG, "🎭 MAJOR EVAL CHANGE DETECTED: " + previousEval + " → " + currentEval + " (Δ" + evalChange + ")");
+        // SELECTIVE: Only trigger on major evaluation swings (blunders/brilliancies)
+        if (evalChange > 1.5f) {  // RESTORED to 1.5f - only major swings
+            Log.d(TAG, "🎭 MAJOR EVAL SWING: " + previousEval + " → " + currentEval + " (Δ" + evalChange + ")");
             return true;
         }
 
@@ -554,23 +722,23 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     }
 
     /**
-     * 🎭 FIXED: Much more selective dialogue to reduce API spam and costs
+     * 🎭 SELECTIVE: Restore proper dialogue frequency - opening, middlegame, endgame only
      */
     private boolean shouldGenerateDialogue(int moveNumber) {
-        // FIXED: Much more selective - only emotional triggers should cause regular commentary
+        // SELECTIVE: Only key moments get regular commentary
         
-        // Opening moves (moves 1-15): Very selective - only major moments
+        // Opening conversation: Move 8 only (after opening development)
         if (moveNumber <= 15) {
-            return moveNumber == 8 || moveNumber == 15;  // Only moves 8 and 15
+            return moveNumber == 8;  // Single opening commentary
         }
 
-        // Middlegame (moves 16-35): Key tactical moments only
+        // Middlegame conversation: Move 25 only (peak tactical phase)
         if (moveNumber <= 35) {
-            return moveNumber % 12 == 0;  // Every 12th move (moves 24, 36)
+            return moveNumber == 25;  // Single middlegame commentary
         }
 
-        // Endgame (moves 36+): Critical moments only
-        return moveNumber % 15 == 0;  // Every 15th move (moves 45, 60)
+        // Endgame conversation: Move 45+ (critical endgame)
+        return moveNumber == 45;  // Single endgame commentary
     }
 
     /**
@@ -584,7 +752,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         if (previousEval != null) {
             float evalChange = Math.abs(newEvaluation - previousEval);
 
-            if (evalChange > 1.5f) {  // Major swing
+            if (evalChange > 0.5f) {  // Evaluation swing - more frequent via Responses API
                 Log.d(TAG, "🎭 MAJOR EVALUATION SWING: " + previousEval + " → " + newEvaluation);
 
                 // Determine which player this affects
@@ -689,52 +857,16 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             
             String gameContext = gameContextBuilder.toString();
                 
-            // 🎭 CRITICAL FIX: Use enhanced method with evaluation data for emotional analysis
+            // 🎭 CRITICAL FIX: Use enhanced method with evaluation data AND EmotionalContext for inter-master awareness
             conversationOrchestrator.startConversationWithEvaluation(
                     "brilliant_move",
                     whitePlayerName,
                     blackPlayerName,
                     gameContext,
-                    new SpectatorConversationOrchestrator.ConversationCallback() {
-                        @Override
-                        public void onConversationStart(String speaker1, String speaker2) {
-                            Log.d(TAG, "🎬 Move commentary conversation started");
-                        }
-                        @Override
-                        public void onDialogueGenerated(String speaker, String dialogue) {
-                            Log.d(TAG, "🎭 Enhanced dialogue from " + speaker + ": " + dialogue);
-
-                            // Update UI with emotional dialogue
-                            aiDialogue.postValue(FineTunedModelManager.getInstance(getApplication())
-                                    .getMasterDisplayName(speaker) + ": \"" + dialogue + "\"");
-
-                            conversationSpeaker.postValue(speaker);
-                        }
-
-                        @Override
-                        public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
-                            Log.d(TAG, "😮 EMOTIONAL RESPONSE! " + speaker + " (" + emotion + "): " + dialogue);
-                            
-                            // Update UI with emotional dialogue
-                            String emotionalDialogue = FineTunedModelManager.getInstance(getApplication())
-                                    .getMasterDisplayName(speaker) + " (" + emotion + "): \"" + dialogue + "\"";
-                            aiDialogue.postValue(emotionalDialogue);
-                            conversationSpeaker.postValue(speaker);
-                        }
-
-                        @Override
-                        public void onConversationEnd(String finalSpeaker, String finalMessage) {
-                            Log.d(TAG, "✅ Move commentary conversation completed with " + finalSpeaker);
-                            conversationActive.postValue(false);
-                        }
-
-                        @Override
-                        public void onError(String error) {
-                            Log.e(TAG, "❌ Enhanced dialogue error: " + error);
-                        }
-                    },
+                    new EnhancedEmotionalConversationCallback("brilliant_move"),
                     currentEval,
-                    lastEvaluationForEmotions
+                    lastEvaluationForEmotions,
+                    emotionalContext  // 🌟 Pass EmotionalContext for emergent behavior!
             );
 
             // 🎭 UPDATE: Store current evaluation for next emotional comparison
@@ -834,6 +966,89 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     // ENHANCED: New getters for conversation state
     public LiveData<String> getConversationSpeaker() { return conversationSpeaker; }
     public LiveData<Boolean> isConversationActive() { return conversationActive; }
+    
+    /**
+     * 🧪 DEBUG: Force an opening conversation for testing
+     */
+    public void forceOpeningConversation() {
+        Log.d(TAG, "🧪 FORCE: Manually triggering opening conversation for testing");
+        if (whitePlayer != null && blackPlayer != null && conversationOrchestrator != null) {
+            generateEnhancedOpeningDialogue();
+        } else {
+            Log.e(TAG, "❌ FORCE: Cannot force conversation - missing requirements");
+            Log.e(TAG, "   whitePlayer: " + whitePlayer);
+            Log.e(TAG, "   blackPlayer: " + blackPlayer);
+            Log.e(TAG, "   conversationOrchestrator: " + conversationOrchestrator);
+        }
+    }
+    
+    /**
+     * 🧪 DEBUG: Force a move commentary for testing
+     */
+    public void forceMoveCommentary() {
+        Log.d(TAG, "🧪 FORCE: Manually triggering move commentary for testing");
+        List<String> currentHistory = moveHistory.getValue();
+        if (currentHistory != null && !currentHistory.isEmpty()) {
+            String lastMove = currentHistory.get(currentHistory.size() - 1);
+            generateEnhancedMoveDialogue(lastMove, currentHistory);
+        } else {
+            Log.e(TAG, "❌ FORCE: No moves to comment on");
+        }
+    }
+    
+    /**
+     * 🔄 FALLBACK: Generate a simple greeting when conversation system fails
+     */
+    private void generateSimpleFallbackGreeting() {
+        Log.d(TAG, "🔄 FALLBACK: Generating simple greeting as conversation fallback");
+        
+        if (whitePlayer == null || blackPlayer == null) {
+            return;
+        }
+        
+        // Simple personality-based greetings
+        String greeting;
+        String speaker;
+        
+        // Randomly choose who speaks first
+        boolean whiteFirst = Math.random() > 0.5;
+        speaker = whiteFirst ? whitePlayer : blackPlayer;
+        String opponent = whiteFirst ? blackPlayer : whitePlayer;
+        
+        switch (speaker.toLowerCase()) {
+            case "tal":
+                greeting = "Ah, " + opponent + "! Ready for some beautiful tactical fireworks?";
+                break;
+            case "fischer":
+                greeting = "Playing " + opponent + " today. Let's see who plays the most accurate chess.";
+                break;
+            case "carlsen":
+                greeting = "Good to play " + opponent + " again. Should be an interesting game.";
+                break;
+            case "kasparov":
+                greeting = "Facing " + opponent + "! Time to show the power of dynamic play!";
+                break;
+            case "karpov":
+                greeting = "A game with " + opponent + ". I'll play solid, positional chess.";
+                break;
+            default:
+                greeting = "Ready to begin against " + opponent + ". May the best player win!";
+                break;
+        }
+        
+        // Display the fallback greeting
+        String formattedGreeting = FineTunedModelManager.getInstance(getApplication())
+                .getMasterDisplayName(speaker) + ": \"" + greeting + "\"";
+        
+        aiDialogue.setValue(formattedGreeting);
+        conversationSpeaker.setValue(speaker);
+        
+        Log.d(TAG, "✅ FALLBACK: Simple greeting displayed: " + formattedGreeting);
+    }
+
+    /**
+     * 🎯 RESPONSES API ONLY APPROACH: No fallbacks, pure Responses API conversations
+     */
 
     /**
      * CRITICAL: Force stop all operations immediately to prevent ANR

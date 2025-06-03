@@ -280,14 +280,23 @@ public class EmotionalIntelligenceManager {
      */
     public EmotionalAnalysisResult analyzeEmotionalState(String masterName, String gameContext, 
                                                         String conversationContext) {
-        return analyzeEmotionalState(masterName, gameContext, conversationContext, null, null);
+        return analyzeEmotionalState(masterName, gameContext, conversationContext, null, null, null);
+    }
+    
+    /**
+     * ENHANCED: Analyze emotional state with inter-master context awareness
+     */
+    public EmotionalAnalysisResult analyzeEmotionalState(String masterName, String gameContext, 
+                                                        String conversationContext, EmotionalContext emotionalContext) {
+        return analyzeEmotionalState(masterName, gameContext, conversationContext, null, null, emotionalContext);
     }
     
     /**
      * ENHANCED: Analyze emotional state with direct evaluation data (for spectator mode)
      */
     public EmotionalAnalysisResult analyzeEmotionalState(String masterName, String gameContext, 
-                                                        String conversationContext, Float currentEval, Float evalChange) {
+                                                        String conversationContext, Float currentEval, Float evalChange, 
+                                                        EmotionalContext emotionalContext) {
         String masterKey = masterName.toLowerCase();
         EmotionalProfile profile = masterProfiles.getOrDefault(masterKey, 
                                     new EmotionalProfile("default"));
@@ -302,16 +311,25 @@ public class EmotionalIntelligenceManager {
         // Step 2: Apply master-specific modifications
         EmotionalState adjustedEmotion = applyMasterPersonality(baseEmotion, profile, gameContext);
         
-        // Step 3: Consider emotional momentum and history
-        EmotionalState finalEmotion = considerEmotionalMomentum(adjustedEmotion, history);
+        // Step 3: 🎭 NEW! Apply inter-master emotional context awareness
+        EmotionalState contextAwareEmotion = applyInterMasterContext(adjustedEmotion, masterName, emotionalContext);
         
-        // Step 4: Generate contextual emotional response
+        // Step 4: Consider emotional momentum and history
+        EmotionalState finalEmotion = considerEmotionalMomentum(contextAwareEmotion, history);
+        
+        // Step 5: Generate contextual emotional response
         String emotionalExpression = generateEmotionalExpression(finalEmotion, profile, 
                                                                 conversationContext);
         
-        // Step 5: Update emotional history
+        // Step 6: Update emotional history
         float intensity = calculateEmotionalIntensity(baseEmotion, profile);
         history.addEmotionalEvent(finalEmotion, intensity, "evaluation_change");
+        
+        // Step 7: 🎭 UPDATE EMOTIONAL CONTEXT for inter-master awareness
+        if (emotionalContext != null) {
+            emotionalContext.updateEmotionalState(masterName, finalEmotion.name, intensity, 
+                                                 history.getEmotionalMomentum());
+        }
         
         Log.d(TAG, String.format("🎭 Emotional analysis for %s: %s (intensity: %.2f, momentum: %.2f)", 
                masterName, finalEmotion.name, intensity, history.getEmotionalMomentum()));
@@ -420,6 +438,170 @@ public class EmotionalIntelligenceManager {
         }
         
         return baseEmotion;
+    }
+    
+    /**
+     * 🎭 BREAKTHROUGH: Apply inter-master emotional context awareness
+     * This is where the magic happens - masters react to each other's emotions!
+     */
+    private EmotionalState applyInterMasterContext(EmotionalState currentEmotion, String masterName, 
+                                                   EmotionalContext emotionalContext) {
+        if (emotionalContext == null) {
+            return currentEmotion;
+        }
+        
+        String otherMasterEmotion = emotionalContext.getOtherMasterEmotion();
+        float otherMasterIntensity = emotionalContext.getOtherMasterIntensity();
+        String lastSpeaker = emotionalContext.getLastSpeaker();
+        
+        Log.d(TAG, String.format("🌟 INTER-MASTER CONTEXT: %s feeling %s, other master (%s) feeling %s (%.2f intensity)", 
+               masterName, currentEmotion.name, emotionalContext.getOtherMaster(), otherMasterEmotion, otherMasterIntensity));
+        
+        // Only apply context if the other master has significant emotional state
+        if (otherMasterIntensity < 0.4f) {
+            return currentEmotion;
+        }
+        
+        // Get master personalities for context-aware reactions
+        String masterKey = masterName.toLowerCase();
+        String otherMasterKey = emotionalContext.getOtherMaster().toLowerCase();
+        
+        // Apply emergent emotional dynamics based on master personalities
+        EmotionalState modifiedEmotion = applyEmergentDynamics(currentEmotion, masterKey, otherMasterKey, 
+                                                              otherMasterEmotion, otherMasterIntensity, lastSpeaker);
+        
+        if (modifiedEmotion != currentEmotion) {
+            Log.d(TAG, String.format("🌟 EMERGENT BEHAVIOR: %s's emotion shifted from %s to %s due to %s being %s", 
+                   masterName, currentEmotion.name, modifiedEmotion.name, 
+                   emotionalContext.getOtherMaster(), otherMasterEmotion));
+        }
+        
+        return modifiedEmotion;
+    }
+    
+    /**
+     * 🎭 EMERGENT DYNAMICS: Define how masters react to each other emotionally
+     */
+    private EmotionalState applyEmergentDynamics(EmotionalState myEmotion, String masterKey, String otherMasterKey,
+                                                String otherEmotion, float otherIntensity, String lastSpeaker) {
+        
+        // Fischer vs Carlsen: Modern precision vs classical intensity
+        if (masterKey.equals("fischer") && otherMasterKey.equals("carlsen")) {
+            return applyFischerVsCarlsenDynamics(myEmotion, otherEmotion, otherIntensity);
+        } else if (masterKey.equals("carlsen") && otherMasterKey.equals("fischer")) {
+            return applyCarlsenVsFischerDynamics(myEmotion, otherEmotion, otherIntensity);
+        }
+        
+        // Tal vs Anyone: Creative chaos meeting other styles
+        else if (masterKey.equals("tal")) {
+            return applyTalDynamics(myEmotion, otherMasterKey, otherEmotion, otherIntensity);
+        }
+        
+        // Generic master dynamics - rival reactions
+        else {
+            return applyGenericRivalDynamics(myEmotion, otherEmotion, otherIntensity);
+        }
+    }
+    
+    /**
+     * Fischer reacting to Carlsen's emotions
+     */
+    private EmotionalState applyFischerVsCarlsenDynamics(EmotionalState fischerEmotion, String carlsenEmotion, float intensity) {
+        switch (carlsenEmotion) {
+            case "confident":
+                // Fischer gets more intense when facing Carlsen's calm confidence
+                if (fischerEmotion == EmotionalState.PLEASED) return EmotionalState.CONFIDENT;
+                if (fischerEmotion == EmotionalState.ANALYTICAL) return EmotionalState.COMPETITIVE;
+                break;
+                
+            case "focused":
+                // Fischer respects focus but wants to disrupt it
+                if (fischerEmotion == EmotionalState.EXCITED) return EmotionalState.COMPETITIVE;
+                break;
+                
+            case "devastated":
+                // Fischer might show slight satisfaction but quickly refocus
+                if (fischerEmotion == EmotionalState.PLEASED) return EmotionalState.CONFIDENT;
+                break;
+        }
+        return fischerEmotion;
+    }
+    
+    /**
+     * Carlsen reacting to Fischer's emotions  
+     */
+    private EmotionalState applyCarlsenVsFischerDynamics(EmotionalState carlsenEmotion, String fischerEmotion, float intensity) {
+        switch (fischerEmotion) {
+            case "confident":
+                // Carlsen remains calm but becomes more focused when Fischer is confident
+                if (carlsenEmotion == EmotionalState.ANALYTICAL) return EmotionalState.FOCUSED;
+                if (carlsenEmotion == EmotionalState.CONTENT) return EmotionalState.ANALYTICAL;
+                break;
+                
+            case "frustrated":
+                // Carlsen might become slightly more confident when Fischer struggles
+                if (carlsenEmotion == EmotionalState.ANALYTICAL) return EmotionalState.CONFIDENT;
+                break;
+                
+            case "ecstatic":
+                // Carlsen becomes more cautious/analytical when Fischer is ecstatic
+                if (carlsenEmotion == EmotionalState.PLEASED) return EmotionalState.ANALYTICAL;
+                break;
+        }
+        return carlsenEmotion;
+    }
+    
+    /**
+     * Tal's unique reactions - he loves chaos and brings out emotions in others
+     */
+    private EmotionalState applyTalDynamics(EmotionalState talEmotion, String otherMasterKey, String otherEmotion, float intensity) {
+        switch (otherEmotion) {
+            case "analytical":
+                // Tal gets excited when facing analytical opponents - wants to shake them up
+                if (talEmotion == EmotionalState.PLEASED) return EmotionalState.EXCITED;
+                if (talEmotion == EmotionalState.CONTENT) return EmotionalState.PLAYFUL;
+                break;
+                
+            case "confident": 
+                // Tal loves to challenge confidence with creative chaos
+                if (talEmotion == EmotionalState.ANALYTICAL) return EmotionalState.INTRIGUED;
+                if (talEmotion == EmotionalState.PLEASED) return EmotionalState.COMPETITIVE;
+                break;
+                
+            case "devastated":
+                // Tal might feel a mix of satisfaction and sympathy
+                if (talEmotion == EmotionalState.THRILLED) return EmotionalState.IMPRESSED;
+                break;
+        }
+        return talEmotion;
+    }
+    
+    /**
+     * Generic rivalry dynamics for other master combinations
+     */
+    private EmotionalState applyGenericRivalDynamics(EmotionalState myEmotion, String otherEmotion, float intensity) {
+        // High intensity emotions can influence the other master
+        if (intensity > 0.7f) {
+            switch (otherEmotion) {
+                case "ecstatic":
+                    // Opponent's ecstasy makes you more focused/competitive
+                    if (myEmotion == EmotionalState.ANALYTICAL) return EmotionalState.FOCUSED;
+                    if (myEmotion == EmotionalState.CONTENT) return EmotionalState.COMPETITIVE;
+                    break;
+                    
+                case "devastated":
+                    // Opponent's devastation might increase confidence
+                    if (myEmotion == EmotionalState.PLEASED) return EmotionalState.CONFIDENT;
+                    if (myEmotion == EmotionalState.ANALYTICAL) return EmotionalState.PLEASED;
+                    break;
+                    
+                case "confident":
+                    // Opponent's confidence triggers competitive response
+                    if (myEmotion == EmotionalState.ANALYTICAL) return EmotionalState.FOCUSED;
+                    break;
+            }
+        }
+        return myEmotion;
     }
     
     /**
@@ -556,5 +738,27 @@ public class EmotionalIntelligenceManager {
     public float getEmotionalMomentum(String masterName) {
         EmotionalHistory history = sessionHistory.get(masterName.toLowerCase());
         return history != null ? history.getEmotionalMomentum() : 0.0f;
+    }
+    
+    /**
+     * 🎭 NEW: Get current complete emotional analysis result for TTS voice modulation
+     */
+    public EmotionalAnalysisResult getCurrentEmotionalAnalysis(String masterName) {
+        String masterKey = masterName.toLowerCase();
+        EmotionalHistory history = sessionHistory.get(masterKey);
+        
+        if (history != null) {
+            EmotionalState currentEmotion = history.getCurrentDominantEmotion();
+            float currentIntensity = Math.max(0.3f, Math.min(1.0f, history.getEmotionalMomentum() + 0.5f)); // Convert momentum to intensity
+            float currentMomentum = history.getEmotionalMomentum();
+            
+            // Create a simple expression for the current state
+            String expression = currentEmotion.name().toLowerCase();
+            
+            return new EmotionalAnalysisResult(currentEmotion, expression, currentIntensity, currentMomentum);
+        }
+        
+        // Default to analytical state if no history
+        return new EmotionalAnalysisResult(EmotionalState.ANALYTICAL, "focused and analytical", 0.5f, 0.0f);
     }
 }

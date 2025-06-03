@@ -69,7 +69,7 @@ public class ConversationManager {
     /**
      * FIXED: Constructor for VoiceService compatibility - now requires context
      */
-    public ConversationManager(Context context, SpeechToTextService sttService, ChatService chatService, TextToSpeechService ttsService) {
+    public ConversationManager(Context context, SpeechToTextService sttService, ChatService chatService, OpenAITTSService ttsService) {
         this(context);
     }
 

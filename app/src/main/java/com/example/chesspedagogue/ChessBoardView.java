@@ -68,6 +68,9 @@ public class ChessBoardView extends View {
     private final int[] reusableCoords = new int[2];  // For coordinate conversions
     private final PorterDuffXfermode srcOverXfermode = new PorterDuffXfermode(PorterDuff.Mode.SRC_OVER);
     private final Map<Character, Drawable> pieceDrawableCache = new HashMap<>();  // Cache drawables
+    
+    // 🎯 BOARD SCALING FIX: Track when size is properly calculated
+    private boolean sizeInitialized = false;
 
     /* ───── ctor ───── */
     public ChessBoardView(Context c) {
@@ -118,12 +121,41 @@ public class ChessBoardView extends View {
             setLayerType(LAYER_TYPE_HARDWARE, null);
         }
     }
+    
+    /* ───────── 🎯 BOARD SCALING FIX ───────── */
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        
+        if (w > 0 && h > 0) {
+            // Calculate square size based on smallest dimension to maintain square board
+            int minDimension = Math.min(w, h);
+            squareSize = minDimension / 8;
+            sizeInitialized = true;
+            
+            Log.d("ChessBoardView", "🎯 Board size calculated: " + squareSize + "px squares (view: " + w + "x" + h + ")");
+        }
+    }
 
     /* ─────────   DRAW   ───────── */
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        squareSize = getWidth() / 8;
+        
+        // 🎯 BOARD SCALING FIX: Only calculate size if not already initialized
+        if (!sizeInitialized && getWidth() > 0 && getHeight() > 0) {
+            int minDimension = Math.min(getWidth(), getHeight());
+            squareSize = minDimension / 8;
+            sizeInitialized = true;
+            Log.d("ChessBoardView", "🎯 Board size calculated in onDraw fallback: " + squareSize + "px squares");
+        }
+        
+        // Safety check - don't draw if not ready
+        if (squareSize <= 0) {
+            Log.d("ChessBoardView", "⚠️ Board not ready for drawing (squareSize=" + squareSize + ")");
+            return;
+        }
+        
         int pad = squareSize / 16;
 
         /* 1) squares - Using pre-allocated RectF */
