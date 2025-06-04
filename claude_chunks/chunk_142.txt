@@ -1,3 +1,23 @@
+# CHUNK 142 of 158
+# Files: 1, Characters: 41,472
+################################################################################
+
+
+================================================================================
+FILE: claude_chunks/chunk_049.txt
+Lines: 1169, Characters: 41,472
+================================================================================
+
+# CHUNK 49 of 64
+# Files: 5, Characters: 39,990
+################################################################################
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\GameDatabaseHelper.java
+Lines: 642, Characters: 24,568
+================================================================================
+
 package com.example.chesspedagogue;
 
 import android.content.ContentValues;
@@ -14,8 +34,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import android.util.LruCache;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -24,18 +42,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ADVANCED GameDatabaseHelper - Now with Emergent Behavior Tracking!
- * Handles saved games, personality engine queries, AND relationship evolution.
- * Features:
- * - Lightning-fast FEN lookups for master positions
- * - Persistent emotional memory and relationship tracking
- * - Topic evolution and conversation innovation
- * - Emergent behavior detection and logging
+ * ENHANCED GameDatabaseHelper - Now with lightning-fast FEN lookups!
+ * Handles both saved games AND instant personality engine queries.
  */
 public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "GameDatabaseHelper";
     private static final String DATABASE_NAME = "chess_games.db";
-    private static final int DATABASE_VERSION = 3; // Incremented for emergent behavior features!
+    private static final int DATABASE_VERSION = 2; // Incremented for new features!
 
     // EXISTING: Saved games table
     private static final String TABLE_GAMES = "saved_games";
@@ -72,70 +85,6 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_DESCRIPTION + " TEXT"
                     + ")";
 
-    // =========================== EMERGENT BEHAVIOR COLUMNS ===========================
-    
-    // Table: master_relationships - Track evolving relationships between masters
-    private static final String TABLE_RELATIONSHIPS = "master_relationships";
-    private static final String COLUMN_MASTER1 = "master1";
-    private static final String COLUMN_MASTER2 = "master2";
-    private static final String COLUMN_RESPECT_LEVEL = "respect_level";
-    private static final String COLUMN_RIVALRY_INTENSITY = "rivalry_intensity";
-    private static final String COLUMN_FRIENDSHIP_BOND = "friendship_bond";
-    private static final String COLUMN_COMMUNICATION_STYLE = "communication_style";
-    private static final String COLUMN_TOTAL_INTERACTIONS = "total_interactions";
-    private static final String COLUMN_TOTAL_GAMES = "total_games";
-    private static final String COLUMN_LAST_MAJOR_EVENT = "last_major_event";
-    private static final String COLUMN_LAST_UPDATED = "last_updated";
-    private static final String COLUMN_CREATED_AT = "created_at";
-
-    // Table: topic_memory - Track topic usage and fatigue
-    private static final String TABLE_TOPIC_MEMORY = "topic_memory";
-    private static final String COLUMN_TOPIC = "topic";
-    private static final String COLUMN_DISCUSSION_COUNT = "discussion_count";
-    private static final String COLUMN_TOTAL_EMOTIONAL_INTENSITY = "total_emotional_intensity";
-    private static final String COLUMN_AVERAGE_EMOTIONAL_INTENSITY = "average_emotional_intensity";
-    private static final String COLUMN_LAST_EMOTION_MASTER1 = "last_emotion_master1";
-    private static final String COLUMN_LAST_EMOTION_MASTER2 = "last_emotion_master2";
-    private static final String COLUMN_TOPIC_FATIGUE_LEVEL = "topic_fatigue_level";
-    private static final String COLUMN_EVOLUTION_PATH = "evolution_path";
-    private static final String COLUMN_BREAKTHROUGH_MOMENTS = "breakthrough_moments";
-    private static final String COLUMN_CONFLICT_INCIDENTS = "conflict_incidents";
-    private static final String COLUMN_LAST_DISCUSSED = "last_discussed";
-
-    // Table: emotional_reactions - Detailed emotional history
-    private static final String TABLE_EMOTIONAL_REACTIONS = "emotional_reactions";
-    private static final String COLUMN_MASTER = "master";
-    private static final String COLUMN_EMOTION_OPPONENT = "opponent";
-    private static final String COLUMN_EMOTION = "emotion";
-    private static final String COLUMN_INTENSITY = "intensity";
-    private static final String COLUMN_MOMENTUM = "momentum";
-    private static final String COLUMN_GAME_CONTEXT = "game_context";
-    private static final String COLUMN_POSITION_EVALUATION = "position_evaluation";
-    private static final String COLUMN_CONVERSATION_SNIPPET = "conversation_snippet";
-    private static final String COLUMN_RELATIONSHIP_IMPACT = "relationship_impact";
-    private static final String COLUMN_TIMESTAMP = "timestamp";
-
-    // Table: conversation_evolution - Track topic innovation
-    private static final String TABLE_CONVERSATION_EVOLUTION = "conversation_evolution";
-    private static final String COLUMN_ORIGINAL_TOPIC = "original_topic";
-    private static final String COLUMN_EVOLVED_TOPIC = "evolved_topic";
-    private static final String COLUMN_EVOLUTION_TYPE = "evolution_type";
-    private static final String COLUMN_CATALYST_EMOTION = "catalyst_emotion";
-    private static final String COLUMN_BREAKTHROUGH_CONTENT = "breakthrough_content";
-    private static final String COLUMN_IMPACT_SCORE = "impact_score";
-    private static final String COLUMN_SUBSEQUENT_USAGE = "subsequent_usage";
-
-    // Table: emergent_events - Log breakthrough moments
-    private static final String TABLE_EMERGENT_EVENTS = "emergent_events";
-    private static final String COLUMN_EVENT_TYPE = "event_type";
-    private static final String COLUMN_EVENT_DESCRIPTION = "description";
-    private static final String COLUMN_EMOTIONAL_CONTEXT = "emotional_context";
-    private static final String COLUMN_CONVERSATION_CONTENT = "conversation_content";
-    private static final String COLUMN_IMPACT_LEVEL = "impact_level";
-    private static final String COLUMN_FOLLOW_UP_EFFECTS = "follow_up_effects";
-
-    // =========================== TABLE CREATION STATEMENTS ===========================
-
     // NEW: Create master positions table for personality engine
     private static final String CREATE_MASTER_POSITIONS_TABLE =
             "CREATE TABLE " + TABLE_MASTER_POSITIONS + "("
@@ -153,127 +102,18 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_TAGS + " TEXT"
                     + ")";
 
-    // NEW: Create relationships table
-    private static final String CREATE_RELATIONSHIPS_TABLE =
-            "CREATE TABLE " + TABLE_RELATIONSHIPS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_RESPECT_LEVEL + " REAL DEFAULT 0.5,"
-                    + COLUMN_RIVALRY_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_FRIENDSHIP_BOND + " REAL DEFAULT 0.0,"
-                    + COLUMN_COMMUNICATION_STYLE + " TEXT DEFAULT 'formal',"
-                    + COLUMN_TOTAL_INTERACTIONS + " INTEGER DEFAULT 0,"
-                    + COLUMN_TOTAL_GAMES + " INTEGER DEFAULT 0,"
-                    + COLUMN_LAST_MAJOR_EVENT + " TEXT,"
-                    + COLUMN_LAST_UPDATED + " INTEGER,"
-                    + COLUMN_CREATED_AT + " INTEGER,"
-                    + "UNIQUE(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ")"
-                    + ")";
-
-    // NEW: Create topic memory table
-    private static final String CREATE_TOPIC_MEMORY_TABLE =
-            "CREATE TABLE " + TABLE_TOPIC_MEMORY + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_DISCUSSION_COUNT + " INTEGER DEFAULT 1,"
-                    + COLUMN_TOTAL_EMOTIONAL_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_AVERAGE_EMOTIONAL_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_LAST_EMOTION_MASTER1 + " TEXT,"
-                    + COLUMN_LAST_EMOTION_MASTER2 + " TEXT,"
-                    + COLUMN_TOPIC_FATIGUE_LEVEL + " REAL DEFAULT 0.0,"
-                    + COLUMN_EVOLUTION_PATH + " TEXT,"
-                    + COLUMN_BREAKTHROUGH_MOMENTS + " INTEGER DEFAULT 0,"
-                    + COLUMN_CONFLICT_INCIDENTS + " INTEGER DEFAULT 0,"
-                    + COLUMN_LAST_DISCUSSED + " INTEGER,"
-                    + COLUMN_CREATED_AT + " INTEGER"
-                    + ")";
-
-    // NEW: Create emotional reactions table
-    private static final String CREATE_EMOTIONAL_REACTIONS_TABLE =
-            "CREATE TABLE " + TABLE_EMOTIONAL_REACTIONS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER + " TEXT NOT NULL,"
-                    + COLUMN_EMOTION_OPPONENT + " TEXT NOT NULL,"
-                    + COLUMN_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EMOTION + " TEXT NOT NULL,"
-                    + COLUMN_INTENSITY + " REAL NOT NULL,"
-                    + COLUMN_MOMENTUM + " REAL DEFAULT 0.0,"
-                    + COLUMN_GAME_CONTEXT + " TEXT,"
-                    + COLUMN_POSITION_EVALUATION + " REAL,"
-                    + COLUMN_CONVERSATION_SNIPPET + " TEXT,"
-                    + COLUMN_RELATIONSHIP_IMPACT + " REAL DEFAULT 0.0,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // NEW: Create conversation evolution table
-    private static final String CREATE_CONVERSATION_EVOLUTION_TABLE =
-            "CREATE TABLE " + TABLE_CONVERSATION_EVOLUTION + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_ORIGINAL_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EVOLVED_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EVOLUTION_TYPE + " TEXT NOT NULL,"
-                    + COLUMN_CATALYST_EMOTION + " TEXT,"
-                    + COLUMN_BREAKTHROUGH_CONTENT + " TEXT,"
-                    + COLUMN_IMPACT_SCORE + " REAL DEFAULT 0.0,"
-                    + COLUMN_SUBSEQUENT_USAGE + " INTEGER DEFAULT 0,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // NEW: Create emergent events table
-    private static final String CREATE_EMERGENT_EVENTS_TABLE =
-            "CREATE TABLE " + TABLE_EMERGENT_EVENTS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_EVENT_TYPE + " TEXT NOT NULL,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_EVENT_DESCRIPTION + " TEXT NOT NULL,"
-                    + COLUMN_EMOTIONAL_CONTEXT + " TEXT,"
-                    + COLUMN_CONVERSATION_CONTENT + " TEXT,"
-                    + COLUMN_IMPACT_LEVEL + " REAL DEFAULT 0.0,"
-                    + COLUMN_FOLLOW_UP_EFFECTS + " TEXT,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // =========================== INDEXES FOR PERFORMANCE ===========================
-
-    // EXISTING: Lightning-fast indexes for instant lookups!
+    // NEW: Lightning-fast indexes for instant lookups!
     private static final String CREATE_FEN_INDEX =
             "CREATE INDEX idx_fen ON " + TABLE_MASTER_POSITIONS + "(" + COLUMN_FEN + ")";
 
     private static final String CREATE_MASTER_INDEX =
             "CREATE INDEX idx_master ON " + TABLE_MASTER_POSITIONS + "(" + COLUMN_MASTER_NAME + ")";
-    
-    // NEW: Emergent behavior indexes for fast relationship and topic queries
-    private static final String CREATE_RELATIONSHIPS_INDEX =
-            "CREATE INDEX idx_relationships ON " + TABLE_RELATIONSHIPS + "(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ")";
-    
-    private static final String CREATE_TOPIC_MEMORY_INDEX =
-            "CREATE INDEX idx_topic_memory ON " + TABLE_TOPIC_MEMORY + "(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ", " + COLUMN_TOPIC + ")";
-    
-    private static final String CREATE_EMOTIONAL_REACTIONS_INDEX =
-            "CREATE INDEX idx_emotional_reactions ON " + TABLE_EMOTIONAL_REACTIONS + "(" + COLUMN_MASTER + ", " + COLUMN_TOPIC + ", " + COLUMN_TIMESTAMP + ")";
-    
-    private static final String CREATE_EMERGENT_EVENTS_INDEX =
-            "CREATE INDEX idx_emergent_events ON " + TABLE_EMERGENT_EVENTS + "(" + COLUMN_EVENT_TYPE + ", " + COLUMN_TIMESTAMP + ")";
 
     private final Context context;
-    
-    // Performance optimization: LRU cache for position lookups
-    // Caches the last 100 position queries to avoid database hits
-    private final LruCache<String, List<HistoricalPosition>> positionCache;
 
     public GameDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
         this.context = context.getApplicationContext();
-        
-        // Initialize the cache with 100 entries max
-        // Each entry uses approximately 1KB, so total cache size ~100KB
-        this.positionCache = new LruCache<>(100);
     }
 
     @Override
@@ -281,52 +121,24 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         // Create existing games table
         db.execSQL(CREATE_GAMES_TABLE);
 
-        // Create master positions table
+        // Create new master positions table
         db.execSQL(CREATE_MASTER_POSITIONS_TABLE);
 
-        // Create NEW emergent behavior tables
-        db.execSQL(CREATE_RELATIONSHIPS_TABLE);
-        db.execSQL(CREATE_TOPIC_MEMORY_TABLE);
-        db.execSQL(CREATE_EMOTIONAL_REACTIONS_TABLE);
-        db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
-        db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
-
-        // Create all indexes for performance
+        // Create lightning-fast indexes
         db.execSQL(CREATE_FEN_INDEX);
         db.execSQL(CREATE_MASTER_INDEX);
-        db.execSQL(CREATE_RELATIONSHIPS_INDEX);
-        db.execSQL(CREATE_TOPIC_MEMORY_INDEX);
-        db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
-        db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
 
-        Log.d(TAG, "✅ Database created with game storage, personality engine, AND emergent behavior tracking!");
+        Log.d(TAG, "✅ Database created with both game storage AND lightning-fast FEN lookups!");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) {
-            // Add the master positions functionality
+            // Add the new master positions functionality
             db.execSQL(CREATE_MASTER_POSITIONS_TABLE);
             db.execSQL(CREATE_FEN_INDEX);
             db.execSQL(CREATE_MASTER_INDEX);
             Log.d(TAG, "🚀 Database upgraded with personality engine support!");
-        }
-        
-        if (oldVersion < 3) {
-            // Add emergent behavior tracking tables
-            db.execSQL(CREATE_RELATIONSHIPS_TABLE);
-            db.execSQL(CREATE_TOPIC_MEMORY_TABLE);
-            db.execSQL(CREATE_EMOTIONAL_REACTIONS_TABLE);
-            db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
-            db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
-            
-            // Add new indexes
-            db.execSQL(CREATE_RELATIONSHIPS_INDEX);
-            db.execSQL(CREATE_TOPIC_MEMORY_INDEX);
-            db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
-            db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
-            
-            Log.d(TAG, "🎭 Database upgraded with emergent behavior tracking - relationships will now evolve!");
         }
     }
 
@@ -463,21 +275,11 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
      * This replaces slow API calls with blazing-fast local queries.
      */
     public List<HistoricalPosition> findSimilarPositions(String fen, String masterName, int maxResults) {
-        // First check the cache!
-        String cacheKey = masterName + ":" + fen + ":" + maxResults;
-        List<HistoricalPosition> cachedResult = positionCache.get(cacheKey);
-        
-        if (cachedResult != null) {
-            Log.d(TAG, "🎯 CACHE HIT! Returning instant result for " + masterName);
-            return new ArrayList<>(cachedResult); // Return a copy to prevent external modifications
-        }
-        
-        // Not in cache, perform database lookup
         List<HistoricalPosition> results = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
 
         try {
-            Log.d(TAG, "⚡ Database FEN lookup for " + masterName + " (will be cached)...");
+            Log.d(TAG, "⚡ Lightning-fast FEN lookup for " + masterName + "...");
 
             // First try exact FEN match for the specific master
             String exactQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
@@ -490,12 +292,6 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 Log.d(TAG, "🎯 EXACT FEN MATCH FOUND for " + masterName + "!");
                 results.addAll(cursorToHistoricalPositions(cursor));
                 cursor.close();
-                
-                // Cache the results before returning
-                if (!results.isEmpty()) {
-                    positionCache.put(cacheKey, new ArrayList<>(results));
-                    Log.d(TAG, "💾 Cached exact match results for future lookups");
-                }
                 return results;
             }
             cursor.close();
@@ -512,12 +308,6 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 Log.d(TAG, "🔍 Similar position found for " + masterName);
                 results.addAll(cursorToHistoricalPositions(cursor));
                 cursor.close();
-                
-                // Cache the results before returning
-                if (!results.isEmpty()) {
-                    positionCache.put(cacheKey, new ArrayList<>(results));
-                    Log.d(TAG, "💾 Cached similar match results for future lookups");
-                }
                 return results;
             }
             cursor.close();
@@ -534,13 +324,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             Log.d(TAG, "📚 Found " + results.size() + " reference positions for " + masterName);
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error in lightning-fast FEN lookup for " + masterName + " with FEN: " + fen, e);
-        }
-        
-        // Cache the results before returning
-        if (!results.isEmpty()) {
-            positionCache.put(cacheKey, new ArrayList<>(results));
-            Log.d(TAG, "💾 Cached results for future lookups");
+            Log.e(TAG, "❌ Error in lightning-fast FEN lookup", e);
         }
 
         return results;
@@ -620,10 +404,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 JSONObject chunk = chunks.getJSONObject(i);
 
                 ContentValues values = new ContentValues();
-                // 🎯 CRITICAL FIX: Map full names to standardized short names for lookup compatibility
-                String playerName = chunk.optString("player_name", "");
-                String standardizedName = getStandardizedMasterName(playerName);
-                values.put(COLUMN_MASTER_NAME, standardizedName);
+                values.put(COLUMN_MASTER_NAME, chunk.optString("player_name", ""));
                 values.put(COLUMN_FEN, chunk.optString("fen", ""));
                 values.put(COLUMN_OPPONENT, chunk.optString("opponent", ""));
                 values.put(COLUMN_YEAR, chunk.optString("year", ""));
@@ -633,23 +414,13 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 values.put(COLUMN_SIGNIFICANCE, chunk.optString("significance", ""));
                 values.put(COLUMN_MOVE_NUMBER, chunk.optInt("move_number", 0));
                 values.put(COLUMN_ANNOTATION, chunk.optString("annotation", ""));
-                // 🚨 SAFE: Handle potentially null tags array
-                JSONArray tagsArray = chunk.optJSONArray("tags");
-                if (tagsArray != null) {
-                    values.put(COLUMN_TAGS, tagsArray.toString());
-                } else {
-                    values.put(COLUMN_TAGS, "[]"); // Empty array as fallback
-                }
+                values.put(COLUMN_TAGS, chunk.optJSONArray("tags").toString());
 
                 db.insert(TABLE_MASTER_POSITIONS, null, values);
             }
 
             db.setTransactionSuccessful();
             Log.d(TAG, "✅ Successfully imported " + chunks.length() + " master positions!");
-            
-            // Clear the cache since we have new data
-            positionCache.evictAll();
-            Log.d(TAG, "🧹 Cleared position cache after import");
 
             return true;
 
@@ -690,30 +461,8 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     /**
      * Check if we have master data (used by PersonalityEngine)
-     * OPTIMIZED: Quick existence check without detailed logging
      */
     public boolean hasMasterData(String masterName) {
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        try {
-            String query = "SELECT 1 FROM " + TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = ? LIMIT 1";
-            Cursor cursor = db.rawQuery(query, new String[]{masterName});
-
-            boolean hasData = cursor.moveToFirst();
-            cursor.close();
-            return hasData;
-
-        } catch (Exception e) {
-            Log.e(TAG, "Error checking master data", e);
-        }
-
-        return false;
-    }
-
-    /**
-     * Get detailed position count for a specific master (for debugging only)
-     */
-    public int getMasterPositionCount(String masterName) {
         SQLiteDatabase db = this.getReadableDatabase();
 
         try {
@@ -723,38 +472,17 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             if (cursor.moveToFirst()) {
                 int count = cursor.getInt(0);
                 cursor.close();
-                return count;
+                Log.d(TAG, "📊 " + masterName + " has " + count + " positions in database");
+                return count > 0;
             }
 
             cursor.close();
 
         } catch (Exception e) {
-            Log.e(TAG, "Error getting master position count", e);
+            Log.e(TAG, "Error checking master data", e);
         }
 
-        return 0;
-    }
-    
-    /**
-     * 🔄 Force clear and reimport all master data - use when database structure changes
-     */
-    public boolean clearAndReimportAllData() {
-        SQLiteDatabase db = this.getWritableDatabase();
-        
-        try {
-            Log.d(TAG, "🗑️ Clearing existing master positions data...");
-            db.delete(TABLE_MASTER_POSITIONS, null, null);
-            
-            // Clear cache
-            positionCache.evictAll();
-            
-            Log.d(TAG, "✅ All master data cleared. Ready for fresh import.");
-            return true;
-            
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Error clearing master data", e);
-            return false;
-        }
+        return false;
     }
 
     /**
@@ -790,64 +518,8 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
         return stats;
     }
-    
-    /**
-     * Get cache performance statistics
-     */
-    public String getCacheStats() {
-        int currentSize = positionCache.size();
-        int maxSize = positionCache.maxSize();
-        int hitCount = positionCache.hitCount();
-        int missCount = positionCache.missCount();
-        float hitRate = (hitCount + missCount) > 0 ? 
-            (float) hitCount / (hitCount + missCount) * 100 : 0;
-        
-        return String.format("Cache: %d/%d entries, %.1f%% hit rate (%d hits, %d misses)",
-            currentSize, maxSize, hitRate, hitCount, missCount);
-    }
 
     // ========== HELPER METHODS ==========
-    
-    /**
-     * 🎯 CRITICAL: Map full master names to standardized short names for lookup compatibility
-     * This ensures PersonalityEngine lookups work correctly with the imported data
-     */
-    private String getStandardizedMasterName(String fullName) {
-        if (fullName == null) return "";
-        
-        String normalized = fullName.toLowerCase().trim();
-        
-        // Map full names to the exact strings PersonalityEngine expects
-        if (normalized.contains("mikhail tal") || normalized.contains("tal")) {
-            return "tal";
-        } else if (normalized.contains("bobby fischer") || normalized.contains("fischer")) {
-            return "fischer";  
-        } else if (normalized.contains("magnus carlsen") || normalized.contains("carlsen")) {
-            return "carlsen";
-        } else if (normalized.contains("garry kasparov") || normalized.contains("kasparov")) {
-            return "kasparov";
-        } else if (normalized.contains("anatoly karpov") || normalized.contains("karpov")) {
-            return "karpov";
-        } else if (normalized.contains("vladimir kramnik") || normalized.contains("kramnik")) {
-            return "kramnik";
-        } else if (normalized.contains("alexander alekhine") || normalized.contains("alekhine")) {
-            return "alekhine";
-        } else if (normalized.contains("josé raúl capablanca") || normalized.contains("capablanca")) {
-            return "capablanca";
-        } else if (normalized.contains("emanuel lasker") || normalized.contains("lasker")) {
-            return "lasker";
-        } else if (normalized.contains("paul morphy") || normalized.contains("morphy")) {
-            return "morphy";
-        } else if (normalized.contains("viswanathan anand") || normalized.contains("anand")) {
-            return "anand";
-        } else if (normalized.contains("mikhail botvinnik") || normalized.contains("botvinnik")) {
-            return "botvinnik";
-        }
-        
-        // Fallback - return original name
-        Log.w(TAG, "⚠️ Unknown master name, using as-is: " + fullName);
-        return fullName;
-    }
 
     private List<HistoricalPosition> cursorToHistoricalPositions(Cursor cursor) {
         List<HistoricalPosition> positions = new ArrayList<>();
@@ -987,51 +659,522 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             );
         }
     }
-    
-    /**
-     * 🔍 Comprehensive database diagnostics - call this to debug empty database issues
-     */
-    public String getDatabaseDiagnostics() {
-        StringBuilder diagnostics = new StringBuilder();
-        SQLiteDatabase db = this.getReadableDatabase();
-        
-        try {
-            // Check if table exists
-            String checkTableQuery = "SELECT name FROM sqlite_master WHERE type='table' AND name='" + TABLE_MASTER_POSITIONS + "'";
-            Cursor tableCursor = db.rawQuery(checkTableQuery, null);
-            boolean tableExists = tableCursor.getCount() > 0;
-            tableCursor.close();
-            
-            diagnostics.append("📊 DATABASE DIAGNOSTICS:\n");
-            diagnostics.append("- Table exists: ").append(tableExists ? "✅ YES" : "❌ NO").append("\n");
-            
-            if (tableExists) {
-                // Total positions
-                Cursor totalCursor = db.rawQuery("SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS, null);
-                if (totalCursor.moveToFirst()) {
-                    int total = totalCursor.getInt(0);
-                    diagnostics.append("- Total positions: ").append(total).append("\n");
-                }
-                totalCursor.close();
-                
-                // Sample data
-                Cursor sampleCursor = db.rawQuery("SELECT " + COLUMN_MASTER_NAME + ", COUNT(*) FROM " + 
-                    TABLE_MASTER_POSITIONS + " GROUP BY " + COLUMN_MASTER_NAME + " LIMIT 10", null);
-                diagnostics.append("- Masters with data:\n");
-                while (sampleCursor.moveToNext()) {
-                    String master = sampleCursor.getString(0);
-                    int count = sampleCursor.getInt(1);
-                    diagnostics.append("  • ").append(master).append(": ").append(count).append(" positions\n");
-                }
-                sampleCursor.close();
-            }
-            
-        } catch (Exception e) {
-            diagnostics.append("❌ Error during diagnostics: ").append(e.getMessage()).append("\n");
+}
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\GameHistoryManager.java
+Lines: 51, Characters: 1,265
+================================================================================
+
+package com.example.chesspedagogue;
+
+import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Manages the history of chess moves for the current game
+ */
+public class GameHistoryManager {
+    private static final String TAG = "GameHistoryManager";
+
+    private static GameHistoryManager instance;
+    private final List<String> currentGameMoves = new ArrayList<>();
+
+    private GameHistoryManager() {
+        // Private constructor for singleton
+    }
+
+    public static synchronized GameHistoryManager getInstance() {
+        if (instance == null) {
+            instance = new GameHistoryManager();
+            Log.d(TAG, "GameHistoryManager instance created");
         }
-        
-        String result = diagnostics.toString();
-        Log.d(TAG, result);
-        return result;
+        return instance;
+    }
+
+    /**
+     * Add a move to the current game history
+     */
+    public void addMove(String move) {
+        currentGameMoves.add(move);
+        Log.d(TAG, "Move added: " + move);
+    }
+
+    /**
+     * Clear the current game history
+     */
+    public void clearHistory() {
+        currentGameMoves.clear();
+        Log.d(TAG, "Game history cleared");
+    }
+
+    /**
+     * Get the list of moves from the current game
+     */
+    public List<String> getCurrentGameMoves() {
+        return new ArrayList<>(currentGameMoves);
     }
 }
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\GameStateInfo.java
+Lines: 64, Characters: 1,492
+================================================================================
+
+package com.example.chesspedagogue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Simple class to hold game state information
+ */
+public class GameStateInfo {
+    private String currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private String playerColor = "white";
+    private String gamePhase = "opening";
+    private boolean isCheck = false;
+    private List<String> moveHistory = new ArrayList<>();
+
+    public String getCurrentFen() {
+        return currentFen;
+    }
+
+    public void setCurrentFen(String currentFen) {
+        this.currentFen = currentFen;
+    }
+
+    public String getPlayerColor() {
+        return playerColor;
+    }
+
+    public void setPlayerColor(String playerColor) {
+        this.playerColor = playerColor;
+    }
+
+    public String getGamePhase() {
+        return gamePhase;
+    }
+
+    public void setGamePhase(String gamePhase) {
+        this.gamePhase = gamePhase;
+    }
+
+    public boolean isCheck() {
+        return isCheck;
+    }
+
+    public void setCheck(boolean check) {
+        isCheck = check;
+    }
+
+    public List<String> getMoveHistory() {
+        return moveHistory;
+    }
+
+    public void setMoveHistory(List<String> moveHistory) {
+        this.moveHistory = moveHistory;
+    }
+
+    public void addMove(String move) {
+        moveHistory.add(move);
+    }
+
+    // Add this method to fix the compilation error
+    public int getMoveCount() {
+        return moveHistory != null ? moveHistory.size() : 0;
+    }
+}
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\GameStateRepository.java
+Lines: 35, Characters: 1,036
+================================================================================
+
+package com.example.chesspedagogue;
+
+import java.util.List;
+
+/**
+ * Repository for accessing game state
+ */
+public class GameStateRepository {
+    private static GameStateInfo currentState = new GameStateInfo();
+
+    public static GameStateInfo getCurrentState() {
+        return currentState;
+    }
+
+    public static void setCurrentState(GameStateInfo state) {
+        currentState = state;
+    }
+
+    // Add this method to fix compilation errors
+    public static void updateState(String newFen, List<String> moveHistory, String playerColor) {
+        currentState.setCurrentFen(newFen);
+        currentState.setMoveHistory(moveHistory);
+        currentState.setPlayerColor(playerColor);
+
+        // Set game phase based on move count
+        int moveCount = moveHistory.size();
+        if (moveCount < 10) {
+            currentState.setGamePhase("opening");
+        } else if (moveCount < 30) {
+            currentState.setGamePhase("middlegame");
+        } else {
+            currentState.setGamePhase("endgame");
+        }
+    }
+}
+
+
+================================================================================
+FILE: app\src\main\java\com\example\chesspedagogue\GroqSpeechRecognizer.java
+Lines: 337, Characters: 11,629
+================================================================================
+
+package com.example.chesspedagogue;
+
+import android.Manifest;
+import android.content.Context;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
+import android.media.MediaRecorder;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
+
+import androidx.annotation.RequiresPermission;
+
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * Consolidated ultra-fast speech recognizer using Groq
+ * Merged functionality from SpeechRecognitionManager
+ */
+public class GroqSpeechRecognizer implements SpeechRecognizer {
+    private static final String TAG = "GroqSpeechRecognizer";
+    private static final int SAMPLE_RATE = 16000;
+    private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
+    private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
+
+    // Groq API endpoint
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
+    private static final String GROQ_MODEL = "distil-whisper-large-v3-en";
+    private static final String GROQ_API_KEY = "GROQ_API_KEY";
+
+    private final Context context;
+    private final ExecutorService executorService;
+    private final Handler mainHandler;
+    private final OkHttpClient httpClient;
+
+    private AudioRecord audioRecord;
+    private boolean isRecording = false;
+    private SpeechCallback callback;
+    private int bufferSize;
+
+    // Old callback interface support for backward compatibility
+    public interface SpeechRecognitionCallback {
+        void onSpeechRecognized(String text);
+        void onSpeechError(String error);
+    }
+
+    public GroqSpeechRecognizer(Context context) {
+        this.context = context.getApplicationContext();
+        this.executorService = Executors.newSingleThreadExecutor();
+        this.mainHandler = new Handler(Looper.getMainLooper());
+
+        // Use shared HTTP client if available
+        this.httpClient = OpenAIService.getInstance().getHttpClient();
+
+        // Calculate buffer size
+        bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);
+        if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
+            bufferSize = SAMPLE_RATE * 2;
+        }
+    }
+
+    // Support old API for backward compatibility
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    public void startListening(SpeechRecognitionCallback oldCallback) {
+        startListening(new SpeechCallback() {
+            @Override
+            public void onPartialResult(String partialText) {
+                // Old API didn't have partial results
+            }
+
+            @Override
+            public void onFinalResult(String finalText) {
+                mainHandler.post(() -> oldCallback.onSpeechRecognized(finalText));
+            }
+
+            @Override
+            public void onError(String errorMessage) {
+                mainHandler.post(() -> oldCallback.onSpeechError(errorMessage));
+            }
+        });
+    }
+
+    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    @Override
+    public void startListening(SpeechCallback callback) {
+        if (isRecording) {
+            Log.d(TAG, "Already recording, ignoring start request");
+            return;
+        }
+
+        if (GROQ_API_KEY == null || GROQ_API_KEY.isEmpty()) {
+            if (callback != null) {
+                mainHandler.post(() -> callback.onError("Groq API key not configured"));
+            }
+            return;
+        }
+
+        this.callback = callback;
+
+        executorService.execute(() -> {
+            try {
+                // Initialize audio recorder
+                audioRecord = new AudioRecord(MediaRecorder.AudioSource.MIC,
+                        SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT, bufferSize);
+
+                if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                    mainHandler.post(() -> {
+                        if (callback != null) {
+                            callback.onError("Failed to initialize AudioRecord");
+                        }
+                    });
+                    return;
+                }
+
+                // Start recording
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[bufferSize];
+                audioRecord.startRecording();
+                isRecording = true;
+
+                Log.d(TAG, "Started ultra-fast Groq recording");
+
+                // Recording loop
+                while (isRecording) {
+                    int read = audioRecord.read(buffer, 0, bufferSize);
+                    if (read > 0) {
+                        outputStream.write(buffer, 0, read);
+                    }
+                }
+
+                // Process the recorded audio with Groq
+                byte[] audioData = outputStream.toByteArray();
+                processAudioWithGroq(audioData);
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error recording audio", e);
+                mainHandler.post(() -> {
+                    if (callback != null) {
+                        callback.onError("Recording error: " + e.getMessage());
+                    }
+                });
+            }
+        });
+    }
+
+    private void processAudioWithGroq(byte[] audioData) {
+        if (audioData.length == 0) {
+            Log.w(TAG, "No audio data to process");
+            return;
+        }
+
+        Log.d(TAG, "Processing " + audioData.length + " bytes with Groq");
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // Convert PCM to WAV format
+            byte[] wavData = convertPcmToWav(audioData, SAMPLE_RATE, 1, 16);
+
+            // Save to temporary file
+            File tempFile = File.createTempFile("groq_audio_", ".wav", context.getCacheDir());
+            try (FileOutputStream fos = new FileOutputStream(tempFile)) {
+                fos.write(wavData);
+            }
+
+            // Create multipart request for Groq
+            RequestBody requestBody = new MultipartBody.Builder()
+                    .setType(MultipartBody.FORM)
+                    .addFormDataPart("file", tempFile.getName(),
+                            RequestBody.create(MediaType.parse("audio/wav"), tempFile))
+                    .addFormDataPart("model", GROQ_MODEL)
+                    .addFormDataPart("response_format", "json")
+                    .addFormDataPart("language", "en")
+                    .addFormDataPart("temperature", "0.0")
+                    .addFormDataPart("prompt", "Chess game conversation")
+                    .build();
+
+            Request request = new Request.Builder()
+                    .url(GROQ_API_URL)
+                    .header("Authorization", "Bearer " + GROQ_API_KEY)
+                    .post(requestBody)
+                    .build();
+
+            // Execute request
+            try (Response response = httpClient.newCall(request).execute()) {
+                long processingTime = System.currentTimeMillis() - startTime;
+                Log.d(TAG, "Groq transcription completed in " + processingTime + "ms!");
+
+                if (response.isSuccessful() && response.body() != null) {
+                    String responseJson = response.body().string();
+                    JSONObject json = new JSONObject(responseJson);
+                    String transcribedText = json.getString("text");
+
+                    Log.d(TAG, "Transcribed: " + transcribedText);
+
+                    if (callback != null) {
+                        mainHandler.post(() -> callback.onFinalResult(transcribedText));
+                    }
+                } else {
+                    String error = "Groq API error: " + response.code();
+                    if (response.body() != null) {
+                        error += " - " + response.body().string();
+                    }
+                    Log.e(TAG, error);
+                    final String errorMsg = error;
+
+                    if (callback != null) {
+                        mainHandler.post(() -> callback.onError(errorMsg));
+                    }
+                }
+            }
+
+            // Clean up temp file
+            tempFile.delete();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error processing with Groq", e);
+            if (callback != null) {
+                mainHandler.post(() -> callback.onError("Groq processing error: " + e.getMessage()));
+            }
+        }
+    }
+
+    @Override
+    public void stopListening() {
+        if (!isRecording) {
+            return;
+        }
+
+        isRecording = false;
+
+        // Stop and release AudioRecord
+        if (audioRecord != null) {
+            try {
+                audioRecord.stop();
+                audioRecord.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error stopping AudioRecord", e);
+            } finally {
+                audioRecord = null;
+            }
+        }
+
+        Log.d(TAG, "Stopped recording audio");
+    }
+
+    @Override
+    public boolean isListening() {
+        return isRecording;
+    }
+
+    @Override
+    public void release() {
+        stopListening();
+        executorService.shutdown();
+    }
+
+    /**
+     * Simulate recognized speech (for testing)
+     */
+    public void simulateRecognizedSpeech(String text) {
+        if (text == null || text.isEmpty() || callback == null) {
+            return;
+        }
+
+        mainHandler.post(() -> callback.onFinalResult(text));
+    }
+
+    /**
+     * Convert PCM audio data to WAV format
+     */
+    private byte[] convertPcmToWav(byte[] pcmData, int sampleRate, int channels, int bitsPerSample) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+        // WAV header fields
+        int dataLength = pcmData.length;
+        int riffChunkSize = 36 + dataLength;
+        int byteRate = sampleRate * channels * (bitsPerSample / 8);
+        short blockAlign = (short) (channels * (bitsPerSample / 8));
+
+        // Write RIFF header
+        writeBytes(out, "RIFF".getBytes());
+        writeInt(out, riffChunkSize);
+        writeBytes(out, "WAVE".getBytes());
+
+        // fmt subchunk
+        writeBytes(out, "fmt ".getBytes());
+        writeInt(out, 16); // PCM format chunk size
+        writeShort(out, (short) 1); // audio format 1 = PCM
+        writeShort(out, (short) channels);
+        writeInt(out, sampleRate);
+        writeInt(out, byteRate);
+        writeShort(out, blockAlign);
+        writeShort(out, (short) bitsPerSample);
+
+        // data subchunk
+        writeBytes(out, "data".getBytes());
+        writeInt(out, dataLength);
+        writeBytes(out, pcmData);
+
+        return out.toByteArray();
+    }
+
+    // Helper methods for WAV header writing
+    private void writeInt(ByteArrayOutputStream out, int value) {
+        out.write(value & 0xFF);
+        out.write((value >> 8) & 0xFF);
+        out.write((value >> 16) & 0xFF);
+        out.write((value >> 24) & 0xFF);
+    }
+
+    private void writeShort(ByteArrayOutputStream out, short value) {
+        out.write(value & 0xFF);
+        out.write((value >> 8) & 0xFF);
+    }
+
+    private void writeBytes(ByteArrayOutputStream out, byte[] data) {
+        try {
+            out.write(data);
+        } catch (IOException e) {
+            Log.e(TAG, "Error writing bytes", e);
+        }
+    }
+}
+
+
+

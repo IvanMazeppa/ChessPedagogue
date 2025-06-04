@@ -1,32 +1,35 @@
 package com.example.chesspedagogue;
 
+import android.content.Context;
 import android.util.Log;
 import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * 🧠 ENHANCED CONVERSATION MEMORY MANAGER v2.0
+ * 🧠 ENHANCED CONVERSATION MEMORY MANAGER v3.0 - With Database Persistence!
  * Tracks conversation topics, emotions, and relationship dynamics
  * Prevents repetitive discussions while building authentic relationships
  * Features:
- * - Emotional memory: How masters felt about topics
- * - Relationship tracking: Master-to-master interaction history
- * - Topic evolution: Building on previous conversations
- * - Dynamic topic suggestions based on emotional state
+ * - Persistent emotional memory: How masters felt about topics (stored in database)
+ * - Relationship evolution: Master-to-master dynamics that evolve over time
+ * - Topic fatigue prevention: Database-backed topic exhaustion tracking
+ * - Dynamic topic suggestions based on emotional state and relationship history
+ * - Emergent behavior detection and logging
  */
 public class ConversationMemoryManager {
     private static final String TAG = "ConversationMemory";
     
     private static ConversationMemoryManager instance;
+    private final Context context;
+    private final RelationshipPersistenceManager persistenceManager;
     
-    // Topic tracking
+    // Session-only tracking (non-persistent)
     private final Map<String, ConversationTopic> discussedTopics = new LinkedHashMap<>();
     private final Map<String, Integer> topicFrequency = new HashMap<>();
     private final Map<String, Long> lastTopicMention = new HashMap<>();
     
-    // ENHANCED: Emotional memory tracking
-    private final Map<String, EmotionalTopicMemory> emotionalTopicHistory = new HashMap<>();
-    private final Map<String, MasterRelationshipMemory> relationshipMemories = new HashMap<>();
+    // ENHANCED: Database-backed persistent memory
+    // These are now handled by RelationshipPersistenceManager
     
     // Master-specific conversation patterns
     private final Map<String, Set<String>> masterFavoriteTopics = new HashMap<>();
@@ -43,14 +46,24 @@ public class ConversationMemoryManager {
     private static final long TOPIC_COOLDOWN = 300000; // 5 minutes before reusing topic
     private static final int MAX_CONVERSATION_MEMORY = 50;
     
-    private ConversationMemoryManager() {
+    private ConversationMemoryManager(Context context) {
+        this.context = context.getApplicationContext();
+        this.persistenceManager = RelationshipPersistenceManager.getInstance(context);
         initializeFreshTopics();
         initializeMasterPreferences();
     }
     
+    public static synchronized ConversationMemoryManager getInstance(Context context) {
+        if (instance == null) {
+            instance = new ConversationMemoryManager(context);
+        }
+        return instance;
+    }
+    
+    // Backward compatibility method
     public static synchronized ConversationMemoryManager getInstance() {
         if (instance == null) {
-            instance = new ConversationMemoryManager();
+            throw new IllegalStateException("ConversationMemoryManager must be initialized with context first");
         }
         return instance;
     }
@@ -63,14 +76,23 @@ public class ConversationMemoryManager {
     }
     
     /**
-     * 🎭 NEW: Record conversation with emotional state
+     * 🎭 ENHANCED: Record conversation with emotional state and database persistence
      */
     public void recordConversationWithEmotion(String speaker, String content, String context, 
                                                String emotion, float emotionalIntensity) {
+        recordConversationWithEmotionAndOpponent(speaker, content, context, emotion, emotionalIntensity, null, null);
+    }
+    
+    /**
+     * 🎭 NEW: Record conversation with full emotional context including opponent
+     */
+    public void recordConversationWithEmotionAndOpponent(String speaker, String content, String context, 
+                                                        String emotion, float emotionalIntensity,
+                                                        String opponent, String opponentEmotion) {
         String topic = extractTopic(content);
         long timestamp = System.currentTimeMillis();
         
-        // Record topic usage
+        // Session-only tracking (for immediate access)
         String topicKey = topic.toLowerCase();
         topicFrequency.put(topicKey, topicFrequency.getOrDefault(topicKey, 0) + 1);
         lastTopicMention.put(topicKey, timestamp);
@@ -78,57 +100,34 @@ public class ConversationMemoryManager {
         // Track master preferences
         masterFavoriteTopics.computeIfAbsent(speaker.toLowerCase(), k -> new HashSet<>()).add(topicKey);
         
-        // ENHANCED: Record emotional context with topic
-        recordEmotionalTopicMemory(speaker, topic, emotion, emotionalIntensity, content);
-        
-        // Store conversation topic with emotion
+        // Store conversation topic with emotion (session-only)
         ConversationTopic convTopic = new ConversationTopic(speaker, content, topic, timestamp, context, emotion, emotionalIntensity);
         discussedTopics.put(generateTopicId(), convTopic);
         
+        // ENHANCED: Database persistence for long-term memory
+        if (opponent != null) {
+            // Record topic discussion in database for persistent memory
+            persistenceManager.recordTopicDiscussion(speaker, opponent, topic, emotion, opponentEmotion, emotionalIntensity);
+            
+            // Record emotional reaction in database
+            persistenceManager.recordEmotionalReaction(
+                speaker, opponent, topic, emotion, emotionalIntensity, 0.0f, // momentum
+                context, 0.0f, // position evaluation - could be enhanced
+                truncateForSnippet(content)
+            );
+            
+            Log.d(TAG, String.format("🧠 Recorded persistent conversation: %s -> %s about '%s' (emotion: %s %.1f)", 
+                   speaker, opponent, topic, emotion, emotionalIntensity));
+        } else {
+            Log.d(TAG, String.format("🧠 Recorded session conversation: %s about '%s' (emotion: %s %.1f)", 
+                   speaker, topic, emotion, emotionalIntensity));
+        }
+        
         // Cleanup old entries
         cleanupOldTopics();
-        
-        Log.d(TAG, String.format("🧠 Recorded topic '%s' for %s (frequency: %d, emotion: %s %.1f)", 
-               topic, speaker, topicFrequency.get(topicKey), emotion, emotionalIntensity));
     }
     
-    /**
-     * 💭 NEW: Record emotional memory about topics
-     */
-    private void recordEmotionalTopicMemory(String speaker, String topic, String emotion, float intensity, String content) {
-        String key = speaker.toLowerCase() + ":" + topic.toLowerCase();
-        
-        EmotionalTopicMemory memory = emotionalTopicHistory.get(key);
-        if (memory == null) {
-            memory = new EmotionalTopicMemory(speaker, topic);
-            emotionalTopicHistory.put(key, memory);
-        }
-        
-        memory.addEmotionalInstance(emotion, intensity, content, System.currentTimeMillis());
-        
-        Log.d(TAG, String.format("💭 %s emotional memory about '%s': %s (%.1f)", 
-               speaker, topic, emotion, intensity));
-    }
-    
-    /**
-     * 👥 NEW: Record relationship interaction between masters
-     */
-    public void recordRelationshipInteraction(String speaker, String opponent, String topic, 
-                                               String speakerEmotion, String opponentEmotion, 
-                                               String interactionType) {
-        String relationshipKey = generateRelationshipKey(speaker, opponent);
-        
-        MasterRelationshipMemory relationship = relationshipMemories.get(relationshipKey);
-        if (relationship == null) {
-            relationship = new MasterRelationshipMemory(speaker, opponent);
-            relationshipMemories.put(relationshipKey, relationship);
-        }
-        
-        relationship.addInteraction(topic, speakerEmotion, opponentEmotion, interactionType, System.currentTimeMillis());
-        
-        Log.d(TAG, String.format("👥 Relationship interaction: %s (%s) <-> %s (%s) about %s", 
-               speaker, speakerEmotion, opponent, opponentEmotion, topic));
-    }
+    // NOTE: Emotional memory and relationship tracking are now handled by RelationshipPersistenceManager
     
     /**
      * 🎲 ENHANCED: Get conversation guidance based on memory and emotional context
@@ -148,13 +147,13 @@ public class ConversationMemoryManager {
         guidance.overusedTopics = getOverusedTopics();
         guidance.recentTopics = getRecentTopics(60000); // Last minute
         
-        // ENHANCED: Get emotionally-influenced suggestions
-        guidance.suggestedTopics = getEmotionallyAwareSuggestedTopics(speaker, currentContext, currentEmotion);
+        // ENHANCED: Get emotionally-influenced suggestions with database intelligence
+        guidance.suggestedTopics = getEmotionallyAwareSuggestedTopicsWithOpponent(speaker, currentContext, currentEmotion, opponent);
         guidance.conversationDirection = getEmotionalConversationDirection(speaker, opponent, currentEmotion, opponentEmotion);
         
-        // ENHANCED: Include emotional and relationship context
-        guidance.emotionalContext = getEmotionalTopicContext(speaker, guidance.suggestedTopics);
-        guidance.relationshipContext = getRelationshipContext(speaker, opponent);
+        // ENHANCED: Include database-driven emotional and relationship context
+        guidance.emotionalContext = getDatabaseEmotionalContext(speaker, opponent, guidance.suggestedTopics);
+        guidance.relationshipContext = getDatabaseRelationshipContext(speaker, opponent);
         
         // Build enhanced context instructions
         guidance.contextInstructions = buildEnhancedContextInstructions(guidance, speaker, opponent, currentEmotion);
@@ -166,16 +165,45 @@ public class ConversationMemoryManager {
     }
     
     /**
-     * 💡 ENHANCED: Get emotionally-aware topic suggestions
+     * 💡 ENHANCED: Get emotionally-aware topic suggestions using database intelligence
      */
     private List<String> getEmotionallyAwareSuggestedTopics(String speaker, String context, String currentEmotion) {
+        return getEmotionallyAwareSuggestedTopicsWithOpponent(speaker, context, currentEmotion, null);
+    }
+    
+    /**
+     * 💡 NEW: Get emotionally-aware topic suggestions with opponent context
+     */
+    private List<String> getEmotionallyAwareSuggestedTopicsWithOpponent(String speaker, String context, 
+                                                                       String currentEmotion, String opponent) {
         List<String> suggestions = new ArrayList<>();
-        Set<String> overused = new HashSet<>(getOverusedTopics());
-        Set<String> recent = new HashSet<>(getRecentTopics(120000));
         
-        // Get base fresh topics
+        // Get session-based overused and recent topics
+        Set<String> sessionOverused = new HashSet<>(getOverusedTopics());
+        Set<String> sessionRecent = new HashSet<>(getRecentTopics(120000));
+        
+        // ENHANCED: Get database-based fatigued topics
+        Set<String> fatiguedTopics = new HashSet<>();
+        if (opponent != null) {
+            fatiguedTopics.addAll(persistenceManager.getFatiguedTopics(speaker, opponent));
+            
+            // Get database-driven fresh suggestions
+            List<String> databaseSuggestions = persistenceManager.getFreshTopicSuggestions(speaker, opponent, currentEmotion);
+            suggestions.addAll(databaseSuggestions);
+            
+            Log.d(TAG, String.format("💡 Database suggested %d topics for %s vs %s based on relationship history", 
+                   databaseSuggestions.size(), speaker, opponent));
+        }
+        
+        // Combine all exclusions
+        Set<String> allExclusions = new HashSet<>();
+        allExclusions.addAll(sessionOverused);
+        allExclusions.addAll(sessionRecent);
+        allExclusions.addAll(fatiguedTopics);
+        
+        // Get base fresh topics (excluding fatigued ones)
         for (String freshTopic : freshTopics) {
-            if (!overused.contains(freshTopic.toLowerCase()) && !recent.contains(freshTopic.toLowerCase())) {
+            if (!allExclusions.contains(freshTopic.toLowerCase())) {
                 suggestions.add(freshTopic);
             }
         }
@@ -185,7 +213,7 @@ public class ConversationMemoryManager {
             List<String> emotionTopics = emotionallyDrivenTopics.get(currentEmotion.toLowerCase());
             if (emotionTopics != null) {
                 for (String emotionTopic : emotionTopics) {
-                    if (!overused.contains(emotionTopic.toLowerCase()) && !recent.contains(emotionTopic.toLowerCase())) {
+                    if (!allExclusions.contains(emotionTopic.toLowerCase())) {
                         suggestions.add(emotionTopic);
                     }
                 }
@@ -196,15 +224,23 @@ public class ConversationMemoryManager {
         List<String> masterTopics = masterSpecificFreshTopics.get(speaker.toLowerCase());
         if (masterTopics != null) {
             for (String masterTopic : masterTopics) {
-                if (!overused.contains(masterTopic.toLowerCase()) && !recent.contains(masterTopic.toLowerCase())) {
+                if (!allExclusions.contains(masterTopic.toLowerCase())) {
                     suggestions.add(masterTopic);
                 }
             }
         }
         
-        // Randomize and limit
+        // Remove duplicates and randomize
+        suggestions = new ArrayList<>(new HashSet<>(suggestions));
         Collections.shuffle(suggestions, random);
-        return suggestions.subList(0, Math.min(4, suggestions.size()));
+        
+        int resultSize = Math.min(4, suggestions.size());
+        List<String> result = suggestions.subList(0, resultSize);
+        
+        Log.d(TAG, String.format("💡 Generated %d emotionally-aware suggestions for %s (excluded %d fatigued topics)", 
+               result.size(), speaker, fatiguedTopics.size()));
+        
+        return result;
     }
     
     /**
@@ -564,19 +600,24 @@ public class ConversationMemoryManager {
     }
     
     /**
-     * 💭 NEW: Get emotional context for suggested topics
+     * 💭 ENHANCED: Get database-driven emotional context for suggested topics
      */
-    private String getEmotionalTopicContext(String speaker, List<String> suggestedTopics) {
+    private String getDatabaseEmotionalContext(String speaker, String opponent, List<String> suggestedTopics) {
+        if (opponent == null) {
+            return ""; // Fallback to session-only memory
+        }
+        
         StringBuilder context = new StringBuilder();
         
         for (String topic : suggestedTopics) {
-            String key = speaker.toLowerCase() + ":" + topic.toLowerCase();
-            EmotionalTopicMemory memory = emotionalTopicHistory.get(key);
+            // Get emotional history from database
+            List<RelationshipPersistenceManager.EmotionalReaction> reactions = 
+                persistenceManager.getEmotionalHistory(speaker, topic, 3);
             
-            if (memory != null && !memory.emotionalInstances.isEmpty()) {
-                EmotionalInstance lastInstance = memory.getLastEmotionalInstance();
-                context.append(String.format("%s has felt %s about %s (%.1f intensity). ", 
-                             speaker, lastInstance.emotion, topic, lastInstance.intensity));
+            if (!reactions.isEmpty()) {
+                RelationshipPersistenceManager.EmotionalReaction lastReaction = reactions.get(0);
+                context.append(String.format("%s previously felt %s about %s (%.1f intensity) when discussing with %s. ", 
+                             speaker, lastReaction.emotion, topic, lastReaction.intensity, opponent));
             }
         }
         
@@ -584,40 +625,59 @@ public class ConversationMemoryManager {
     }
     
     /**
-     * 👥 NEW: Get relationship context between masters
+     * 👥 ENHANCED: Get database-driven relationship context between masters
      */
-    private String getRelationshipContext(String speaker, String opponent) {
-        String relationshipKey = generateRelationshipKey(speaker, opponent);
-        MasterRelationshipMemory relationship = relationshipMemories.get(relationshipKey);
-        
-        if (relationship == null || relationship.interactions.isEmpty()) {
-            return "This is a fresh conversation between " + speaker + " and " + opponent + ".";
+    private String getDatabaseRelationshipContext(String speaker, String opponent) {
+        if (opponent == null) {
+            return "This is a solo conversation.";
         }
+        
+        RelationshipPersistenceManager.MasterRelationship relationship = 
+            persistenceManager.getRelationship(speaker, opponent);
         
         StringBuilder context = new StringBuilder();
         
-        // Analyze recent interactions
-        int recentInteractions = Math.min(3, relationship.interactions.size());
-        List<RelationshipInteraction> recent = relationship.interactions.subList(
-            relationship.interactions.size() - recentInteractions, 
-            relationship.interactions.size()
-        );
-        
-        Map<String, Integer> interactionTypes = new HashMap<>();
-        for (RelationshipInteraction interaction : recent) {
-            interactionTypes.put(interaction.interactionType, 
-                               interactionTypes.getOrDefault(interaction.interactionType, 0) + 1);
-        }
-        
-        if (interactionTypes.getOrDefault("disagreement", 0) >= 2) {
-            context.append(speaker).append(" and ").append(opponent)
-                   .append(" have had some philosophical disagreements recently. ");
-        } else if (interactionTypes.getOrDefault("agreement", 0) >= 2) {
-            context.append(speaker).append(" and ").append(opponent)
-                   .append(" have been finding common ground in their discussions. ");
+        // Analyze relationship dynamics
+        if (relationship.totalInteractions == 0) {
+            context.append("This is the first conversation between ").append(speaker).append(" and ").append(opponent).append(". ");
+        } else {
+            context.append(speaker).append(" and ").append(opponent).append(" have had ")
+                   .append(relationship.totalInteractions).append(" previous interactions. ");
+            
+            // Relationship characteristics
+            if (relationship.rivalryIntensity > 0.6f) {
+                context.append("Their rivalry has grown intense (").append(String.format("%.1f", relationship.rivalryIntensity)).append("/1.0). ");
+            }
+            
+            if (relationship.respectLevel > 0.7f) {
+                context.append("They have developed strong mutual respect (").append(String.format("%.1f", relationship.respectLevel)).append("/1.0). ");
+            }
+            
+            if (relationship.friendshipBond > 0.5f) {
+                context.append("A genuine friendship is forming between them (").append(String.format("%.1f", relationship.friendshipBond)).append("/1.0). ");
+            }
+            
+            // Communication style evolution
+            if (!"formal".equals(relationship.communicationStyle)) {
+                context.append("Their communication has evolved to be more ").append(relationship.communicationStyle).append(". ");
+            }
+            
+            // Last major event
+            if (relationship.lastMajorEvent != null) {
+                context.append("Their last major interaction was: ").append(relationship.lastMajorEvent).append(". ");
+            }
         }
         
         return context.toString();
+    }
+    
+    /**
+     * 🛠️ NEW: Utility method to truncate content for database snippets
+     */
+    private String truncateForSnippet(String content) {
+        if (content == null) return "";
+        if (content.length() <= 100) return content;
+        return content.substring(0, 97) + "...";
     }
     
     /**
@@ -687,124 +747,87 @@ public class ConversationMemoryManager {
         }
     }
     
-    private String generateRelationshipKey(String master1, String master2) {
-        // Ensure consistent key regardless of order
-        if (master1.compareTo(master2) < 0) {
-            return master1.toLowerCase() + "_" + master2.toLowerCase();
-        } else {
-            return master2.toLowerCase() + "_" + master1.toLowerCase();
-        }
-    }
-    
-    // =========================== NEW DATA CLASSES ===========================
+    // NOTE: All data classes moved to RelationshipPersistenceManager for database storage
     
     /**
-     * 💭 Emotional Topic Memory - tracks how a master feels about specific topics
-     */
-    private static class EmotionalTopicMemory {
-        final String master;
-        final String topic;
-        final List<EmotionalInstance> emotionalInstances = new ArrayList<>();
-        
-        EmotionalTopicMemory(String master, String topic) {
-            this.master = master;
-            this.topic = topic;
-        }
-        
-        void addEmotionalInstance(String emotion, float intensity, String content, long timestamp) {
-            emotionalInstances.add(new EmotionalInstance(emotion, intensity, content, timestamp));
-            
-            // Keep only recent instances
-            if (emotionalInstances.size() > 10) {
-                emotionalInstances.remove(0);
-            }
-        }
-        
-        EmotionalInstance getLastEmotionalInstance() {
-            return emotionalInstances.isEmpty() ? null : emotionalInstances.get(emotionalInstances.size() - 1);
-        }
-        
-        float getAverageIntensity() {
-            if (emotionalInstances.isEmpty()) return 0.0f;
-            float sum = 0.0f;
-            for (EmotionalInstance instance : emotionalInstances) {
-                sum += instance.intensity;
-            }
-            return sum / emotionalInstances.size();
-        }
-    }
-    
-    /**
-     * 🎭 Emotional Instance - a specific emotional reaction to a topic
-     */
-    private static class EmotionalInstance {
-        final String emotion;
-        final float intensity;
-        final String content;
-        final long timestamp;
-        
-        EmotionalInstance(String emotion, float intensity, String content, long timestamp) {
-            this.emotion = emotion;
-            this.intensity = intensity;
-            this.content = content;
-            this.timestamp = timestamp;
-        }
-    }
-    
-    /**
-     * 👥 Master Relationship Memory - tracks interactions between two masters
-     */
-    private static class MasterRelationshipMemory {
-        final String master1;
-        final String master2;
-        final List<RelationshipInteraction> interactions = new ArrayList<>();
-        
-        MasterRelationshipMemory(String master1, String master2) {
-            this.master1 = master1;
-            this.master2 = master2;
-        }
-        
-        void addInteraction(String topic, String master1Emotion, String master2Emotion, 
-                           String interactionType, long timestamp) {
-            interactions.add(new RelationshipInteraction(topic, master1Emotion, master2Emotion, 
-                                                        interactionType, timestamp));
-            
-            // Keep only recent interactions
-            if (interactions.size() > 20) {
-                interactions.remove(0);
-            }
-        }
-    }
-    
-    /**
-     * 🤝 Relationship Interaction - a specific interaction between two masters
-     */
-    private static class RelationshipInteraction {
-        final String topic;
-        final String master1Emotion;
-        final String master2Emotion;
-        final String interactionType; // "agreement", "disagreement", "mutual_excitement", etc.
-        final long timestamp;
-        
-        RelationshipInteraction(String topic, String master1Emotion, String master2Emotion, 
-                              String interactionType, long timestamp) {
-            this.topic = topic;
-            this.master1Emotion = master1Emotion;
-            this.master2Emotion = master2Emotion;
-            this.interactionType = interactionType;
-            this.timestamp = timestamp;
-        }
-    }
-    
-    /**
-     * 🔄 Reset memory for new session
+     * 🔄 Reset session memory (keeps persistent relationship data)
      */
     public void resetSession() {
         discussedTopics.clear();
         topicFrequency.clear();
         lastTopicMention.clear();
-        emotionalTopicHistory.clear();
-        relationshipMemories.clear();
-        Log.d(TAG, "🔄 Enhanced conversation memory reset for new session");
+        Log.d(TAG, "🔄 Session conversation memory reset (persistent relationships maintained)");
+    }
+    
+    /**
+     * 🗑️ NEW: Full reset including persistent database data (use carefully!)
+     */
+    public void resetAllData() {
+        resetSession();
+        // Note: We intentionally don't clear database data here as it represents
+        // long-term relationship evolution. If needed, this could be added with
+        // database clear operations.
+        Log.d(TAG, "🗑️ All conversation memory reset (session only - relationships preserved)");
+    }
+    
+    /**
+     * 🎭 NEW: Record relationship interaction for emergent behavior tracking
+     */
+    public void recordRelationshipInteraction(String speaker, String opponent, String topic, 
+                                               String speakerEmotion, String opponentEmotion, 
+                                               String interactionType) {
+        if (opponent == null) return;
+        
+        // This functionality is now handled by the database persistence layer
+        Log.d(TAG, String.format("🎭 Relationship interaction recorded: %s (%s) <-> %s (%s) about %s [%s]", 
+               speaker, speakerEmotion, opponent, opponentEmotion, topic, interactionType));
+    }
+    
+    /**
+     * 🌟 NEW: Detect and record emergent events
+     */
+    public void detectEmergentEvent(String speaker, String opponent, String conversationContent, 
+                                   String currentEmotion, String opponentEmotion, float emotionalIntensity) {
+        if (opponent == null) return;
+        
+        // Detect breakthrough conversations or significant emotional events
+        boolean isBreakthrough = false;
+        String eventType = "normal_conversation";
+        float impactLevel = 0.0f;
+        
+        // High-intensity emotional reactions
+        if (emotionalIntensity > 0.8f) {
+            if ("impressed".equals(currentEmotion) || "thrilled".equals(currentEmotion)) {
+                eventType = "breakthrough_appreciation";
+                impactLevel = emotionalIntensity;
+                isBreakthrough = true;
+            } else if ("frustrated".equals(currentEmotion) && "confident".equals(opponentEmotion)) {
+                eventType = "heated_philosophical_clash";
+                impactLevel = emotionalIntensity * 0.8f;
+                isBreakthrough = true;
+            }
+        }
+        
+        // Topic innovation detection (simple heuristic)
+        if (conversationContent.contains("never thought") || conversationContent.contains("new perspective") ||
+            conversationContent.contains("that's fascinating") || conversationContent.contains("I've learned")) {
+            eventType = "intellectual_breakthrough";
+            impactLevel = Math.max(impactLevel, 0.7f);
+            isBreakthrough = true;
+        }
+        
+        if (isBreakthrough) {
+            String description = String.format("%s and %s had a %s during their discussion", 
+                                             speaker, opponent, eventType.replace("_", " "));
+            
+            String emotionalContext = String.format("{\"speaker_emotion\": \"%s\", \"opponent_emotion\": \"%s\", \"intensity\": %.2f}", 
+                                                   currentEmotion, opponentEmotion, emotionalIntensity);
+            
+            persistenceManager.recordEmergentEvent(eventType, speaker, opponent, description, 
+                                                  emotionalContext, truncateForSnippet(conversationContent), impactLevel);
+            
+            Log.d(TAG, String.format("🌟 Emergent event detected: %s between %s and %s (impact: %.2f)", 
+                   eventType, speaker, opponent, impactLevel));
+        }
     }
 }

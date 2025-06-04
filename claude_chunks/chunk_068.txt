@@ -1,3 +1,13 @@
+# CHUNK 68 of 158
+# Files: 5, Characters: 43,316
+################################################################################
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/GameDatabaseHelper.java
+Lines: 839, Characters: 33,220
+================================================================================
+
 package com.example.chesspedagogue;
 
 import android.content.ContentValues;
@@ -24,18 +34,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * ADVANCED GameDatabaseHelper - Now with Emergent Behavior Tracking!
- * Handles saved games, personality engine queries, AND relationship evolution.
- * Features:
- * - Lightning-fast FEN lookups for master positions
- * - Persistent emotional memory and relationship tracking
- * - Topic evolution and conversation innovation
- * - Emergent behavior detection and logging
+ * ENHANCED GameDatabaseHelper - Now with lightning-fast FEN lookups!
+ * Handles both saved games AND instant personality engine queries.
  */
 public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "GameDatabaseHelper";
     private static final String DATABASE_NAME = "chess_games.db";
-    private static final int DATABASE_VERSION = 3; // Incremented for emergent behavior features!
+    private static final int DATABASE_VERSION = 2; // Incremented for new features!
 
     // EXISTING: Saved games table
     private static final String TABLE_GAMES = "saved_games";
@@ -72,70 +77,6 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_DESCRIPTION + " TEXT"
                     + ")";
 
-    // =========================== EMERGENT BEHAVIOR COLUMNS ===========================
-    
-    // Table: master_relationships - Track evolving relationships between masters
-    private static final String TABLE_RELATIONSHIPS = "master_relationships";
-    private static final String COLUMN_MASTER1 = "master1";
-    private static final String COLUMN_MASTER2 = "master2";
-    private static final String COLUMN_RESPECT_LEVEL = "respect_level";
-    private static final String COLUMN_RIVALRY_INTENSITY = "rivalry_intensity";
-    private static final String COLUMN_FRIENDSHIP_BOND = "friendship_bond";
-    private static final String COLUMN_COMMUNICATION_STYLE = "communication_style";
-    private static final String COLUMN_TOTAL_INTERACTIONS = "total_interactions";
-    private static final String COLUMN_TOTAL_GAMES = "total_games";
-    private static final String COLUMN_LAST_MAJOR_EVENT = "last_major_event";
-    private static final String COLUMN_LAST_UPDATED = "last_updated";
-    private static final String COLUMN_CREATED_AT = "created_at";
-
-    // Table: topic_memory - Track topic usage and fatigue
-    private static final String TABLE_TOPIC_MEMORY = "topic_memory";
-    private static final String COLUMN_TOPIC = "topic";
-    private static final String COLUMN_DISCUSSION_COUNT = "discussion_count";
-    private static final String COLUMN_TOTAL_EMOTIONAL_INTENSITY = "total_emotional_intensity";
-    private static final String COLUMN_AVERAGE_EMOTIONAL_INTENSITY = "average_emotional_intensity";
-    private static final String COLUMN_LAST_EMOTION_MASTER1 = "last_emotion_master1";
-    private static final String COLUMN_LAST_EMOTION_MASTER2 = "last_emotion_master2";
-    private static final String COLUMN_TOPIC_FATIGUE_LEVEL = "topic_fatigue_level";
-    private static final String COLUMN_EVOLUTION_PATH = "evolution_path";
-    private static final String COLUMN_BREAKTHROUGH_MOMENTS = "breakthrough_moments";
-    private static final String COLUMN_CONFLICT_INCIDENTS = "conflict_incidents";
-    private static final String COLUMN_LAST_DISCUSSED = "last_discussed";
-
-    // Table: emotional_reactions - Detailed emotional history
-    private static final String TABLE_EMOTIONAL_REACTIONS = "emotional_reactions";
-    private static final String COLUMN_MASTER = "master";
-    private static final String COLUMN_EMOTION_OPPONENT = "opponent";
-    private static final String COLUMN_EMOTION = "emotion";
-    private static final String COLUMN_INTENSITY = "intensity";
-    private static final String COLUMN_MOMENTUM = "momentum";
-    private static final String COLUMN_GAME_CONTEXT = "game_context";
-    private static final String COLUMN_POSITION_EVALUATION = "position_evaluation";
-    private static final String COLUMN_CONVERSATION_SNIPPET = "conversation_snippet";
-    private static final String COLUMN_RELATIONSHIP_IMPACT = "relationship_impact";
-    private static final String COLUMN_TIMESTAMP = "timestamp";
-
-    // Table: conversation_evolution - Track topic innovation
-    private static final String TABLE_CONVERSATION_EVOLUTION = "conversation_evolution";
-    private static final String COLUMN_ORIGINAL_TOPIC = "original_topic";
-    private static final String COLUMN_EVOLVED_TOPIC = "evolved_topic";
-    private static final String COLUMN_EVOLUTION_TYPE = "evolution_type";
-    private static final String COLUMN_CATALYST_EMOTION = "catalyst_emotion";
-    private static final String COLUMN_BREAKTHROUGH_CONTENT = "breakthrough_content";
-    private static final String COLUMN_IMPACT_SCORE = "impact_score";
-    private static final String COLUMN_SUBSEQUENT_USAGE = "subsequent_usage";
-
-    // Table: emergent_events - Log breakthrough moments
-    private static final String TABLE_EMERGENT_EVENTS = "emergent_events";
-    private static final String COLUMN_EVENT_TYPE = "event_type";
-    private static final String COLUMN_EVENT_DESCRIPTION = "description";
-    private static final String COLUMN_EMOTIONAL_CONTEXT = "emotional_context";
-    private static final String COLUMN_CONVERSATION_CONTENT = "conversation_content";
-    private static final String COLUMN_IMPACT_LEVEL = "impact_level";
-    private static final String COLUMN_FOLLOW_UP_EFFECTS = "follow_up_effects";
-
-    // =========================== TABLE CREATION STATEMENTS ===========================
-
     // NEW: Create master positions table for personality engine
     private static final String CREATE_MASTER_POSITIONS_TABLE =
             "CREATE TABLE " + TABLE_MASTER_POSITIONS + "("
@@ -153,113 +94,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_TAGS + " TEXT"
                     + ")";
 
-    // NEW: Create relationships table
-    private static final String CREATE_RELATIONSHIPS_TABLE =
-            "CREATE TABLE " + TABLE_RELATIONSHIPS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_RESPECT_LEVEL + " REAL DEFAULT 0.5,"
-                    + COLUMN_RIVALRY_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_FRIENDSHIP_BOND + " REAL DEFAULT 0.0,"
-                    + COLUMN_COMMUNICATION_STYLE + " TEXT DEFAULT 'formal',"
-                    + COLUMN_TOTAL_INTERACTIONS + " INTEGER DEFAULT 0,"
-                    + COLUMN_TOTAL_GAMES + " INTEGER DEFAULT 0,"
-                    + COLUMN_LAST_MAJOR_EVENT + " TEXT,"
-                    + COLUMN_LAST_UPDATED + " INTEGER,"
-                    + COLUMN_CREATED_AT + " INTEGER,"
-                    + "UNIQUE(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ")"
-                    + ")";
-
-    // NEW: Create topic memory table
-    private static final String CREATE_TOPIC_MEMORY_TABLE =
-            "CREATE TABLE " + TABLE_TOPIC_MEMORY + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_DISCUSSION_COUNT + " INTEGER DEFAULT 1,"
-                    + COLUMN_TOTAL_EMOTIONAL_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_AVERAGE_EMOTIONAL_INTENSITY + " REAL DEFAULT 0.0,"
-                    + COLUMN_LAST_EMOTION_MASTER1 + " TEXT,"
-                    + COLUMN_LAST_EMOTION_MASTER2 + " TEXT,"
-                    + COLUMN_TOPIC_FATIGUE_LEVEL + " REAL DEFAULT 0.0,"
-                    + COLUMN_EVOLUTION_PATH + " TEXT,"
-                    + COLUMN_BREAKTHROUGH_MOMENTS + " INTEGER DEFAULT 0,"
-                    + COLUMN_CONFLICT_INCIDENTS + " INTEGER DEFAULT 0,"
-                    + COLUMN_LAST_DISCUSSED + " INTEGER,"
-                    + COLUMN_CREATED_AT + " INTEGER"
-                    + ")";
-
-    // NEW: Create emotional reactions table
-    private static final String CREATE_EMOTIONAL_REACTIONS_TABLE =
-            "CREATE TABLE " + TABLE_EMOTIONAL_REACTIONS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER + " TEXT NOT NULL,"
-                    + COLUMN_EMOTION_OPPONENT + " TEXT NOT NULL,"
-                    + COLUMN_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EMOTION + " TEXT NOT NULL,"
-                    + COLUMN_INTENSITY + " REAL NOT NULL,"
-                    + COLUMN_MOMENTUM + " REAL DEFAULT 0.0,"
-                    + COLUMN_GAME_CONTEXT + " TEXT,"
-                    + COLUMN_POSITION_EVALUATION + " REAL,"
-                    + COLUMN_CONVERSATION_SNIPPET + " TEXT,"
-                    + COLUMN_RELATIONSHIP_IMPACT + " REAL DEFAULT 0.0,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // NEW: Create conversation evolution table
-    private static final String CREATE_CONVERSATION_EVOLUTION_TABLE =
-            "CREATE TABLE " + TABLE_CONVERSATION_EVOLUTION + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_ORIGINAL_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EVOLVED_TOPIC + " TEXT NOT NULL,"
-                    + COLUMN_EVOLUTION_TYPE + " TEXT NOT NULL,"
-                    + COLUMN_CATALYST_EMOTION + " TEXT,"
-                    + COLUMN_BREAKTHROUGH_CONTENT + " TEXT,"
-                    + COLUMN_IMPACT_SCORE + " REAL DEFAULT 0.0,"
-                    + COLUMN_SUBSEQUENT_USAGE + " INTEGER DEFAULT 0,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // NEW: Create emergent events table
-    private static final String CREATE_EMERGENT_EVENTS_TABLE =
-            "CREATE TABLE " + TABLE_EMERGENT_EVENTS + "("
-                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
-                    + COLUMN_EVENT_TYPE + " TEXT NOT NULL,"
-                    + COLUMN_MASTER1 + " TEXT NOT NULL,"
-                    + COLUMN_MASTER2 + " TEXT NOT NULL,"
-                    + COLUMN_EVENT_DESCRIPTION + " TEXT NOT NULL,"
-                    + COLUMN_EMOTIONAL_CONTEXT + " TEXT,"
-                    + COLUMN_CONVERSATION_CONTENT + " TEXT,"
-                    + COLUMN_IMPACT_LEVEL + " REAL DEFAULT 0.0,"
-                    + COLUMN_FOLLOW_UP_EFFECTS + " TEXT,"
-                    + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
-                    + ")";
-
-    // =========================== INDEXES FOR PERFORMANCE ===========================
-
-    // EXISTING: Lightning-fast indexes for instant lookups!
+    // NEW: Lightning-fast indexes for instant lookups!
     private static final String CREATE_FEN_INDEX =
             "CREATE INDEX idx_fen ON " + TABLE_MASTER_POSITIONS + "(" + COLUMN_FEN + ")";
 
     private static final String CREATE_MASTER_INDEX =
             "CREATE INDEX idx_master ON " + TABLE_MASTER_POSITIONS + "(" + COLUMN_MASTER_NAME + ")";
-    
-    // NEW: Emergent behavior indexes for fast relationship and topic queries
-    private static final String CREATE_RELATIONSHIPS_INDEX =
-            "CREATE INDEX idx_relationships ON " + TABLE_RELATIONSHIPS + "(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ")";
-    
-    private static final String CREATE_TOPIC_MEMORY_INDEX =
-            "CREATE INDEX idx_topic_memory ON " + TABLE_TOPIC_MEMORY + "(" + COLUMN_MASTER1 + ", " + COLUMN_MASTER2 + ", " + COLUMN_TOPIC + ")";
-    
-    private static final String CREATE_EMOTIONAL_REACTIONS_INDEX =
-            "CREATE INDEX idx_emotional_reactions ON " + TABLE_EMOTIONAL_REACTIONS + "(" + COLUMN_MASTER + ", " + COLUMN_TOPIC + ", " + COLUMN_TIMESTAMP + ")";
-    
-    private static final String CREATE_EMERGENT_EVENTS_INDEX =
-            "CREATE INDEX idx_emergent_events ON " + TABLE_EMERGENT_EVENTS + "(" + COLUMN_EVENT_TYPE + ", " + COLUMN_TIMESTAMP + ")";
 
     private final Context context;
     
@@ -281,52 +121,24 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         // Create existing games table
         db.execSQL(CREATE_GAMES_TABLE);
 
-        // Create master positions table
+        // Create new master positions table
         db.execSQL(CREATE_MASTER_POSITIONS_TABLE);
 
-        // Create NEW emergent behavior tables
-        db.execSQL(CREATE_RELATIONSHIPS_TABLE);
-        db.execSQL(CREATE_TOPIC_MEMORY_TABLE);
-        db.execSQL(CREATE_EMOTIONAL_REACTIONS_TABLE);
-        db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
-        db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
-
-        // Create all indexes for performance
+        // Create lightning-fast indexes
         db.execSQL(CREATE_FEN_INDEX);
         db.execSQL(CREATE_MASTER_INDEX);
-        db.execSQL(CREATE_RELATIONSHIPS_INDEX);
-        db.execSQL(CREATE_TOPIC_MEMORY_INDEX);
-        db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
-        db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
 
-        Log.d(TAG, "✅ Database created with game storage, personality engine, AND emergent behavior tracking!");
+        Log.d(TAG, "✅ Database created with both game storage AND lightning-fast FEN lookups!");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion < 2) {
-            // Add the master positions functionality
+            // Add the new master positions functionality
             db.execSQL(CREATE_MASTER_POSITIONS_TABLE);
             db.execSQL(CREATE_FEN_INDEX);
             db.execSQL(CREATE_MASTER_INDEX);
             Log.d(TAG, "🚀 Database upgraded with personality engine support!");
-        }
-        
-        if (oldVersion < 3) {
-            // Add emergent behavior tracking tables
-            db.execSQL(CREATE_RELATIONSHIPS_TABLE);
-            db.execSQL(CREATE_TOPIC_MEMORY_TABLE);
-            db.execSQL(CREATE_EMOTIONAL_REACTIONS_TABLE);
-            db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
-            db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
-            
-            // Add new indexes
-            db.execSQL(CREATE_RELATIONSHIPS_INDEX);
-            db.execSQL(CREATE_TOPIC_MEMORY_INDEX);
-            db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
-            db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
-            
-            Log.d(TAG, "🎭 Database upgraded with emergent behavior tracking - relationships will now evolve!");
         }
     }
 
@@ -1035,3 +847,387 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         return result;
     }
 }
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/GameHistoryManager.java
+Lines: 51, Characters: 1,265
+================================================================================
+
+package com.example.chesspedagogue;
+
+import android.util.Log;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Manages the history of chess moves for the current game
+ */
+public class GameHistoryManager {
+    private static final String TAG = "GameHistoryManager";
+
+    private static GameHistoryManager instance;
+    private final List<String> currentGameMoves = new ArrayList<>();
+
+    private GameHistoryManager() {
+        // Private constructor for singleton
+    }
+
+    public static synchronized GameHistoryManager getInstance() {
+        if (instance == null) {
+            instance = new GameHistoryManager();
+            Log.d(TAG, "GameHistoryManager instance created");
+        }
+        return instance;
+    }
+
+    /**
+     * Add a move to the current game history
+     */
+    public void addMove(String move) {
+        currentGameMoves.add(move);
+        Log.d(TAG, "Move added: " + move);
+    }
+
+    /**
+     * Clear the current game history
+     */
+    public void clearHistory() {
+        currentGameMoves.clear();
+        Log.d(TAG, "Game history cleared");
+    }
+
+    /**
+     * Get the list of moves from the current game
+     */
+    public List<String> getCurrentGameMoves() {
+        return new ArrayList<>(currentGameMoves);
+    }
+}
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/GameResultView.java
+Lines: 205, Characters: 6,303
+================================================================================
+
+package com.example.chesspedagogue;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.RectF;
+import android.util.AttributeSet;
+import android.view.View;
+import android.animation.ValueAnimator;
+import android.animation.ObjectAnimator;
+
+/**
+ * 🏆 Game Result Display
+ * Shows win/lose/draw with animated display
+ */
+public class GameResultView extends View {
+    private static final String TAG = "GameResultView";
+    
+    public enum GameResult {
+        NONE("", Color.TRANSPARENT),
+        WHITE_WINS("1-0", Color.GREEN),
+        BLACK_WINS("0-1", Color.RED),
+        DRAW("½-½", Color.YELLOW);
+        
+        public final String display;
+        public final int color;
+        
+        GameResult(String display, int color) {
+            this.display = display;
+            this.color = color;
+        }
+    }
+    
+    private GameResult currentResult = GameResult.NONE;
+    private String winnerName = "";
+    private String resultDescription = "";
+    
+    private Paint textPaint;
+    private Paint backgroundPaint;
+    private Paint borderPaint;
+    private RectF backgroundRect;
+    
+    private float animationAlpha = 0f;
+    private ValueAnimator showAnimator;
+    
+    public GameResultView(Context context) {
+        super(context);
+        init();
+    }
+    
+    public GameResultView(Context context, AttributeSet attrs) {
+        super(context, attrs);
+        init();
+    }
+    
+    private void init() {
+        textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setTextSize(28f);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setFakeBoldText(true);
+        
+        backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        backgroundPaint.setColor(Color.BLACK);
+        backgroundPaint.setAlpha(180);
+        
+        borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setStrokeWidth(3f);
+        borderPaint.setColor(Color.WHITE);
+        
+        backgroundRect = new RectF();
+        
+        setVisibility(View.GONE);
+    }
+    
+    /**
+     * 🏆 Display game result with animation
+     */
+    public void showResult(GameResult result, String winner, String description) {
+        this.currentResult = result;
+        this.winnerName = winner;
+        this.resultDescription = description;
+        
+        if (result == GameResult.NONE) {
+            hideResult();
+            return;
+        }
+        
+        // Update colors based on result
+        backgroundPaint.setColor(result.color);
+        backgroundPaint.setAlpha(180);
+        borderPaint.setColor(result.color);
+        
+        // Show with animation
+        setVisibility(View.VISIBLE);
+        animateShow();
+        
+        android.util.Log.d(TAG, String.format("🏆 Game result: %s - %s (%s)", 
+                                            result.display, winner, description));
+    }
+    
+    /**
+     * Hide result display
+     */
+    public void hideResult() {
+        currentResult = GameResult.NONE;
+        setVisibility(View.GONE);
+        android.util.Log.d(TAG, "🔄 Game result hidden");
+    }
+    
+    private void animateShow() {
+        if (showAnimator != null) {
+            showAnimator.cancel();
+        }
+        
+        showAnimator = ValueAnimator.ofFloat(0f, 1f);
+        showAnimator.setDuration(500);
+        showAnimator.addUpdateListener(animation -> {
+            animationAlpha = (float) animation.getAnimatedValue();
+            invalidate();
+        });
+        showAnimator.start();
+        
+        // Auto-hide after 10 seconds
+        postDelayed(this::hideResult, 10000);
+    }
+    
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        
+        if (currentResult == GameResult.NONE) {
+            return;
+        }
+        
+        int width = getWidth();
+        int height = getHeight();
+        
+        // Draw background with animation alpha
+        backgroundPaint.setAlpha((int)(180 * animationAlpha));
+        borderPaint.setAlpha((int)(255 * animationAlpha));
+        textPaint.setAlpha((int)(255 * animationAlpha));
+        
+        // Center background rectangle
+        float rectWidth = width * 0.8f;
+        float rectHeight = height * 0.6f;
+        float left = (width - rectWidth) / 2f;
+        float top = (height - rectHeight) / 2f;
+        
+        backgroundRect.set(left, top, left + rectWidth, top + rectHeight);
+        
+        // Draw background and border
+        canvas.drawRoundRect(backgroundRect, 12f, 12f, backgroundPaint);
+        canvas.drawRoundRect(backgroundRect, 12f, 12f, borderPaint);
+        
+        // Draw result text
+        float centerX = width / 2f;
+        float centerY = height / 2f;
+        
+        // Main result (1-0, 0-1, ½-½)
+        textPaint.setTextSize(36f);
+        canvas.drawText(currentResult.display, centerX, centerY - 20, textPaint);
+        
+        // Winner name
+        if (!winnerName.isEmpty()) {
+            textPaint.setTextSize(20f);
+            canvas.drawText(winnerName + " wins!", centerX, centerY + 15, textPaint);
+        }
+        
+        // Description (checkmate, resignation, etc.)
+        if (!resultDescription.isEmpty()) {
+            textPaint.setTextSize(16f);
+            canvas.drawText(resultDescription, centerX, centerY + 40, textPaint);
+        }
+    }
+    
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        // Fixed size for result display
+        int desiredWidth = 300;
+        int desiredHeight = 120;
+        
+        int width = resolveSize(desiredWidth, widthMeasureSpec);
+        int height = resolveSize(desiredHeight, heightMeasureSpec);
+        
+        setMeasuredDimension(width, height);
+    }
+    
+    /**
+     * Quick result display methods
+     */
+    public void showWhiteWins(String winnerName, String method) {
+        showResult(GameResult.WHITE_WINS, winnerName, method);
+    }
+    
+    public void showBlackWins(String winnerName, String method) {
+        showResult(GameResult.BLACK_WINS, winnerName, method);
+    }
+    
+    public void showDraw(String reason) {
+        showResult(GameResult.DRAW, "", reason);
+    }
+}
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/GameStateInfo.java
+Lines: 64, Characters: 1,492
+================================================================================
+
+package com.example.chesspedagogue;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Simple class to hold game state information
+ */
+public class GameStateInfo {
+    private String currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private String playerColor = "white";
+    private String gamePhase = "opening";
+    private boolean isCheck = false;
+    private List<String> moveHistory = new ArrayList<>();
+
+    public String getCurrentFen() {
+        return currentFen;
+    }
+
+    public void setCurrentFen(String currentFen) {
+        this.currentFen = currentFen;
+    }
+
+    public String getPlayerColor() {
+        return playerColor;
+    }
+
+    public void setPlayerColor(String playerColor) {
+        this.playerColor = playerColor;
+    }
+
+    public String getGamePhase() {
+        return gamePhase;
+    }
+
+    public void setGamePhase(String gamePhase) {
+        this.gamePhase = gamePhase;
+    }
+
+    public boolean isCheck() {
+        return isCheck;
+    }
+
+    public void setCheck(boolean check) {
+        isCheck = check;
+    }
+
+    public List<String> getMoveHistory() {
+        return moveHistory;
+    }
+
+    public void setMoveHistory(List<String> moveHistory) {
+        this.moveHistory = moveHistory;
+    }
+
+    public void addMove(String move) {
+        moveHistory.add(move);
+    }
+
+    // Add this method to fix the compilation error
+    public int getMoveCount() {
+        return moveHistory != null ? moveHistory.size() : 0;
+    }
+}
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/GameStateRepository.java
+Lines: 35, Characters: 1,036
+================================================================================
+
+package com.example.chesspedagogue;
+
+import java.util.List;
+
+/**
+ * Repository for accessing game state
+ */
+public class GameStateRepository {
+    private static GameStateInfo currentState = new GameStateInfo();
+
+    public static GameStateInfo getCurrentState() {
+        return currentState;
+    }
+
+    public static void setCurrentState(GameStateInfo state) {
+        currentState = state;
+    }
+
+    // Add this method to fix compilation errors
+    public static void updateState(String newFen, List<String> moveHistory, String playerColor) {
+        currentState.setCurrentFen(newFen);
+        currentState.setMoveHistory(moveHistory);
+        currentState.setPlayerColor(playerColor);
+
+        // Set game phase based on move count
+        int moveCount = moveHistory.size();
+        if (moveCount < 10) {
+            currentState.setGamePhase("opening");
+        } else if (moveCount < 30) {
+            currentState.setGamePhase("middlegame");
+        } else {
+            currentState.setGamePhase("endgame");
+        }
+    }
+}
+

@@ -1,3 +1,14 @@
+# CHUNK 76 of 158
+# Files: 1, Characters: 71,835
+# Note: Large file - standalone chunk
+################################################################################
+
+
+================================================================================
+FILE: app/src/main/java/com/example/chesspedagogue/SpectatorConversationOrchestrator.java
+Lines: 1415, Characters: 71,835
+================================================================================
+
 package com.example.chesspedagogue;
 
 import android.content.Context;
@@ -138,7 +149,7 @@ public class SpectatorConversationOrchestrator {
         StockfishManager stockfishManager = new StockfishManager();
         this.personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
         this.emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
-        this.conversationMemory = ConversationMemoryManager.getInstance(context);
+        this.conversationMemory = ConversationMemoryManager.getInstance();
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         
@@ -1413,3 +1424,4 @@ public class SpectatorConversationOrchestrator {
         responsesManager.shutdown();
     }
 }
+

@@ -1,0 +1,1225 @@
+# CHUNK 158 of 158
+# Files: 2, Characters: 49,854
+################################################################################
+
+
+================================================================================
+FILE: claude_chunks/chunks_summary.json
+Lines: 733, Characters: 28,843
+================================================================================
+
+{
+  "total_files": 278,
+  "total_chunks": 64,
+  "chunk_size_limit": 50000,
+  "chunks": [
+    {
+      "filename": "chunk_001.txt",
+      "file_count": 7,
+      "total_chars": 39988,
+      "files": [
+        "CLAUDE.md",
+        "README.md",
+        "local.properties",
+        "app\\google-services.json",
+        "app\\.cxx\\Debug\\2n1i5506\\hash_key.txt",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\additional_project_files.txt"
+      ]
+    },
+    {
+      "filename": "chunk_002.txt",
+      "file_count": 4,
+      "total_chars": 25940,
+      "files": [
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\compile_commands.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\metadata_generation_command.txt",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\prefab_config.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\symbol_folder_index.txt"
+      ]
+    },
+    {
+      "filename": "chunk_003.txt",
+      "file_count": 1,
+      "total_chars": 26878,
+      "files": [
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\cache-v2-11267d1683e240c49e90.json"
+      ]
+    },
+    {
+      "filename": "chunk_004.txt",
+      "file_count": 6,
+      "total_chars": 38202,
+      "files": [
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\cmakeFiles-v1-f2ba90267dbd665b196c.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\codemodel-v2-db3867eba63e4636d5b4.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\directory-.-Debug-d0094a50bb2071803777.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\index-2025-04-16T23-21-05-0717.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\.cmake\\api\\v1\\reply\\target-my_native_lib-Debug-2d2fe6a874ea1b0c4eac.json",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\CMakeFiles\\TargetDirectories.txt"
+      ]
+    },
+    {
+      "filename": "chunk_005.txt",
+      "file_count": 2,
+      "total_chars": 49450,
+      "files": [
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c",
+        "app\\.cxx\\Debug\\2n1i5506\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_006.txt",
+      "file_count": 3,
+      "total_chars": 42994,
+      "files": [
+        "app\\.cxx\\Debug\\5g604b1s\\hash_key.txt",
+        "app\\.cxx\\Debug\\5g604b1s\\arm64-v8a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\5g604b1s\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c"
+      ]
+    },
+    {
+      "filename": "chunk_007.txt",
+      "file_count": 7,
+      "total_chars": 43910,
+      "files": [
+        "app\\.cxx\\Debug\\5g604b1s\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\additional_project_files.txt",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\compile_commands.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\metadata_generation_command.txt",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\prefab_config.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\symbol_folder_index.txt"
+      ]
+    },
+    {
+      "filename": "chunk_008.txt",
+      "file_count": 7,
+      "total_chars": 38903,
+      "files": [
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\cache-v2-f6db9bcbdb293368658b.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\cmakeFiles-v1-9d9a97233dcdd2b7133c.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\codemodel-v2-1a99622ec6f332d0e6d4.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\directory-.-Debug-d0094a50bb2071803777.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\index-2025-04-17T00-22-01-0518.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\.cmake\\api\\v1\\reply\\target-my_native_lib-Debug-eccfa0de31c452973a3a.json",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\CMakeFiles\\TargetDirectories.txt"
+      ]
+    },
+    {
+      "filename": "chunk_009.txt",
+      "file_count": 2,
+      "total_chars": 49450,
+      "files": [
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c",
+        "app\\.cxx\\Debug\\5g604b1s\\armeabi-v7a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_010.txt",
+      "file_count": 8,
+      "total_chars": 48505,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\hash_key.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\additional_project_files.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\compile_commands.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\metadata_generation_command.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\prefab_config.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\symbol_folder_index.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\cache-v2-6837d114ea4fffa68a03.json"
+      ]
+    },
+    {
+      "filename": "chunk_011.txt",
+      "file_count": 7,
+      "total_chars": 37591,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\cmakeFiles-v1-a7a598cebef5322dd9cb.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\codemodel-v2-6fe426e4106c1614a87b.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\directory-.-Debug-d0094a50bb2071803777.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\index-2025-04-17T15-30-08-0354.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\.cmake\\api\\v1\\reply\\target-my_native_lib-Debug-e749929aba042cb6caca.json",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\CMakeFiles\\TargetDirectories.txt",
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c"
+      ]
+    },
+    {
+      "filename": "chunk_012.txt",
+      "file_count": 7,
+      "total_chars": 45051,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\additional_project_files.txt",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\compile_commands.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\metadata_generation_command.txt",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\prefab_config.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\symbol_folder_index.txt"
+      ]
+    },
+    {
+      "filename": "chunk_013.txt",
+      "file_count": 1,
+      "total_chars": 27564,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\cache-v2-abf20087d7b50573293a.json"
+      ]
+    },
+    {
+      "filename": "chunk_014.txt",
+      "file_count": 6,
+      "total_chars": 35591,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\cmakeFiles-v1-e8be2dd7c4248e9af744.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\codemodel-v2-4538e1b5d545368b855b.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\directory-.-Debug-d0094a50bb2071803777.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\index-2025-04-17T15-54-11-0473.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\.cmake\\api\\v1\\reply\\target-my_native_lib-Debug-9344b081dc3ca887d918.json",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\CMakeFiles\\TargetDirectories.txt"
+      ]
+    },
+    {
+      "filename": "chunk_015.txt",
+      "file_count": 2,
+      "total_chars": 49450,
+      "files": [
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c",
+        "app\\.cxx\\Debug\\5u65181k\\armeabi-v7a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_016.txt",
+      "file_count": 7,
+      "total_chars": 44060,
+      "files": [
+        "app\\.cxx\\Debug\\6d5tx5o1\\hash_key.txt",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\CMakeCache.txt",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\additional_project_files.txt",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\compile_commands.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\metadata_generation_command.txt",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\prefab_config.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\symbol_folder_index.txt"
+      ]
+    },
+    {
+      "filename": "chunk_017.txt",
+      "file_count": 1,
+      "total_chars": 27329,
+      "files": [
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\cache-v2-1a64e34f27719ffad556.json"
+      ]
+    },
+    {
+      "filename": "chunk_018.txt",
+      "file_count": 6,
+      "total_chars": 38368,
+      "files": [
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\cmakeFiles-v1-ff5dd5faddea1df99ebf.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\codemodel-v2-9a16e10f53172e4ea2ee.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\directory-.-Debug-d0094a50bb2071803777.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\index-2025-04-14T05-26-01-0477.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\.cmake\\api\\v1\\reply\\target-my_native_lib-Debug-157cf1746036b41dae01.json",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\CMakeFiles\\TargetDirectories.txt"
+      ]
+    },
+    {
+      "filename": "chunk_019.txt",
+      "file_count": 2,
+      "total_chars": 49450,
+      "files": [
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c",
+        "app\\.cxx\\Debug\\6d5tx5o1\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_020.txt",
+      "file_count": 3,
+      "total_chars": 43084,
+      "files": [
+        "app\\.cxx\\RelWithDebInfo\\201ji525\\hash_key.txt",
+        "app\\.cxx\\RelWithDebInfo\\201ji525\\arm64-v8a\\CMakeCache.txt",
+        "app\\.cxx\\RelWithDebInfo\\201ji525\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdC\\CMakeCCompilerId.c"
+      ]
+    },
+    {
+      "filename": "chunk_021.txt",
+      "file_count": 3,
+      "total_chars": 28579,
+      "files": [
+        "app\\.cxx\\RelWithDebInfo\\201ji525\\arm64-v8a\\CMakeFiles\\3.22.1-g37088a8-dirty\\CompilerIdCXX\\CMakeCXXCompilerId.cpp",
+        "app\\.cxx\\tools\\debug\\arm64-v8a\\compile_commands.json",
+        "app\\.cxx\\tools\\debug\\armeabi-v7a\\compile_commands.json"
+      ]
+    },
+    {
+      "filename": "chunk_022.txt",
+      "file_count": 3,
+      "total_chars": 28887,
+      "files": [
+        "app\\.cxx\\tools\\release\\arm64-v8a\\compile_commands.json",
+        "app\\src\\androidTest\\java\\com\\example\\chesspedagogue\\ExampleInstrumentedTest.kt",
+        "app\\src\\main\\AndroidManifest.xml"
+      ]
+    },
+    {
+      "filename": "chunk_023.txt",
+      "file_count": 1,
+      "total_chars": 3895536,
+      "files": [
+        "app\\src\\main\\assets\\fischer_positions.json"
+      ]
+    },
+    {
+      "filename": "chunk_024.txt",
+      "file_count": 1,
+      "total_chars": 1148715,
+      "files": [
+        "app\\src\\main\\assets\\kasparov_positions.json"
+      ]
+    },
+    {
+      "filename": "chunk_025.txt",
+      "file_count": 1,
+      "total_chars": 662660,
+      "files": [
+        "app\\src\\main\\assets\\tal_positions.json"
+      ]
+    },
+    {
+      "filename": "chunk_026.txt",
+      "file_count": 8,
+      "total_chars": 43905,
+      "files": [
+        "app\\src\\main\\cpp\\CMakeLists.txt",
+        "app\\src\\main\\cpp\\arch_compatibility.h",
+        "app\\src\\main\\cpp\\native_bridge.cpp",
+        "app\\src\\main\\cpp\\stockfish_adapter.cpp",
+        "app\\src\\main\\cpp\\stockfish_wrapper.cpp",
+        "app\\src\\main\\cpp\\stockfish_wrapper.h",
+        "app\\src\\main\\cpp\\stockfish\\benchmark.cpp",
+        "app\\src\\main\\cpp\\stockfish\\benchmark.h"
+      ]
+    },
+    {
+      "filename": "chunk_027.txt",
+      "file_count": 9,
+      "total_chars": 49138,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\bitboard.cpp",
+        "app\\src\\main\\cpp\\stockfish\\bitboard.h",
+        "app\\src\\main\\cpp\\stockfish\\engine.cpp",
+        "app\\src\\main\\cpp\\stockfish\\engine.h",
+        "app\\src\\main\\cpp\\stockfish\\evaluate.cpp",
+        "app\\src\\main\\cpp\\stockfish\\evaluate.h",
+        "app\\src\\main\\cpp\\stockfish\\history.h",
+        "app\\src\\main\\cpp\\stockfish\\jstockfish_Uci.cpp",
+        "app\\src\\main\\cpp\\stockfish\\main.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_028.txt",
+      "file_count": 6,
+      "total_chars": 49799,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\memory.cpp",
+        "app\\src\\main\\cpp\\stockfish\\memory.h",
+        "app\\src\\main\\cpp\\stockfish\\misc.cpp",
+        "app\\src\\main\\cpp\\stockfish\\misc.h",
+        "app\\src\\main\\cpp\\stockfish\\movegen.cpp",
+        "app\\src\\main\\cpp\\stockfish\\movegen.h"
+      ]
+    },
+    {
+      "filename": "chunk_029.txt",
+      "file_count": 2,
+      "total_chars": 13186,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\movepick.cpp",
+        "app\\src\\main\\cpp\\stockfish\\movepick.h"
+      ]
+    },
+    {
+      "filename": "chunk_030.txt",
+      "file_count": 1,
+      "total_chars": 49387,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\numa.h"
+      ]
+    },
+    {
+      "filename": "chunk_031.txt",
+      "file_count": 2,
+      "total_chars": 45718,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\perft.h",
+        "app\\src\\main\\cpp\\stockfish\\position.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_032.txt",
+      "file_count": 3,
+      "total_chars": 15189,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\position.h",
+        "app\\src\\main\\cpp\\stockfish\\score.cpp",
+        "app\\src\\main\\cpp\\stockfish\\score.h"
+      ]
+    },
+    {
+      "filename": "chunk_033.txt",
+      "file_count": 1,
+      "total_chars": 88675,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\search.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_034.txt",
+      "file_count": 7,
+      "total_chars": 47651,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\search.h",
+        "app\\src\\main\\cpp\\stockfish\\stockfish_wrapper.cpp",
+        "app\\src\\main\\cpp\\stockfish\\thread.cpp",
+        "app\\src\\main\\cpp\\stockfish\\thread.h",
+        "app\\src\\main\\cpp\\stockfish\\thread_win32_osx.h",
+        "app\\src\\main\\cpp\\stockfish\\timeman.cpp",
+        "app\\src\\main\\cpp\\stockfish\\timeman.h"
+      ]
+    },
+    {
+      "filename": "chunk_035.txt",
+      "file_count": 5,
+      "total_chars": 36427,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\tt.cpp",
+        "app\\src\\main\\cpp\\stockfish\\tt.h",
+        "app\\src\\main\\cpp\\stockfish\\tune.cpp",
+        "app\\src\\main\\cpp\\stockfish\\tune.h",
+        "app\\src\\main\\cpp\\stockfish\\types.h"
+      ]
+    },
+    {
+      "filename": "chunk_036.txt",
+      "file_count": 5,
+      "total_chars": 49600,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\uci.cpp",
+        "app\\src\\main\\cpp\\stockfish\\uci.h",
+        "app\\src\\main\\cpp\\stockfish\\ucioption.cpp",
+        "app\\src\\main\\cpp\\stockfish\\ucioption.h",
+        "app\\src\\main\\cpp\\stockfish\\incbin\\incbin.h"
+      ]
+    },
+    {
+      "filename": "chunk_037.txt",
+      "file_count": 3,
+      "total_chars": 48487,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\nnue\\network.cpp",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\network.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_accumulator.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_038.txt",
+      "file_count": 6,
+      "total_chars": 48624,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_accumulator.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_architecture.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_common.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_feature_transformer.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_misc.cpp",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\nnue_misc.h"
+      ]
+    },
+    {
+      "filename": "chunk_039.txt",
+      "file_count": 7,
+      "total_chars": 48057,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\nnue\\features\\half_ka_v2_hm.cpp",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\features\\half_ka_v2_hm.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\layers\\affine_transform.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\layers\\affine_transform_sparse_input.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\layers\\clipped_relu.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\layers\\simd.h",
+        "app\\src\\main\\cpp\\stockfish\\nnue\\layers\\sqr_clipped_relu.h"
+      ]
+    },
+    {
+      "filename": "chunk_040.txt",
+      "file_count": 1,
+      "total_chars": 65251,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\syzygy\\tbprobe.cpp"
+      ]
+    },
+    {
+      "filename": "chunk_041.txt",
+      "file_count": 1,
+      "total_chars": 2365,
+      "files": [
+        "app\\src\\main\\cpp\\stockfish\\syzygy\\tbprobe.h"
+      ]
+    },
+    {
+      "filename": "chunk_042.txt",
+      "file_count": 1,
+      "total_chars": 67743,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\AIDialogueManager.java"
+      ]
+    },
+    {
+      "filename": "chunk_043.txt",
+      "file_count": 8,
+      "total_chars": 45384,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\AIvsAIGameManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ApiKeyConfig.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChallengeData.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChatAdapter.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChatMessage.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChatService.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessBoardManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessBoardView.java"
+      ]
+    },
+    {
+      "filename": "chunk_044.txt",
+      "file_count": 4,
+      "total_chars": 31294,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessCoachManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessConversationActivity.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessMasterRatings.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ChessMasterSelectionActivity.java"
+      ]
+    },
+    {
+      "filename": "chunk_045.txt",
+      "file_count": 2,
+      "total_chars": 31752,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ConversationManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\EvaluationBarView.java"
+      ]
+    },
+    {
+      "filename": "chunk_046.txt",
+      "file_count": 1,
+      "total_chars": 20325,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\EvaluationTracker.java"
+      ]
+    },
+    {
+      "filename": "chunk_047.txt",
+      "file_count": 1,
+      "total_chars": 103549,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\FineTunedModelManager.java"
+      ]
+    },
+    {
+      "filename": "chunk_048.txt",
+      "file_count": 1,
+      "total_chars": 31173,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GameAnalysisActivity.java"
+      ]
+    },
+    {
+      "filename": "chunk_049.txt",
+      "file_count": 5,
+      "total_chars": 39990,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GameDatabaseHelper.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GameHistoryManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GameStateInfo.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GameStateRepository.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\GroqSpeechRecognizer.java"
+      ]
+    },
+    {
+      "filename": "chunk_050.txt",
+      "file_count": 1,
+      "total_chars": 91376,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\MainActivity.java"
+      ]
+    },
+    {
+      "filename": "chunk_051.txt",
+      "file_count": 2,
+      "total_chars": 29984,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\MoveHistoryObserver.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\OpenAIService.java"
+      ]
+    },
+    {
+      "filename": "chunk_052.txt",
+      "file_count": 1,
+      "total_chars": 64489,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\OpenAITTSService.java"
+      ]
+    },
+    {
+      "filename": "chunk_053.txt",
+      "file_count": 3,
+      "total_chars": 46921,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\PersonalityEngine.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SavedGamesActivity.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SettingsActivity.java"
+      ]
+    },
+    {
+      "filename": "chunk_054.txt",
+      "file_count": 1,
+      "total_chars": 37526,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SimpleRecordService.java"
+      ]
+    },
+    {
+      "filename": "chunk_055.txt",
+      "file_count": 1,
+      "total_chars": 26056,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SpectatorGameActivity.java"
+      ]
+    },
+    {
+      "filename": "chunk_056.txt",
+      "file_count": 6,
+      "total_chars": 38485,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SpectatorGameViewModel.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SpeechRecognitionManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SpeechRecognizer.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SpeechToTextService.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SplashActivity.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\SquareHighlight.java"
+      ]
+    },
+    {
+      "filename": "chunk_057.txt",
+      "file_count": 2,
+      "total_chars": 36001,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\StockfishManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\TextToSpeechService.java"
+      ]
+    },
+    {
+      "filename": "chunk_058.txt",
+      "file_count": 3,
+      "total_chars": 40931,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ThreeStageResponseManager.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\Utils.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\model\\GameState.java"
+      ]
+    },
+    {
+      "filename": "chunk_059.txt",
+      "file_count": 4,
+      "total_chars": 44112,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\repository\\GameRepository.java",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ui\\theme\\Color.kt",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ui\\theme\\Theme.kt",
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\ui\\theme\\Type.kt"
+      ]
+    },
+    {
+      "filename": "chunk_060.txt",
+      "file_count": 4,
+      "total_chars": 49490,
+      "files": [
+        "app\\src\\main\\java\\com\\example\\chesspedagogue\\viewmodel\\GameViewModel.java",
+        "app\\src\\main\\res\\anim\\card_hover.xml",
+        "app\\src\\main\\res\\anim\\fade_in.xml",
+        "app\\src\\main\\res\\anim\\gentle_pulse.xml"
+      ]
+    },
+    {
+      "filename": "chunk_061.txt",
+      "file_count": 35,
+      "total_chars": 40951,
+      "files": [
+        "app\\src\\main\\res\\anim\\pulse.xml",
+        "app\\src\\main\\res\\anim\\scale_bounce.xml",
+        "app\\src\\main\\res\\anim\\slide_down.xml",
+        "app\\src\\main\\res\\anim\\slide_up.xml",
+        "app\\src\\main\\res\\animator\\pulse.xml",
+        "app\\src\\main\\res\\drawable\\bg_message_coach.xml",
+        "app\\src\\main\\res\\drawable\\bg_message_user.xml",
+        "app\\src\\main\\res\\drawable\\ic_arrow_back.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_bishop.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_king.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_knight.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_pawn.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_queen.xml",
+        "app\\src\\main\\res\\drawable\\ic_black_rook.xml",
+        "app\\src\\main\\res\\drawable\\ic_launcher_background.xml",
+        "app\\src\\main\\res\\drawable\\ic_launcher_foreground.xml",
+        "app\\src\\main\\res\\drawable\\ic_microphone.xml",
+        "app\\src\\main\\res\\drawable\\ic_start_conversation.xml",
+        "app\\src\\main\\res\\drawable\\ic_stop_conversation.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_bishop.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_king.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_knight.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_pawn.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_queen.xml",
+        "app\\src\\main\\res\\drawable\\ic_white_rook.xml",
+        "app\\src\\main\\res\\drawable\\listening_animation.xml",
+        "app\\src\\main\\res\\drawable\\portrait_frame.xml",
+        "app\\src\\main\\res\\drawable\\rounded_panel_background.xml",
+        "app\\src\\main\\res\\drawable\\status_error_bg.xml",
+        "app\\src\\main\\res\\drawable\\status_success_bg.xml",
+        "app\\src\\main\\res\\drawable\\status_warning_bg.xml",
+        "app\\src\\main\\res\\drawable\\wood_background.xml",
+        "app\\src\\main\\res\\drawable\\wood_button_bg.xml",
+        "app\\src\\main\\res\\drawable\\wood_panel_bg.xml",
+        "app\\src\\main\\res\\layout\\activity_chess_conversation.xml"
+      ]
+    },
+    {
+      "filename": "chunk_062.txt",
+      "file_count": 2,
+      "total_chars": 46572,
+      "files": [
+        "app\\src\\main\\res\\layout\\activity_chess_master_selection.xml",
+        "app\\src\\main\\res\\layout\\activity_game_analysis.xml"
+      ]
+    },
+    {
+      "filename": "chunk_063.txt",
+      "file_count": 4,
+      "total_chars": 42909,
+      "files": [
+        "app\\src\\main\\res\\layout\\activity_main.xml",
+        "app\\src\\main\\res\\layout\\activity_saved_games.xml",
+        "app\\src\\main\\res\\layout\\activity_settings.xml",
+        "app\\src\\main\\res\\layout\\activity_spectator_game.xml"
+      ]
+    },
+    {
+      "filename": "chunk_064.txt",
+      "file_count": 21,
+      "total_chars": 39952,
+      "files": [
+        "app\\src\\main\\res\\layout\\activity_splash.xml",
+        "app\\src\\main\\res\\layout\\activity_test_voice.xml",
+        "app\\src\\main\\res\\layout\\activity_voice_test.xml",
+        "app\\src\\main\\res\\layout\\challenge_panel.xml",
+        "app\\src\\main\\res\\layout\\chat_panel_layout.xml",
+        "app\\src\\main\\res\\layout\\item_message_coach.xml",
+        "app\\src\\main\\res\\layout\\item_message_user.xml",
+        "app\\src\\main\\res\\menu\\main_menu.xml",
+        "app\\src\\main\\res\\mipmap-anydpi-v26\\ic_launcher.xml",
+        "app\\src\\main\\res\\mipmap-anydpi-v26\\ic_launcher_round.xml",
+        "app\\src\\main\\res\\values\\colors.xml",
+        "app\\src\\main\\res\\values\\ic_launcher_foreground.xml",
+        "app\\src\\main\\res\\values\\ic_launcher_round_foreground.xml",
+        "app\\src\\main\\res\\values\\strings.xml",
+        "app\\src\\main\\res\\values\\styles.xml",
+        "app\\src\\main\\res\\values\\themes.xml",
+        "app\\src\\main\\res\\values-night\\themes.xml",
+        "app\\src\\main\\res\\xml\\backup_rules.xml",
+        "app\\src\\main\\res\\xml\\data_extraction_rules.xml",
+        "app\\src\\main\\res\\xml\\preferences.xml",
+        "app\\src\\test\\java\\com\\example\\chesspedagogue\\ExampleUnitTest.kt"
+      ]
+    }
+  ]
+}
+
+
+================================================================================
+FILE: claude_chunks/project_structure.txt
+Lines: 474, Characters: 21,011
+================================================================================
+
+PROJECT STRUCTURE
+========================================
+
+└── 
+    ├── app
+    │   ├── src
+    │   │   ├── androidTest
+    │   │   │   └── java
+    │   │   │       └── com
+    │   │   │           └── example
+    │   │   │               └── chesspedagogue
+    │   │   │                   └── ExampleInstrumentedTest.kt
+    │   │   ├── main
+    │   │   │   ├── assets
+    │   │   │   │   ├── fischer_positions.json
+    │   │   │   │   ├── kasparov_positions.json
+    │   │   │   │   ├── stockfish
+    │   │   │   │   └── tal_positions.json
+    │   │   │   ├── cpp
+    │   │   │   │   ├── stockfish
+    │   │   │   │   │   ├── incbin
+    │   │   │   │   │   │   ├── incbin.h
+    │   │   │   │   │   │   └── UNLICENCE
+    │   │   │   │   │   ├── nnue
+    │   │   │   │   │   │   ├── features
+    │   │   │   │   │   │   │   ├── half_ka_v2_hm.cpp
+    │   │   │   │   │   │   │   └── half_ka_v2_hm.h
+    │   │   │   │   │   │   ├── layers
+    │   │   │   │   │   │   │   ├── affine_transform.h
+    │   │   │   │   │   │   │   ├── affine_transform_sparse_input.h
+    │   │   │   │   │   │   │   ├── clipped_relu.h
+    │   │   │   │   │   │   │   ├── simd.h
+    │   │   │   │   │   │   │   └── sqr_clipped_relu.h
+    │   │   │   │   │   │   ├── network.cpp
+    │   │   │   │   │   │   ├── network.h
+    │   │   │   │   │   │   ├── nnue_accumulator.cpp
+    │   │   │   │   │   │   ├── nnue_accumulator.h
+    │   │   │   │   │   │   ├── nnue_architecture.h
+    │   │   │   │   │   │   ├── nnue_common.h
+    │   │   │   │   │   │   ├── nnue_feature_transformer.h
+    │   │   │   │   │   │   ├── nnue_misc.cpp
+    │   │   │   │   │   │   └── nnue_misc.h
+    │   │   │   │   │   ├── syzygy
+    │   │   │   │   │   │   ├── tbprobe.cpp
+    │   │   │   │   │   │   └── tbprobe.h
+    │   │   │   │   │   ├── benchmark.cpp
+    │   │   │   │   │   ├── benchmark.h
+    │   │   │   │   │   ├── bitboard.cpp
+    │   │   │   │   │   ├── bitboard.h
+    │   │   │   │   │   ├── engine.cpp
+    │   │   │   │   │   ├── engine.h
+    │   │   │   │   │   ├── evaluate.cpp
+    │   │   │   │   │   ├── evaluate.h
+    │   │   │   │   │   ├── history.h
+    │   │   │   │   │   ├── jstockfish_Uci.cpp
+    │   │   │   │   │   ├── main.cpp
+    │   │   │   │   │   ├── Makefile
+    │   │   │   │   │   ├── memory.cpp
+    │   │   │   │   │   ├── memory.h
+    │   │   │   │   │   ├── misc.cpp
+    │   │   │   │   │   ├── misc.h
+    │   │   │   │   │   ├── movegen.cpp
+    │   │   │   │   │   ├── movegen.h
+    │   │   │   │   │   ├── movepick.cpp
+    │   │   │   │   │   ├── movepick.h
+    │   │   │   │   │   ├── numa.h
+    │   │   │   │   │   ├── perft.h
+    │   │   │   │   │   ├── position.cpp
+    │   │   │   │   │   ├── position.h
+    │   │   │   │   │   ├── score.cpp
+    │   │   │   │   │   ├── score.h
+    │   │   │   │   │   ├── search.cpp
+    │   │   │   │   │   ├── search.h
+    │   │   │   │   │   ├── stockfish_wrapper.cpp
+    │   │   │   │   │   ├── thread.cpp
+    │   │   │   │   │   ├── thread.h
+    │   │   │   │   │   ├── thread_win32_osx.h
+    │   │   │   │   │   ├── timeman.cpp
+    │   │   │   │   │   ├── timeman.h
+    │   │   │   │   │   ├── tt.cpp
+    │   │   │   │   │   ├── tt.h
+    │   │   │   │   │   ├── tune.cpp
+    │   │   │   │   │   ├── tune.h
+    │   │   │   │   │   ├── types.h
+    │   │   │   │   │   ├── uci.cpp
+    │   │   │   │   │   ├── uci.h
+    │   │   │   │   │   ├── ucioption.cpp
+    │   │   │   │   │   └── ucioption.h
+    │   │   │   │   ├── arch_compatibility.h
+    │   │   │   │   ├── CMakeLists.txt
+    │   │   │   │   ├── native_bridge.cpp
+    │   │   │   │   ├── stockfish_adapter.cpp
+    │   │   │   │   ├── stockfish_wrapper.cpp
+    │   │   │   │   └── stockfish_wrapper.h
+    │   │   │   ├── java
+    │   │   │   │   └── com
+    │   │   │   │       └── example
+    │   │   │   │           └── chesspedagogue
+    │   │   │   │               ├── model
+    │   │   │   │               │   └── GameState.java
+    │   │   │   │               ├── repository
+    │   │   │   │               │   └── GameRepository.java
+    │   │   │   │               ├── ui
+    │   │   │   │               │   └── theme
+    │   │   │   │               │       ├── Color.kt
+    │   │   │   │               │       ├── Theme.kt
+    │   │   │   │               │       └── Type.kt
+    │   │   │   │               ├── util
+    │   │   │   │               ├── viewmodel
+    │   │   │   │               │   └── GameViewModel.java
+    │   │   │   │               ├── AIDialogueManager.java
+    │   │   │   │               ├── AIvsAIGameManager.java
+    │   │   │   │               ├── ApiKeyConfig.java
+    │   │   │   │               ├── ChallengeData.java
+    │   │   │   │               ├── ChatAdapter.java
+    │   │   │   │               ├── ChatMessage.java
+    │   │   │   │               ├── ChatService.java
+    │   │   │   │               ├── ChessBoardManager.java
+    │   │   │   │               ├── ChessBoardView.java
+    │   │   │   │               ├── ChessCoachManager.java
+    │   │   │   │               ├── ChessConversationActivity.java
+    │   │   │   │               ├── ChessMasterRatings.java
+    │   │   │   │               ├── ChessMasterSelectionActivity.java
+    │   │   │   │               ├── ConversationManager.java
+    │   │   │   │               ├── EvaluationBarView.java
+    │   │   │   │               ├── EvaluationTracker.java
+    │   │   │   │               ├── FineTunedModelManager.java
+    │   │   │   │               ├── GameAnalysisActivity.java
+    │   │   │   │               ├── GameDatabaseHelper.java
+    │   │   │   │               ├── GameHistoryManager.java
+    │   │   │   │               ├── GameStateInfo.java
+    │   │   │   │               ├── GameStateRepository.java
+    │   │   │   │               ├── GroqSpeechRecognizer.java
+    │   │   │   │               ├── MainActivity.java
+    │   │   │   │               ├── MoveHistoryObserver.java
+    │   │   │   │               ├── OpenAIService.java
+    │   │   │   │               ├── OpenAITTSService.java
+    │   │   │   │               ├── PersonalityEngine.java
+    │   │   │   │               ├── SavedGamesActivity.java
+    │   │   │   │               ├── SettingsActivity.java
+    │   │   │   │               ├── SimpleRecordService.java
+    │   │   │   │               ├── SpectatorGameActivity.java
+    │   │   │   │               ├── SpectatorGameViewModel.java
+    │   │   │   │               ├── SpeechRecognitionManager.java
+    │   │   │   │               ├── SpeechRecognizer.java
+    │   │   │   │               ├── SpeechToTextService.java
+    │   │   │   │               ├── SplashActivity.java
+    │   │   │   │               ├── SquareHighlight.java
+    │   │   │   │               ├── StockfishManager.java
+    │   │   │   │               ├── TextToSpeechService.java
+    │   │   │   │               ├── ThreeStageResponseManager.java
+    │   │   │   │               └── Utils.java
+    │   │   │   ├── jniLibs
+    │   │   │   │   ├── arm64-v8a
+    │   │   │   │   │   └── libstockfish.so
+    │   │   │   │   └── armeabi-v7a
+    │   │   │   │       └── libstockfish.so
+    │   │   │   ├── res
+    │   │   │   │   ├── anim
+    │   │   │   │   │   ├── card_hover.xml
+    │   │   │   │   │   ├── fade_in.xml
+    │   │   │   │   │   ├── gentle_pulse.xml
+    │   │   │   │   │   ├── pulse.xml
+    │   │   │   │   │   ├── scale_bounce.xml
+    │   │   │   │   │   ├── slide_down.xml
+    │   │   │   │   │   └── slide_up.xml
+    │   │   │   │   ├── animator
+    │   │   │   │   │   └── pulse.xml
+    │   │   │   │   ├── drawable
+    │   │   │   │   │   ├── bg_message_coach.xml
+    │   │   │   │   │   ├── bg_message_user.xml
+    │   │   │   │   │   ├── ic_android_icon_main.png
+    │   │   │   │   │   ├── ic_android_icon_main_round.png
+    │   │   │   │   │   ├── ic_arrow_back.xml
+    │   │   │   │   │   ├── ic_black_bishop.xml
+    │   │   │   │   │   ├── ic_black_king.xml
+    │   │   │   │   │   ├── ic_black_knight.xml
+    │   │   │   │   │   ├── ic_black_pawn.xml
+    │   │   │   │   │   ├── ic_black_queen.xml
+    │   │   │   │   │   ├── ic_black_rook.xml
+    │   │   │   │   │   ├── ic_chess_puzzle.png
+    │   │   │   │   │   ├── ic_game_analysis.webp
+    │   │   │   │   │   ├── ic_launcher_background.xml
+    │   │   │   │   │   ├── ic_launcher_foreground.xml
+    │   │   │   │   │   ├── ic_microphone.xml
+    │   │   │   │   │   ├── ic_speak_to_coach.png
+    │   │   │   │   │   ├── ic_start_conversation.xml
+    │   │   │   │   │   ├── ic_stop_conversation.xml
+    │   │   │   │   │   ├── ic_white_bishop.xml
+    │   │   │   │   │   ├── ic_white_king.xml
+    │   │   │   │   │   ├── ic_white_knight.xml
+    │   │   │   │   │   ├── ic_white_pawn.xml
+    │   │   │   │   │   ├── ic_white_queen.xml
+    │   │   │   │   │   ├── ic_white_rook.xml
+    │   │   │   │   │   ├── listening_animation.xml
+    │   │   │   │   │   ├── portrait_frame.xml
+    │   │   │   │   │   ├── rounded_panel_background.xml
+    │   │   │   │   │   ├── status_error_bg.xml
+    │   │   │   │   │   ├── status_success_bg.xml
+    │   │   │   │   │   ├── status_warning_bg.xml
+    │   │   │   │   │   ├── wood_background.xml
+    │   │   │   │   │   ├── wood_button_bg.xml
+    │   │   │   │   │   └── wood_panel_bg.xml
+    │   │   │   │   ├── drawable-hdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-mdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xxhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── drawable-xxxhdpi
+    │   │   │   │   │   ├── portrait_card_alekhine.png
+    │   │   │   │   │   ├── portrait_card_anand.png
+    │   │   │   │   │   ├── portrait_card_botvinnik.png
+    │   │   │   │   │   ├── portrait_card_capablanca.png
+    │   │   │   │   │   ├── portrait_card_carlsen.png
+    │   │   │   │   │   ├── portrait_card_fischer.png
+    │   │   │   │   │   ├── portrait_card_karpov.png
+    │   │   │   │   │   ├── portrait_card_kasparov.png
+    │   │   │   │   │   ├── portrait_card_kramnik.png
+    │   │   │   │   │   ├── portrait_card_lasker.png
+    │   │   │   │   │   ├── portrait_card_morphy.png
+    │   │   │   │   │   ├── portrait_card_tal.png
+    │   │   │   │   │   ├── portrait_speaking_alekhine.png
+    │   │   │   │   │   ├── portrait_speaking_anand.png
+    │   │   │   │   │   ├── portrait_speaking_botvinnik.png
+    │   │   │   │   │   ├── portrait_speaking_capablanca.png
+    │   │   │   │   │   ├── portrait_speaking_carlsen.png
+    │   │   │   │   │   ├── portrait_speaking_fischer.png
+    │   │   │   │   │   ├── portrait_speaking_karpov.png
+    │   │   │   │   │   ├── portrait_speaking_kasparov.png
+    │   │   │   │   │   ├── portrait_speaking_kramnik.png
+    │   │   │   │   │   ├── portrait_speaking_lasker.png
+    │   │   │   │   │   ├── portrait_speaking_morphy.png
+    │   │   │   │   │   └── portrait_speaking_tal.png
+    │   │   │   │   ├── font
+    │   │   │   │   ├── layout
+    │   │   │   │   │   ├── activity_chess_conversation.xml
+    │   │   │   │   │   ├── activity_chess_master_selection.xml
+    │   │   │   │   │   ├── activity_game_analysis.xml
+    │   │   │   │   │   ├── activity_main.xml
+    │   │   │   │   │   ├── activity_saved_games.xml
+    │   │   │   │   │   ├── activity_settings.xml
+    │   │   │   │   │   ├── activity_spectator_game.xml
+    │   │   │   │   │   ├── activity_splash.xml
+    │   │   │   │   │   ├── activity_test_voice.xml
+    │   │   │   │   │   ├── activity_voice_test.xml
+    │   │   │   │   │   ├── challenge_panel.xml
+    │   │   │   │   │   ├── chat_panel_layout.xml
+    │   │   │   │   │   ├── item_message_coach.xml
+    │   │   │   │   │   └── item_message_user.xml
+    │   │   │   │   ├── menu
+    │   │   │   │   │   └── main_menu.xml
+    │   │   │   │   ├── mipmap-anydpi
+    │   │   │   │   ├── mipmap-anydpi-v26
+    │   │   │   │   │   ├── ic_launcher.xml
+    │   │   │   │   │   └── ic_launcher_round.xml
+    │   │   │   │   ├── mipmap-hdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-mdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xxhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── mipmap-xxxhdpi
+    │   │   │   │   │   ├── ic_launcher.webp
+    │   │   │   │   │   └── ic_launcher_round.webp
+    │   │   │   │   ├── raw
+    │   │   │   │   │   ├── capture.mp3
+    │   │   │   │   │   ├── check.mp3
+    │   │   │   │   │   ├── move.mp3
+    │   │   │   │   │   └── thinking_sound.mp3
+    │   │   │   │   ├── values
+    │   │   │   │   │   ├── colors.xml
+    │   │   │   │   │   ├── ic_launcher_foreground.xml
+    │   │   │   │   │   ├── ic_launcher_round_foreground.xml
+    │   │   │   │   │   ├── strings.xml
+    │   │   │   │   │   ├── styles.xml
+    │   │   │   │   │   └── themes.xml
+    │   │   │   │   ├── values-night
+    │   │   │   │   │   └── themes.xml
+    │   │   │   │   └── xml
+    │   │   │   │       ├── backup_rules.xml
+    │   │   │   │       ├── data_extraction_rules.xml
+    │   │   │   │       └── preferences.xml
+    │   │   │   ├── AndroidManifest.xml
+    │   │   │   └── ic_launcher-playstore.png
+    │   │   └── test
+    │   │       └── java
+    │   │           └── com
+    │   │               └── example
+    │   │                   └── chesspedagogue
+    │   │                       ├── repository
+    │   │                       ├── viewmodel
+    │   │                       └── ExampleUnitTest.kt
+    │   ├── .gitignore
+    │   ├── build.gradle
+    │   ├── google-services.json
+    │   └── proguard-rules.pro
+    ├── claude_chunks
+    │   ├── chunk_001.txt
+    │   ├── chunk_002.txt
+    │   ├── chunk_003.txt
+    │   ├── chunk_004.txt
+    │   ├── chunk_005.txt
+    │   ├── chunk_006.txt
+    │   ├── chunk_007.txt
+    │   ├── chunk_008.txt
+    │   ├── chunk_009.txt
+    │   ├── chunk_010.txt
+    │   ├── chunk_011.txt
+    │   ├── chunk_012.txt
+    │   ├── chunk_013.txt
+    │   ├── chunk_014.txt
+    │   ├── chunk_015.txt
+    │   ├── chunk_016.txt
+    │   ├── chunk_017.txt
+    │   ├── chunk_018.txt
+    │   ├── chunk_019.txt
+    │   ├── chunk_020.txt
+    │   ├── chunk_021.txt
+    │   ├── chunk_022.txt
+    │   ├── chunk_023.txt
+    │   ├── chunk_024.txt
+    │   ├── chunk_025.txt
+    │   ├── chunk_026.txt
+    │   ├── chunk_027.txt
+    │   ├── chunk_028.txt
+    │   ├── chunk_029.txt
+    │   ├── chunk_030.txt
+    │   ├── chunk_031.txt
+    │   ├── chunk_032.txt
+    │   ├── chunk_033.txt
+    │   ├── chunk_034.txt
+    │   ├── chunk_035.txt
+    │   ├── chunk_036.txt
+    │   ├── chunk_037.txt
+    │   ├── chunk_038.txt
+    │   ├── chunk_039.txt
+    │   ├── chunk_040.txt
+    │   ├── chunk_041.txt
+    │   ├── chunk_042.txt
+    │   ├── chunk_043.txt
+    │   ├── chunk_044.txt
+    │   ├── chunk_045.txt
+    │   ├── chunk_046.txt
+    │   ├── chunk_047.txt
+    │   ├── chunk_048.txt
+    │   ├── chunk_049.txt
+    │   ├── chunk_050.txt
+    │   ├── chunk_051.txt
+    │   ├── chunk_052.txt
+    │   ├── chunk_053.txt
+    │   ├── chunk_054.txt
+    │   ├── chunk_055.txt
+    │   ├── chunk_056.txt
+    │   ├── chunk_057.txt
+    │   ├── chunk_058.txt
+    │   ├── chunk_059.txt
+    │   ├── chunk_060.txt
+    │   ├── chunk_061.txt
+    │   ├── chunk_062.txt
+    │   ├── chunk_063.txt
+    │   ├── chunk_064.txt
+    │   ├── chunks_summary.json
+    │   └── README.txt
+    ├── .gitignore
+    ├── build.gradle
+    ├── chunk_project.py
+    ├── CLAUDE.md
+    ├── gradle.properties
+    ├── gradlew
+    ├── gradlew.bat
+    ├── local.properties
+    ├── README.md
+    └── settings.gradle
+

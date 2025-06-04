@@ -1,0 +1,189 @@
+# CHUNK 95 of 158
+# Files: 1, Characters: 27,101
+################################################################################
+
+
+================================================================================
+FILE: claude_chunks/chunk_002.txt
+Lines: 178, Characters: 27,101
+================================================================================
+
+# CHUNK 2 of 64
+# Files: 4, Characters: 25,940
+################################################################################
+
+
+================================================================================
+FILE: app\.cxx\Debug\2n1i5506\arm64-v8a\compile_commands.json
+Lines: 122, Characters: 24,677
+================================================================================
+
+[
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\benchmark.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\benchmark.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\benchmark.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\bitboard.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\bitboard.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\bitboard.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\engine.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\engine.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\engine.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\evaluate.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\evaluate.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\evaluate.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\main.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\main.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\main.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\memory.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\memory.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\memory.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\misc.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\misc.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\misc.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\movegen.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\movegen.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\movegen.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\movepick.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\movepick.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\movepick.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\nnue\\features\\half_ka_v2_hm.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\features\\half_ka_v2_hm.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\features\\half_ka_v2_hm.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\nnue\\network.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\network.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\network.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\nnue\\nnue_accumulator.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\nnue_accumulator.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\nnue_accumulator.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\nnue\\nnue_misc.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\nnue_misc.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\nnue\\nnue_misc.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\position.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\position.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\position.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\score.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\score.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\score.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\search.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\search.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\search.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\syzygy\\tbprobe.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\syzygy\\tbprobe.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\syzygy\\tbprobe.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\thread.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\thread.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\thread.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\timeman.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\timeman.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\timeman.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\tt.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\tt.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\tt.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\tune.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\tune.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\tune.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\uci.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\uci.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\uci.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\stockfish\\src\\ucioption.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\ucioption.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\stockfish\\src\\ucioption.cpp"
+},
+{
+  "directory": "D:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/.cxx/Debug/2n1i5506/arm64-v8a",
+  "command": "C:\\Users\\dilli\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=aarch64-none-linux-android21 --sysroot=C:/Users/dilli/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dmy_native_lib_EXPORTS -ID:/Users/dilli/AndroidStudioProjects/ChessPedagogue/app/src/main/cpp/stockfish/include -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -g -fno-limit-debug-info  -fPIC -std=gnu++17 -o CMakeFiles\\my_native_lib.dir\\native_bridge.cpp.o -c D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\native_bridge.cpp",
+  "file": "D:\\Users\\dilli\\AndroidStudioProjects\\ChessPedagogue\\app\\src\\main\\cpp\\native_bridge.cpp"
+}
+]
+
+
+================================================================================
+FILE: app\.cxx\Debug\2n1i5506\arm64-v8a\metadata_generation_command.txt
+Lines: 18, Characters: 1,115
+================================================================================
+
+                        -HD:\Users\dilli\AndroidStudioProjects\ChessPedagogue\app\src\main\cpp
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=21
+-DANDROID_PLATFORM=android-21
+-DANDROID_ABI=arm64-v8a
+-DCMAKE_ANDROID_ARCH_ABI=arm64-v8a
+-DANDROID_NDK=C:\Users\dilli\AppData\Local\Android\Sdk\ndk\25.2.9519653
+-DCMAKE_ANDROID_NDK=C:\Users\dilli\AppData\Local\Android\Sdk\ndk\25.2.9519653
+-DCMAKE_TOOLCHAIN_FILE=C:\Users\dilli\AppData\Local\Android\Sdk\ndk\25.2.9519653\build\cmake\android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=C:\Users\dilli\AppData\Local\Android\Sdk\cmake\3.22.1\bin\ninja.exe
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\app\build\intermediates\cxx\Debug\2n1i5506\obj\arm64-v8a
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\app\build\intermediates\cxx\Debug\2n1i5506\obj\arm64-v8a
+-DCMAKE_BUILD_TYPE=Debug
+-BD:\Users\dilli\AndroidStudioProjects\ChessPedagogue\app\.cxx\Debug\2n1i5506\arm64-v8a
+-GNinja
+                        Build command args: []
+                        Version: 2
+
+
+================================================================================
+FILE: app\.cxx\Debug\2n1i5506\arm64-v8a\prefab_config.json
+Lines: 4, Characters: 40
+================================================================================
+
+{
+  "enabled": false,
+  "packages": []
+}
+
+
+================================================================================
+FILE: app\.cxx\Debug\2n1i5506\arm64-v8a\symbol_folder_index.txt
+Lines: 1, Characters: 108
+================================================================================
+
+D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\app\build\intermediates\cxx\Debug\2n1i5506\obj\arm64-v8a
+
+
+
