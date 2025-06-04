@@ -11,6 +11,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -248,12 +249,12 @@ public class RelationshipPersistenceManager {
         MasterRelationship relationship = getRelationship(master1, master2);
         List<String> suggestions = new ArrayList<>();
         
-        // Get base fresh topics from ConversationMemoryManager
-        ConversationMemoryManager memoryManager = ConversationMemoryManager.getInstance(context);
-        ConversationMemoryManager.ConversationGuidance guidance = 
-            memoryManager.getConversationGuidanceWithEmotion(master1, master2, "", currentEmotion, null);
-        
-        suggestions.addAll(guidance.suggestedTopics);
+        // Add base fresh topics (avoiding recursion by implementing directly)
+        suggestions.addAll(Arrays.asList(
+            "chess_history", "learning_journey", "memorable_games", "chess_beauty",
+            "competitive_psychology", "chess_evolution", "teaching_chess", "chess_patterns",
+            "decision_making", "chess_culture", "famous_positions", "chess_mysteries"
+        ));
         
         // Add relationship-based topics
         if (relationship.rivalryIntensity > 0.6f) {
