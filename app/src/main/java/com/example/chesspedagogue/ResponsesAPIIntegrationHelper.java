@@ -46,10 +46,11 @@ public class ResponsesAPIIntegrationHelper {
             enableResponsesAPIForMaster("fischer", true);
             enableResponsesAPIForMaster("carlsen", true);
             enableResponsesAPIForMaster("anand", true);
+            enableResponsesAPIForMaster("alekhine", true); // 🏛️ ALEKHINE ENABLED
             
             // FUTURE: Enable for other masters when assistants are created
             // These masters need proper Responses API assistant configuration
-            Log.d(TAG, "🚀 Enabled Responses API by default for masters with assistants: Tal, Fischer, Carlsen, Anand");
+            Log.d(TAG, "🚀 Enabled Responses API by default for masters with assistants: Tal, Fischer, Carlsen, Anand, Alekhine");
             Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) need Responses API configuration");
         }
         
@@ -219,6 +220,8 @@ public class ResponsesAPIIntegrationHelper {
             case "tal":
             case "fischer":
             case "carlsen":
+            case "anand":
+            case "alekhine": // 🏛️ ALEKHINE ASSISTANT CONFIGURED
                 return true;
             default:
                 return false;
@@ -262,6 +265,8 @@ public class ResponsesAPIIntegrationHelper {
         if (mastersJson.contains("tal")) settings.put("tal", true);
         if (mastersJson.contains("fischer")) settings.put("fischer", true);
         if (mastersJson.contains("carlsen")) settings.put("carlsen", true);
+        if (mastersJson.contains("anand")) settings.put("anand", true);
+        if (mastersJson.contains("alekhine")) settings.put("alekhine", true); // 🏛️ ALEKHINE PERSISTENCE
         
         return settings;
     }
@@ -289,7 +294,7 @@ public class ResponsesAPIIntegrationHelper {
      */
     public MigrationStatus getMigrationStatus() {
         int totalMasters = 12;
-        int mastersWithAssistants = 3; // Tal, Fischer, Carlsen
+        int mastersWithAssistants = 5; // Tal, Fischer, Carlsen, Anand, Alekhine
         int enabledMasters = 0;
         
         for (Boolean enabled : masterResponsesEnabled.values()) {

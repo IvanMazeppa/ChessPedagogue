@@ -322,6 +322,7 @@ public class SpectatorConversationOrchestrator {
                             ChessMasterResponsesManager.debugTest();
                             Log.d(TAG, "🔧 ORCHESTRATOR: Static debugTest call completed");
                             
+                            // 🧠 ENHANCED: Pass emotional context to Responses API
                             responsesManager.sendMessage(sessionId, prompt, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
                             @Override
                             public void onResponseStart(String sessionId) {

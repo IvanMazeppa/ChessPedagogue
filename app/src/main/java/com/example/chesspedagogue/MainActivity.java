@@ -291,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Configure ElevenLabs API key - ALTERNATE ACCOUNT
         // TODO: Move this to a secure configuration file
-        ElevenLabsConfig.setApiKey(this, "sk_1b6bb69b6d409200ccb930fd9d9aa7e9443a7198dcc18132");
+        ElevenLabsConfig.setApiKey(this, "sk_788fa3710ea8bb4363f71f110a7b360a50f48beb4168fbf4");
         
         // Enable ElevenLabs TTS if API key is set
         if (ElevenLabsConfig.hasApiKey(this)) {

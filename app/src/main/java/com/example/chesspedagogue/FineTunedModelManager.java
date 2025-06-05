@@ -33,6 +33,7 @@ public class FineTunedModelManager {
     private static final String KEY_FISCHER_ASSISTANT_ID = "fischer_assistant_id";
     private static final String KEY_CARLSEN_ASSISTANT_ID = "carlsen_assistant_id";
     private static final String KEY_ANAND_ASSISTANT_ID = "anand_assistant_id";
+    private static final String KEY_ALEKHINE_ASSISTANT_ID = "alekhine_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -46,9 +47,13 @@ public class FineTunedModelManager {
     private static final String CARLSEN_ASSISTANT_ID = "asst_TTzxbfvJQz3e80FetQblJ0Gl"; // Your Carlsen assistant
     private static final String CARLSEN_VECTOR_STORE_ID = "vs_68365028eb988191b09d8d50e6f11b5d"; // Your Carlsen vector store
 
-    // 🏆 MAGNUS ANAND CONFIGURATION - NEW!
+    // 🏆 ANAND CONFIGURATION - NEW!
     private static final String ANAND_ASSISTANT_ID = "asst_3PUe4Mra1zfY1VEfcDxF0xa9"; // Your Anand assistant
-    private static final String ANAND_VECTOR_STORE_ID = "vs_683a6d79f3f881918134880655179275"; // Your Anand vector store
+    private static final String ANAND_VECTOR_STORE_ID = "vs_anand_original_id"; // Original Anand vector store
+
+    // 🏛️ ALEKHINE CONFIGURATION - UPDATED MODEL!
+    private static final String ALEKHINE_ASSISTANT_ID = "asst_wnshRkbnaca2vkRxYqYZDcLu"; // Updated Alekhine assistant
+    private static final String ALEKHINE_VECTOR_STORE_ID = "vs_683a6d79f3f881918134880655179275"; // Alekhine vector store
 
     // Model constants - updated for enhanced models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
@@ -61,7 +66,7 @@ public class FineTunedModelManager {
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_ANAND = "gpt-4o-mini"; // Changed from gpt-4.1 to reduce verbosity
-    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe";
+    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD"; // 🆕 UPDATED ALEKHINE MODEL!
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
     // Voice model options2
@@ -1249,6 +1254,8 @@ public class FineTunedModelManager {
                 return getCarlsenAssistantId();
             case "anand":
                 return getAnandAssistantId();
+            case "alekhine": // 🏛️ NEW ALEKHINE SUPPORT!
+                return getAlekhineAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1312,6 +1319,20 @@ public class FineTunedModelManager {
     }
 
     /**
+     * 🏛️ NEW: Get Alekhine Assistant ID with vector store support!
+     */
+    public String getAlekhineAssistantId() {
+        // Use your pre-configured Alekhine assistant
+        Log.d(TAG, "🏛️ Using configured Alekhine assistant: " + ALEKHINE_ASSISTANT_ID);
+        assistantIds.put("alekhine", ALEKHINE_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_ALEKHINE_ASSISTANT_ID, ALEKHINE_ASSISTANT_ID).apply();
+
+        return ALEKHINE_ASSISTANT_ID;
+    }
+
+    /**
      * ENHANCED: Check if master should use Assistants API (now includes Anand!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
@@ -1319,6 +1340,7 @@ public class FineTunedModelManager {
             case "tal":
             case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
+            case "alekhine": // 🏛️ ALEKHINE NOW USES ASSISTANTS API!
             // case "anand": // 🚫 DISABLED ASSISTANTS API TO REDUCE VERBOSITY!
             case "botvinnik":
                 return true;
@@ -1341,6 +1363,8 @@ public class FineTunedModelManager {
                 return getCarlsenAssistantId();
             case "anand": // 🏆 ANAND GETS HIS OWN ASSISTANT!
                 return getAnandAssistantId();
+            case "alekhine": // 🏛️ ALEKHINE GETS HIS OWN ASSISTANT!
+                return getAlekhineAssistantId();
             default:
                 // Default to Tal assistant for other masters
                 String assistantId = getTalAssistantId();

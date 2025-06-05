@@ -159,7 +159,7 @@ public class ChessMasterResponsesManager {
                 }
                 
                 // Create simple request for testing
-                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext);
+                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext, null);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
                 Log.e(TAG, "🚀 ALTERNATIVE: About to test Responses API call");
@@ -190,6 +190,14 @@ public class ChessMasterResponsesManager {
      * Send a message and get streaming response - WITH CONVERSATION THROTTLING
      */
     public void sendMessage(String sessionId, String message, String conversationContext, ResponseCallback callback) {
+        sendMessage(sessionId, message, conversationContext, callback, null);
+    }
+    
+    /**
+     * 🧠 ENHANCED: Send message with emotional context integration
+     */
+    public void sendMessage(String sessionId, String message, String conversationContext, 
+                           ResponseCallback callback, EmotionalContext emotionalContext) {
         // Validate callback to prevent NullPointerException
         if (callback == null) {
             Log.e(TAG, "❌ sendMessage called with null callback for session: " + sessionId);
@@ -252,7 +260,7 @@ public class ChessMasterResponsesManager {
                 Log.d(TAG, "⏱️ Updated throttling: last response time set for " + session.masterName);
                 
                 // Create enhanced input with master personality and context-specific length rules
-                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext);
+                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext, null);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
                 // Create response request using CORRECT Responses API format for fine-tuned models
@@ -661,6 +669,8 @@ public class ChessMasterResponsesManager {
                 return "asst_TTzxbfvJQz3e80FetQblJ0Gl";
             case "anand":
                 return "asst_3PUe4Mra1zfY1VEfcDxF0xa9";
+            case "alekhine": // 🏛️ NEW ALEKHINE ASSISTANT!
+                return "asst_wnshRkbnaca2vkRxYqYZDcLu";
             default:
                 // For masters without assistants, return null to use regular completion
                 return null;
@@ -719,9 +729,16 @@ public class ChessMasterResponsesManager {
     
     
     /**
-     * 🎭 ENHANCED: Build system prompt for a chess master with context-specific length rules
+     * 🎭 ENHANCED: Build system prompt for a chess master with emotional intelligence and context
      */
     private String buildSystemPromptForMaster(String masterName, String conversationContext) {
+        return buildSystemPromptForMaster(masterName, conversationContext, null);
+    }
+    
+    /**
+     * 🧠 NEW: Build system prompt with emotional context integration
+     */
+    private String buildSystemPromptForMaster(String masterName, String conversationContext, EmotionalContext emotionalContext) {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are ").append(masterName).append(", the legendary chess master. ");
         
@@ -819,6 +836,14 @@ public class ChessMasterResponsesManager {
                 prompt.append("Focus on the specific position and moves being played.");
         }
         
+        // 🧠 ENHANCED: Add emotional context for emotional intelligence
+        if (emotionalContext != null) {
+            String emotionalGuidance = emotionalContext.getEmotionalContextForResponsesAPI(masterName);
+            if (!emotionalGuidance.trim().isEmpty()) {
+                prompt.append("\n\n🎭 ").append(emotionalGuidance);
+            }
+        }
+        
         // 🎭 CONTEXT-SPECIFIC LENGTH RULES: Natural conversation flow
         String lengthInstructions = getLengthInstructionsForContext(conversationContext);
         prompt.append(lengthInstructions);
@@ -877,6 +902,8 @@ public class ChessMasterResponsesManager {
                 return "vs_68365028eb988191b09d8d50e6f11b5d";
             case "anand":
                 return "vs_683a6d79f3f881918134880655179275";
+            case "alekhine": // 🏛️ ALEKHINE VECTOR STORE - Enhanced for passionate analysis
+                return "vs_alekhine_passionate_chess"; // Placeholder - will be created with Alekhine's games and analysis
             default:
                 return null;
         }
