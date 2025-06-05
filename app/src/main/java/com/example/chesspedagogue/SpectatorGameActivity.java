@@ -15,6 +15,7 @@ import android.widget.EditText;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.core.app.ActivityCompat;
 import androidx.lifecycle.ViewModelProvider;
 import android.content.Context;
 import android.view.inputmethod.InputMethodManager;
@@ -43,6 +44,7 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private ProgressBar thinkingProgressBar;
     private Button pauseResumeButton;
     private Button speedControlButton;
+    private Button ttsToggleButton;
     private TextView currentSpeakerTextView;
     private Button userCommentButton;
 
@@ -313,13 +315,41 @@ public class SpectatorGameActivity extends AppCompatActivity {
                 updateSpeedButtonText();
             }
 
-            // NEW: User comment button setup
+            // TTS Toggle button setup - CRITICAL for quota management
+            ttsToggleButton = findViewById(R.id.ttsToggleButton);
+            if (ttsToggleButton != null) {
+                ttsToggleButton.setOnClickListener(v -> toggleTTS());
+                updateTTSButtonText();
+                Log.d(TAG, "✅ TTS toggle button initialized");
+            } else {
+                Log.w(TAG, "⚠️ TTS toggle button not found in layout");
+            }
+
+            // User comment button setup
             userCommentButton = findViewById(R.id.userCommentButton);
             if (userCommentButton != null) {
-                userCommentButton.setOnClickListener(v -> showUserCommentDialog());
+                userCommentButton.setOnClickListener(v -> handleUserInterruption("dialog"));
                 Log.d(TAG, "✅ User comment button initialized");
             } else {
                 Log.w(TAG, "⚠️ User comment button not found in layout");
+            }
+
+            // Quick voice button setup
+            Button quickVoiceButton = findViewById(R.id.quickVoiceButton);
+            if (quickVoiceButton != null) {
+                quickVoiceButton.setOnClickListener(v -> handleUserInterruption("voice"));
+                Log.d(TAG, "✅ Quick voice button initialized");
+            } else {
+                Log.w(TAG, "⚠️ Quick voice button not found in layout");
+            }
+
+            // Quick type button setup
+            Button quickTypeButton = findViewById(R.id.quickTypeButton);
+            if (quickTypeButton != null) {
+                quickTypeButton.setOnClickListener(v -> handleUserInterruption("type"));
+                Log.d(TAG, "✅ Quick type button initialized");
+            } else {
+                Log.w(TAG, "⚠️ Quick type button not found in layout");
             }
 
             Log.d(TAG, "✅ Controls set up successfully");
@@ -399,6 +429,162 @@ public class SpectatorGameActivity extends AppCompatActivity {
 
 
     /**
+     * 🛑 Handle user interruption with immediate AI reactions
+     */
+    private void handleUserInterruption(String interactionType) {
+        Log.d(TAG, "🛑 User interrupting AI conversation - type: " + interactionType);
+        
+        try {
+            // IMMEDIATE STOP - Stop all AI activities instantly
+            SpectatorConversationOrchestrator orchestrator = SpectatorConversationOrchestrator.getInstance(this);
+            if (orchestrator != null) {
+                orchestrator.setUserRecordingInProgress(true); // This stops TTS and pauses conversations
+                Log.d(TAG, "✅ AI conversations stopped immediately");
+            }
+            
+            // Stop TTS immediately
+            OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
+            if (ttsService != null) {
+                ttsService.stopSpeaking();
+                Log.d(TAG, "✅ TTS stopped immediately");
+            }
+            
+            // Generate master-specific interruption reactions
+            generateInterruptionReaction();
+            
+            // Handle the specific interaction type
+            switch (interactionType) {
+                case "voice":
+                    startVoiceComment();
+                    break;
+                case "type":
+                    showTextCommentDialog();
+                    break;
+                case "dialog":
+                default:
+                    showUserCommentDialog();
+                    break;
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error handling user interruption", e);
+            // Fallback to original dialog
+            showUserCommentDialog();
+        }
+    }
+    
+    /**
+     * 🎭 Generate master-specific reactions to user interruption
+     */
+    private void generateInterruptionReaction() {
+        try {
+            // Get current speaker info
+            SpectatorConversationOrchestrator orchestrator = SpectatorConversationOrchestrator.getInstance(this);
+            String currentSpeaker = orchestrator != null ? orchestrator.getCurrentSpeaker() : null;
+            String otherPlayer = currentSpeaker != null ? 
+                (currentSpeaker.equals(whitePlayer) ? blackPlayer : whitePlayer) : null;
+            
+            Log.d(TAG, "🎭 Generating interruption reaction for " + currentSpeaker);
+            
+            // Master-specific interruption personalities
+            String interruptionReaction = getInterruptionReaction(currentSpeaker);
+            String otherPlayerReaction = getOtherPlayerReaction(otherPlayer, currentSpeaker);
+            
+            // Display the interruption reaction briefly
+            if (interruptionReaction != null) {
+                String speakerDisplay = "💬 " + FineTunedModelManager.getInstance(this).getMasterDisplayName(currentSpeaker);
+                displayAIDialogue(speakerDisplay + "\n\n" + interruptionReaction);
+                
+                // Show other player's reaction after a brief delay
+                if (otherPlayerReaction != null) {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        String otherDisplay = "💬 " + FineTunedModelManager.getInstance(this).getMasterDisplayName(otherPlayer);
+                        displayAIDialogue(otherDisplay + "\n\n" + otherPlayerReaction);
+                    }, 2000);
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error generating interruption reaction", e);
+        }
+    }
+    
+    /**
+     * 🎭 Get master-specific reaction to being interrupted
+     */
+    private String getInterruptionReaction(String masterName) {
+        if (masterName == null) return null;
+        
+        switch (masterName.toLowerCase()) {
+            case "fischer":
+                return "Hold on... what? *slightly annoyed* You're interrupting my analysis. This better be important.";
+            
+            case "tal":
+                return "*chuckles warmly* Ah, a spectator wants to join our conversation! How delightful!";
+            
+            case "carlsen":
+                return "*pauses calmly* Sure, let's hear what you have to say. I'm always interested in different perspectives.";
+            
+            case "anand":
+                return "*smiles graciously* Of course! I love discussing chess with fellow enthusiasts. What's your question?";
+            
+            case "kasparov":
+                return "*raises eyebrow* An interruption? Bold move. Let's see what insight you bring to the table.";
+            
+            case "karpov":
+                return "*stops mid-sentence, slightly formal* Very well. I'll listen to your observation.";
+            
+            case "kramnik":
+                return "*analytical pause* Interesting timing. What position aspect caught your attention?";
+            
+            case "capablanca":
+                return "*elegantly pauses* Ah, a fellow chess lover joins us. Please, share your thoughts.";
+            
+            case "morphy":
+                return "*courteous bow* My apologies, good sir. You have the floor.";
+            
+            case "lasker":
+                return "*philosophical smile* The student becomes the teacher? I'm listening with great interest.";
+            
+            case "alekhine":
+                return "*intense focus shifts* You dare interrupt? This calculation was reaching a critical point...";
+            
+            case "botvinnik":
+                return "*methodical pause* I see. Let me note where we were and address your inquiry systematically.";
+            
+            default:
+                return "*pauses thoughtfully* Ah, you'd like to join our discussion. Please, go ahead.";
+        }
+    }
+    
+    /**
+     * 🎭 Get other player's reaction to the interruption
+     */
+    private String getOtherPlayerReaction(String masterName, String interruptedMaster) {
+        if (masterName == null || interruptedMaster == null) return null;
+        
+        // Special interactions based on who was interrupted
+        if ("fischer".equals(interruptedMaster.toLowerCase())) {
+            switch (masterName.toLowerCase()) {
+                case "tal":
+                    return "*grins* Bobby doesn't like interruptions, but I think this could be fun!";
+                case "carlsen":
+                    return "*amused* Fischer's perfectionist nature showing. Let's see what our friend wants to know.";
+                case "anand":
+                    return "*diplomatic* Bobby, perhaps our spectator friend has noticed something we missed?";
+                default:
+                    return "*observes Fischer's reaction with interest*";
+            }
+        } else if ("anand".equals(interruptedMaster.toLowerCase())) {
+            return "*nods approvingly* Anand always makes time for chess education. Wise approach.";
+        } else if ("tal".equals(interruptedMaster.toLowerCase())) {
+            return "*smiles* Trust Tal to welcome an interruption with such enthusiasm!";
+        }
+        
+        return null; // Many won't react to preserve natural flow
+    }
+
+    /**
      * 🎤 Show user comment dialog with voice recording option
      */
     private void showUserCommentDialog() {
@@ -441,6 +627,17 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private void startVoiceComment() {
         Log.d(TAG, "🎤 Starting voice comment recording");
         
+        // CRITICAL FIX: Stop all TTS and pause AI conversations during user recording
+        OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
+        if (ttsService != null && ttsService.isSpeaking()) {
+            Log.d(TAG, "🛑 Stopping AI speech for user voice comment");
+            ttsService.stopSpeaking();
+        }
+        
+        // Pause AI conversations during user recording
+        SpectatorConversationOrchestrator orchestrator = SpectatorConversationOrchestrator.getInstance(this);
+        orchestrator.setUserRecordingInProgress(true);
+        
         // Check microphone permission first
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) 
                 != PackageManager.PERMISSION_GRANTED) {
@@ -480,6 +677,10 @@ public class SpectatorGameActivity extends AppCompatActivity {
                 
                 mainHandler.post(() -> {
                     recordingDialog.dismiss();
+                    
+                    // Resume AI conversations after recording is done
+                    orchestrator.setUserRecordingInProgress(false);
+                    
                     if (transcribedText != null && !transcribedText.trim().isEmpty()) {
                         // Show what was transcribed and confirm
                         confirmTranscription(transcribedText);
@@ -493,6 +694,10 @@ public class SpectatorGameActivity extends AppCompatActivity {
                 Log.e(TAG, "❌ Error in voice recording", e);
                 mainHandler.post(() -> {
                     recordingDialog.dismiss();
+                    
+                    // Resume AI conversations after recording error
+                    SpectatorConversationOrchestrator.getInstance(this).setUserRecordingInProgress(false);
+                    
                     Toast.makeText(this, "Voice recording failed. Please type your comment instead.", Toast.LENGTH_SHORT).show();
                     showTextCommentDialog();
                 });
@@ -514,6 +719,7 @@ public class SpectatorGameActivity extends AppCompatActivity {
             final Object lock = new Object();
             final String[] result = new String[1];
             final boolean[] completed = new boolean[1];
+            final String[] error = new String[1];
             
             // Update dialog button to allow stopping
             mainHandler.post(() -> {
@@ -528,6 +734,15 @@ public class SpectatorGameActivity extends AppCompatActivity {
             });
             
             // Start listening with callback
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "⚠️ Audio recording permission not granted");
+                synchronized (lock) {
+                    error[0] = "Audio recording permission not granted";
+                    completed[0] = true;
+                    lock.notify();
+                }
+                return null;
+            }
             speechRecognizer.startListening(new GroqSpeechRecognizer.SpeechRecognitionCallback() {
                 @Override
                 public void onSpeechRecognized(String text) {
@@ -891,6 +1106,64 @@ public class SpectatorGameActivity extends AppCompatActivity {
                 default: speedText = "Normal"; emoji = "⏱️"; break;
             }
             speedControlButton.setText(emoji + " " + speedText);
+        }
+    }
+
+    /**
+     * 🔊 Toggle TTS on/off for spectator mode - CRITICAL for quota management
+     */
+    private void toggleTTS() {
+        try {
+            // Get current TTS setting from SharedPreferences
+            android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            boolean currentTTSEnabled = prefs.getBoolean("tts_enabled", true);
+            
+            // Toggle the setting
+            boolean newTTSEnabled = !currentTTSEnabled;
+            prefs.edit().putBoolean("tts_enabled", newTTSEnabled).apply();
+            
+            // Update button appearance
+            updateTTSButtonText();
+            
+            // Stop current TTS if disabling
+            if (!newTTSEnabled) {
+                OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
+                if (ttsService != null) {
+                    ttsService.stopSpeaking();
+                }
+                Log.d(TAG, "🔇 TTS disabled - stopped current speech");
+            } else {
+                Log.d(TAG, "🔊 TTS enabled");
+            }
+            
+            // Show feedback
+            String statusMessage = newTTSEnabled ? "🔊 Voice enabled" : "🔇 Voice disabled";
+            Toast.makeText(this, statusMessage, Toast.LENGTH_SHORT).show();
+            displayAIDialogue(statusMessage + " - Masters will " + (newTTSEnabled ? "speak" : "be silent"));
+            
+            Log.d(TAG, "🔊 TTS toggled: " + (newTTSEnabled ? "ON" : "OFF"));
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error toggling TTS", e);
+            Toast.makeText(this, "Error toggling voice", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 🔊 Update TTS button text based on current setting
+     */
+    private void updateTTSButtonText() {
+        if (ttsToggleButton != null) {
+            android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            boolean ttsEnabled = prefs.getBoolean("tts_enabled", true);
+            
+            if (ttsEnabled) {
+                ttsToggleButton.setText("🔊 TTS");
+                ttsToggleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
+            } else {
+                ttsToggleButton.setText("🔇 TTS");
+                ttsToggleButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_red_dark)));
+            }
         }
     }
 

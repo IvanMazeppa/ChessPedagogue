@@ -6,11 +6,12 @@ import android.content.SharedPreferences;
 /**
  * Configuration helper for ElevenLabs API
  * Since Android doesn't support environment variables, use this to set your API key
+ * Note: Desktop environment variable would be ELEVENLABS_API_KEY_ALTERNATE
  * 
- * Voice IDs for Chess Masters:
- * - Tal: WczBIOau2qV9z7nLeDqq (passionate, expressive voice)
- * - Fischer: TxvUy8tvDazkNBlnGcpU (intense, precise American voice)
- * - Carlsen: ygiXC2Oa1BiHksD3WkJZ (modern, confident Norwegian-accented voice)
+ * Voice IDs for Chess Masters (ALTERNATE ACCOUNT):
+ * - Tal: MWyJiWDobXN8FX3CJTdE (passionate, expressive voice)
+ * - Fischer: 8sGzMkj2HZn6rYwGx6G0 (intense, precise American voice)  
+ * - Carlsen: 9pRpxWU0T7UFt2oEMH6n (modern, confident Norwegian-accented voice)
  * 
  * Model Performance:
  * - eleven_flash_v2_5: ~75ms latency (best for real-time)

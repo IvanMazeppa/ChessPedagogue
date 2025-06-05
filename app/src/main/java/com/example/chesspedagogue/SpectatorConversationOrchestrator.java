@@ -36,6 +36,7 @@ public class SpectatorConversationOrchestrator {
     // Conversation state
     private final Map<String, ConversationState> activeConversations = new HashMap<>();
     private boolean conversationInProgress = false;
+    private boolean userRecordingInProgress = false; // NEW: Flag to pause AI conversations during user recording
     
     // Conversation timing
     private static final long MIN_RESPONSE_DELAY = 2000; // 2 seconds
@@ -153,6 +154,41 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
+     * 🎤 NEW: Pause AI conversations during user voice recording
+     */
+    public void setUserRecordingInProgress(boolean recording) {
+        this.userRecordingInProgress = recording;
+        if (recording) {
+            Log.d(TAG, "🎤 User recording started - pausing AI conversations");
+            // Stop any current TTS
+            if (ttsService != null && ttsService.isSpeaking()) {
+                ttsService.stopSpeaking();
+            }
+        } else {
+            Log.d(TAG, "🎤 User recording ended - AI conversations can resume");
+        }
+    }
+    
+    /**
+     * 🎤 NEW: Check if user is currently recording
+     */
+    public boolean isUserRecording() {
+        return userRecordingInProgress;
+    }
+    
+    /**
+     * 🎭 NEW: Get current speaker from active conversation
+     */
+    public String getCurrentSpeaker() {
+        for (ConversationState state : activeConversations.values()) {
+            if (state.isActive) {
+                return state.currentSpeaker;
+            }
+        }
+        return null; // No active conversation
+    }
+    
+    /**
      * Start a new conversation based on game event
      */
     /**
@@ -193,6 +229,13 @@ public class SpectatorConversationOrchestrator {
     private void startConversation(String triggerType, String whitePlayer, String blackPlayer, 
                                  String gameContext, ConversationCallback callback,
                                  Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
+        
+        // NEW: Check if user is recording - if so, skip AI conversation
+        if (userRecordingInProgress) {
+            Log.d(TAG, "🎤 User recording in progress - skipping AI conversation");
+            return;
+        }
+        
         if (conversationInProgress) {
             Log.d(TAG, "⏸️ Conversation already in progress, skipping");
             // Add timeout recovery - if conversation has been stuck for >30 seconds, reset it
@@ -552,6 +595,15 @@ public class SpectatorConversationOrchestrator {
      */
     private void speakWithPersonality(String speaker, String dialogue) {
         try {
+            // Check if TTS is enabled in spectator mode
+            android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            boolean ttsEnabled = prefs.getBoolean("tts_enabled", true);
+            
+            if (!ttsEnabled) {
+                Log.d(TAG, "🔇 TTS disabled - skipping speech for " + speaker);
+                return;
+            }
+            
             Log.d(TAG, "🎭 Speaking with " + speaker + "'s voice (bypassing global preference)");
             
             // Use the new thread-safe method that bypasses global preferences
@@ -575,6 +627,14 @@ public class SpectatorConversationOrchestrator {
         try {
             // Save current master preference
             android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            
+            // Check if TTS is enabled in spectator mode
+            boolean ttsEnabled = prefs.getBoolean("tts_enabled", true);
+            if (!ttsEnabled) {
+                Log.d(TAG, "🔇 TTS disabled - skipping emotional personality speech for " + speaker);
+                return;
+            }
+            
             String currentMaster = prefs.getString("selected_master", "tal");
             
             // Set speaker's voice
@@ -882,6 +942,14 @@ public class SpectatorConversationOrchestrator {
         try {
             // Save current master preference
             android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            
+            // Check if TTS is enabled in spectator mode
+            boolean ttsEnabled = prefs.getBoolean("tts_enabled", true);
+            if (!ttsEnabled) {
+                Log.d(TAG, "🔇 TTS disabled - skipping enhanced emotional speech for " + speaker);
+                return;
+            }
+            
             String currentMaster = prefs.getString("selected_master", "tal");
             
             // Set speaker's voice

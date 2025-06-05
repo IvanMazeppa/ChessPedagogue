@@ -53,13 +53,12 @@ public class ElevenLabsTTSService {
     // Voice IDs for chess masters - using carefully selected voices from ElevenLabs
     private static final Map<String, String> MASTER_VOICE_IDS = new HashMap<>();
     static {
-        // Voices selected to match each chess master's personality and accent
-        MASTER_VOICE_IDS.put("tal", "l1TTYDn50ppSCqvuVlKY"); // Selected voice for Tal - passionate, expressive
+        // Voices selected to match each chess master's personality and accent - ALTERNATE ACCOUNT
+        MASTER_VOICE_IDS.put("tal", "MWyJiWDobXN8FX3CJTdE"); // NEW: Tal voice for alternate account
 
-        MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // Selected voice for Fischer - intense, precise
-        //MASTER_VOICE_IDS.put("fischer", "mrmh5i7zNpOwftrj8xdS"); // Selected voice for Fischer - intense, precise
+        MASTER_VOICE_IDS.put("fischer", "8sGzMkj2HZn6rYwGx6G0"); // NEW: Fischer voice for alternate account
         MASTER_VOICE_IDS.put("kasparov", "TxGEqnHWrfWFTfGW9XjX"); // Josh - dynamic, passionate
-        MASTER_VOICE_IDS.put("carlsen", "ygiXC2Oa1BiHksD3WkJZ"); // Selected voice for Carlsen - modern, confident Norwegian-accented
+        MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // NEW: Carlsen voice for alternate account
         MASTER_VOICE_IDS.put("karpov", "IKne3meq5aSn9XLyUdCD"); // Charlie - refined, measured
         MASTER_VOICE_IDS.put("kramnik", "ErXwobaYiN019PkySvjV"); // Antoni - analytical, precise
         MASTER_VOICE_IDS.put("capablanca", "VR6AewLTigWG4xSOukaG"); // Arnold - elegant, natural
@@ -152,9 +151,9 @@ public class ElevenLabsTTSService {
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newFixedThreadPool(4);
         
-        // Get API key from preferences
+        // Get API key from preferences - ALTERNATE ACCOUNT
         // Note: System.getenv() doesn't work on Android - use SharedPreferences instead
-        this.apiKey = prefs.getString("elevenlabs_api_key", "sk_78213d87bcdfcdb50e74b2a1c3944fabb71db48eb5ccbfb5");
+        this.apiKey = prefs.getString("elevenlabs_api_key", "sk_1b6bb69b6d409200ccb930fd9d9aa7e9443a7198dcc18132");
     }
     
     public static synchronized ElevenLabsTTSService getInstance(Context context) {
