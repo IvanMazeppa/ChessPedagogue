@@ -5,6 +5,10 @@ import android.util.Log;
 public class EmotionalContext {
     private static final String TAG = "EmotionalContext";
     
+    // 🔥 ENHANCED: Emotional contagion tracking
+    private EmotionalIntelligenceManager emotionalManager;
+    private float contagionStrength = 0.3f; // Base contagion effect
+    
     private String currentMaster;
     private String otherMaster;
     private String currentMasterEmotion;
@@ -35,9 +39,20 @@ public class EmotionalContext {
         this.moveCount = 0;
     }
     
+    // 🔥 ENHANCED: Set emotional intelligence manager for contagion
+    public void setEmotionalManager(EmotionalIntelligenceManager manager) {
+        this.emotionalManager = manager;
+    }
+    
     public void updateEmotionalState(String master, String emotion, float intensity, float momentum) {
         Log.d(TAG, String.format("🎭 Updating emotional state: %s -> %s (%.2f intensity, %.2f momentum)", 
             master, emotion, intensity, momentum));
+            
+        // Store previous emotions for contagion analysis
+        String previousCurrentEmotion = currentMasterEmotion;
+        String previousOtherEmotion = otherMasterEmotion;
+        float previousCurrentIntensity = currentMasterIntensity;
+        float previousOtherIntensity = otherMasterIntensity;
             
         if (master.equals(currentMaster)) {
             this.currentMasterEmotion = emotion;
@@ -48,6 +63,11 @@ public class EmotionalContext {
             this.otherMasterIntensity = intensity;
             this.otherMasterMomentum = momentum;
         }
+        
+        // 🔥 ENHANCED: Apply emotional contagion
+        applyEmotionalContagion(master, emotion, intensity, 
+                               previousCurrentEmotion, previousOtherEmotion,
+                               previousCurrentIntensity, previousOtherIntensity);
         
         this.lastEmotionalUpdate = System.currentTimeMillis();
         analyzeEmotionalDynamics();
@@ -198,4 +218,100 @@ public class EmotionalContext {
     public float getOtherMasterIntensity() { return otherMasterIntensity; }
     public boolean isConversationActive() { return isConversationActive; }
     public String getLastSpeaker() { return lastSpeaker; }
+    
+    // =========================== 🔥 EMOTIONAL CONTAGION SYSTEM ===========================
+    
+    /**
+     * 🔥 Apply emotional contagion between masters
+     */
+    private void applyEmotionalContagion(String sourceMaster, String sourceEmotion, float sourceIntensity,
+                                        String previousCurrentEmotion, String previousOtherEmotion,
+                                        float previousCurrentIntensity, float previousOtherIntensity) {
+        if (emotionalManager == null || sourceIntensity < 0.5f) return;
+        
+        // Determine target master and their personality
+        String targetMaster = sourceMaster.equals(currentMaster) ? otherMaster : currentMaster;
+        
+        // Calculate contagion effect
+        float contagionEffect = emotionalManager.calculateContagionEffect(
+            sourceEmotion, sourceIntensity, targetMaster, sourceMaster, targetMaster
+        );
+        
+        if (contagionEffect > 0.1f) { // Only apply significant contagion
+            // Apply contagion to target master's emotional state
+            if (targetMaster.equals(currentMaster)) {
+                float newIntensity = Math.min(1.0f, currentMasterIntensity + contagionEffect);
+                currentMasterIntensity = newIntensity;
+                
+                // Potentially shift emotion if contagion is strong
+                if (contagionEffect > 0.3f && !sourceEmotion.equals(currentMasterEmotion)) {
+                    currentMasterEmotion = getContagionEmotion(sourceEmotion, currentMasterEmotion);
+                }
+                
+                Log.d(TAG, String.format("🔥 Emotional contagion: %s influenced %s (%.2f effect, new intensity: %.2f)", 
+                       sourceMaster, targetMaster, contagionEffect, newIntensity));
+                       
+            } else if (targetMaster.equals(otherMaster)) {
+                float newIntensity = Math.min(1.0f, otherMasterIntensity + contagionEffect);
+                otherMasterIntensity = newIntensity;
+                
+                if (contagionEffect > 0.3f && !sourceEmotion.equals(otherMasterEmotion)) {
+                    otherMasterEmotion = getContagionEmotion(sourceEmotion, otherMasterEmotion);
+                }
+                
+                Log.d(TAG, String.format("🔥 Emotional contagion: %s influenced %s (%.2f effect, new intensity: %.2f)", 
+                       sourceMaster, targetMaster, contagionEffect, newIntensity));
+            }
+        }
+    }
+    
+    /**
+     * 🎭 Calculate contagion-influenced emotion
+     */
+    private String getContagionEmotion(String sourceEmotion, String targetEmotion) {
+        // Simple contagion rules - could be enhanced with more sophisticated mapping
+        if (sourceEmotion.contains("excited") && targetEmotion.contains("analytical")) {
+            return "intrigued"; // Excitement spreads as intrigue to analytical masters
+        } else if (sourceEmotion.contains("frustrated") && targetEmotion.contains("confident")) {
+            return "concerned"; // Frustration makes confident masters cautious
+        } else if (sourceEmotion.contains("thrilled") && !targetEmotion.contains("frustrated")) {
+            return "pleased"; // Joy spreads as pleasure
+        }
+        
+        return targetEmotion; // Default: no emotion change
+    }
+    
+    /**
+     * 🎯 Enhanced emergent behavior analysis with contagion awareness
+     */
+    public String getEmotionalContextForResponsesAPI(String masterName) {
+        StringBuilder context = new StringBuilder();
+        
+        String opponentName = masterName.equals(currentMaster) ? otherMaster : currentMaster;
+        String myEmotion = masterName.equals(currentMaster) ? currentMasterEmotion : otherMasterEmotion;
+        String opponentEmotion = masterName.equals(currentMaster) ? otherMasterEmotion : currentMasterEmotion;
+        float myIntensity = masterName.equals(currentMaster) ? currentMasterIntensity : otherMasterIntensity;
+        float opponentIntensity = masterName.equals(currentMaster) ? otherMasterIntensity : currentMasterIntensity;
+        
+        context.append(String.format("EMOTIONAL CONTEXT: You are feeling %s (intensity: %.1f). ", 
+                      myEmotion, myIntensity));
+        context.append(String.format("%s is feeling %s (intensity: %.1f). ", 
+                      opponentName, opponentEmotion, opponentIntensity));
+        
+        // Add contagion awareness
+        if (opponentIntensity > 0.6f) {
+            context.append(String.format("Their strong %s emotion may be influencing the atmosphere. ", 
+                          opponentEmotion));
+        }
+        
+        if (shouldTriggerEmergentBehavior()) {
+            context.append("The emotional dynamic between you both is creating interesting conversation potential. ");
+            
+            if (areEmotionsContrasting()) {
+                context.append("Your emotional states are contrasting - this could lead to engaging debate. ");
+            }
+        }
+        
+        return context.toString();
+    }
 }

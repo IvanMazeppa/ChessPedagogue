@@ -140,6 +140,11 @@ public class SpectatorConversationOrchestrator {
         this.personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
         this.emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
         this.conversationMemory = ConversationMemoryManager.getInstance(context);
+        
+        // 🎭 ENHANCED: Initialize emotional intelligence with default masters for relationship tracking
+        this.emotionalIntelligence.initializeWithHistory("tal", "fischer"); // Default initialization
+        
+        Log.d(TAG, "🎭 Enhanced emotional intelligence initialized with relationship tracking");
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         
@@ -271,6 +276,10 @@ public class SpectatorConversationOrchestrator {
         
         activeConversations.put(conversationId, state);
         
+        // 🎭 ENHANCED: Initialize emotional intelligence with actual masters for this conversation
+        emotionalIntelligence.initializeWithHistory(whitePlayer, blackPlayer);
+        Log.d(TAG, String.format("🎭 Emotional intelligence initialized for %s vs %s conversation", whitePlayer, blackPlayer));
+        
         // Determine first speaker based on trigger
         String firstSpeaker = determineFirstSpeaker(triggerType, whitePlayer, blackPlayer);
         state.currentSpeaker = firstSpeaker;
@@ -322,6 +331,7 @@ public class SpectatorConversationOrchestrator {
                             ChessMasterResponsesManager.debugTest();
                             Log.d(TAG, "🔧 ORCHESTRATOR: Static debugTest call completed");
                             
+                            // 🧠 ENHANCED: Pass emotional context to Responses API
                             responsesManager.sendMessage(sessionId, prompt, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
                             @Override
                             public void onResponseStart(String sessionId) {
@@ -347,10 +357,14 @@ public class SpectatorConversationOrchestrator {
                                 // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
                                 conversationMemory.recordConversation(speaker, cleanedResponse, gameContext);
                                 
+                                // Check for emotional context using enhanced system
+                                String emotionalState = detectEmotionalContext(state, state.currentEval, state.previousEval);
+                                
+                                // 🎭 ENHANCED: Record emotional event for relationship evolution
+                                recordEmotionalEventForConversation(state, speaker, cleanedResponse, emotionalState);
+                                
                                 // 🎭 ENHANCED: Deliver dialogue with sophisticated emotional intelligence
                                 mainHandler.post(() -> {
-                                    // Check for emotional context using enhanced system
-                                    String emotionalState = detectEmotionalContext(state, state.currentEval, state.previousEval);
                                     if (emotionalState != null) {
                                         callback.onEmotionalResponse(speaker, emotionalState, cleanedResponse);
                                     } else {
@@ -497,6 +511,9 @@ public class SpectatorConversationOrchestrator {
                                         // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
                                         conversationMemory.recordConversation(responder, cleanedResponse, 
                                                                              buildConversationContext(state));
+                                        
+                                        // 🎭 ENHANCED: Record emotional event for relationship evolution
+                                        recordEmotionalEventForConversation(state, responder, cleanedResponse, emotionalContext);
                                         
                                         // 🎭 ENHANCED: Use sophisticated emotional intelligence for responses
                                         mainHandler.post(() -> {
@@ -778,7 +795,7 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * 🎭 ENHANCED: Sophisticated emotional analysis with evaluation data
+     * 🎭 ENHANCED: Sophisticated emotional analysis with evaluation data and advanced intelligence
      */
     private String detectEmotionalContext(ConversationState state, Float currentEval, Float previousEval) {
         try {
@@ -799,6 +816,10 @@ public class SpectatorConversationOrchestrator {
             String conversationContext = buildConversationContext(state);
             String gameContext = buildGameContext(state, evalChange, currentEval);
             
+            // 🔥 ENHANCED: Determine position themes for situational amplifiers
+            String positionThemes = determinePositionThemes(currentEval, evalChange, gameContext);
+            int timeRemaining = 300; // Default spectator mode time (can be enhanced later)
+            
             // Use EmotionalIntelligenceManager for sophisticated analysis
             EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult;
             
@@ -814,37 +835,55 @@ public class SpectatorConversationOrchestrator {
                     state.emotionalContext.switchPerspective();
                 }
                 
-                emotionalResult = emotionalIntelligence.analyzeEmotionalState(
-                    state.currentSpeaker,
-                    gameContext,
-                    conversationContext,
-                    state.emotionalContext
-                );
-            } else {
-                // Fallback to original method without EmotionalContext
-                emotionalResult = emotionalIntelligence.analyzeEmotionalState(
+                // 🔥 NEW: Use enhanced emotional analysis with situational awareness
+                emotionalResult = emotionalIntelligence.analyzeEmotionalStateWithSituation(
                     state.currentSpeaker,
                     gameContext,
                     conversationContext,
                     currentEval,
                     evalChange,
-                    null
+                    state.emotionalContext,
+                    positionThemes,
+                    timeRemaining
+                );
+            } else {
+                // Create temporary EmotionalContext for enhanced analysis
+                String opponent = state.currentSpeaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                EmotionalContext tempContext = new EmotionalContext(state.currentSpeaker, opponent);
+                tempContext.updateGameContext(state.turnCount, "spectator_game");
+                
+                // 🔥 NEW: Use enhanced emotional analysis with situational awareness
+                emotionalResult = emotionalIntelligence.analyzeEmotionalStateWithSituation(
+                    state.currentSpeaker,
+                    gameContext,
+                    conversationContext,
+                    currentEval,
+                    evalChange,
+                    tempContext,
+                    positionThemes,
+                    timeRemaining
                 );
             }
             
-            Log.d(TAG, String.format("🎭 Emotional analysis for %s: %s (intensity: %.2f, momentum: %.2f)", 
-                  state.currentSpeaker, emotionalResult.emotion.name, 
+            // 🌊 EMOTIONAL CONTAGION: Apply contagion effects between masters
+            String opponent = state.currentSpeaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+            EmotionalIntelligenceManager.EmotionalState finalEmotion = applyEmotionalContagionInConversation(
+                state, emotionalResult, opponent
+            );
+            
+            Log.d(TAG, String.format("🎭 Enhanced emotional analysis for %s: %s (intensity: %.2f, momentum: %.2f)", 
+                  state.currentSpeaker, finalEmotion.name, 
                   emotionalResult.intensity, emotionalResult.momentum));
             
             // Return emotion name if intensity is significant enough
             if (emotionalResult.intensity > 0.2f) { // Threshold for emotional expression
-                return emotionalResult.emotion.name;
+                return finalEmotion.name;
             }
             
             return null; // No significant emotional state
             
         } catch (Exception e) {
-            Log.e(TAG, "Error in emotional analysis, falling back to basic detection", e);
+            Log.e(TAG, "Error in enhanced emotional analysis, falling back to basic detection", e);
             return basicEmotionalFallback(state);
         }
     }
@@ -908,6 +947,111 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
+     * 🔥 NEW: Apply emotional contagion effects in conversation
+     */
+    private EmotionalIntelligenceManager.EmotionalState applyEmotionalContagionInConversation(
+            ConversationState state, EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult, String opponent) {
+        
+        try {
+            // Get opponent's recent emotional state from conversation history
+            String opponentLastEmotion = null;
+            float opponentIntensity = 0.5f;
+            
+            // Look for opponent's last emotional state in recent turns
+            for (int i = state.turns.size() - 1; i >= 0; i--) {
+                ConversationTurn turn = state.turns.get(i);
+                if (turn.speaker.equals(opponent) && turn.emotionalContext != null) {
+                    opponentLastEmotion = turn.emotionalContext;
+                    opponentIntensity = 0.7f; // Assume moderate intensity from context
+                    break;
+                }
+            }
+            
+            // Apply emotional contagion if we have opponent's emotional state
+            if (opponentLastEmotion != null) {
+                Log.d(TAG, String.format("🌊 Applying emotional contagion: %s (%s) ← %s (%s, %.2f)", 
+                      state.currentSpeaker, emotionalResult.emotion.name, 
+                      opponent, opponentLastEmotion, opponentIntensity));
+                
+                EmotionalIntelligenceManager.EmotionalState contagionResult = 
+                    emotionalIntelligence.applyEmotionalContagion(
+                        state.currentSpeaker,
+                        emotionalResult.emotion,
+                        opponent,
+                        opponentLastEmotion,
+                        opponentIntensity
+                    );
+                
+                return contagionResult;
+            }
+            
+            return emotionalResult.emotion; // No contagion applied
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error applying emotional contagion", e);
+            return emotionalResult.emotion; // Fallback to original emotion
+        }
+    }
+    
+    /**
+     * 🎯 NEW: Determine position themes for situational amplifiers
+     */
+    private String determinePositionThemes(Float currentEval, Float evalChange, String gameContext) {
+        List<String> themes = new ArrayList<>();
+        
+        if (currentEval != null && evalChange != null) {
+            float absEval = Math.abs(currentEval);
+            float absChange = Math.abs(evalChange);
+            
+            // Evaluation-based themes
+            if (absEval > 3.0f) {
+                themes.add("decisive");
+            } else if (absEval > 1.5f) {
+                themes.add("advantage");
+            } else if (absEval < 0.5f) {
+                themes.add("balanced");
+            }
+            
+            // Change-based themes
+            if (absChange > 2.0f) {
+                themes.add("dramatic_swing");
+                themes.add("critical");
+            } else if (absChange > 1.0f) {
+                themes.add("significant_change");
+            }
+            
+            // Tactical vs positional themes based on change magnitude
+            if (absChange > 1.5f) {
+                themes.add("tactical");
+            } else {
+                themes.add("positional");
+            }
+        }
+        
+        // Game context themes
+        if (gameContext != null) {
+            String context = gameContext.toLowerCase();
+            if (context.contains("opening")) {
+                themes.add("opening");
+            } else if (context.contains("endgame")) {
+                themes.add("endgame");
+            } else {
+                themes.add("middlegame");
+            }
+            
+            if (context.contains("blunder")) {
+                themes.add("error");
+                themes.add("critical");
+            } else if (context.contains("brilliant")) {
+                themes.add("creative");
+                themes.add("artistic");
+            }
+        }
+        
+        return String.join(",", themes);
+    }
+    
+    /**
      * Fallback emotional detection (simplified version of old logic)
      */
     private String basicEmotionalFallback(ConversationState state) {
@@ -936,7 +1080,7 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * 🎭 NEW: Enhanced emotional TTS using full EmotionalIntelligenceManager results
+     * 🎭 NEW: Enhanced emotional TTS using full EmotionalIntelligenceManager results with situational awareness
      */
     private void speakWithEnhancedEmotionalIntelligence(String speaker, String dialogue, ConversationState state) {
         try {
@@ -965,24 +1109,45 @@ public class SpectatorConversationOrchestrator {
             String conversationContext = buildConversationContext(state);
             String gameContext = buildGameContext(state, evalChange, currentEval);
             
+            // 🔥 ENHANCED: Use full situational emotional analysis for TTS
+            String positionThemes = determinePositionThemes(currentEval, evalChange, gameContext);
+            int timeRemaining = 300; // Default spectator mode time
+            
             EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
-                emotionalIntelligence.analyzeEmotionalState(
+                emotionalIntelligence.analyzeEmotionalStateWithSituation(
                     speaker,
                     gameContext,
                     conversationContext,
                     currentEval,
                     evalChange,
-                    null
+                    state.emotionalContext,
+                    positionThemes,
+                    timeRemaining
                 );
             
-            Log.d(TAG, String.format("🎭 Enhanced TTS for %s: %s (intensity: %.2f, momentum: %.2f)", 
-                  speaker, emotionalResult.emotion.name, emotionalResult.intensity, emotionalResult.momentum));
+            // 🌊 Apply emotional contagion for voice synthesis
+            String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+            EmotionalIntelligenceManager.EmotionalState finalEmotion = applyEmotionalContagionInConversation(
+                state, emotionalResult, opponent
+            );
+            
+            // Update result with contagion effect
+            EmotionalIntelligenceManager.EmotionalAnalysisResult enhancedResult = 
+                new EmotionalIntelligenceManager.EmotionalAnalysisResult(
+                    finalEmotion,
+                    emotionalResult.expression,
+                    emotionalResult.intensity,
+                    emotionalResult.momentum
+                );
+            
+            Log.d(TAG, String.format("🎭 Enhanced TTS with contagion for %s: %s (intensity: %.2f, momentum: %.2f)", 
+                  speaker, enhancedResult.emotion.name, enhancedResult.intensity, enhancedResult.momentum));
             
             // Use ElevenLabs if available for superior emotional voice synthesis
             if (TTSServiceManager.isUsingElevenLabs(context)) {
-                speakWithElevenLabsEmotionalIntelligence(speaker, dialogue, emotionalResult, currentMaster);
+                speakWithElevenLabsEmotionalIntelligence(speaker, dialogue, enhancedResult, currentMaster);
             } else {
-                speakWithOpenAIEmotionalIntelligence(speaker, dialogue, emotionalResult, currentMaster);
+                speakWithOpenAIEmotionalIntelligence(speaker, dialogue, enhancedResult, currentMaster);
             }
             
         } catch (Exception e) {
@@ -1470,6 +1635,93 @@ public class SpectatorConversationOrchestrator {
         
         mainHandler.removeCallbacksAndMessages(null);
         Log.d(TAG, "🛑 Force stopped all conversations");
+    }
+    
+    /**
+     * 🎭 NEW: Record emotional events for relationship evolution tracking
+     */
+    private void recordEmotionalEventForConversation(ConversationState state, String speaker, String dialogue, String emotionalState) {
+        try {
+            if (emotionalState == null || emotionalState.isEmpty()) {
+                return; // No emotional context to record
+            }
+            
+            String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+            
+            // Determine topic from dialogue content
+            String topic = extractTopicFromDialogue(dialogue);
+            
+            // Calculate emotional intensity from the state
+            float intensity = calculateIntensityFromEmotionalState(emotionalState);
+            
+            // Use EmotionalIntelligenceManager to persist this event
+            EmotionalIntelligenceManager.EmotionalEvent event = new EmotionalIntelligenceManager.EmotionalEvent(
+                topic,
+                EmotionalIntelligenceManager.EmotionalState.valueOf(emotionalState.toUpperCase()),
+                intensity
+            );
+            
+            emotionalIntelligence.persistEmotionalEvent(event, dialogue);
+            
+            Log.d(TAG, String.format("🎭 Recorded emotional event: %s feels %s about %s (intensity: %.2f)", 
+                  speaker, emotionalState, topic, intensity));
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error recording emotional event for conversation", e);
+        }
+    }
+    
+    /**
+     * Extract main topic from dialogue content
+     */
+    private String extractTopicFromDialogue(String dialogue) {
+        String lower = dialogue.toLowerCase();
+        
+        // Chess-specific topics
+        if (lower.contains("position") || lower.contains("move")) {
+            return "position_analysis";
+        } else if (lower.contains("tactic") || lower.contains("combination")) {
+            return "tactical_discussion";
+        } else if (lower.contains("strategy") || lower.contains("plan")) {
+            return "strategic_planning";
+        } else if (lower.contains("opening")) {
+            return "opening_theory";
+        } else if (lower.contains("endgame")) {
+            return "endgame_technique";
+        } else if (lower.contains("blunder") || lower.contains("mistake")) {
+            return "error_analysis";
+        } else if (lower.contains("brilliant") || lower.contains("creative")) {
+            return "creative_play";
+        } else if (lower.contains("style") || lower.contains("philosophy")) {
+            return "chess_philosophy";
+        } else {
+            return "general_discussion";
+        }
+    }
+    
+    /**
+     * Calculate emotional intensity from state name
+     */
+    private float calculateIntensityFromEmotionalState(String emotionalState) {
+        switch (emotionalState.toLowerCase()) {
+            case "ecstatic":
+            case "devastated":
+                return 1.0f;
+            case "thrilled":
+            case "frustrated":
+                return 0.8f;
+            case "excited":
+            case "concerned":
+                return 0.6f;
+            case "pleased":
+            case "uneasy":
+                return 0.4f;
+            case "content":
+            case "focused":
+                return 0.3f;
+            default:
+                return 0.5f; // Default moderate intensity
+        }
     }
     
     /**

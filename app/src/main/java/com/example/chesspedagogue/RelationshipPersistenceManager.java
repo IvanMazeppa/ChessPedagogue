@@ -350,6 +350,35 @@ public class RelationshipPersistenceManager {
         return reactions;
     }
     
+    /**
+     * 🧠 NEW: Get emotional history between two masters
+     */
+    public List<EmotionalReaction> getEmotionalHistoryBetweenMasters(String master, String opponent, int limit) {
+        List<EmotionalReaction> reactions = new ArrayList<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        
+        String query = "SELECT * FROM emotional_reactions WHERE master = ? AND opponent = ? " +
+                      "ORDER BY timestamp DESC LIMIT ?";
+        Cursor cursor = db.rawQuery(query, new String[]{master.toLowerCase(), opponent.toLowerCase(), String.valueOf(limit)});
+        
+        while (cursor.moveToNext()) {
+            EmotionalReaction reaction = new EmotionalReaction(
+                cursor.getString(cursor.getColumnIndex("master")),
+                cursor.getString(cursor.getColumnIndex("opponent")),
+                cursor.getString(cursor.getColumnIndex("topic")),
+                cursor.getString(cursor.getColumnIndex("emotion")),
+                cursor.getFloat(cursor.getColumnIndex("intensity")),
+                cursor.getFloat(cursor.getColumnIndex("momentum")),
+                cursor.getString(cursor.getColumnIndex("conversation_snippet")),
+                cursor.getLong(cursor.getColumnIndex("timestamp"))
+            );
+            reactions.add(reaction);
+        }
+        
+        cursor.close();
+        return reactions;
+    }
+    
     // =========================== EMERGENT EVENT TRACKING ===========================
     
     /**
@@ -561,6 +590,14 @@ public class RelationshipPersistenceManager {
             this.conversationSnippet = conversationSnippet;
             this.timestamp = timestamp;
         }
+        
+        // Getter methods for EmotionalIntelligenceManager
+        public String getTopic() { return topic; }
+        public String getEmotion() { return emotion; }
+        public float getIntensity() { return intensity; }
+        public long getTimestamp() { return timestamp; }
+        public float getMomentum() { return momentum; }
+        public String getConversationSnippet() { return conversationSnippet; }
     }
     
     /**

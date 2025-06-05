@@ -54,21 +54,21 @@ public class ElevenLabsTTSService {
     private static final Map<String, String> MASTER_VOICE_IDS = new HashMap<>();
     static {
         // Voices selected to match each chess master's personality and accent - ALTERNATE ACCOUNT
-        MASTER_VOICE_IDS.put("tal", "MWyJiWDobXN8FX3CJTdE"); // NEW: Tal voice for alternate account
+        MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // NEW: Tal voice for alternate account
 
-        MASTER_VOICE_IDS.put("fischer", "8sGzMkj2HZn6rYwGx6G0"); // NEW: Fischer voice for alternate account
-        MASTER_VOICE_IDS.put("kasparov", "TxGEqnHWrfWFTfGW9XjX"); // Josh - dynamic, passionate
-        MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // NEW: Carlsen voice for alternate account
-        MASTER_VOICE_IDS.put("karpov", "IKne3meq5aSn9XLyUdCD"); // Charlie - refined, measured
-        MASTER_VOICE_IDS.put("kramnik", "ErXwobaYiN019PkySvjV"); // Antoni - analytical, precise
-        MASTER_VOICE_IDS.put("capablanca", "VR6AewLTigWG4xSOukaG"); // Arnold - elegant, natural
-        MASTER_VOICE_IDS.put("alekhine", "EXAVITQu4vr4xnSDxMaL"); // Sam - sophisticated
-        MASTER_VOICE_IDS.put("morphy", "yoZ06aMxZJJ28mfd3POQ"); // Sam - gentlemanly American
-        MASTER_VOICE_IDS.put("lasker", "t0jbNlBVZ17f02VDIeMI"); // Adam - wise, philosophical
+        MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // NEW: Fischer voice for alternate account
+        MASTER_VOICE_IDS.put("kasparov", "Josh"); // Josh - dynamic, passionate
+        MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // Martin Carlsen voice for alternate account
+        MASTER_VOICE_IDS.put("karpov", "Charli"); // Charlie - refined, measured
+        MASTER_VOICE_IDS.put("kramnik", "Antoni"); // Antoni - analytical, precise
+        MASTER_VOICE_IDS.put("capablanca", "Arnold"); // Arnold - elegant,
+        MASTER_VOICE_IDS.put("alekhine", "3EuKHIEZbSzrHGNmdYsx"); // Ivan - Russian - calm
+        MASTER_VOICE_IDS.put("morphy", "Arnold"); // Nikolai (modified - gentlemanly American
+        MASTER_VOICE_IDS.put("lasker", "Adam"); // Adam - wise, philosophical
         MASTER_VOICE_IDS.put("anand", "Mgih2jslgx7pUv85yYYU"); // Maksud - conversational, friendly, optimistic
-        MASTER_VOICE_IDS.put("botvinnik", "SOYHLrjzK2X1ezoPC6cr"); // Harry - methodical British
+        MASTER_VOICE_IDS.put("botvinnik", "Harry"); // Harry - methodical British
     }
-    
+
     private static ElevenLabsTTSService instance;
     
     private final OkHttpClient httpClient;
@@ -153,7 +153,7 @@ public class ElevenLabsTTSService {
         
         // Get API key from preferences - ALTERNATE ACCOUNT
         // Note: System.getenv() doesn't work on Android - use SharedPreferences instead
-        this.apiKey = prefs.getString("elevenlabs_api_key", "sk_1b6bb69b6d409200ccb930fd9d9aa7e9443a7198dcc18132");
+        this.apiKey = prefs.getString("elevenlabs_api_key", "sk_788fa3710ea8bb4363f71f110a7b360a50f48beb4168fbf4");
     }
     
     public static synchronized ElevenLabsTTSService getInstance(Context context) {
@@ -831,7 +831,7 @@ public class ElevenLabsTTSService {
     }
     
     /**
-     * 🎭 Calculate voice modulation based on emotional state
+     * 🎭 Calculate voice modulation based on emotional state with master-specific enhancements
      */
     private EmotionalVoiceModulation getEmotionalVoiceModulation(EmotionalIntelligenceManager.EmotionalAnalysisResult emotional) {
         EmotionalVoiceModulation modulation = new EmotionalVoiceModulation();
@@ -870,9 +870,10 @@ public class ElevenLabsTTSService {
                 
             case ANALYTICAL:
             case FOCUSED:
-                // Analytical - more stable, less variation
-                modulation.stabilityAdjustment = 0.1f * intensityFactor;
-                modulation.styleAdjustment = -0.05f * intensityFactor;
+                // ENHANCED: Alekhine-specific analytical expressiveness
+                // Analytical - more stable, but with subtle emotional undertones for Alekhine
+                modulation.stabilityAdjustment = 0.05f * intensityFactor; // Less stable than before
+                modulation.styleAdjustment = 0.1f * intensityFactor; // More expressive for Alekhine's passionate analysis
                 break;
                 
             case CONFIDENT:
@@ -893,6 +894,24 @@ public class ElevenLabsTTSService {
             float momentumMultiplier = 1.0f + (Math.abs(emotional.momentum) * 0.3f);
             modulation.stabilityAdjustment *= momentumMultiplier;
             modulation.styleAdjustment *= momentumMultiplier;
+        }
+        
+        // 🎭 ALEKHINE ENHANCEMENT: Master-specific emotional amplification
+        // Apply master-specific emotional enhancement based on current selected master
+        String currentMaster = getCurrentChessMaster();
+        if ("alekhine".equals(currentMaster.toLowerCase())) {
+            // Alekhine is passionate and intense - amplify all emotional expressions
+            float alekhineFactor = 1.4f; // 40% more emotional expression
+            modulation.stabilityAdjustment *= alekhineFactor;
+            modulation.styleAdjustment *= alekhineFactor;
+            
+            // For analytical states, add more passion to Alekhine's voice
+            if (emotional.emotion.name.equals("analytical") || emotional.emotion.name.equals("focused")) {
+                modulation.stabilityAdjustment -= 0.1f; // Make analytical less stable (more passionate)
+                modulation.styleAdjustment += 0.15f;    // Add artistic flair to analysis
+            }
+            
+            Log.d(TAG, String.format("🏛️ ALEKHINE VOICE ENHANCEMENT: Applied passionate amplification (factor: %.1f)", alekhineFactor));
         }
         
         return modulation;
