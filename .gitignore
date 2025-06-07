@@ -48,3 +48,11 @@ captures/
 
 # API Keys - NEVER commit these!
 app/src/main/java/com/example/chesspedagogue/ApiKeys.java
+ /test_conversation_memory_system.py
+/test_null_pointer_fix.py
+/wsl_conversation_memory_test.py
+/wsl_conversation_memory_test_20250604_005137.json
+/ENHANCED_MEMORY_INTEGRATION_GUIDE.md
+/EMOTIONAL_INTELLIGENCE_ENHANCEMENT_ROADMAP.md
+/EMOTIONAL_INTELLIGENCE_ENHANCEMENTS_SUMMARY.md
+/ENHANCEMENTS_COMPLETED_README.md

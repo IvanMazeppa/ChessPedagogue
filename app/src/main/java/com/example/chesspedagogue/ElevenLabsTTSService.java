@@ -14,7 +14,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -57,7 +59,7 @@ public class ElevenLabsTTSService {
         MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // NEW: Tal voice for alternate account
 
         MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // NEW: Fischer voice for alternate account
-        MASTER_VOICE_IDS.put("kasparov", "Josh"); // Josh - dynamic, passionate
+        MASTER_VOICE_IDS.put("kasparov", "rT6zdbVnOt0GO9v5OiWr"); // Azeri  - recorded
         MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // Martin Carlsen voice for alternate account
         MASTER_VOICE_IDS.put("karpov", "Charli"); // Charlie - refined, measured
         MASTER_VOICE_IDS.put("kramnik", "Antoni"); // Antoni - analytical, precise
@@ -87,6 +89,11 @@ public class ElevenLabsTTSService {
     // 🎭 Emotional intelligence integration
     private EmotionalIntelligenceManager.EmotionalAnalysisResult currentEmotionalState;
     
+    // 🎤 PHASE 1: Voice-Emotion Feedback Integration
+    private VoiceEmotionalAnalyzer voiceEmotionalAnalyzer;
+    private String currentSpeakingMaster = null;
+    private final List<String> currentListeningMasters = new ArrayList<>();
+    
     // Chunk management
     private final ConcurrentLinkedQueue<ChunkPlaybackItem> chunkQueue = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean isPlayingChunks = new AtomicBoolean(false);
@@ -99,6 +106,10 @@ public class ElevenLabsTTSService {
     
     // Queue for pending speech requests
     private final Queue<PendingSpeech> pendingSpeechQueue = new ConcurrentLinkedQueue<>();
+    
+    // Recent speech cache for duplicate detection
+    private final Map<String, Long> recentSpeechCache = new HashMap<>();
+    private static final long SPEECH_DUPLICATE_WINDOW = 30000; // 30 seconds
     
     // Inner class for queued speech
     private static class PendingSpeech {
@@ -150,6 +161,9 @@ public class ElevenLabsTTSService {
                 .build();
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.executorService = Executors.newFixedThreadPool(4);
+        
+        // 🎤 Initialize Voice-Emotion Feedback System
+        this.voiceEmotionalAnalyzer = VoiceEmotionalAnalyzer.getInstance(context);
         
         // Get API key from preferences - ALTERNATE ACCOUNT
         // Note: System.getenv() doesn't work on Android - use SharedPreferences instead
@@ -213,6 +227,15 @@ public class ElevenLabsTTSService {
         
         // Don't clean up if currently speaking - queue instead
         if (isSpeaking && !interruptRequested) {
+            // Check for duplicate speech in queue to prevent repetition
+            if (isDuplicateSpeech(text)) {
+                Log.w(TAG, "🚫 Duplicate speech detected, skipping: " + text.substring(0, Math.min(50, text.length())) + "...");
+                if (listener != null) {
+                    listener.onSpeechCompleted(); // Complete immediately for duplicates
+                }
+                return;
+            }
+            
             Log.d(TAG, "⚠️ Speech in progress - queueing for later playback");
             pendingSpeechQueue.add(new PendingSpeech(text, listener));
             return;
@@ -235,6 +258,9 @@ public class ElevenLabsTTSService {
             @Override
             public void onSpeechStarted() {
                 Log.d(TAG, "✅ ElevenLabs speech started successfully");
+                
+                // 🎤 Process voice emotional feedback when speech starts
+                processVoiceEmotionalFeedback(text);
             }
             
             @Override
@@ -272,7 +298,7 @@ public class ElevenLabsTTSService {
         };
         
         // Format text with TTS controls based on master and context
-        String formattedText = text;
+        String tempFormattedText = text;
         try {
             String currentMaster = getCurrentChessMaster();
             boolean isEmotional = currentContext != null && 
@@ -280,11 +306,12 @@ public class ElevenLabsTTSService {
                  currentContext.contains("BLUNDER") || 
                  currentContext.contains("SWING"));
             
-            formattedText = ElevenLabsTTSFormatter.formatForTTS(text, currentMaster, isEmotional);
-            Log.d(TAG, "📝 Formatted text for TTS: " + formattedText.substring(0, Math.min(100, formattedText.length())) + "...");
+            tempFormattedText = ElevenLabsTTSFormatter.formatForTTS(text, currentMaster, isEmotional);
+            Log.d(TAG, "📝 Formatted text for TTS: " + tempFormattedText.substring(0, Math.min(100, tempFormattedText.length())) + "...");
         } catch (Exception e) {
             Log.w(TAG, "Error formatting text for TTS, using original", e);
         }
+        final String formattedText = tempFormattedText;
         
         // Generate a single chunk for the formatted text
         generateTTSChunk(formattedText, 0, true, orderingCallback);
@@ -336,21 +363,31 @@ public class ElevenLabsTTSService {
         Log.d(TAG, "🎭 Using voice ID for " + masterName + ": " + voiceId);
         
         // Format text with TTS controls based on the SPECIFIC master (not global preference)
-        String formattedText = text;
+        String tempText = text;
         try {
             boolean isEmotional = currentContext != null && 
                 (currentContext.contains("BRILLIANT") || 
                  currentContext.contains("BLUNDER") || 
                  currentContext.contains("SWING"));
             
-            formattedText = ElevenLabsTTSFormatter.formatForTTS(text, masterName, isEmotional);
-            Log.d(TAG, "📝 Formatted text for TTS (specific master " + masterName + "): " + formattedText.substring(0, Math.min(100, formattedText.length())) + "...");
+            tempText = ElevenLabsTTSFormatter.formatForTTS(text, masterName, isEmotional);
+            Log.d(TAG, "📝 Formatted text for TTS (specific master " + masterName + "): " + tempText.substring(0, Math.min(100, tempText.length())) + "...");
         } catch (Exception e) {
             Log.w(TAG, "Error formatting text for TTS, using original", e);
         }
+        final String formattedText = tempText;
         
         // Don't clean up if currently speaking - queue instead
         if (isSpeaking && !interruptRequested) {
+            // Check for duplicate speech in queue to prevent repetition
+            if (isDuplicateSpeech(text)) {
+                Log.w(TAG, "🚫 Duplicate speech detected for " + masterName + ", skipping: " + text.substring(0, Math.min(50, text.length())) + "...");
+                if (callback != null) {
+                    callback.onSpeechCompleted(text); // Complete immediately for duplicates
+                }
+                return;
+            }
+            
             Log.d(TAG, "⚠️ Speech in progress - queueing specific master speech for later playback");
             pendingSpeechQueue.add(new PendingSpeech(text, new OnSpeechCompletedListener() {
                 @Override
@@ -386,6 +423,9 @@ public class ElevenLabsTTSService {
             @Override
             public void onSpeechStarted() {
                 Log.d(TAG, "✅ ElevenLabs speech started successfully for " + masterName);
+                
+                // 🎤 Process voice emotional feedback when speech starts
+                processVoiceEmotionalFeedback(formattedText);
             }
             
             @Override
@@ -1181,6 +1221,82 @@ public class ElevenLabsTTSService {
         }
     }
     
+    // 🎤 ========== VOICE-EMOTION FEEDBACK INTEGRATION METHODS ==========
+    
+    /**
+     * Set the current speaking master and listening masters for voice-emotion feedback
+     */
+    public void setVoiceEmotionalContext(String speakingMaster, List<String> listeningMasters) {
+        this.currentSpeakingMaster = speakingMaster;
+        this.currentListeningMasters.clear();
+        if (listeningMasters != null) {
+            this.currentListeningMasters.addAll(listeningMasters);
+        }
+        
+        Log.d(TAG, String.format("🎭 Voice emotional context set: %s speaking to %d listeners", 
+                                speakingMaster, this.currentListeningMasters.size()));
+    }
+    
+    /**
+     * Add a voice emotional callback to receive reactions
+     */
+    public void addVoiceEmotionalCallback(VoiceEmotionalAnalyzer.VoiceEmotionalCallback callback) {
+        if (voiceEmotionalAnalyzer != null) {
+            voiceEmotionalAnalyzer.addVoiceEmotionalCallback(callback);
+        }
+    }
+    
+    /**
+     * Remove a voice emotional callback
+     */
+    public void removeVoiceEmotionalCallback(VoiceEmotionalAnalyzer.VoiceEmotionalCallback callback) {
+        if (voiceEmotionalAnalyzer != null) {
+            voiceEmotionalAnalyzer.removeVoiceEmotionalCallback(callback);
+        }
+    }
+    
+    /**
+     * Process voice emotional feedback when speech starts
+     */
+    private void processVoiceEmotionalFeedback(String text) {
+        if (voiceEmotionalAnalyzer != null && currentSpeakingMaster != null && !currentListeningMasters.isEmpty()) {
+            try {
+                // Get current emotional intensity (if available)
+                float currentIntensity = 0.5f; // Default
+                if (currentEmotionalState != null) {
+                    currentIntensity = currentEmotionalState.intensity;
+                }
+                
+                // Process voice emotional feedback
+                voiceEmotionalAnalyzer.processVoiceEmotionalFeedback(
+                    text, 
+                    currentSpeakingMaster, 
+                    currentIntensity, 
+                    currentListeningMasters
+                );
+                
+                Log.d(TAG, String.format("🎭 Processed voice emotional feedback: %s → %d listeners", 
+                                        currentSpeakingMaster, currentListeningMasters.size()));
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error processing voice emotional feedback", e);
+            }
+        }
+    }
+    
+    /**
+     * Enhanced speak method with voice-emotion integration for spectator mode
+     */
+    public void speakWithVoiceEmotionalFeedback(String masterName, String text, 
+                                              List<String> listeningMasters, 
+                                              SpeechCallback callback) {
+        // Set the voice emotional context
+        setVoiceEmotionalContext(masterName, listeningMasters);
+        
+        // Use the existing speakWithSpecificMaster method
+        speakWithSpecificMaster(masterName, text, callback);
+    }
+    
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
         // Save for future use
@@ -1213,12 +1329,42 @@ public class ElevenLabsTTSService {
     }
     
     /**
+     * Check if speech is a duplicate of recent speech to prevent repetition
+     */
+    private boolean isDuplicateSpeech(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
+        }
+        
+        String normalizedText = text.trim().toLowerCase();
+        long currentTime = System.currentTimeMillis();
+        
+        // Clean up old entries
+        recentSpeechCache.entrySet().removeIf(entry -> 
+            currentTime - entry.getValue() > SPEECH_DUPLICATE_WINDOW);
+        
+        // Check if this text was spoken recently
+        if (recentSpeechCache.containsKey(normalizedText)) {
+            long lastTime = recentSpeechCache.get(normalizedText);
+            if (currentTime - lastTime < SPEECH_DUPLICATE_WINDOW) {
+                return true; // Duplicate detected
+            }
+        }
+        
+        // Add/update this text in the cache
+        recentSpeechCache.put(normalizedText, currentTime);
+        
+        return false;
+    }
+    
+    /**
      * Shutdown with thorough cleanup
      */
     public void shutdown() {
         Log.d(TAG, "🛑 Shutting down ElevenLabs TTS service");
         stopSpeech();
         cleanupCurrentSession();
+        recentSpeechCache.clear();
         executorService.shutdown();
     }
     

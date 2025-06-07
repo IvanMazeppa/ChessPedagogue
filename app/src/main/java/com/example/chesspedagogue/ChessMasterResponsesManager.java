@@ -164,19 +164,13 @@ public class ChessMasterResponsesManager {
                 
                 Log.e(TAG, "🚀 ALTERNATIVE: About to test Responses API call");
                 
-                // Test with Chat Completions instead to verify the method works
+                // Use proper Responses API call instead of chat completions
                 try {
-                    String quickResponse = openAIService.getChatCompletion(systemPrompt, enhancedInput);
-                    if (quickResponse != null && !quickResponse.trim().isEmpty()) {
-                        Log.e(TAG, "🚀 ALTERNATIVE: Chat completion successful!");
-                        callback.onResponseComplete(quickResponse.trim());
-                    } else {
-                        Log.e(TAG, "🚀 ALTERNATIVE: Empty response from Chat completion");
-                        callback.onError("Empty response");
-                    }
+                    Log.e(TAG, "🚀 ALTERNATIVE: Using Responses API");
+                    sendMessageInternal(sessionId, message, conversationContext, callback);
                 } catch (Exception e) {
-                    Log.e(TAG, "🚀 ALTERNATIVE: Chat completion error: " + e.getMessage());
-                    callback.onError("Chat completion error: " + e.getMessage());
+                    Log.e(TAG, "🚀 ALTERNATIVE: Responses API error: " + e.getMessage());
+                    callback.onError("Responses API error: " + e.getMessage());
                 }
                 
             } catch (Exception e) {
@@ -263,40 +257,54 @@ public class ChessMasterResponsesManager {
                 String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext, null);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
-                // Create response request using CORRECT Responses API format for fine-tuned models
+                // Create response request using CORRECT Responses API format
                 JSONObject requestBody = new JSONObject();
                 requestBody.put("model", getModelForMaster(session.masterName));
                 requestBody.put("stream", true);
                 
-                // CORRECT: Use "input" as array of message objects for fine-tuned models
-                // DO NOT use "instructions" field when using array format
-                JSONArray inputArray = new JSONArray();
+                // Check if master uses vector store (array format) or instructions approach
+                String vectorStoreId = getVectorStoreIdForMaster(session.masterName);
                 
-                // Add system message as first item in input array
-                JSONObject systemMessage = new JSONObject();
-                systemMessage.put("role", "system");
-                JSONArray systemContent = new JSONArray();
-                JSONObject systemTextContent = new JSONObject();
-                systemTextContent.put("type", "input_text");
-                systemTextContent.put("text", systemPrompt);
-                systemContent.put(systemTextContent);
-                systemMessage.put("content", systemContent);
-                inputArray.put(systemMessage);
-                
-                // Add user message
-                JSONObject userMessage = new JSONObject();
-                userMessage.put("role", "user");
-                JSONArray userContent = new JSONArray();
-                JSONObject userTextContent = new JSONObject();
-                userTextContent.put("type", "input_text");
-                userTextContent.put("text", enhancedInput);
-                userContent.put(userTextContent);
-                userMessage.put("content", userContent);
-                inputArray.put(userMessage);
-                
-                requestBody.put("input", inputArray);
-                
-                // NOTE: Do NOT add "instructions" field when using array format
+                if (vectorStoreId != null && !vectorStoreId.isEmpty()) {
+                    // Masters with vector stores: Use array format (Tal, Fischer, Carlsen, etc.)
+                    Log.d(TAG, "🗂️ Using array format for " + session.masterName + " (has vector store)");
+                    
+                    JSONArray inputArray = new JSONArray();
+                    
+                    // Add system message as first item in input array
+                    JSONObject systemMessage = new JSONObject();
+                    systemMessage.put("role", "system");
+                    JSONArray systemContent = new JSONArray();
+                    JSONObject systemTextContent = new JSONObject();
+                    systemTextContent.put("type", "input_text");
+                    systemTextContent.put("text", systemPrompt);
+                    systemContent.put(systemTextContent);
+                    systemMessage.put("content", systemContent);
+                    inputArray.put(systemMessage);
+                    
+                    // Add user message
+                    JSONObject userMessage = new JSONObject();
+                    userMessage.put("role", "user");
+                    JSONArray userContent = new JSONArray();
+                    JSONObject userTextContent = new JSONObject();
+                    userTextContent.put("type", "input_text");
+                    userTextContent.put("text", enhancedInput);
+                    userContent.put(userTextContent);
+                    userMessage.put("content", userContent);
+                    inputArray.put(userMessage);
+                    
+                    requestBody.put("input", inputArray);
+                    
+                } else {
+                    // Masters without vector stores: Use instructions approach (Kasparov)
+                    Log.d(TAG, "📝 Using instructions format for " + session.masterName + " (no vector store)");
+                    
+                    // Use instructions parameter for system prompt
+                    requestBody.put("instructions", systemPrompt);
+                    
+                    // Use simple string input for user message
+                    requestBody.put("input", enhancedInput);
+                }
                 
                 // Add previous response ID for stateful conversation
                 if (session.previousResponseId != null) {
@@ -671,6 +679,8 @@ public class ChessMasterResponsesManager {
                 return "asst_3PUe4Mra1zfY1VEfcDxF0xa9";
             case "alekhine": // 🏛️ NEW ALEKHINE ASSISTANT!
                 return "asst_wnshRkbnaca2vkRxYqYZDcLu";
+            case "kasparov": // ♔ NEW KASPAROV ASSISTANT!
+                return "asst_e6coEccRgsWqzfwsQG1xTwTs";
             default:
                 // For masters without assistants, return null to use regular completion
                 return null;
@@ -867,36 +877,29 @@ public class ChessMasterResponsesManager {
      * 🎭 Get context-specific length instructions for natural conversation flow
      */
     private String getLengthInstructionsForContext(String conversationContext) {
+        // Use schema-based length guidance for better control
         if (conversationContext == null) {
-            return " Keep responses concise (2-3 sentences max) and directly relevant. ";
+            return " Keep responses concise (1-2 sentences) and directly relevant. ";
         }
         
+        // Determine trigger type from context
+        String triggerType = "position_change"; // Default
         String context = conversationContext.toLowerCase();
         
-        // Opening conversations: Longer, more detailed introduction
         if (context.contains("opening") || context.contains("game between")) {
-            return " For opening commentary, give a thoughtful introduction (3-4 sentences). Set the scene, express your anticipation, and share your initial thoughts about the position or opening choice. ";
+            triggerType = "opening";
+        } else if (context.contains("brilliant") || context.contains("blunder")) {
+            triggerType = "brilliant_move";
+        } else if (context.contains("endgame") || context.contains("game ended")) {
+            triggerType = "endgame";
         }
         
-        // Follow-up conversations: Shorter, more conversational 
-        else if (context.contains("response to") || context.contains("reply") || context.contains("conversation turn")) {
-            return " For follow-up responses, keep it conversational and brief (1-2 sentences). Respond naturally to what was just said, like in real conversation. ";
-        }
+        // Get schema and determine if this is initial or response
+        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(triggerType);
+        boolean isInitial = !context.contains("response to") && !context.contains("reply") && !context.contains("conversation turn");
         
-        // Emotional responses: Medium length for impact
-        else if (context.contains("emotional") || context.contains("blunder") || context.contains("brilliant")) {
-            return " For emotional reactions, express yourself with feeling (2-3 sentences). Show your personality and reaction to the dramatic moment. ";
-        }
-        
-        // Endgame conversations: Thoughtful and reflective
-        else if (context.contains("endgame") || context.contains("game ended")) {
-            return " For endgame analysis, be reflective and analytical (3-4 sentences). Share your thoughts on the game's key moments and outcome. ";
-        }
-        
-        // Default: Standard length
-        else {
-            return " Keep responses concise (2-3 sentences max) and directly relevant. ";
-        }
+        // Return schema-based guidance
+        return " " + ConversationSchema.getLengthGuidance(schema, isInitial) + " ";
     }
     
     /**
@@ -916,6 +919,8 @@ public class ChessMasterResponsesManager {
                 return "vs_683a6d79f3f881918134880655179275";
             case "alekhine": // 🏛️ ALEKHINE VECTOR STORE - Correct ID provided
                 return "vs_683e1b8b55d08191accfeebc2d4900db";
+            case "kasparov": // ♔ KASPAROV - Using new instructions approach (no vector store)
+                return null;
             default:
                 return null;
         }

@@ -30,6 +30,7 @@ public class SpectatorConversationOrchestrator {
     private final PersonalityEngine personalityEngine;
     private final EmotionalIntelligenceManager emotionalIntelligence;
     private final ConversationMemoryManager conversationMemory;
+    private final ConversationVarietyManager varietyManager;
     private final ExecutorService executorService;
     private final Handler mainHandler;
     
@@ -55,6 +56,7 @@ public class SpectatorConversationOrchestrator {
         int turnCount;
         long startTime;
         boolean isActive;
+        String triggerType; // Schema: what triggered this conversation
         
         // 🎭 NEW: Evaluation data for emotional analysis
         Float currentEval;
@@ -63,24 +65,25 @@ public class SpectatorConversationOrchestrator {
         // 🌟 ENHANCED: EmotionalContext for inter-master awareness
         EmotionalContext emotionalContext;
         
-        ConversationState(String conversationId, String whitePlayer, String blackPlayer) {
+        ConversationState(String conversationId, String whitePlayer, String blackPlayer, String triggerType) {
             this.conversationId = conversationId;
             this.whitePlayer = whitePlayer;
             this.blackPlayer = blackPlayer;
+            this.triggerType = triggerType;
             this.turns = new ArrayList<>();
             this.turnCount = 0;
             this.startTime = System.currentTimeMillis();
             this.isActive = true;
         }
         
-        ConversationState(String conversationId, String whitePlayer, String blackPlayer, Float currentEval, Float previousEval) {
-            this(conversationId, whitePlayer, blackPlayer);
+        ConversationState(String conversationId, String whitePlayer, String blackPlayer, String triggerType, Float currentEval, Float previousEval) {
+            this(conversationId, whitePlayer, blackPlayer, triggerType);
             this.currentEval = currentEval;
             this.previousEval = previousEval;
         }
         
-        ConversationState(String conversationId, String whitePlayer, String blackPlayer, Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
-            this(conversationId, whitePlayer, blackPlayer, currentEval, previousEval);
+        ConversationState(String conversationId, String whitePlayer, String blackPlayer, String triggerType, Float currentEval, Float previousEval, EmotionalContext emotionalContext) {
+            this(conversationId, whitePlayer, blackPlayer, triggerType, currentEval, previousEval);
             this.emotionalContext = emotionalContext;
         }
     }
@@ -140,6 +143,7 @@ public class SpectatorConversationOrchestrator {
         this.personalityEngine = PersonalityEngine.getInstance(context, stockfishManager);
         this.emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
         this.conversationMemory = ConversationMemoryManager.getInstance(context);
+        this.varietyManager = ConversationVarietyManager.getInstance(context);
         
         // 🎭 ENHANCED: Initialize emotional intelligence with default masters for relationship tracking
         this.emotionalIntelligence.initializeWithHistory("tal", "fischer"); // Default initialization
@@ -269,9 +273,9 @@ public class SpectatorConversationOrchestrator {
         // Create ConversationState with or without EmotionalContext
         if (emotionalContext != null) {
             Log.d(TAG, "🌟 Creating conversation with EmotionalContext for inter-master awareness");
-            state = new ConversationState(conversationId, whitePlayer, blackPlayer, currentEval, previousEval, emotionalContext);
+            state = new ConversationState(conversationId, whitePlayer, blackPlayer, triggerType, currentEval, previousEval, emotionalContext);
         } else {
-            state = new ConversationState(conversationId, whitePlayer, blackPlayer, currentEval, previousEval);
+            state = new ConversationState(conversationId, whitePlayer, blackPlayer, triggerType, currentEval, previousEval);
         }
         
         activeConversations.put(conversationId, state);
@@ -840,32 +844,17 @@ public class SpectatorConversationOrchestrator {
     }
     
     private boolean shouldTriggerResponse(String statement, ConversationState state) {
-        // Check conversation limits
-        if (state.turnCount >= MAX_CONVERSATION_TURNS) return false;
+        // Get schema for current conversation type
+        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(state.triggerType);
         
-        // Always continue for first few turns to establish banter
-        if (state.turnCount < 5) return true; // Increased minimum turns
-        
-        // Check statement triggers - be more permissive
-        String lower = statement.toLowerCase();
-        return lower.contains("?") || lower.contains("!") || 
-               lower.contains("but") || lower.contains("however") || 
-               lower.contains("interesting") || lower.contains("you") ||
-               lower.contains("your") || lower.length() > 40;
+        // Use schema-based logic instead of overly permissive triggers
+        return ConversationSchema.shouldRespondToStatement(schema, statement, state.turnCount);
     }
     
     private boolean shouldContinueConversation(String response, ConversationState state) {
-        // Check turn limit
-        if (state.turnCount >= MAX_CONVERSATION_TURNS) return false;
-        
-        // Continue for at least 4-5 exchanges for natural flow
-        if (state.turnCount < 8) return true; // Increased minimum exchanges
-        
-        // Check response characteristics - be more permissive
-        return response.length() > 20 && 
-               (response.contains("?") || response.contains("!") || 
-                response.contains("...") || response.contains(",") ||
-                Math.random() < 0.7); // 70% chance to continue for natural flow
+        // Use schema-based logic for natural conversation flow
+        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(state.triggerType);
+        return ConversationSchema.shouldRespondToStatement(schema, response, state.turnCount);
     }
     
     /**
@@ -1933,6 +1922,7 @@ public class SpectatorConversationOrchestrator {
             case "fischer":
             case "tal":
             case "anand":
+            case "kasparov":
                 return true;
             default:
                 Log.w(TAG, "🚫 Master " + masterName + " doesn't have Responses API configured");
@@ -2136,16 +2126,69 @@ public class SpectatorConversationOrchestrator {
     }
     
     private String createFallbackDisagreementResponse(String master, String opponent) {
+        // Generate multiple disagreement options to prevent repetition
+        List<String> disagreementOptions = new ArrayList<>();
+        
         switch (master) {
-            case "kasparov": return "I must respectfully disagree! Bold play is sometimes necessary.";
-            case "karpov": return "Perhaps, but positional factors suggest otherwise.";
-            case "kramnik": return "The computer evaluation might tell a different story.";
-            case "botvinnik": return "Scientific analysis requires examining all variations.";
-            case "morphy": return "The natural flow of the game suggests a different path.";
-            case "lasker": return "Chess allows for different approaches and philosophies.";
-            case "capablanca": return "I see the position differently, with respect.";
-            default: return "An interesting perspective, though I see it differently.";
+            case "kasparov": 
+                disagreementOptions.add("I must respectfully disagree! Bold play is sometimes necessary.");
+                disagreementOptions.add("With all respect, dynamic factors favor a different approach!");
+                disagreementOptions.add("I see it differently - the position calls for more aggressive play!");
+                disagreementOptions.add("Forgive me, but I believe we need maximum energy here!");
+                break;
+            case "karpov": 
+                disagreementOptions.add("Perhaps, but positional factors suggest otherwise.");
+                disagreementOptions.add("I respectfully see the structural elements differently.");
+                disagreementOptions.add("With due consideration, the static factors point elsewhere.");
+                disagreementOptions.add("Allow me to offer a different positional perspective.");
+                break;
+            case "kramnik": 
+                disagreementOptions.add("The computer evaluation might tell a different story.");
+                disagreementOptions.add("Modern analysis suggests an alternative approach.");
+                disagreementOptions.add("I respectfully question this assessment based on deep preparation.");
+                disagreementOptions.add("Technical analysis points to a different conclusion.");
+                break;
+            case "botvinnik": 
+                disagreementOptions.add("Scientific analysis requires examining all variations.");
+                disagreementOptions.add("Methodical study reveals alternative possibilities.");
+                disagreementOptions.add("Systematic preparation suggests a different path.");
+                disagreementOptions.add("Theoretical research indicates another direction.");
+                break;
+            case "morphy": 
+                disagreementOptions.add("The natural flow of the game suggests a different path.");
+                disagreementOptions.add("With respect, the classical principles guide us elsewhere.");
+                disagreementOptions.add("Natural development points to an alternative approach.");
+                disagreementOptions.add("Clear thinking reveals a different route forward.");
+                break;
+            case "lasker": 
+                disagreementOptions.add("Chess allows for different approaches and philosophies.");
+                disagreementOptions.add("The psychology of the position suggests otherwise.");
+                disagreementOptions.add("Human understanding often differs from pure calculation.");
+                disagreementOptions.add("Experience teaches us to consider alternative viewpoints.");
+                break;
+            case "capablanca": 
+                disagreementOptions.add("I see the position differently, with respect.");
+                disagreementOptions.add("Simplicity and clarity suggest another direction.");
+                disagreementOptions.add("Natural judgment points to a different approach.");
+                disagreementOptions.add("With all respect, logical thinking leads elsewhere.");
+                break;
+            default: 
+                disagreementOptions.add("An interesting perspective, though I see it differently.");
+                disagreementOptions.add("I respectfully offer an alternative viewpoint.");
+                disagreementOptions.add("With consideration, I must present a different analysis.");
+                disagreementOptions.add("Allow me to share a contrasting perspective.");
+                break;
         }
+        
+        // Select a response that hasn't been used recently
+        String selected = selectBestResponse(master, disagreementOptions, null);
+        
+        // Track this disagreement response
+        varietyManager.trackResponse(master, selected);
+        
+        Log.d(TAG, String.format("🎯 Selected disagreement response for %s: %.40s...", master, selected));
+        
+        return selected;
     }
     
     private String createFallbackGeneralResponse(String master, String opponent, String statement) {
@@ -2176,86 +2219,177 @@ public class SpectatorConversationOrchestrator {
     }
 
     /**
-     * Create simple fallback dialogue based on master personality
+     * Enhanced fallback dialogue with variety and repetition detection
      */
     private String createFallbackDialogue(String speaker, String opponent, String triggerType, String gameContext) {
         String masterLower = speaker.toLowerCase();
         
-        // Basic personality-based responses for non-Responses API masters
+        // Generate multiple candidate responses and select one that hasn't been used recently
+        List<String> candidateResponses = generateCandidateResponses(masterLower, triggerType);
+        
+        // Check conversation memory for guidance
+        ConversationMemoryManager.ConversationGuidance guidance = 
+            conversationMemory.getConversationGuidanceWithEmotion(speaker, opponent, gameContext, null, null);
+        
+        // Filter out overused phrases and select best response
+        String selectedResponse = selectBestResponse(speaker, candidateResponses, guidance);
+        
+        // Track this response to prevent future repetition
+        varietyManager.trackResponse(speaker, selectedResponse);
+        
+        // Record in conversation memory
+        conversationMemory.recordConversationWithEmotionAndOpponent(
+            speaker, selectedResponse, gameContext, "analytical", 0.6f, opponent, "listening");
+        
+        Log.d(TAG, String.format("🎯 Selected fallback response for %s: %.50s...", speaker, selectedResponse));
+        
+        return selectedResponse;
+    }
+    
+    /**
+     * Generate multiple candidate responses for variety
+     */
+    private List<String> generateCandidateResponses(String masterLower, String triggerType) {
+        List<String> candidates = new ArrayList<>();
+        
+        // Get base responses for this master and trigger
         switch (masterLower) {
             case "kasparov":
                 switch (triggerType) {
-                    case "opening": return "This opening requires dynamic play and sharp calculation!";
-                    case "brilliant_move": return "Magnificent! This shows the true fighting spirit of chess!";
-                    case "blunder": return "A serious mistake! Chess punishes such oversights mercilessly.";
-                    case "response": return "I must respond with maximum energy and initiative!";
-                    default: return "The position demands concrete analysis and bold decisions.";
+                    case "opening": 
+                        candidates.add("This opening requires dynamic play and sharp calculation!");
+                        candidates.add("We must seize the initiative from the very first moves!");
+                        candidates.add("Bold opening choices define the character of the entire game!");
+                        candidates.add("The opening battle sets the tone for tactical complications!");
+                        break;
+                    case "brilliant_move": 
+                        candidates.add("Magnificent! This shows the true fighting spirit of chess!");
+                        candidates.add("Spectacular! This is what I call concrete chess!");
+                        candidates.add("Brilliant execution! The position comes alive with possibilities!");
+                        candidates.add("Powerful play! This demonstrates championship-level thinking!");
+                        break;
+                    case "blunder": 
+                        candidates.add("A serious mistake! Chess punishes such oversights mercilessly.");
+                        candidates.add("Unforgivable! At this level, precision is everything!");
+                        candidates.add("A critical error that shifts the entire evaluation!");
+                        candidates.add("Such imprecision cannot be tolerated in serious chess!");
+                        break;
+                    case "response": 
+                        candidates.add("I must respond with maximum energy and initiative!");
+                        candidates.add("The position calls for dynamic counter-action!");
+                        candidates.add("We cannot allow passive play in such sharp positions!");
+                        candidates.add("Active piece play is the key to maintaining balance!");
+                        break;
+                    default: 
+                        candidates.add("The position demands concrete analysis and bold decisions.");
+                        candidates.add("Sharp tactical ideas emerge from every piece placement!");
+                        candidates.add("Dynamic factors outweigh static considerations here!");
+                        candidates.add("The struggle intensifies with each passing move!");
+                        break;
                 }
+                break;
                 
             case "karpov":
                 switch (triggerType) {
-                    case "opening": return "A solid positional approach will serve us well here.";
-                    case "brilliant_move": return "Excellent technique. Every piece finds its perfect square.";
-                    case "blunder": return "Such imprecision disturbs the harmony of the position.";
-                    case "response": return "Patience and accuracy will reveal the correct path.";
-                    default: return "The position requires careful evaluation and precise technique.";
+                    case "opening": 
+                        candidates.add("A solid positional approach will serve us well here.");
+                        candidates.add("Methodical development creates lasting advantages.");
+                        candidates.add("Patient maneuvering will reveal the position's secrets.");
+                        candidates.add("Structural considerations guide our piece placement.");
+                        break;
+                    case "brilliant_move": 
+                        candidates.add("Excellent technique. Every piece finds its perfect square.");
+                        candidates.add("Masterful coordination! The pieces work in perfect harmony.");
+                        candidates.add("Refined execution shows deep positional understanding.");
+                        candidates.add("This demonstrates the beauty of precise technique.");
+                        break;
+                    case "blunder": 
+                        candidates.add("Such imprecision disturbs the harmony of the position.");
+                        candidates.add("Inaccurate play compromises the structural foundation.");
+                        candidates.add("This error creates unnecessary weaknesses.");
+                        candidates.add("Positional misjudgment leads to lasting problems.");
+                        break;
+                    case "response": 
+                        candidates.add("Patience and accuracy will reveal the correct path.");
+                        candidates.add("Careful evaluation prevents unnecessary risks.");
+                        candidates.add("Steady improvement maintains the positional balance.");
+                        candidates.add("Methodical play extracts maximum value from each move.");
+                        break;
+                    default: 
+                        candidates.add("The position requires careful evaluation and precise technique.");
+                        candidates.add("Positional factors determine the optimal continuation.");
+                        candidates.add("Systematic improvement of piece coordination is key.");
+                        candidates.add("Refined technique converts small advantages.");
+                        break;
                 }
-                
-            case "kramnik":
-                switch (triggerType) {
-                    case "opening": return "Modern theory suggests several interesting possibilities here.";
-                    case "brilliant_move": return "Computer-like precision! This is how chess should be played.";
-                    case "blunder": return "The engines would never approve of such a move.";
-                    case "response": return "Let me analyze this systematically...";
-                    default: return "Deep preparation and technical accuracy are essential.";
-                }
-                
-            case "botvinnik":
-                switch (triggerType) {
-                    case "opening": return "Scientific approach to the opening is paramount.";
-                    case "brilliant_move": return "This demonstrates proper chess understanding and preparation.";
-                    case "blunder": return "Insufficient analysis leads to such tactical oversights.";
-                    case "response": return "Systematic study reveals the correct plan.";
-                    default: return "Chess is a science that rewards methodical preparation.";
-                }
-                
-            case "morphy":
-                switch (triggerType) {
-                    case "opening": return "Rapid development and central control - the eternal principles!";
-                    case "brilliant_move": return "Beautiful! This captures the true essence of chess artistry.";
-                    case "blunder": return "Even the strongest players can fall prey to tactical blindness.";
-                    case "response": return "The position calls for swift and decisive action!";
-                    default: return "Clear thinking and natural development guide the way.";
-                }
-                
-            case "lasker":
-                switch (triggerType) {
-                    case "opening": return "Understanding the psychology of the position is crucial.";
-                    case "brilliant_move": return "Practical strength conquers theoretical knowledge!";
-                    case "blunder": return "Human nature reveals itself even in the royal game.";
-                    case "response": return "The struggle continues - every move tells a story.";
-                    default: return "Chess reflects the eternal struggle between mind and will.";
-                }
-                
-            case "capablanca":
-                switch (triggerType) {
-                    case "opening": return "Simplicity and clarity should guide our play.";
-                    case "brilliant_move": return "Natural and logical - this is how chess should flow.";
-                    case "blunder": return "The position was so clear, yet confusion crept in.";
-                    case "response": return "The clearest path forward reveals itself to patient study.";
-                    default: return "Natural moves and sound judgment surpass complex calculations.";
-                }
+                break;
                 
             default:
                 // Generic fallback for any other masters
                 switch (triggerType) {
-                    case "opening": return "An interesting opening choice with rich possibilities.";
-                    case "brilliant_move": return "Excellent play! This move shows deep understanding.";
-                    case "blunder": return "A critical error that changes the evaluation significantly.";
-                    case "response": return "The position demands careful consideration.";
-                    default: return "The game continues with interesting challenges ahead.";
+                    case "opening": 
+                        candidates.add("An interesting opening choice with rich possibilities.");
+                        candidates.add("The opening setup promises complex middlegame play.");
+                        candidates.add("This approach leads to instructive strategic themes.");
+                        break;
+                    case "brilliant_move": 
+                        candidates.add("Excellent play! This move shows deep understanding.");
+                        candidates.add("Impressive! The calculation must have been demanding.");
+                        candidates.add("Beautiful execution of a complex idea!");
+                        break;
+                    case "blunder": 
+                        candidates.add("A critical error that changes the evaluation significantly.");
+                        candidates.add("An unfortunate oversight in a crucial moment.");
+                        candidates.add("Such mistakes are part of the human element in chess.");
+                        break;
+                    case "response": 
+                        candidates.add("The position demands careful consideration.");
+                        candidates.add("Multiple factors require thoughtful evaluation.");
+                        candidates.add("This moment calls for precise judgment.");
+                        break;
+                    default: 
+                        candidates.add("The game continues with interesting challenges ahead.");
+                        candidates.add("Each move brings new possibilities to explore.");
+                        candidates.add("The position evolves with fascinating complexity.");
+                        break;
                 }
+                break;
         }
+        
+        return candidates;
+    }
+    
+    /**
+     * Select the best response from candidates, avoiding recently used phrases
+     */
+    private String selectBestResponse(String speaker, List<String> candidates, 
+                                    ConversationMemoryManager.ConversationGuidance guidance) {
+        if (candidates.isEmpty()) {
+            return "The position offers many interesting possibilities.";
+        }
+        
+        // Filter out responses that would be repetitive
+        List<String> filteredCandidates = new ArrayList<>();
+        for (String candidate : candidates) {
+            if (!varietyManager.isPotentialRepetition(speaker, candidate)) {
+                filteredCandidates.add(candidate);
+            }
+        }
+        
+        // If all candidates are potentially repetitive, use the least recent one
+        if (filteredCandidates.isEmpty()) {
+            Log.w(TAG, "⚠️ All candidate responses are potentially repetitive for " + speaker);
+            filteredCandidates = candidates; // Use all candidates as fallback
+        }
+        
+        // Select randomly from filtered candidates
+        Random random = new Random();
+        String selected = filteredCandidates.get(random.nextInt(filteredCandidates.size()));
+        
+        Log.d(TAG, String.format("🎯 Selected response for %s: %d candidates → %d filtered → %.30s...", 
+               speaker, candidates.size(), filteredCandidates.size(), selected));
+        
+        return selected;
     }
 
     public void cleanup() {

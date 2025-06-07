@@ -57,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
 
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
-    private AlertDialog transcriptionDialog;
     // Handler for UI updates
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     // State tracking
@@ -149,9 +148,8 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                 @Override
                 public void onTranscriptionReceived(String transcribedText) {
                     Log.d(TAG, "📝 Transcription received: " + transcribedText);
-                    // Show transcribed text in UI popup
+                    // Update UI state directly (transcription popup removed)
                     mainHandler.post(() -> {
-                        showTranscriptionPopup(transcribedText);
                         updateUIState(ProcessingState.THINKING);
                     });
                 }
@@ -2608,32 +2606,6 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         }
     }
 
-    /**
-     * Show transcription popup overlay
-     */
-    private void showTranscriptionPopup(String transcribedText) {
-        // Dismiss any existing transcription popup
-        if (transcriptionDialog != null && transcriptionDialog.isShowing()) {
-            transcriptionDialog.dismiss();
-        }
-
-        // Create a simple popup showing what was transcribed
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("🎤 You said:")
-               .setMessage("\"" + transcribedText + "\"")
-               .setIcon(R.drawable.ic_microphone)
-               .setCancelable(true);
-
-        transcriptionDialog = builder.create();
-        transcriptionDialog.show();
-
-        // Auto-dismiss after 3 seconds
-        mainHandler.postDelayed(() -> {
-            if (transcriptionDialog != null && transcriptionDialog.isShowing()) {
-                transcriptionDialog.dismiss();
-            }
-        }, 3000);
-    }
 
     // ==================== Always-Listening Voice Control Manager ====================
 
@@ -2716,8 +2688,7 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                 String voiceText = command.substring("voice_input:".length());
                 Log.d(TAG, "🎤 Processing voice input: " + voiceText);
                 
-                // Show transcription and trigger processing
-                showTranscriptionPopup(voiceText);
+                // Process voice input directly (transcription popup removed)
                 updateUIState(ProcessingState.THINKING, voiceText);
                 
                 // 🎯 TRIGGER COACH RESPONSE: Connect STT to coach response system

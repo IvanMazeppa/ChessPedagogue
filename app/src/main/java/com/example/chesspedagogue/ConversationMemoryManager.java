@@ -244,13 +244,32 @@ public class ConversationMemoryManager {
     }
     
     /**
-     * 🔍 Extract topic from conversation content
+     * 🔍 Enhanced topic extraction with repetitive phrase detection
      */
     private String extractTopic(String content) {
         String lowerContent = content.toLowerCase();
         
-        // Define topic patterns
-        if (containsWords(lowerContent, "perfect", "perfection", "precise", "exact", "truth")) {
+        // ENHANCED: Check for specific repetitive phrases we've identified
+        if (containsWords(lowerContent, "bold play", "fighting spirit", "respectfully disagree", "maximum energy")) {
+            return "aggressive_philosophy";
+        } else if (containsWords(lowerContent, "accuracy", "precision", "without accuracy", "fighting spirit is nothing")) {
+            return "precision_vs_aggression";
+        } else if (containsWords(lowerContent, "positional factors", "structural", "harmony of the position")) {
+            return "positional_structure";
+        } else if (containsWords(lowerContent, "computer evaluation", "engines", "technical accuracy")) {
+            return "computer_analysis";
+        } else if (containsWords(lowerContent, "scientific approach", "methodical", "systematic")) {
+            return "scientific_method";
+        } else if (containsWords(lowerContent, "natural flow", "classical principles", "development")) {
+            return "classical_principles";
+        } else if (containsWords(lowerContent, "different approaches", "philosophies", "psychology")) {
+            return "chess_psychology";
+        } else if (containsWords(lowerContent, "simplicity", "clarity", "natural")) {
+            return "natural_play";
+        }
+        
+        // Original topic patterns
+        else if (containsWords(lowerContent, "perfect", "perfection", "precise", "exact", "truth")) {
             return "perfectionism";
         } else if (containsWords(lowerContent, "practical", "pragmatic", "realistic", "chances")) {
             return "pragmatism";

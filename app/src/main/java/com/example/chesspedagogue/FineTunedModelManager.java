@@ -34,6 +34,7 @@ public class FineTunedModelManager {
     private static final String KEY_CARLSEN_ASSISTANT_ID = "carlsen_assistant_id";
     private static final String KEY_ANAND_ASSISTANT_ID = "anand_assistant_id";
     private static final String KEY_ALEKHINE_ASSISTANT_ID = "alekhine_assistant_id";
+    private static final String KEY_KASPAROV_ASSISTANT_ID = "kasparov_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -55,13 +56,17 @@ public class FineTunedModelManager {
     private static final String ALEKHINE_ASSISTANT_ID = "asst_wnshRkbnaca2vkRxYqYZDcLu"; // Updated Alekhine assistant
     private static final String ALEKHINE_VECTOR_STORE_ID = "vs_683a6d79f3f881918134880655179275"; // Alekhine vector store
 
+    // ♔ KASPAROV CONFIGURATION - NEW GPT-4.1 MODEL!
+    private static final String KASPAROV_ASSISTANT_ID = "asst_e6coEccRgsWqzfwsQG1xTwTs"; // Your Kasparov assistant  
+    private static final String KASPAROV_VECTOR_STORE_ID = "vs_kasparov_original_id"; // Kasparov vector store
+
     // Model constants - updated for enhanced models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
     private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4"; // 🆕 UPDATED!
     private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz"; // NEW GPT-4.1 KASPAROV MODEL!
     private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
     private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
@@ -1256,6 +1261,8 @@ public class FineTunedModelManager {
                 return getAnandAssistantId();
             case "alekhine": // 🏛️ NEW ALEKHINE SUPPORT!
                 return getAlekhineAssistantId();
+            case "kasparov": // ♔ NEW KASPAROV SUPPORT!
+                return getKasparovAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1333,6 +1340,20 @@ public class FineTunedModelManager {
     }
 
     /**
+     * ♔ NEW: Get Kasparov Assistant ID with vector store support!
+     */
+    public String getKasparovAssistantId() {
+        // Use your pre-configured Kasparov assistant
+        Log.d(TAG, "♔ Using configured Kasparov assistant: " + KASPAROV_ASSISTANT_ID);
+        assistantIds.put("kasparov", KASPAROV_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_KASPAROV_ASSISTANT_ID, KASPAROV_ASSISTANT_ID).apply();
+
+        return KASPAROV_ASSISTANT_ID;
+    }
+
+    /**
      * ENHANCED: Check if master should use Assistants API (now includes Anand!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
@@ -1340,7 +1361,8 @@ public class FineTunedModelManager {
             case "tal":
             case "fischer": // 🆕 FISCHER NOW USES ASSISTANTS API!
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
-            case "alekhine": // 🏛️ ALEKHINE NOW USES ASSISTANTS API!
+            // case "alekhine": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
+            // case "kasparov": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
             // case "anand": // 🚫 DISABLED ASSISTANTS API TO REDUCE VERBOSITY!
             case "botvinnik":
                 return true;
@@ -1363,8 +1385,10 @@ public class FineTunedModelManager {
                 return getCarlsenAssistantId();
             case "anand": // 🏆 ANAND GETS HIS OWN ASSISTANT!
                 return getAnandAssistantId();
-            case "alekhine": // 🏛️ ALEKHINE GETS HIS OWN ASSISTANT!
-                return getAlekhineAssistantId();
+            // case "alekhine": // 🚫 DISABLED - NOW USES FINE-TUNED WITH INSTRUCTIONS!
+            //     return getAlekhineAssistantId();
+            // case "kasparov": // 🚫 DISABLED - NOW USES FINE-TUNED WITH INSTRUCTIONS!
+            //     return getKasparovAssistantId();
             default:
                 // Default to Tal assistant for other masters
                 String assistantId = getTalAssistantId();

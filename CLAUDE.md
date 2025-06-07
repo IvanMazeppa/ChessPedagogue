@@ -119,10 +119,22 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - **Master Selection**: Full roster of 12 chess legends with unique personalities
 - **Voice Comments**: STT integration for commenting during spectator games
 
-**6. Threading Model**
+**6. Emotional Intelligence & Emergent Behavior System**
+- `EmotionalIntelligenceManager`: 12+ master-specific emotional profiles with intensity tracking
+- `EmergentConversationManager`: Dynamic topic discovery and emergent behavior tracking
+- `EmotionalContext`: Real-time emotional state management and contagion effects
+- `RelationshipPersistenceManager`: Long-term master relationships and emotional memory
+- **Emotional Contagion**: Masters influence each other's emotional states (30% base rate)
+- **Master-Specific Traits**: Tal (drama_factor 2.0x), Fischer (intensity 1.7x), unique personalities
+- **Emergent Topics**: System extracts and tracks naturally occurring conversation themes
+- **Voice-Emotion Integration**: ElevenLabs TTS with emotional emphasis and dramatic pauses
+- **Relationship Evolution**: Masters develop ongoing dynamics, nicknames, and inside references
+- **Topic Fatigue Management**: Prevents repetitive discussions while maintaining authenticity
+
+**7. Threading Model**
 - UI operations on main thread
 - Stockfish engine runs on dedicated background thread
-- Network calls (OpenAI API, Groq STT) use ExecutorService thread pool
+- Network calls (Responses API, Groq STT) use ExecutorService thread pool
 - Database queries run on background threads
 - Handler/LiveData pattern for thread-safe UI updates
 
@@ -130,10 +142,12 @@ The app follows Model-View-ViewModel pattern with clear separation:
 
 **OpenAI Services**
 - Requires API key stored in SharedPreferences (never commit!)
-- Chat completions use GPT-4 or fine-tuned models
-- **Assistants API**: Tal, Fischer, and Carlsen use assistants with vector stores
+- **IMPORTANT**: This project uses the **Responses API**, not chat completions
+- `ResponsesAPIService`: Handles streaming responses from OpenAI's Responses API
+- **Assistants API**: Tal, Fischer, and Carlsen use assistants with vector stores  
 - TTS uses OpenAI's voice API with master-specific accents and voices
 - All API calls include proper error handling and retry logic
+- **Migration Note**: Chat completions are deprecated in favor of Responses API
 
 **Groq Speech Recognition**
 - Fast, accurate speech-to-text for voice interactions
@@ -154,6 +168,14 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Indexed by master_name and fen for fast lookups
 - Populated from JSON files in assets during first launch
 - **Expanded Coverage**: Historical games from all 12 chess masters
+
+**Emergent Behavior & Emotional Intelligence Tables**
+- **master_relationships**: Tracks respect levels, rivalry intensity, friendship bonds between masters
+- **emotional_memory**: Persistent storage of emotional reactions to specific topics
+- **conversation_topics**: Records emergent topics, their frequency, and emotional associations
+- **topic_fatigue**: Tracks overused topics to maintain conversation freshness
+- **emotional_contagion_log**: History of emotional influence events between masters
+- **emergent_patterns**: Automatically detected conversation and emotional patterns
 
 ### State Management
 
@@ -228,6 +250,24 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Minimal comments, self-documenting code preferred
 - **Error Resilience**: Multiple fallback mechanisms for voice and AI features
 
+### Emergent Behavior Examples & Current Features
+
+**Active Emergent Behaviors**
+- **Emotional Contagion**: Fischer's harshness increases Carlsen's calm confidence (defensive reaction)
+- **Cross-Master Influence**: Tal's excitement transforms to "intrigue" in analytical masters
+- **Dynamic Relationship Evolution**: Masters develop nicknames, inside jokes, and ongoing rivalries
+- **Topic Discovery**: System automatically extracts chess concepts and philosophical themes from natural conversation
+- **Emotional Memory**: Masters remember how they felt about specific topics across sessions
+- **Voice-Emotion Integration**: Masters react to emotional delivery, not just content
+- **Conversation Freshness**: Topic fatigue detection prevents repetitive discussions
+
+**Emergent Behavior Roadmap** (See EMERGENT_BEHAVIOR_EMOTIONAL_INTELLIGENCE_ROADMAP.md)
+- **Phase 1**: Voice-emotion feedback loops (masters react to HOW things are said)
+- **Phase 2**: Multi-layered emotional complexity (hidden emotions, defensive mechanisms)
+- **Phase 3**: Adaptive emotional learning (masters learn optimal strategies with opponents)
+- **Phase 4**: Emotional momentum & cascades (chain reactions and building intensity)
+- **Phase 5**: Meta-emotional awareness (masters become aware of their own patterns)
+
 ### Known Issues & Future Enhancements
 
 **Potential Wake Word Implementation**
@@ -240,6 +280,7 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Database query optimization for large position datasets
 - Memory management for long spectator games
 - Background processing improvements for AI responses
+- Emotional state caching for faster contagion calculations
 
 ### Debugging Tips
 
@@ -260,3 +301,13 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Verify assistant IDs and vector store configuration
 - Monitor API response codes and error handling
 - Test personality profile selection and traits
+
+**Emotional Intelligence & Emergent Behavior Issues**
+- Monitor emotional contagion logs (🎭 EMOTIONAL tags)
+- Check EmergentConversationManager topic extraction
+- Verify relationship persistence database updates
+- Track emotional intensity calculations and thresholds
+- Test master-specific emotional profile loading
+- Verify topic fatigue detection and refresh mechanisms
+- Monitor conversation memory and summarization
+- Check voice emotional cue detection and reactions

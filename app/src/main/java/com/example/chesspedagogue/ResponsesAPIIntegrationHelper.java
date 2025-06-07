@@ -40,15 +40,16 @@ public class ResponsesAPIIntegrationHelper {
         this.useResponsesAPI = new AtomicBoolean(prefs.getBoolean(KEY_USE_RESPONSES_API, true));
         this.masterResponsesEnabled = loadMasterSettings();
         
-        // FORCE ENABLE: Always ensure the 5 working masters are enabled (don't rely on cache)
+        // FORCE ENABLE: Always ensure the 6 working masters are enabled (don't rely on cache)
         enableResponsesAPIForMaster("tal", true);
         enableResponsesAPIForMaster("fischer", true);
         enableResponsesAPIForMaster("carlsen", true);
         enableResponsesAPIForMaster("anand", true);
         enableResponsesAPIForMaster("alekhine", true); // 🏛️ ALEKHINE ENABLED
+        enableResponsesAPIForMaster("kasparov", true); // ♔ KASPAROV ENABLED
         
-        Log.d(TAG, "🔧 FORCE ENABLED Responses API for the 5 working masters: Tal, Fischer, Carlsen, Anand, Alekhine");
-        Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) will use fallback dialogue");
+        Log.d(TAG, "🔧 FORCE ENABLED Responses API for the 6 working masters: Tal, Fischer, Carlsen, Anand, Alekhine, Kasparov");
+        Log.d(TAG, "📋 Other masters (Kramnik, Karpov, etc.) will use fallback dialogue");
         
         // IMPORTANT: Enable for main game mode by setting a preference flag
         prefs.edit().putBoolean("responses_api_main_game_enabled", true).apply();
@@ -218,6 +219,7 @@ public class ResponsesAPIIntegrationHelper {
             case "carlsen":
             case "anand":
             case "alekhine": // 🏛️ ALEKHINE ASSISTANT CONFIGURED
+            case "kasparov": // ♔ KASPAROV ASSISTANT CONFIGURED
                 return true;
             default:
                 return false;
@@ -263,6 +265,7 @@ public class ResponsesAPIIntegrationHelper {
         if (mastersJson.contains("carlsen")) settings.put("carlsen", true);
         if (mastersJson.contains("anand")) settings.put("anand", true);
         if (mastersJson.contains("alekhine")) settings.put("alekhine", true); // 🏛️ ALEKHINE PERSISTENCE
+        if (mastersJson.contains("kasparov")) settings.put("kasparov", true); // ♔ KASPAROV PERSISTENCE
         
         return settings;
     }
@@ -290,7 +293,7 @@ public class ResponsesAPIIntegrationHelper {
      */
     public MigrationStatus getMigrationStatus() {
         int totalMasters = 12;
-        int mastersWithAssistants = 5; // Tal, Fischer, Carlsen, Anand, Alekhine
+        int mastersWithAssistants = 6; // Tal, Fischer, Carlsen, Anand, Alekhine, Kasparov
         int enabledMasters = 0;
         
         for (Boolean enabled : masterResponsesEnabled.values()) {
