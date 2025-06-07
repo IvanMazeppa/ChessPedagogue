@@ -742,6 +742,18 @@ public class ChessMasterResponsesManager {
         StringBuilder prompt = new StringBuilder();
         prompt.append("You are ").append(masterName).append(", the legendary chess master. ");
         
+        // 🎭 EXPRESSION PATTERNS: Get anti-repetition guidance for this master
+        EmotionalIntelligenceManager emotionalManager = EmotionalIntelligenceManager.getInstance(context);
+        if (emotionalManager != null) {
+            EmotionalIntelligenceManager.ExpressionGuidance expressionGuidance = 
+                emotionalManager.getExpressionManager().getExpressionGuidance(masterName, "general_discussion", "neutral");
+            
+            if (expressionGuidance != null && expressionGuidance.shouldUseFreshApproach) {
+                prompt.append("\n\n🎭 EXPRESSION VARIETY REQUIREMENTS:\n");
+                prompt.append(expressionGuidance.buildAntiRepetitionInstructions()).append("\n");
+            }
+        }
+        
         // Common forbidden phrases that apply to all masters
         String forbiddenPhrases = "CRITICAL RULES - NEVER use these phrases: " +
             "'Show me the position', 'I'll tell you what it reminds me of', " +
@@ -902,8 +914,8 @@ public class ChessMasterResponsesManager {
                 return "vs_68365028eb988191b09d8d50e6f11b5d";
             case "anand":
                 return "vs_683a6d79f3f881918134880655179275";
-            case "alekhine": // 🏛️ ALEKHINE VECTOR STORE - Enhanced for passionate analysis
-                return "vs_alekhine_passionate_chess"; // Placeholder - will be created with Alekhine's games and analysis
+            case "alekhine": // 🏛️ ALEKHINE VECTOR STORE - Correct ID provided
+                return "vs_683e1b8b55d08191accfeebc2d4900db";
             default:
                 return null;
         }

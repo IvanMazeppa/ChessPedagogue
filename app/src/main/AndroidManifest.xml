@@ -7,6 +7,9 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <application
         android:allowBackup="true"
@@ -79,6 +82,13 @@
             android:enabled="true"
             android:exported="false" />
 
+        <!-- Always-Listening Wake Word Service -->
+        <service
+            android:name=".AlwaysListeningService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
         <!-- Chess Master Selection Activity -->
         <activity
             android:name=".ChessMasterSelectionActivity"
@@ -96,6 +106,18 @@
             android:exported="false"
             android:theme="@style/Theme.ChessPedagogue"
             android:label="Responses API Test" />
+
+        <!-- Analytics Activity -->
+        <activity
+            android:name=".AnalyticsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ChessPedagogue"
+            android:label="🎭 Personality Analytics"
+            android:parentActivityName=".SettingsActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SettingsActivity" />
+        </activity>
 
     </application>
 

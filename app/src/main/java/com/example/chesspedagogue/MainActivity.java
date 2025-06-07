@@ -47,10 +47,13 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceCommandListener {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
     private static final int REQUEST_CHESS_SET_SELECTION = 1002;
+    
+    // 🎤 Always-listening voice control
+    private VoiceControlManager voiceControlManager;
 
     // Add this near your other class members
     private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -95,6 +98,9 @@ public class MainActivity extends AppCompatActivity {
     // SimpleRecordService connection
     private SimpleRecordService recordService;
     private boolean isServiceBound = false;
+    
+    // Voice status indicator
+    private VoiceStatusIndicator voiceStatusIndicator;
 
     // Add this field to MainActivity
     private long lastMoveHistoryUpdate = 0;
@@ -355,6 +361,10 @@ public class MainActivity extends AppCompatActivity {
         // Bind to the SimpleRecordService
         Log.d(TAG, "📞 About to call bindRecordService...");
         bindRecordService();
+        
+        // 🎤 Initialize always-listening voice control manager
+        initializeVoiceControlManager();
+        
         Log.d(TAG, "✅ MainActivity onCreate completed!");
         
         } catch (Exception e) {
@@ -447,7 +457,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 🎭 PERSONALITY ENGINE TOGGLE - The Magic Button!
+     * 🎭 PERSONALITY ENGINE TOGGLE & 🎤 ALWAYS-LISTENING TOGGLE - The Magic Button!
      * Add this method to your MainActivity.java class
      */
     private void setupPersonalityEngineButton() {
@@ -455,13 +465,46 @@ public class MainActivity extends AppCompatActivity {
         // Or you can add a new button - your choice!
 
         if (speakButton != null) {
-            // Add long-press listener for personality toggle
+            // Add long-press listener for dual functionality
             speakButton.setOnLongClickListener(v -> {
-                Log.d(TAG, "🎭 Personality engine toggle requested!");
-                togglePersonalityEngine();
+                Log.d(TAG, "🎭 Long press detected - showing options");
+                showLongPressOptionsDialog();
                 return true; // Consume the long press
             });
         }
+    }
+
+    /**
+     * 🎤 Show options dialog for long press (personality toggle + always-listening toggle)
+     */
+    private void showLongPressOptionsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🎤 Voice & AI Options");
+        
+        // Get current states
+        Boolean personalityEnabled = gameViewModel.getPersonalityEngineEnabled().getValue();
+        boolean isPersonalityOn = personalityEnabled != null && personalityEnabled;
+        boolean alwaysListeningEnabled = voiceControlManager != null && voiceControlManager.isAlwaysListeningEnabled();
+        
+        String message = "Choose an option:\n\n" +
+                        "🎭 Personality Engine: " + (isPersonalityOn ? "ON" : "OFF") + "\n" +
+                        "🎤 Always-Listening: " + (alwaysListeningEnabled ? "ON" : "OFF");
+        
+        builder.setMessage(message);
+        
+        builder.setPositiveButton("🎭 Toggle Personality", (dialog, which) -> {
+            togglePersonalityEngine();
+        });
+        
+        builder.setNeutralButton("🎤 Toggle Always-Listening", (dialog, which) -> {
+            if (voiceControlManager != null) {
+                voiceControlManager.toggleAlwaysListening();
+            }
+        });
+        
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+        
+        builder.show();
     }
 
     /**
@@ -959,6 +1002,12 @@ public class MainActivity extends AppCompatActivity {
 
         // ===== CRITICAL: Refresh move history display on resume =====
         updateMoveHistoryDisplay();
+        
+        // 🎤 Re-register with voice control manager
+        if (voiceControlManager != null) {
+            voiceControlManager.registerVoiceCommandListener(this);
+            Log.d(TAG, "🎤 Re-registered with voice control manager");
+        }
     }
 
     private void updateCoachPortrait() {
@@ -2213,6 +2262,9 @@ public class MainActivity extends AppCompatActivity {
             // ===== CRITICAL: Initialize move history UI element =====
             moveHistoryTextView = findViewById(R.id.moveHistoryTextView);
             Log.d(TAG, "moveHistoryTextView: " + (moveHistoryTextView != null ? "✅ Found" : "❌ NULL"));
+            
+            // Initialize Voice Status Indicator
+            initializeVoiceStatusIndicator();
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Exception during view finding: " + e.getMessage(), e);
@@ -2510,6 +2562,12 @@ public class MainActivity extends AppCompatActivity {
             isServiceBound = false;
         }
 
+        // 🎤 Cleanup voice control manager
+        if (voiceControlManager != null) {
+            voiceControlManager.cleanup();
+            Log.d(TAG, "🎤 Voice control manager cleaned up");
+        }
+
         super.onDestroy();
     }
 
@@ -2575,5 +2633,301 @@ public class MainActivity extends AppCompatActivity {
                 transcriptionDialog.dismiss();
             }
         }, 3000);
+    }
+
+    // ==================== Always-Listening Voice Control Manager ====================
+
+    /**
+     * 🎤 Initialize always-listening voice control manager
+     */
+    private void initializeVoiceControlManager() {
+        try {
+            Log.d(TAG, "🎤 Initializing always-listening voice control manager");
+            
+            // Get VoiceControlManager instance
+            voiceControlManager = VoiceControlManager.getInstance(this);
+            
+            // Register this activity as a voice command listener
+            voiceControlManager.registerVoiceCommandListener(this);
+            
+            // Start always-listening if enabled in settings
+            SharedPreferences prefs = getSharedPreferences("VoiceControlPrefs", Context.MODE_PRIVATE);
+            boolean alwaysListeningEnabled = prefs.getBoolean("always_listening_enabled", false);
+            
+            if (alwaysListeningEnabled) {
+                Log.d(TAG, "🎤 Always-listening enabled - starting service");
+                voiceControlManager.startAlwaysListening();
+            } else {
+                Log.d(TAG, "🎤 Always-listening disabled - available on demand");
+            }
+            
+            Log.d(TAG, "✅ Voice control manager initialized successfully");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing voice control manager", e);
+        }
+    }
+
+    // ==================== VoiceCommandListener Interface Implementation ====================
+
+    @Override
+    public void onWakeWordDetected(String wakeWord) {
+        Log.d(TAG, "🎯 Wake word detected: " + wakeWord);
+        
+        // Show visual feedback
+        runOnUiThread(() -> {
+            Toast.makeText(this, "🎤 " + wakeWord + " detected", Toast.LENGTH_SHORT).show();
+            
+            // Start visual listening indicator
+            updateUIState(ProcessingState.LISTENING);
+        });
+    }
+
+    @Override
+    public void onVoiceCommand(String command) {
+        Log.d(TAG, "🗣️ Voice command received: " + command);
+        
+        runOnUiThread(() -> {
+            if (command.startsWith("start_voice_recording")) {
+                // Start voice recording for main game
+                Log.d(TAG, "🎤 Starting voice recording from wake word");
+                startVoiceRecording();
+                
+            } else if (command.startsWith("switch_master:")) {
+                // Switch to specific master and start voice
+                String masterName = command.substring("switch_master:".length()).split(";")[0];
+                Log.d(TAG, "🎭 Switching to master: " + masterName);
+                
+                // Switch master
+                FineTunedModelManager.getInstance(this).setSelectedChessMaster(masterName);
+                updateVoiceForCurrentMaster();
+                
+                // Show feedback
+                String displayName = FineTunedModelManager.getInstance(this).getMasterDisplayName(masterName);
+                Toast.makeText(this, "🎭 Switched to " + displayName, Toast.LENGTH_SHORT).show();
+                
+                // Start voice recording if commanded
+                if (command.contains("start_voice")) {
+                    startVoiceRecording();
+                }
+                
+            } else if (command.startsWith("voice_input:")) {
+                // Process direct voice input
+                String voiceText = command.substring("voice_input:".length());
+                Log.d(TAG, "🎤 Processing voice input: " + voiceText);
+                
+                // Show transcription and trigger processing
+                showTranscriptionPopup(voiceText);
+                updateUIState(ProcessingState.THINKING, voiceText);
+                
+                // 🎯 TRIGGER COACH RESPONSE: Connect STT to coach response system
+                triggerCoachResponseFromVoiceInput(voiceText);
+                
+            } else if (command.equals("show_voice_options")) {
+                // Show voice options in menu context
+                showVoiceOptionsDialog();
+                
+            } else {
+                Log.w(TAG, "⚠️ Unknown voice command: " + command);
+            }
+        });
+    }
+
+    @Override
+    public void onVoiceError(String error) {
+        Log.e(TAG, "❌ Voice control error: " + error);
+        
+        runOnUiThread(() -> {
+            Toast.makeText(this, "Voice error: " + error, Toast.LENGTH_SHORT).show();
+            updateUIState(ProcessingState.IDLE);
+        });
+    }
+
+    @Override
+    public String getActivityType() {
+        return "main_game";
+    }
+    
+    @Override
+    public void onVoiceStatusChanged(AlwaysListeningService.VoiceStatus status) {
+        Log.d(TAG, "🚦 Voice status changed: " + status);
+        
+        runOnUiThread(() -> {
+            if (voiceStatusIndicator != null) {
+                voiceStatusIndicator.updateStatus(status);
+            }
+        });
+    }
+    
+    /**
+     * 🚦 Initialize Voice Status Indicator and add to UI
+     */
+    private void initializeVoiceStatusIndicator() {
+        try {
+            voiceStatusIndicator = new VoiceStatusIndicator(this);
+            
+            // Add to the main layout in top-right corner
+            FrameLayout mainLayout = findViewById(android.R.id.content);
+            if (mainLayout != null) {
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                );
+                params.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+                params.setMargins(0, 100, 16, 0); // Top margin to avoid status bar
+                
+                mainLayout.addView(voiceStatusIndicator, params);
+                Log.d(TAG, "✅ Voice status indicator added to UI");
+            } else {
+                Log.e(TAG, "❌ Could not find main layout for voice status indicator");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing voice status indicator", e);
+        }
+    }
+
+    /**
+     * 🎤 Show voice options dialog for wake word configuration
+     */
+    private void showVoiceOptionsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🎤 Voice Control Options");
+        
+        // Check current always-listening state
+        boolean alwaysListeningEnabled = voiceControlManager != null && voiceControlManager.isAlwaysListeningEnabled();
+        
+        String message = "Always-listening: " + (alwaysListeningEnabled ? "ON" : "OFF") + "\n\n" +
+                        "Wake words:\n" +
+                        "• 'Hey Coach' - Start voice recording\n" +
+                        "• 'Hey [Master]' - Switch master and start voice\n" +
+                        "• Long press speak button - Toggle always-listening";
+        
+        builder.setMessage(message);
+        
+        builder.setPositiveButton("Toggle Always-Listening", (dialog, which) -> {
+            if (voiceControlManager != null) {
+                voiceControlManager.toggleAlwaysListening();
+            }
+        });
+        
+        builder.setNegativeButton("Close", (dialog, which) -> dialog.dismiss());
+        
+        builder.show();
+    }
+
+    // ==================== Activity Lifecycle for Voice Control ====================
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
+        // Unregister from voice control manager but keep service running
+        if (voiceControlManager != null) {
+            voiceControlManager.unregisterVoiceCommandListener();
+            Log.d(TAG, "🎤 Unregistered from voice control manager");
+        }
+    }
+    
+    /**
+     * 🎯 Trigger coach response from already-transcribed voice input
+     */
+    private void triggerCoachResponseFromVoiceInput(String voiceText) {
+        Log.d(TAG, "🎤 Triggering coach response for: " + voiceText);
+        
+        if (recordService != null && isServiceBound) {
+            try {
+                // Create a simple game context for the coach
+                String gameContext = "Current position: " + gameViewModel.getCurrentFEN().getValue() + 
+                                   "\nUser question: " + voiceText;
+                
+                // Get the current master
+                String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+                Log.d(TAG, "🎭 Current master: " + currentMaster);
+                
+                // Create a ThreeStageResponseManager instance and process the voice input
+                ThreeStageResponseManager threeStageManager = ThreeStageResponseManager.getInstance(this);
+                threeStageManager.processThreeStageResponse(voiceText, gameContext,
+                        new ThreeStageResponseManager.ThreeStageCallback() {
+                            @Override
+                            public void onStageResponse(ThreeStageResponseManager.ResponseStage stage, String response, boolean isFinal) {
+                                Log.d(TAG, "✨ " + stage.getDisplayName() + " response: " + response.substring(0, Math.min(50, response.length())) + "...");
+                                
+                                // Update UI to show coach is responding
+                                runOnUiThread(() -> {
+                                    updateUIState(ProcessingState.THINKING, "Coach is thinking...");
+                                    // Update voice status to show processing (red light)
+                                    if (voiceControlManager != null) {
+                                        voiceControlManager.updateVoiceStatus(AlwaysListeningService.VoiceStatus.PROCESSING_SPEECH);
+                                    }
+                                });
+                                
+                                if (isFinal) {
+                                    // Final response - trigger TTS and update UI
+                                    runOnUiThread(() -> {
+                                        updateUIState(ProcessingState.SPEAKING, response);
+                                        // Voice status returns to listening while coach speaks
+                                        if (voiceControlManager != null) {
+                                            voiceControlManager.updateVoiceStatus(AlwaysListeningService.VoiceStatus.LISTENING_FOR_INITIATION);
+                                        }
+                                        // Trigger TTS for the coach response
+                                        ChessCoachManager.getInstance(MainActivity.this).sendMessage(response, new ChessCoachManager.ChessCoachCallback() {
+                                            @Override
+                                            public void onResponseReceived(String response) {
+                                                Log.d(TAG, "🗣️ Coach response received: " + response.substring(0, Math.min(50, response.length())));
+                                            }
+                                            
+                                            @Override
+                                            public void onError(String error) {
+                                                Log.e(TAG, "🗣️ Coach speech error: " + error);
+                                            }
+                                            
+                                            @Override
+                                            public void onSpeechCompleted() {
+                                                Log.d(TAG, "🗣️ Coach finished speaking");
+                                                // Coach is done speaking - ready for next input
+                                            }
+                                        });
+                                    });
+                                }
+                            }
+                            
+                            @Override
+                            public void onStageError(ThreeStageResponseManager.ResponseStage stage, String error) {
+                                Log.e(TAG, "❌ Stage " + stage.getDisplayName() + " error: " + error);
+                                runOnUiThread(() -> {
+                                    updateUIState(ProcessingState.IDLE);
+                                    // Reset voice status to listening on error
+                                    if (voiceControlManager != null) {
+                                        voiceControlManager.updateVoiceStatus(AlwaysListeningService.VoiceStatus.LISTENING_FOR_INITIATION);
+                                    }
+                                    Toast.makeText(MainActivity.this, "Error getting coach response: " + error, Toast.LENGTH_SHORT).show();
+                                });
+                            }
+                            
+                            @Override
+                            public void onAllStagesComplete(String finalResponse) {
+                                Log.d(TAG, "🏆 All stages complete: " + finalResponse.substring(0, Math.min(100, finalResponse.length())) + "...");
+                                runOnUiThread(() -> {
+                                    updateUIState(ProcessingState.IDLE);
+                                    // Voice status should already be LISTENING_FOR_INITIATION from the final response
+                                });
+                            }
+                        });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error triggering coach response", e);
+                runOnUiThread(() -> {
+                    updateUIState(ProcessingState.IDLE);
+                    // Reset voice status to listening on exception
+                    if (voiceControlManager != null) {
+                        voiceControlManager.updateVoiceStatus(AlwaysListeningService.VoiceStatus.LISTENING_FOR_INITIATION);
+                    }
+                    Toast.makeText(this, "Error connecting to coach", Toast.LENGTH_SHORT).show();
+                });
+            }
+        } else {
+            Log.e(TAG, "❌ Record service not available for voice input processing");
+            Toast.makeText(this, "Voice service not ready", Toast.LENGTH_SHORT).show();
+        }
     }
 }

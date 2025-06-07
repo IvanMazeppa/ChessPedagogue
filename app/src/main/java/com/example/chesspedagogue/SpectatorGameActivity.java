@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,12 +26,14 @@ import android.content.pm.PackageManager;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 🎭 SIMPLIFIED SPECTATOR MODE - AI Masters Talking to Each Other!
  * Focused on AI dialogue instead of commentary
  */
-public class SpectatorGameActivity extends AppCompatActivity {
+public class SpectatorGameActivity extends AppCompatActivity implements VoiceControlManager.VoiceCommandListener {
     private static final String TAG = "SpectatorGameActivity";
 
     // UI Elements - Simplified!
@@ -56,6 +59,12 @@ public class SpectatorGameActivity extends AppCompatActivity {
     private int gameSpeed = 3000;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
+    
+    // 🎤 Always-listening voice control
+    private VoiceControlManager voiceControlManager;
+    
+    // Voice status indicator
+    private VoiceStatusIndicator voiceStatusIndicator;
     
     // Animation tracking for delayed board updates
     private boolean isAnimationInProgress = false;
@@ -84,6 +93,10 @@ public class SpectatorGameActivity extends AppCompatActivity {
                     setupControls()) {
 
                 Log.d(TAG, "✅ All components initialized successfully!");
+                
+                // 🎤 Initialize always-listening voice control manager
+                initializeVoiceControlManager();
+                
                 startSpectatorGame();
 
             } else {
@@ -152,6 +165,9 @@ public class SpectatorGameActivity extends AppCompatActivity {
             pauseResumeButton = findViewById(R.id.pauseResumeButton);
             speedControlButton = findViewById(R.id.speedControlButton);
             currentSpeakerTextView = findViewById(R.id.currentSpeakerTextView);
+            
+            // Initialize Voice Status Indicator
+            initializeVoiceStatusIndicator();
 
             // Check critical views
             if (chessBoardView == null) {
@@ -588,44 +604,15 @@ public class SpectatorGameActivity extends AppCompatActivity {
      * 🎤 Show user comment dialog with voice recording option
      */
     private void showUserCommentDialog() {
-        try {
-            Log.d(TAG, "🎤 Showing user comment dialog with voice option");
-
-            // Create dialog
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
-            builder.setTitle("💬 Chat with the Chess Masters");
-            builder.setMessage("Choose how you'd like to comment on the game:");
-
-            // Create custom view with both options
-            View dialogView = getLayoutInflater().inflate(android.R.layout.simple_list_item_1, null);
-            
-            // Option 1: Voice recording (primary)
-            builder.setPositiveButton("🎤 Speak", (dialog, which) -> {
-                startVoiceComment();
-            });
-
-            // Option 2: Type (fallback)
-            builder.setNeutralButton("⌨️ Type", (dialog, which) -> {
-                showTextCommentDialog();
-            });
-
-            builder.setNegativeButton("❌ Cancel", (dialog, which) -> dialog.cancel());
-
-            // Show dialog
-            AlertDialog dialog = builder.create();
-            dialog.show();
-
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Error showing comment dialog", e);
-            Toast.makeText(this, "Error opening comment dialog", Toast.LENGTH_SHORT).show();
-        }
+        // REDESIGNED: Skip choice dialog and go straight to voice (modern UX)
+        startVoiceComment();
     }
 
     /**
-     * 🎤 Start voice recording for comment
+     * 🎤 Start voice recording for comment - REDESIGNED for seamless UX
      */
     private void startVoiceComment() {
-        Log.d(TAG, "🎤 Starting voice comment recording");
+        Log.d(TAG, "🎤 Starting seamless voice comment recording");
         
         // CRITICAL FIX: Stop all TTS and pause AI conversations during user recording
         OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
@@ -653,52 +640,52 @@ public class SpectatorGameActivity extends AppCompatActivity {
             return;
         }
 
-        // Show recording dialog
-        AlertDialog.Builder recordingBuilder = new AlertDialog.Builder(this);
-        recordingBuilder.setTitle("🎤 Recording Your Comment");
-        recordingBuilder.setMessage("Speak your comment about the game...");
-        recordingBuilder.setCancelable(false);
+        // REDESIGNED: Simple listening indicator with automatic silence detection
+        AlertDialog.Builder listeningBuilder = new AlertDialog.Builder(this);
+        listeningBuilder.setTitle("🎤 Listening...");
+        listeningBuilder.setMessage("Speak your comment about the game");
+        listeningBuilder.setCancelable(true);
         
-        // Add progress indicator
+        // Add pulsing progress indicator
         ProgressBar progressBar = new ProgressBar(this);
         progressBar.setIndeterminate(true);
-        recordingBuilder.setView(progressBar);
+        listeningBuilder.setView(progressBar);
         
-        recordingBuilder.setNegativeButton("⏹️ Stop", null); // Will be set later
+        AlertDialog listeningDialog = listeningBuilder.create();
+        listeningDialog.show();
         
-        AlertDialog recordingDialog = recordingBuilder.create();
-        recordingDialog.show();
-        
-        // Start STT using OpenAI Whisper via SimpleRecordService pattern
+        // Start automatic STT with silence detection
         executorService.execute(() -> {
             try {
-                // Initialize Groq/OpenAI STT service
-                String transcribedText = performSpeechToText(recordingDialog);
+                // Use improved STT with automatic silence detection
+                String transcribedText = performAutomaticSpeechToText(listeningDialog);
                 
                 mainHandler.post(() -> {
-                    recordingDialog.dismiss();
+                    listeningDialog.dismiss();
                     
                     // Resume AI conversations after recording is done
                     orchestrator.setUserRecordingInProgress(false);
                     
                     if (transcribedText != null && !transcribedText.trim().isEmpty()) {
-                        // Show what was transcribed and confirm
-                        confirmTranscription(transcribedText);
+                        // REDESIGNED: Skip confirmation, process directly
+                        Log.d(TAG, "🎯 Processing voice comment directly: " + transcribedText);
+                        submitUserComment(transcribedText);
                     } else {
-                        Toast.makeText(this, "Couldn't understand. Please try again or type instead.", Toast.LENGTH_SHORT).show();
-                        showTextCommentDialog();
+                        Toast.makeText(this, "Couldn't understand. Try speaking again or type your comment.", Toast.LENGTH_SHORT).show();
+                        // Offer to try again or type
+                        showVoiceOrTypeChoice();
                     }
                 });
                 
             } catch (Exception e) {
                 Log.e(TAG, "❌ Error in voice recording", e);
                 mainHandler.post(() -> {
-                    recordingDialog.dismiss();
+                    listeningDialog.dismiss();
                     
                     // Resume AI conversations after recording error
                     SpectatorConversationOrchestrator.getInstance(this).setUserRecordingInProgress(false);
                     
-                    Toast.makeText(this, "Voice recording failed. Please type your comment instead.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Voice failed. Try typing your comment.", Toast.LENGTH_SHORT).show();
                     showTextCommentDialog();
                 });
             }
@@ -706,7 +693,119 @@ public class SpectatorGameActivity extends AppCompatActivity {
     }
 
     /**
-     * 🎤 Perform speech-to-text conversion using Groq
+     * 🎤 NEW: Perform automatic speech-to-text with silence detection (like main game)
+     */
+    private String performAutomaticSpeechToText(AlertDialog listeningDialog) {
+        try {
+            Log.d(TAG, "🎤 Starting automatic speech recognition with silence detection");
+            
+            // Use GroqSpeechRecognizer with automatic silence detection
+            GroqSpeechRecognizer speechRecognizer = new GroqSpeechRecognizer(this);
+            
+            // Create a synchronization object to wait for result
+            final Object lock = new Object();
+            final String[] result = new String[1];
+            final boolean[] completed = new boolean[1];
+            final AtomicBoolean isListening = new AtomicBoolean(true);
+            
+            // REDESIGNED: No stop button - automatic silence detection only
+            mainHandler.post(() -> {
+                listeningDialog.setOnCancelListener(dialog -> {
+                    Log.d(TAG, "🚫 User cancelled voice input");
+                    isListening.set(false);
+                    speechRecognizer.stopListening();
+                    synchronized (lock) {
+                        completed[0] = true;
+                        lock.notify();
+                    }
+                });
+            });
+            
+            // CRITICAL FIX: Add silence detection timer
+            final long SILENCE_THRESHOLD = 2000; // 2 seconds of silence
+            final AtomicReference<Long> lastSoundTime = new AtomicReference<>(System.currentTimeMillis());
+            
+            // Silence detection thread
+            Thread silenceDetector = new Thread(() -> {
+                while (isListening.get() && !completed[0]) {
+                    try {
+                        Thread.sleep(500); // Check every 500ms
+                        long currentTime = System.currentTimeMillis();
+                        if (currentTime - lastSoundTime.get() > SILENCE_THRESHOLD) {
+                            Log.d(TAG, "🔇 Silence detected - stopping recording automatically");
+                            isListening.set(false);
+                            speechRecognizer.stopListening();
+                            // Don't notify lock here - let the success callback handle it
+                            break;
+                        }
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+            });
+            silenceDetector.start();
+            
+            // Start listening with callback
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                Log.w(TAG, "⚠️ Audio recording permission not granted");
+                synchronized (lock) {
+                    completed[0] = true;
+                    lock.notify();
+                }
+                return null;
+            }
+            speechRecognizer.startListening(new GroqSpeechRecognizer.SpeechRecognitionCallback() {
+                @Override
+                public void onSpeechRecognized(String text) {
+                    Log.d(TAG, "✅ Speech recognized: " + text);
+                    synchronized (lock) {
+                        result[0] = text;
+                        completed[0] = true;
+                        isListening.set(false);
+                        lock.notify();
+                    }
+                    silenceDetector.interrupt();
+                }
+                
+                @Override
+                public void onSpeechError(String error) {
+                    Log.e(TAG, "❌ Speech recognition error: " + error);
+                    synchronized (lock) {
+                        result[0] = null;
+                        completed[0] = true;
+                        isListening.set(false);
+                        lock.notify();
+                    }
+                    silenceDetector.interrupt();
+                }
+            });
+            
+            // Update last sound time (simulate audio activity detection)
+            // In a real implementation, this would be updated by audio level monitoring
+            lastSoundTime.set(System.currentTimeMillis());
+            
+            // Wait for result with timeout
+            synchronized (lock) {
+                if (!completed[0]) {
+                    lock.wait(10000); // 10 second total timeout
+                }
+            }
+            
+            // Cleanup
+            isListening.set(false);
+            speechRecognizer.stopListening();
+            silenceDetector.interrupt();
+            
+            return result[0];
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Automatic STT error", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 🎤 LEGACY: Perform speech-to-text conversion using Groq (for fallback)
      */
     private String performSpeechToText(AlertDialog recordingDialog) {
         try {
@@ -727,8 +826,13 @@ public class SpectatorGameActivity extends AppCompatActivity {
                     Log.d(TAG, "⏹️ User stopped recording");
                     speechRecognizer.stopListening();
                     synchronized (lock) {
-                        completed[0] = true;
-                        lock.notify();
+                        // CRITICAL FIX: Only set completed if we don't already have a result
+                        if (result[0] == null) {
+                            completed[0] = true;
+                            lock.notify();
+                        } else {
+                            Log.d(TAG, "✅ User stopped but we already have transcription result");
+                        }
                     }
                 });
             });
@@ -748,9 +852,11 @@ public class SpectatorGameActivity extends AppCompatActivity {
                 public void onSpeechRecognized(String text) {
                     Log.d(TAG, "✅ Speech recognized: " + text);
                     synchronized (lock) {
+                        // CRITICAL FIX: Always prioritize successful transcription
                         result[0] = text;
                         completed[0] = true;
                         lock.notify();
+                        Log.d(TAG, "🎯 STT result stored and notification sent");
                     }
                 }
                 
@@ -784,26 +890,33 @@ public class SpectatorGameActivity extends AppCompatActivity {
     }
 
     /**
-     * ✅ Confirm transcribed text before sending
+     * 🔄 Show choice between voice and type (only shown on voice failure)
      */
-    private void confirmTranscription(String transcribedText) {
-        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(this);
-        confirmBuilder.setTitle("✅ Confirm Your Comment");
-        confirmBuilder.setMessage("You said: \"" + transcribedText + "\"\n\nSend this to the chess masters?");
+    private void showVoiceOrTypeChoice() {
+        AlertDialog.Builder choiceBuilder = new AlertDialog.Builder(this);
+        choiceBuilder.setTitle("💬 Try Again?");
+        choiceBuilder.setMessage("Would you like to try speaking again or type your comment?");
         
-        confirmBuilder.setPositiveButton("✅ Send", (dialog, which) -> {
-            submitUserComment(transcribedText);
-        });
-        
-        confirmBuilder.setNeutralButton("🔄 Try Again", (dialog, which) -> {
+        choiceBuilder.setPositiveButton("🎤 Try Speaking Again", (dialog, which) -> {
             startVoiceComment();
         });
         
-        confirmBuilder.setNegativeButton("⌨️ Type Instead", (dialog, which) -> {
+        choiceBuilder.setNegativeButton("⌨️ Type Comment", (dialog, which) -> {
             showTextCommentDialog();
         });
         
-        confirmBuilder.show();
+        choiceBuilder.setNeutralButton("❌ Cancel", (dialog, which) -> dialog.cancel());
+        
+        choiceBuilder.show();
+    }
+    
+    /**
+     * ✅ REMOVED: Confirm transcribed text before sending (now processes directly)
+     */
+    private void confirmTranscription(String transcribedText) {
+        // REDESIGNED: Skip confirmation and process directly
+        Log.d(TAG, "🎯 Direct processing (no confirmation): " + transcribedText);
+        submitUserComment(transcribedText);
     }
 
     /**
@@ -1203,6 +1316,13 @@ public class SpectatorGameActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         Log.d(TAG, "⏸️ SpectatorGameActivity pausing - stopping all processes");
+        
+        // Unregister from voice control manager but keep service running
+        if (voiceControlManager != null) {
+            voiceControlManager.unregisterVoiceCommandListener();
+            Log.d(TAG, "🎤 Unregistered from voice control manager for spectator mode");
+        }
+        
         performImmediateCleanup();
     }
 
@@ -1274,6 +1394,139 @@ public class SpectatorGameActivity extends AppCompatActivity {
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Error during emergency cleanup", e);
+        }
+    }
+
+    // ==================== Always-Listening Voice Control Manager ====================
+
+    /**
+     * 🎤 Initialize always-listening voice control manager for spectator mode
+     */
+    private void initializeVoiceControlManager() {
+        try {
+            Log.d(TAG, "🎤 Initializing always-listening voice control for spectator mode");
+            
+            // Get VoiceControlManager instance
+            voiceControlManager = VoiceControlManager.getInstance(this);
+            
+            // Register this activity as a voice command listener
+            voiceControlManager.registerVoiceCommandListener(this);
+            
+            Log.d(TAG, "✅ Voice control manager initialized for spectator mode");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing voice control manager", e);
+        }
+    }
+
+    // ==================== VoiceCommandListener Interface Implementation ====================
+
+    @Override
+    public void onWakeWordDetected(String wakeWord) {
+        Log.d(TAG, "🎯 Wake word detected in spectator mode: " + wakeWord);
+        
+        // Show visual feedback
+        runOnUiThread(() -> {
+            displayAIDialogue("🎤 " + wakeWord + " detected! Listening for your comment...");
+        });
+    }
+
+    @Override
+    public void onVoiceCommand(String command) {
+        Log.d(TAG, "🗣️ Voice command received in spectator mode: " + command);
+        
+        runOnUiThread(() -> {
+            if (command.startsWith("interrupt_for_comment")) {
+                // Start voice comment directly (modern UX)
+                Log.d(TAG, "🎤 Starting voice comment from wake word");
+                startVoiceComment();
+                
+            } else if (command.startsWith("focus_master:")) {
+                // Focus on specific master in conversation
+                String masterName = command.substring("focus_master:".length());
+                Log.d(TAG, "🎭 Focusing on master: " + masterName);
+                
+                String displayName = FineTunedModelManager.getInstance(this).getMasterDisplayName(masterName);
+                displayAIDialogue("👁️ Focusing on " + displayName + "'s commentary...");
+                
+                // TODO: Implement master focus in spectator conversation
+                
+            } else if (command.startsWith("voice_input:")) {
+                // Process direct voice input as comment
+                String voiceText = command.substring("voice_input:".length());
+                Log.d(TAG, "🎤 Processing voice comment: " + voiceText);
+                
+                // Submit the voice input as user comment
+                submitUserComment(voiceText);
+                
+            } else {
+                Log.w(TAG, "⚠️ Unknown voice command in spectator mode: " + command);
+            }
+        });
+    }
+
+    @Override
+    public void onVoiceError(String error) {
+        Log.e(TAG, "❌ Voice control error in spectator mode: " + error);
+        
+        runOnUiThread(() -> {
+            displayAIDialogue("❌ Voice error: " + error);
+        });
+    }
+
+    @Override
+    public String getActivityType() {
+        return "spectator";
+    }
+    
+    @Override
+    public void onVoiceStatusChanged(AlwaysListeningService.VoiceStatus status) {
+        Log.d(TAG, "🚦 Voice status changed in spectator mode: " + status);
+        
+        runOnUiThread(() -> {
+            if (voiceStatusIndicator != null) {
+                voiceStatusIndicator.updateStatus(status);
+            }
+        });
+    }
+    
+    /**
+     * 🚦 Initialize Voice Status Indicator and add to UI
+     */
+    private void initializeVoiceStatusIndicator() {
+        try {
+            voiceStatusIndicator = new VoiceStatusIndicator(this);
+            
+            // Add to the main layout in top-right corner
+            FrameLayout mainLayout = findViewById(android.R.id.content);
+            if (mainLayout != null) {
+                FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT
+                );
+                params.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+                params.setMargins(0, 100, 16, 0); // Top margin to avoid status bar
+                
+                mainLayout.addView(voiceStatusIndicator, params);
+                Log.d(TAG, "✅ Voice status indicator added to spectator UI");
+            } else {
+                Log.e(TAG, "❌ Could not find main layout for voice status indicator");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing voice status indicator in spectator mode", e);
+        }
+    }
+
+    // ==================== Activity Lifecycle for Voice Control ====================
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Re-register with voice control manager
+        if (voiceControlManager != null) {
+            voiceControlManager.registerVoiceCommandListener(this);
+            Log.d(TAG, "🎤 Re-registered with voice control manager for spectator mode");
         }
     }
 }

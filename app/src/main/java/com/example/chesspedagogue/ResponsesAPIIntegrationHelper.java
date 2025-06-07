@@ -40,19 +40,15 @@ public class ResponsesAPIIntegrationHelper {
         this.useResponsesAPI = new AtomicBoolean(prefs.getBoolean(KEY_USE_RESPONSES_API, true));
         this.masterResponsesEnabled = loadMasterSettings();
         
-        // Enable Responses API by default for masters with assistants
-        if (masterResponsesEnabled.isEmpty()) {
-            enableResponsesAPIForMaster("tal", true);
-            enableResponsesAPIForMaster("fischer", true);
-            enableResponsesAPIForMaster("carlsen", true);
-            enableResponsesAPIForMaster("anand", true);
-            enableResponsesAPIForMaster("alekhine", true); // 🏛️ ALEKHINE ENABLED
-            
-            // FUTURE: Enable for other masters when assistants are created
-            // These masters need proper Responses API assistant configuration
-            Log.d(TAG, "🚀 Enabled Responses API by default for masters with assistants: Tal, Fischer, Carlsen, Anand, Alekhine");
-            Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) need Responses API configuration");
-        }
+        // FORCE ENABLE: Always ensure the 5 working masters are enabled (don't rely on cache)
+        enableResponsesAPIForMaster("tal", true);
+        enableResponsesAPIForMaster("fischer", true);
+        enableResponsesAPIForMaster("carlsen", true);
+        enableResponsesAPIForMaster("anand", true);
+        enableResponsesAPIForMaster("alekhine", true); // 🏛️ ALEKHINE ENABLED
+        
+        Log.d(TAG, "🔧 FORCE ENABLED Responses API for the 5 working masters: Tal, Fischer, Carlsen, Anand, Alekhine");
+        Log.d(TAG, "📋 Other masters (Kasparov, Kramnik, Karpov, etc.) will use fallback dialogue");
         
         // IMPORTANT: Enable for main game mode by setting a preference flag
         prefs.edit().putBoolean("responses_api_main_game_enabled", true).apply();

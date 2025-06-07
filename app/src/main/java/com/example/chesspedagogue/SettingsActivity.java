@@ -161,6 +161,13 @@ public class SettingsActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Analytics Dashboard button
+        Button analyticsButton = findViewById(R.id.button_analytics_dashboard);
+        analyticsButton.setOnClickListener(v -> {
+            Intent intent = new Intent(SettingsActivity.this, AnalyticsActivity.class);
+            startActivity(intent);
+        });
+
         // Update the UI to show the current selected master
         updateChessMasterDisplay();
         setupEnhancedVoiceSettings();

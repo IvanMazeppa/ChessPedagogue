@@ -7,6 +7,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.stream.Collectors;
 
 /**
  * ENHANCED EMOTIONAL INTELLIGENCE SYSTEM
@@ -224,18 +227,24 @@ public class EmotionalIntelligenceManager {
     }
     
     /**
-     * Track emotional patterns over time
+     * 🧠 ENHANCED: Track emotional patterns over time with persistent memory
      */
     public static class EmotionalHistory {
-        private final List<EmotionalEvent> events;
+        private final List<EmotionalEvent> sessionEvents;          // Current session only
+        private final List<EmotionalIntelligenceManager.EmotionalEvent> historicalEvents; // From database
+        private final Map<String, EmotionalPattern> patterns;      // Topic + emotion patterns
         private EmotionalState currentDominantEmotion;
         private float emotionalMomentum; // -1.0 to 1.0
+        private float historicalMomentum; // From previous sessions
         private int consecutiveSimilarEmotions;
         
         public EmotionalHistory() {
-            this.events = new ArrayList<>();
+            this.sessionEvents = new ArrayList<>();
+            this.historicalEvents = new ArrayList<>();
+            this.patterns = new HashMap<>();
             this.currentDominantEmotion = EmotionalState.ANALYTICAL;
             this.emotionalMomentum = 0.0f;
+            this.historicalMomentum = 0.0f;
             this.consecutiveSimilarEmotions = 0;
         }
         
@@ -253,15 +262,45 @@ public class EmotionalIntelligenceManager {
             }
         }
         
-        public void addEmotionalEvent(EmotionalState emotion, float intensity, String trigger) {
-            events.add(new EmotionalEvent(emotion, intensity, trigger));
+        /**
+         * 🧠 ENHANCED: Add session event and update patterns
+         */
+        public void addSessionEvent(EmotionalState emotion, float intensity, String trigger) {
+            EmotionalEvent event = new EmotionalEvent(emotion, intensity, trigger);
+            sessionEvents.add(event);
             updateEmotionalMomentum(emotion, intensity);
             updateDominantEmotion(emotion);
             
-            // Keep history manageable
-            if (events.size() > 20) {
-                events.remove(0);
+            // Update patterns for this topic + emotion combination
+            updatePatterns(emotion.name, intensity, trigger);
+            
+            // Keep session history manageable
+            if (sessionEvents.size() > 20) {
+                sessionEvents.remove(0);
             }
+        }
+        
+        /**
+         * 🧠 NEW: Add historical event from database (don't affect current session state)
+         */
+        public void addHistoricalEvent(EmotionalIntelligenceManager.EmotionalEvent event) {
+            historicalEvents.add(event);
+            // Update patterns but don't affect current session momentum
+            updatePatterns(event.emotion.name, event.intensity, event.topic);
+        }
+        
+        /**
+         * 🧠 NEW: Update emotional patterns for topic + emotion combinations
+         */
+        private void updatePatterns(String emotion, float intensity, String topic) {
+            String patternKey = topic + "_" + emotion;
+            EmotionalPattern pattern = patterns.computeIfAbsent(patternKey, k -> new EmotionalPattern());
+            
+            // Create a temporary event for pattern updating
+            EmotionalIntelligenceManager.EmotionalEvent tempEvent = 
+                new EmotionalIntelligenceManager.EmotionalEvent(topic, 
+                    EmotionalState.valueOf(emotion.toUpperCase()), intensity);
+            pattern.addOccurrence(tempEvent);
         }
         
         private void updateEmotionalMomentum(EmotionalState emotion, float intensity) {
@@ -303,14 +342,79 @@ public class EmotionalIntelligenceManager {
             return consecutiveSimilarEmotions >= 3;
         }
         
-        // 🧠 NEW: Methods for enhanced memory integration
-        public void addHistoricalEvent(EmotionalIntelligenceManager.EmotionalEvent event) {
-            // Convert external EmotionalEvent to internal EmotionalEvent
-            addEmotionalEvent(event.emotion, event.intensity, event.topic);
+        // 🧠 ENHANCED: Methods for enhanced memory integration
+        public void setHistoricalMomentum(float momentum) {
+            this.historicalMomentum = Math.max(-1.0f, Math.min(1.0f, momentum));
         }
         
-        public void setInitialMomentum(float momentum) {
-            this.emotionalMomentum = Math.max(-1.0f, Math.min(1.0f, momentum));
+        /**
+         * 🧠 NEW: Calculate combined momentum from session + historical data
+         */
+        public float calculateCombinedMomentum() {
+            // Weight recent session events more heavily than historical
+            return (emotionalMomentum * 0.7f) + (historicalMomentum * 0.3f);
+        }
+        
+        /**
+         * 🧠 NEW: Get emotional pattern for topic + emotion combination
+         */
+        public EmotionalPattern getPattern(String topic, String emotion) {
+            return patterns.get(topic + "_" + emotion);
+        }
+        
+        /**
+         * 🧠 NEW: Get all events (historical + session)
+         */
+        public List<EmotionalIntelligenceManager.EmotionalEvent> getAllEvents() {
+            List<EmotionalIntelligenceManager.EmotionalEvent> allEvents = new ArrayList<>();
+            allEvents.addAll(historicalEvents);
+            
+            // Convert session events to the main EmotionalEvent format
+            for (EmotionalEvent sessionEvent : sessionEvents) {
+                allEvents.add(new EmotionalIntelligenceManager.EmotionalEvent(
+                    sessionEvent.trigger, sessionEvent.emotion, sessionEvent.intensity, sessionEvent.timestamp));
+            }
+            
+            return allEvents;
+        }
+        
+        /**
+         * 🧠 NEW: Get session events only
+         */
+        public List<EmotionalEvent> getSessionEvents() {
+            return new ArrayList<>(sessionEvents);
+        }
+        
+        /**
+         * 🧠 NEW: Get historical events only
+         */
+        public List<EmotionalIntelligenceManager.EmotionalEvent> getHistoricalEvents() {
+            return new ArrayList<>(historicalEvents);
+        }
+        
+        /**
+         * 🧠 NEW: Check if should persist this emotional event
+         */
+        public boolean shouldPersist(EmotionalEvent event) {
+            return event.intensity > 0.7f || consecutiveSimilarEmotions >= 3;
+        }
+        
+        /**
+         * 🧠 NEW: Trim historical events to prevent memory bloat
+         */
+        public void trimHistoricalEvents() {
+            if (historicalEvents.size() > 50) {
+                // Keep only recent and significant events
+                historicalEvents.sort((a, b) -> Long.compare(b.timestamp, a.timestamp));
+                while (historicalEvents.size() > 50) {
+                    historicalEvents.remove(historicalEvents.size() - 1);
+                }
+            }
+        }
+        
+        // 🧠 LEGACY: Keep backward compatibility
+        public void addEmotionalEvent(EmotionalState emotion, float intensity, String trigger) {
+            addSessionEvent(emotion, intensity, trigger);
         }
     }
     
@@ -757,6 +861,7 @@ public class EmotionalIntelligenceManager {
         public final String expression;
         public final float intensity;
         public final float momentum;
+        public ExpressionGuidance expressionGuidance; // 🎭 NEW: Expression diversity guidance
         
         public EmotionalAnalysisResult(EmotionalState emotion, String expression, 
                                      float intensity, float momentum) {
@@ -764,6 +869,7 @@ public class EmotionalIntelligenceManager {
             this.expression = expression;
             this.intensity = intensity;
             this.momentum = momentum;
+            this.expressionGuidance = null; // Will be set by analyzeWithExpressionGuidance
         }
         
         public boolean shouldInfluenceVoice() {
@@ -832,6 +938,9 @@ public class EmotionalIntelligenceManager {
     /**
      * 🧠 Initialize with persistent emotional history from database
      */
+    /**
+     * 🧠 ENHANCED: Initialize with historical emotional data from database
+     */
     public void initializeWithHistory(String masterName, String opponentName) {
         this.currentMaster = masterName;
         this.opponentMaster = opponentName;
@@ -843,10 +952,11 @@ public class EmotionalIntelligenceManager {
                 masterName, opponentName, 20 // Last 20 emotional reactions
             );
             
-            // Convert database reactions to EmotionalEvent objects and load into session history
+            // Get or create emotional history for this master
             EmotionalHistory history = sessionHistory.computeIfAbsent(masterName.toLowerCase(), 
                                         k -> new EmotionalHistory());
             
+            // Convert database reactions to EmotionalEvent objects and load as historical events
             for (RelationshipPersistenceManager.EmotionalReaction reaction : recentReactions) {
                 EmotionalEvent event = new EmotionalEvent(
                     reaction.getTopic(),
@@ -859,7 +969,10 @@ public class EmotionalIntelligenceManager {
             
             // Calculate initial emotional momentum from history
             float historicalMomentum = calculateHistoricalMomentum(masterName, opponentName);
-            history.setInitialMomentum(historicalMomentum);
+            history.setHistoricalMomentum(historicalMomentum);
+            
+            // Trim historical events to prevent memory bloat
+            history.trimHistoricalEvents();
             
             Log.d(TAG, String.format("🧠 Loaded emotional history for %s vs %s: %d events, momentum: %.2f", 
                    masterName, opponentName, recentReactions.size(), historicalMomentum));
@@ -868,6 +981,30 @@ public class EmotionalIntelligenceManager {
             Log.e(TAG, "❌ Failed to load emotional history, using session-only mode", e);
             // Continue without historical data - graceful degradation
         }
+    }
+    
+    /**
+     * 🧠 NEW: Get emotional pattern for a master's topic + emotion combination
+     */
+    public EmotionalPattern getEmotionalPattern(String topic, String emotion) {
+        if (currentMaster == null) return null;
+        
+        EmotionalHistory history = sessionHistory.get(currentMaster.toLowerCase());
+        if (history != null) {
+            return history.getPattern(topic, emotion);
+        }
+        return null;
+    }
+    
+    /**
+     * 🧠 NEW: Get combined emotional momentum (session + historical)
+     */
+    public float getCombinedEmotionalMomentum(String masterName) {
+        EmotionalHistory history = sessionHistory.get(masterName.toLowerCase());
+        if (history != null) {
+            return history.calculateCombinedMomentum();
+        }
+        return 0.0f;
     }
     
     /**
@@ -900,28 +1037,6 @@ public class EmotionalIntelligenceManager {
         }
     }
     
-    /**
-     * 🎯 Get emotional pattern for topic and emotion combination
-     */
-    public EmotionalPattern getEmotionalPattern(String topic, String emotion) {
-        if (persistenceManager == null || currentMaster == null) return null;
-        
-        try {
-            // TODO: Implement getEmotionalPattern in RelationshipPersistenceManager
-            // For now, return a simple pattern based on session data
-            EmotionalHistory history = sessionHistory.get(currentMaster.toLowerCase());
-            if (history != null) {
-                // Create a simple pattern from session data
-                EmotionalPattern pattern = new EmotionalPattern();
-                // Pattern analysis could be implemented here
-                return pattern;
-            }
-            return null;
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Failed to get emotional pattern", e);
-            return null;
-        }
-    }
     
     /**
      * 📊 Calculate historical emotional momentum from database
@@ -1000,6 +1115,7 @@ public class EmotionalIntelligenceManager {
         void onEmotionalBreakthrough(String master, String emotion, String topic, float intensity);
         void onEmotionalPatternDetected(String master, EmotionalPattern pattern);
         void onRelationshipEvolution(String master1, String master2, float oldValue, float newValue);
+        void onExpressionRepetitionDetected(String master, String concept, float diversityScore);
     }
     
     /**
@@ -1590,5 +1706,541 @@ public class EmotionalIntelligenceManager {
         );
         
         return enhancedResult;
+    }
+    
+    // ==========================================
+    // 🎭 PERSONALITY EXPRESSION MANAGER
+    // ==========================================
+    
+    /**
+     * 🎭 PersonalityExpressionManager: Tracks HOW masters express concepts to prevent repetitive phrasing
+     * 
+     * Solves the repetition problem where Fischer always says "truth on the board" or 
+     * "analysis cuts through" when discussing similar concepts. This system tracks expression
+     * patterns and provides guidance to use fresh approaches and varied personality facets.
+     */
+    public static class PersonalityExpressionManager {
+        private static final String TAG = "PersonalityExpression";
+        private static final long PHRASE_COOLDOWN = 15 * 60 * 1000; // 15 minutes
+        private static final float DIVERSITY_THRESHOLD = 0.3f; // Below this = too repetitive
+        
+        private static PersonalityExpressionManager instance;
+        private final Map<String, Map<String, ExpressionPattern>> masterExpressions = new HashMap<>();
+        private final RelationshipPersistenceManager persistenceManager;
+        
+        private PersonalityExpressionManager(Context context) {
+            this.persistenceManager = RelationshipPersistenceManager.getInstance(context);
+        }
+        
+        public static synchronized PersonalityExpressionManager getInstance(Context context) {
+            if (instance == null) {
+                instance = new PersonalityExpressionManager(context);
+            }
+            return instance;
+        }
+        
+        /**
+         * 📝 Record how a master expressed a specific concept
+         */
+        public void recordExpression(String master, String concept, String actualPhrase, 
+                                   String emotionalTone, String argumentativeAngle) {
+            Map<String, ExpressionPattern> expressions = masterExpressions.computeIfAbsent(
+                master.toLowerCase(), k -> new HashMap<>()
+            );
+            
+            ExpressionPattern pattern = expressions.computeIfAbsent(concept, k -> new ExpressionPattern(concept));
+            pattern.addExpression(actualPhrase, emotionalTone, argumentativeAngle);
+            
+            // Persist significant expression patterns
+            if (pattern.timesUsed >= 3) {
+                persistenceManager.recordExpressionPattern(master, concept, pattern);
+            }
+            
+            Log.d(TAG, String.format("🎭 Recorded expression: %s expressed '%s' via '%s' (diversity: %.2f)",
+                   master, concept, argumentativeAngle, pattern.diversityScore));
+        }
+        
+        /**
+         * 🎯 Get expression guidance to avoid repetitive phrasing
+         */
+        public ExpressionGuidance getExpressionGuidance(String master, String concept, String emotion) {
+            ExpressionGuidance guidance = new ExpressionGuidance();
+            
+            Map<String, ExpressionPattern> expressions = masterExpressions.get(master.toLowerCase());
+            if (expressions != null) {
+                ExpressionPattern pattern = expressions.get(concept);
+                if (pattern != null) {
+                    guidance.avoidPhrases = new ArrayList<>(pattern.usedPhrases);
+                    guidance.usedAngles = new ArrayList<>(pattern.usedAngles);
+                    guidance.suggestedAlternatives = generateAlternatives(master, concept, emotion, pattern);
+                    guidance.diversityScore = pattern.diversityScore;
+                    guidance.shouldUseFreshApproach = pattern.diversityScore < DIVERSITY_THRESHOLD;
+                    
+                    // Filter recent phrases (cooldown period)
+                    long currentTime = System.currentTimeMillis();
+                    guidance.recentPhrases = pattern.usedPhrases.stream()
+                        .filter(phrase -> (currentTime - pattern.lastUsed) < PHRASE_COOLDOWN)
+                        .collect(ArrayList::new, (list, item) -> list.add(item), ArrayList::addAll);
+                }
+            }
+            
+            return guidance;
+        }
+        
+        /**
+         * 🤝 PHASE 3: Dynamic Relationship Evolution - Analyze expression similarity between masters
+         */
+        public RelationshipAdjustment analyzeExpressionSimilarity(String master1, String master2, String concept) {
+            Map<String, ExpressionPattern> expressions1 = masterExpressions.get(master1.toLowerCase());
+            Map<String, ExpressionPattern> expressions2 = masterExpressions.get(master2.toLowerCase());
+            
+            if (expressions1 == null || expressions2 == null) {
+                return new RelationshipAdjustment(); // Default neutral adjustment
+            }
+            
+            ExpressionPattern pattern1 = expressions1.get(concept);
+            ExpressionPattern pattern2 = expressions2.get(concept);
+            
+            if (pattern1 == null || pattern2 == null) {
+                return new RelationshipAdjustment(); // No patterns to compare
+            }
+            
+            // Calculate similarity scores
+            float phraseSimilarity = calculateListSimilarity(pattern1.usedPhrases, pattern2.usedPhrases);
+            float angleSimilarity = calculateListSimilarity(pattern1.usedAngles, pattern2.usedAngles);
+            float toneSimilarity = calculateListSimilarity(pattern1.usedEmotionalTones, pattern2.usedEmotionalTones);
+            
+            // Weight the similarities (angles are most important for personality)
+            float overallSimilarity = (phraseSimilarity * 0.2f + angleSimilarity * 0.6f + toneSimilarity * 0.2f);
+            
+            RelationshipAdjustment adjustment = new RelationshipAdjustment();
+            adjustment.similarityScore = overallSimilarity;
+            adjustment.concept = concept;
+            
+            // Generate relationship guidance based on similarity
+            if (overallSimilarity > 0.7f) {
+                // High similarity - masters might bond or compete
+                adjustment.addressingStyle = generateHighSimilarityAddressing(master1, master2, concept, overallSimilarity);
+                adjustment.relationshipImpact = 0.1f; // Positive bond from shared approaches
+                adjustment.personalityInfluence = "convergent"; // Masters are influencing each other
+                
+            } else if (overallSimilarity < 0.3f) {
+                // Low similarity - masters have contrasting approaches
+                adjustment.addressingStyle = generateLowSimilarityAddressing(master1, master2, concept, overallSimilarity);
+                adjustment.relationshipImpact = 0.05f; // Slight respect for different approach
+                adjustment.personalityInfluence = "divergent"; // Masters maintaining distinct styles
+                
+            } else {
+                // Moderate similarity - balanced interaction
+                adjustment.addressingStyle = generateModerateSimilarityAddressing(master1, master2, concept, overallSimilarity);
+                adjustment.relationshipImpact = 0.02f; // Minimal impact
+                adjustment.personalityInfluence = "neutral"; // No strong influence
+            }
+            
+            Log.d(TAG, String.format("🤝 EXPRESSION SIMILARITY: %s ↔ %s on '%s' = %.2f (influence: %s)", 
+                   master1, master2, concept, overallSimilarity, adjustment.personalityInfluence));
+            
+            return adjustment;
+        }
+        
+        /**
+         * 📊 Calculate similarity between two lists of expressions
+         */
+        private float calculateListSimilarity(List<String> list1, List<String> list2) {
+            if (list1.isEmpty() || list2.isEmpty()) return 0.0f;
+            
+            Set<String> set1 = new HashSet<>(list1);
+            Set<String> set2 = new HashSet<>(list2);
+            
+            // Calculate Jaccard similarity
+            Set<String> intersection = new HashSet<>(set1);
+            intersection.retainAll(set2);
+            
+            Set<String> union = new HashSet<>(set1);
+            union.addAll(set2);
+            
+            return union.isEmpty() ? 0.0f : (float) intersection.size() / union.size();
+        }
+        
+        /**
+         * 🔥 Generate addressing style for masters with high expression similarity
+         */
+        private String generateHighSimilarityAddressing(String master1, String master2, String concept, float similarity) {
+            String addressingGuidance = "";
+            
+            // Masters recognize shared approaches
+            if (master1.equalsIgnoreCase("fischer") && master2.equalsIgnoreCase("carlsen")) {
+                addressingGuidance = "ADDRESSING STYLE: Fischer acknowledges Carlsen's analytical precision, calling him 'the Norwegian calculator' or 'surprisingly methodical for a modern player.' Shows grudging respect for shared perfectionism.";
+            } else if (master1.equalsIgnoreCase("tal") && master2.equalsIgnoreCase("alekhine")) {
+                addressingGuidance = "ADDRESSING STYLE: Tal recognizes Alekhine's artistic flair, addressing him as 'master of combinations' or 'fellow artist.' Bonds over shared love of creative chess.";
+            } else if (master1.equalsIgnoreCase("kasparov") && master2.equalsIgnoreCase("fischer")) {
+                addressingGuidance = "ADDRESSING STYLE: Kasparov acknowledges Fischer's intensity, calling him 'the American perfectionist' or 'Bobby.' Shows competitive respect for shared drive.";
+            } else {
+                // Generic high similarity addressing
+                addressingGuidance = String.format("ADDRESSING STYLE: %s recognizes %s's similar approach to %s, using respectful but competitive terms. Shows appreciation for shared methodology.", master1, master2, concept);
+            }
+            
+            return addressingGuidance + String.format(" (Similarity: %.2f - kindred spirits in %s)", similarity, concept);
+        }
+        
+        /**
+         * ⚔️ Generate addressing style for masters with low expression similarity
+         */
+        private String generateLowSimilarityAddressing(String master1, String master2, String concept, float similarity) {
+            String addressingGuidance = "";
+            
+            // Masters clash over different approaches
+            if (master1.equalsIgnoreCase("fischer") && master2.equalsIgnoreCase("tal")) {
+                addressingGuidance = "ADDRESSING STYLE: Fischer dismisses Tal's intuitive approach as 'sloppy' or 'unscientific.' Addresses him as 'Mikhail' with condescending tone about his 'random sacrifices.'";
+            } else if (master1.equalsIgnoreCase("carlsen") && master2.equalsIgnoreCase("alekhine")) {
+                addressingGuidance = "ADDRESSING STYLE: Carlsen politely critiques Alekhine's romantic approach as 'impractical in modern chess.' Addresses him respectfully but highlights efficiency vs artistry.";
+            } else if (master1.equalsIgnoreCase("tal") && master2.equalsIgnoreCase("fischer")) {
+                addressingGuidance = "ADDRESSING STYLE: Tal teases Fischer's rigid approach, calling him 'Bobby the machine' or 'too serious.' Shows amusement at Fischer's obsession with perfection.";
+            } else {
+                // Generic low similarity addressing
+                addressingGuidance = String.format("ADDRESSING STYLE: %s contrasts their approach to %s with %s's method, using terms that highlight the philosophical differences. Respectful but emphasizes distinct styles.", master1, concept, master2);
+            }
+            
+            return addressingGuidance + String.format(" (Similarity: %.2f - contrasting philosophies on %s)", similarity, concept);
+        }
+        
+        /**
+         * ⚖️ Generate addressing style for masters with moderate expression similarity
+         */
+        private String generateModerateSimilarityAddressing(String master1, String master2, String concept, float similarity) {
+            return String.format("ADDRESSING STYLE: %s maintains neutral professional respect toward %s regarding %s. Uses formal address with occasional acknowledgment of %s's competence. (Similarity: %.2f - balanced interaction)", 
+                               master1, master2, concept, master2, similarity);
+        }
+        
+        /**
+         * 🎭 Apply relationship-based conversation modifiers
+         */
+        public String buildRelationshipGuidance(String speaker, String listener, String concept) {
+            RelationshipAdjustment adjustment = analyzeExpressionSimilarity(speaker, listener, concept);
+            
+            StringBuilder guidance = new StringBuilder();
+            guidance.append(adjustment.addressingStyle).append(" ");
+            
+            // Add personality influence guidance
+            switch (adjustment.personalityInfluence) {
+                case "convergent":
+                    guidance.append("PERSONALITY INFLUENCE: Masters are unconsciously adopting similar expression patterns. ");
+                    guidance.append(speaker).append(" might echo ").append(listener).append("'s terminology or approach slightly. ");
+                    break;
+                    
+                case "divergent":
+                    guidance.append("PERSONALITY INFLUENCE: Masters are maintaining distinct approaches. ");
+                    guidance.append(speaker).append(" should emphasize their unique perspective in contrast to ").append(listener).append(". ");
+                    break;
+                    
+                case "neutral":
+                    guidance.append("PERSONALITY INFLUENCE: Standard professional interaction without strong mutual influence. ");
+                    break;
+            }
+            
+            return guidance.toString();
+        }
+
+        /**
+         * 🎨 Generate fresh alternatives for expressing concepts
+         */
+        private List<String> generateAlternatives(String master, String concept, String emotion, 
+                                                ExpressionPattern pattern) {
+            List<String> alternatives = new ArrayList<>();
+            
+            // Fischer-specific alternatives for common repetitive concepts
+            if (master.equalsIgnoreCase("fischer")) {
+                switch (concept.toLowerCase()) {
+                    case "perfectionism":
+                    case "truth":
+                    case "analysis":
+                        if (!pattern.usedAngles.contains("standards_rant")) {
+                            alternatives.add("ANGLE: standards_rant - Focus on impossibly high standards and technical precision");
+                        }
+                        if (!pattern.usedAngles.contains("dismissive_criticism")) {
+                            alternatives.add("ANGLE: dismissive_criticism - Harshly criticize opponent's 'amateur' approach");
+                        }
+                        if (!pattern.usedAngles.contains("paranoid_conspiracy")) {
+                            alternatives.add("ANGLE: paranoid_conspiracy - Suspicious of opponent's motives or methods");
+                        }
+                        if (!pattern.usedAngles.contains("brutal_honesty")) {
+                            alternatives.add("ANGLE: brutal_honesty - Bluntly state uncomfortable truths about the position");
+                        }
+                        break;
+                        
+                    case "soviet_criticism":
+                    case "politics":
+                        if (!pattern.usedAngles.contains("conspiracy_theory")) {
+                            alternatives.add("ANGLE: conspiracy_theory - Paranoid suspicions about collusion");
+                        }
+                        if (!pattern.usedAngles.contains("collusion_accusation")) {
+                            alternatives.add("ANGLE: collusion_accusation - Direct accusations of cheating or manipulation");
+                        }
+                        if (!pattern.usedAngles.contains("system_corruption")) {
+                            alternatives.add("ANGLE: system_corruption - Claims about corrupt chess establishment");
+                        }
+                        break;
+                        
+                    case "confidence":
+                    case "superiority":
+                        if (!pattern.usedAngles.contains("arrogant_dismissal")) {
+                            alternatives.add("ANGLE: arrogant_dismissal - Condescendingly dismiss opponent's abilities");
+                        }
+                        if (!pattern.usedAngles.contains("intellectual_superiority")) {
+                            alternatives.add("ANGLE: intellectual_superiority - Claim mental/analytical dominance");
+                        }
+                        break;
+                }
+            }
+            
+            // Carlsen-specific alternatives
+            if (master.equalsIgnoreCase("carlsen")) {
+                switch (concept.toLowerCase()) {
+                    case "practical_play":
+                    case "endgame":
+                        if (!pattern.usedAngles.contains("step_by_step")) {
+                            alternatives.add("ANGLE: step_by_step - Methodical, patient approach");
+                        }
+                        if (!pattern.usedAngles.contains("pressure_builder")) {
+                            alternatives.add("ANGLE: pressure_builder - Gradually increasing positional pressure");
+                        }
+                        break;
+                        
+                    case "modern_chess":
+                        if (!pattern.usedAngles.contains("computer_age")) {
+                            alternatives.add("ANGLE: computer_age - Reference to modern preparation and analysis");
+                        }
+                        break;
+                }
+            }
+            
+            return alternatives;
+        }
+        
+        /**
+         * 📊 Calculate diversity score using Shannon entropy
+         */
+        private float calculateDiversityScore(List<String> expressions) {
+            if (expressions.isEmpty()) return 1.0f;
+            
+            // Count frequency of each expression type
+            Map<String, Integer> frequency = new HashMap<>();
+            for (String expr : expressions) {
+                frequency.put(expr, frequency.getOrDefault(expr, 0) + 1);
+            }
+            
+            // Calculate Shannon entropy
+            int total = expressions.size();
+            float entropy = 0;
+            
+            for (int count : frequency.values()) {
+                float probability = (float) count / total;
+                if (probability > 0) {
+                    entropy -= probability * Math.log(probability) / Math.log(2);
+                }
+            }
+            
+            // Normalize to 0-1 range (max entropy for N items is log2(N))
+            float maxEntropy = (float) (Math.log(frequency.size()) / Math.log(2));
+            return maxEntropy > 0 ? entropy / maxEntropy : 0;
+        }
+    }
+    
+    /**
+     * 📋 ExpressionPattern: Tracks how a master has expressed a specific concept
+     */
+    public static class ExpressionPattern {
+        public String concept;
+        public List<String> usedPhrases = new ArrayList<>();
+        public List<String> usedAngles = new ArrayList<>();
+        public List<String> usedEmotionalTones = new ArrayList<>();
+        public int timesUsed = 0;
+        public long lastUsed = 0;
+        public float diversityScore = 1.0f;
+        
+        public ExpressionPattern(String concept) {
+            this.concept = concept;
+        }
+        
+        public void addExpression(String phrase, String emotionalTone, String argumentativeAngle) {
+            usedPhrases.add(phrase.toLowerCase());
+            usedAngles.add(argumentativeAngle);
+            usedEmotionalTones.add(emotionalTone);
+            timesUsed++;
+            lastUsed = System.currentTimeMillis();
+            
+            // Recalculate diversity score
+            diversityScore = calculateCombinedDiversity();
+        }
+        
+        public boolean shouldAvoidPhrase(String phrase) {
+            return usedPhrases.contains(phrase.toLowerCase()) && 
+                   (System.currentTimeMillis() - lastUsed) < PersonalityExpressionManager.PHRASE_COOLDOWN;
+        }
+        
+        private float calculateCombinedDiversity() {
+            // Combine diversity of phrases, angles, and tones
+            float phraseDiversity = calculateListDiversity(usedPhrases);
+            float angleDiversity = calculateListDiversity(usedAngles);
+            float toneDiversity = calculateListDiversity(usedEmotionalTones);
+            
+            // Weighted average (angles matter most for personality expression)
+            return (phraseDiversity * 0.3f + angleDiversity * 0.5f + toneDiversity * 0.2f);
+        }
+        
+        private float calculateListDiversity(List<String> items) {
+            if (items.isEmpty()) return 1.0f;
+            
+            Map<String, Integer> frequency = new HashMap<>();
+            for (String item : items) {
+                frequency.put(item, frequency.getOrDefault(item, 0) + 1);
+            }
+            
+            int total = items.size();
+            float entropy = 0;
+            
+            for (int count : frequency.values()) {
+                float probability = (float) count / total;
+                if (probability > 0) {
+                    entropy -= probability * Math.log(probability) / Math.log(2);
+                }
+            }
+            
+            float maxEntropy = (float) (Math.log(frequency.size()) / Math.log(2));
+            return maxEntropy > 0 ? entropy / maxEntropy : 0;
+        }
+    }
+    
+    /**
+     * 🎯 ExpressionGuidance: Provides anti-repetition instructions for conversations
+     */
+    public static class ExpressionGuidance {
+        public List<String> avoidPhrases = new ArrayList<>();
+        public List<String> recentPhrases = new ArrayList<>();
+        public List<String> usedAngles = new ArrayList<>();
+        public List<String> suggestedAlternatives = new ArrayList<>();
+        public float diversityScore = 1.0f;
+        public boolean shouldUseFreshApproach = false;
+        
+        /**
+         * 📝 Build anti-repetition instructions for AI prompts
+         */
+        public String buildAntiRepetitionInstructions() {
+            StringBuilder instructions = new StringBuilder();
+            
+            if (shouldUseFreshApproach) {
+                instructions.append("CRITICAL: Avoid repetitive phrasing! Express this concept in a completely fresh way. ");
+            }
+            
+            if (!recentPhrases.isEmpty()) {
+                instructions.append("RECENTLY USED PHRASES TO AVOID: ");
+                instructions.append(String.join(", ", recentPhrases.subList(0, Math.min(3, recentPhrases.size()))));
+                instructions.append(". ");
+            }
+            
+            if (!usedAngles.isEmpty()) {
+                instructions.append("PREVIOUSLY USED APPROACHES: ");
+                instructions.append(String.join(", ", usedAngles.subList(0, Math.min(3, usedAngles.size()))));
+                instructions.append(". ");
+            }
+            
+            if (!suggestedAlternatives.isEmpty()) {
+                instructions.append("FRESH APPROACHES TO TRY: ");
+                instructions.append(String.join(" OR ", suggestedAlternatives));
+                instructions.append(". ");
+            }
+            
+            return instructions.toString();
+        }
+        
+        /**
+         * 🔍 Get expression variety analysis
+         */
+        public String getVarietyAnalysis() {
+            if (diversityScore > 0.7f) {
+                return "High expression variety - continue natural conversation";
+            } else if (diversityScore > 0.4f) {
+                return "Moderate variety - consider fresh approaches occasionally";
+            } else {
+                return "Low variety detected - actively avoid repetitive patterns";
+            }
+        }
+    }
+    
+    
+    // PersonalityExpressionManager instance
+    private PersonalityExpressionManager expressionManager;
+    
+    /**
+     * 🎭 Get the PersonalityExpressionManager instance
+     */
+    public PersonalityExpressionManager getExpressionManager() {
+        if (expressionManager == null) {
+            expressionManager = PersonalityExpressionManager.getInstance(context);
+        }
+        return expressionManager;
+    }
+    
+    /**
+     * 📊 Combined analysis including expression diversity
+     */
+    public EmotionalAnalysisResult analyzeWithExpressionGuidance(String masterName, String concept, 
+                                                               String gameContext, String conversationContext,
+                                                               Float currentEval, Float evalChange, 
+                                                               EmotionalContext emotionalContext) {
+        // Get base emotional analysis
+        EmotionalAnalysisResult baseResult = analyzeEmotionalState(masterName, gameContext, conversationContext, 
+                                                                   currentEval, evalChange, emotionalContext);
+        
+        // Get expression guidance for this concept
+        ExpressionGuidance guidance = getExpressionManager().getExpressionGuidance(
+            masterName, concept, baseResult.emotion.name
+        );
+        
+        // Enhance result with expression guidance
+        baseResult.expressionGuidance = guidance;
+        
+        // Log diversity analysis
+        if (guidance.shouldUseFreshApproach) {
+            Log.w(TAG, String.format("🎭 LOW EXPRESSION DIVERSITY: %s discussing '%s' (score: %.2f) - %s",
+                    masterName, concept, guidance.diversityScore, guidance.getVarietyAnalysis()));
+            
+            // Notify callbacks about repetition
+            for (EmotionalMemoryCallback callback : callbacks) {
+                callback.onExpressionRepetitionDetected(masterName, concept, guidance.diversityScore);
+            }
+        }
+        
+        return baseResult;
+    }
+    
+    /**
+     * 🤝 RelationshipAdjustment: Data class for dynamic relationship evolution
+     */
+    public static class RelationshipAdjustment {
+        public float similarityScore = 0.0f;
+        public String concept = "";
+        public String addressingStyle = "";
+        public float relationshipImpact = 0.0f;
+        public String personalityInfluence = "neutral"; // convergent, divergent, neutral
+        
+        public RelationshipAdjustment() {
+            this.similarityScore = 0.0f;
+            this.addressingStyle = "ADDRESSING STYLE: Standard professional interaction.";
+            this.relationshipImpact = 0.0f;
+            this.personalityInfluence = "neutral";
+        }
+        
+        public boolean hasSignificantImpact() {
+            return Math.abs(relationshipImpact) > 0.05f;
+        }
+        
+        public boolean isConvergent() {
+            return "convergent".equals(personalityInfluence);
+        }
+        
+        public boolean isDivergent() {
+            return "divergent".equals(personalityInfluence);
+        }
     }
 }

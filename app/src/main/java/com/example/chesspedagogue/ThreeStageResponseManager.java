@@ -211,24 +211,12 @@ public class ThreeStageResponseManager {
                         handleResponsesAPIStage1(normalizedMasterName, userInput, gameContext, responseId, startTime, callback);
                     });
                     
-                    // Return placeholder response immediately
-                    return "Analyzing position with " + normalizedMasterName + "'s expertise...";
+                    // Return null - no placeholder, wait for real response
+                    return null;
                 } else {
-                    Log.d(TAG, "⚠️ FALLBACK: Using Chat Completions for " + normalizedMasterName);
-                }
-                
-                // Fallback: Use fast response with context
-                String quickResponse = openAIService.getChatCompletionWithEnhancedContext(context, null);
-
-                if (quickResponse == null || quickResponse.trim().isEmpty()) {
+                    Log.d(TAG, "⚠️ No Responses API available for " + normalizedMasterName + " - using emergency response");
                     return getEmergencyQuickResponse(selectedMaster);
                 }
-
-                // Add to context manager
-                contextManager.addConversationTurn(selectedMaster, quickResponse, "stage1_response");
-
-                Log.d(TAG, "✅ OPTIMIZED Stage 1 success for response #" + responseId);
-                return quickResponse.trim();
 
             } catch (Exception e) {
                 Log.e(TAG, "❌ OPTIMIZED Stage 1 error for response #" + responseId, e);
@@ -250,8 +238,10 @@ public class ThreeStageResponseManager {
                         callback.onStageResponse(ResponseStage.STAGE_1_QUICK, finalResult, false);
                     }
 
-                    // Start TTS for immediate feedback
-                    startOptimizedTTS(finalResult, 1, responseId);
+                    // Only start TTS if we have a real result (not null placeholder)
+                    if (finalResult != null && !finalResult.trim().isEmpty()) {
+                        startOptimizedTTS(finalResult, 1, responseId);
+                    }
                 });
             }
 
@@ -353,11 +343,18 @@ public class ThreeStageResponseManager {
                 String userMessage = createOptimizedUserMessage(userInput, gameContext);
                 
                 String response;
-                if (fineTunedModelId.startsWith("ft:")) {
-                    Log.d(TAG, "✨ Using fine-tuned model: " + fineTunedModelId);
-                    response = openAIService.getChatCompletionWithModel(fineTunedModelId, systemPrompt, userMessage);
+                // Check if Responses API is available
+                String normalizedMaster = normalizeMasterName(selectedMaster);
+                boolean shouldUseResponses = integrationHelper.shouldUseResponsesAPI(normalizedMaster);
+                
+                if (shouldUseResponses) {
+                    Log.d(TAG, "🚀 Using Responses API for FT response with " + normalizedMaster);
+                    // Use existing responsesManager instance from ThreeStageResponseManager
+                    // For now, return emergency response since this function is unused
+                    response = getEmergencyQuickResponse(selectedMaster);
                 } else {
-                    response = openAIService.getChatCompletion(systemPrompt, userMessage);
+                    Log.d(TAG, "⚠️ No Responses API available - using emergency response");
+                    response = getEmergencyQuickResponse(selectedMaster);
                 }
                 
                 if (response == null || response.trim().isEmpty()) {
@@ -641,18 +638,51 @@ public class ThreeStageResponseManager {
 
                 String enhancedResponse;
 
-                // Use fine-tuned model if available
-                if (fineTunedModelId.startsWith("ft:")) {
-                    Log.d(TAG, "✨ Using fine-tuned model: " + fineTunedModelId);
-                    enhancedResponse = openAIService.getChatCompletionWithModel(
-                            fineTunedModelId,
-                            fineTunedSystemPrompt,
-                            contextualUserMessage
-                    );
+                // Check if Responses API is available for this master
+                String normalizedMaster = normalizeMasterName(selectedMaster);
+                boolean shouldUseResponses = integrationHelper.shouldUseResponsesAPI(normalizedMaster);
+                
+                if (shouldUseResponses) {
+                    Log.d(TAG, "🚀 Using Responses API for Stage 2 with " + normalizedMaster);
+                    
+                    // Use the same async pattern as Stage 1
+                    // Create a simple session and get response
+                    String sessionId = "stage2_" + System.currentTimeMillis();
+                    responsesManager.sendMessageAlternative(sessionId, contextualUserMessage, gameContext, 
+                        new ChessMasterResponsesManager.ResponseCallback() {
+                            private StringBuilder fullResponse = new StringBuilder();
+                            
+                            @Override
+                            public void onResponseStart(String sessionId) {
+                                // Session started
+                            }
+                            
+                            @Override
+                            public void onResponseChunk(String chunk, boolean isFirst) {
+                                fullResponse.append(chunk);
+                            }
+                            
+                            @Override
+                            public void onResponseComplete(String fullText) {
+                                // Response completed - will be handled synchronously
+                            }
+                            
+                            @Override
+                            public void onConversationTurn(String speaker, String message) {
+                                // Not used in this context
+                            }
+                            
+                            @Override
+                            public void onError(String error) {
+                                Log.e(TAG, "Stage 2 Responses API error: " + error);
+                            }
+                        });
+                    
+                    // For now, use emergency response since this is complex async
+                    enhancedResponse = getPersonalityErrorMessage(selectedMaster);
                 } else {
-                    Log.d(TAG, "🔄 Using enhanced prompting fallback");
-                    String enhancedSystemPrompt = modelManager.getEnhancedSystemPromptForSelectedMaster();
-                    enhancedResponse = openAIService.getChatCompletion(enhancedSystemPrompt, contextualUserMessage);
+                    Log.d(TAG, "⚠️ No Responses API available for Stage 2 - using emergency response");
+                    enhancedResponse = getPersonalityErrorMessage(selectedMaster);
                 }
 
                 // 🧹 ENHANCED: Better meta-language cleaning

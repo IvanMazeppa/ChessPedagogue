@@ -280,7 +280,7 @@ public class EmotionalContext {
         
         return targetEmotion; // Default: no emotion change
     }
-    
+
     /**
      * 🎯 Enhanced emergent behavior analysis with contagion awareness
      */

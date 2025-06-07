@@ -371,7 +371,49 @@
             android:clickable="true"
             android:focusable="true"
             android:background="?attr/selectableItemBackground"
-            android:layout_marginBottom="24dp" />
+            android:layout_marginBottom="16dp" />
+
+        <!-- SECTION 5: ANALYTICS DASHBOARD -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Personality Analytics"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            android:text="View real-time personality expression patterns, relationship evolution, and emergent behavior between chess masters."
+            android:textSize="14sp"
+            android:textStyle="italic" />
+
+        <!-- Analytics Dashboard Button -->
+        <Button
+            android:id="@+id/button_analytics_dashboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:text="📊 View Personality Analytics"
+            android:drawableEnd="@android:drawable/ic_menu_info_details"
+            android:backgroundTint="#FF9800" />
 
     </LinearLayout>
 </ScrollView>

@@ -284,7 +284,10 @@ public class SpectatorConversationOrchestrator {
         String firstSpeaker = determineFirstSpeaker(triggerType, whitePlayer, blackPlayer);
         state.currentSpeaker = firstSpeaker;
         
-        Log.d(TAG, "🎬 Starting conversation: " + conversationId + " (" + triggerType + ")");
+        Log.d(TAG, "🎬 CONVERSATION START: " + conversationId + " (" + triggerType + ")");
+        Log.d(TAG, "🎬 Players: WHITE=" + whitePlayer + ", BLACK=" + blackPlayer + ", FIRST_SPEAKER=" + firstSpeaker);
+        Log.d(TAG, "🎬 conversationInProgress set to: " + conversationInProgress);
+        
         callback.onConversationStart(whitePlayer, blackPlayer);
         
         // Generate initial statement
@@ -292,17 +295,32 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * Generate initial statement using Responses API
+     * Generate initial statement using Responses API with fallback
      */
     private void generateInitialStatement(ConversationState state, String triggerType, 
                                          String gameContext, ConversationCallback callback) {
         Log.d(TAG, "🎬 generateInitialStatement called: trigger=" + triggerType + ", speaker=" + state.currentSpeaker);
         
+        // Check if user recording is in progress - if so, skip AI conversation generation
+        if (userRecordingInProgress) {
+            Log.d(TAG, "🎤 User recording in progress - skipping AI initial statement generation");
+            return;
+        }
+        
+        String speaker = state.currentSpeaker;
+        String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+        
+        // Check if speaker has Responses API configured
+        if (!hasResponsesAPIConfigured(speaker)) {
+            Log.w(TAG, "⚠️ " + speaker + " doesn't have Responses API configured, using fallback dialogue generation");
+            generateFallbackDialogue(state, triggerType, gameContext, callback);
+            return;
+        }
+        
+        Log.d(TAG, "✅ " + speaker + " has Responses API configured - proceeding with API call");
+        
         executorService.execute(() -> {
             try {
-                String speaker = state.currentSpeaker;
-                String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
-                
                 Log.d(TAG, "📡 About to call responsesManager.createResponseSession for " + speaker);
                 Log.d(TAG, "📡 responsesManager is: " + (responsesManager != null ? "AVAILABLE" : "NULL"));
                 
@@ -350,6 +368,14 @@ public class SpectatorConversationOrchestrator {
                                 // Clean and personalize response
                                 String cleanedResponse = cleanResponse(fullResponse, speaker);
                                 
+                                // 🎭 RECORD EXPRESSION PATTERNS: Track how master expressed this concept
+                                String concept = extractConceptFromTrigger(triggerType, gameContext);
+                                String emotionalTone = detectEmotionalContext(state, state.currentEval, state.previousEval);
+                                String argumentativeAngle = extractArgumentativeAngle(cleanedResponse);
+                                emotionalIntelligence.getExpressionManager().recordExpression(
+                                    speaker, concept, cleanedResponse, emotionalTone != null ? emotionalTone : "neutral", argumentativeAngle
+                                );
+                                
                                 // Add to conversation history
                                 state.turns.add(new ConversationTurn(speaker, cleanedResponse, triggerType));
                                 state.turnCount++;
@@ -386,9 +412,18 @@ public class SpectatorConversationOrchestrator {
                                     });
                                     
                                     // Schedule response if appropriate
-                                    if (shouldTriggerResponse(cleanedResponse, state)) {
+                                    Log.d(TAG, "🔍 CONVERSATION DEBUG: After " + speaker + " spoke, checking if " + opponent + " should respond");
+                                    Log.d(TAG, "🔍 State: whitePlayer=" + state.whitePlayer + ", blackPlayer=" + state.blackPlayer + ", turnCount=" + state.turnCount);
+                                    Log.d(TAG, "🔍 Response text: " + cleanedResponse.substring(0, Math.min(100, cleanedResponse.length())));
+                                    
+                                    boolean shouldTrigger = shouldTriggerResponse(cleanedResponse, state);
+                                    Log.d(TAG, "🔍 shouldTriggerResponse(" + speaker + " -> " + opponent + ") = " + shouldTrigger);
+                                    
+                                    if (shouldTrigger) {
+                                        Log.d(TAG, "✅ CONVERSATION FLOW: Scheduling response from " + opponent + " to " + speaker);
                                         scheduleResponse(state, opponent, cleanedResponse, callback);
                                     } else {
+                                        Log.w(TAG, "❌ CONVERSATION END: shouldTriggerResponse=false, ending conversation after " + speaker);
                                         endConversation(state, speaker, cleanedResponse, callback);
                                     }
                                 });
@@ -456,12 +491,20 @@ public class SpectatorConversationOrchestrator {
                                  String previousStatement, ConversationCallback callback) {
         long delay = MIN_RESPONSE_DELAY + new Random().nextInt((int)(MAX_RESPONSE_DELAY - MIN_RESPONSE_DELAY));
         
+        Log.d(TAG, "⏰ SCHEDULE RESPONSE: " + responder + " will respond in " + delay + "ms to: " + previousStatement.substring(0, Math.min(50, previousStatement.length())));
+        Log.d(TAG, "⏰ State before delay: isActive=" + state.isActive + ", turnCount=" + state.turnCount + ", maxTurns=" + MAX_CONVERSATION_TURNS);
+        
         mainHandler.postDelayed(() -> {
+            Log.d(TAG, "🕐 DELAY EXPIRED: About to check if " + responder + " should still respond");
+            Log.d(TAG, "🕐 State after delay: isActive=" + state.isActive + ", turnCount=" + state.turnCount);
+            
             if (!state.isActive || state.turnCount >= MAX_CONVERSATION_TURNS) {
+                Log.w(TAG, "❌ RESPONSE CANCELLED: state.isActive=" + state.isActive + ", turnCount=" + state.turnCount + " >= maxTurns=" + MAX_CONVERSATION_TURNS);
                 endConversation(state, state.currentSpeaker, previousStatement, callback);
                 return;
             }
             
+            Log.d(TAG, "✅ GENERATING RESPONSE: Calling generateResponse for " + responder);
             generateResponse(state, responder, previousStatement, callback);
         }, delay);
     }
@@ -471,6 +514,25 @@ public class SpectatorConversationOrchestrator {
      */
     private void generateResponse(ConversationState state, String responder, 
                                  String previousStatement, ConversationCallback callback) {
+        Log.d(TAG, "🎯 GENERATE RESPONSE: Starting response generation for " + responder);
+        Log.d(TAG, "🎯 Previous statement from " + state.currentSpeaker + ": " + previousStatement.substring(0, Math.min(100, previousStatement.length())));
+        
+        // Check if user recording is in progress - if so, skip AI response generation
+        if (userRecordingInProgress) {
+            Log.d(TAG, "🎤 User recording in progress - skipping AI response generation");
+            return;
+        }
+        
+        // Check if responder has Responses API configured
+        boolean hasAPI = hasResponsesAPIConfigured(responder);
+        Log.d(TAG, "🎯 API CHECK: " + responder + " hasResponsesAPI = " + hasAPI);
+        
+        if (!hasAPI) {
+            Log.w(TAG, "⚠️ " + responder + " doesn't have Responses API configured, using fallback response generation");
+            generateFallbackResponse(state, responder, previousStatement, callback);
+            return;
+        }
+        
         executorService.execute(() -> {
             try {
                 state.currentSpeaker = responder;
@@ -503,6 +565,13 @@ public class SpectatorConversationOrchestrator {
                                     @Override
                                     public void onResponseComplete(String fullResponse) {
                                         String cleanedResponse = cleanResponse(fullResponse, responder);
+                                        
+                                        // 🎭 RECORD EXPRESSION PATTERNS: Track how master responded to opponent
+                                        String concept = extractConceptFromResponse(previousStatement, cleanedResponse);
+                                        String argumentativeAngle = extractArgumentativeAngle(cleanedResponse);
+                                        emotionalIntelligence.getExpressionManager().recordExpression(
+                                            responder, concept, cleanedResponse, emotionalContext != null ? emotionalContext : "neutral", argumentativeAngle
+                                        );
                                         
                                         // Add to conversation history
                                         state.turns.add(new ConversationTurn(responder, cleanedResponse, emotionalContext));
@@ -540,10 +609,18 @@ public class SpectatorConversationOrchestrator {
                                             // Continue or end conversation
                                             String nextSpeaker = responder.equals(state.whitePlayer) ? 
                                                 state.blackPlayer : state.whitePlayer;
+                                            
+                                            Log.d(TAG, "🔄 RESPONSE COMPLETE: " + responder + " finished speaking. Next speaker would be: " + nextSpeaker);
+                                            Log.d(TAG, "🔄 State: responder=" + responder + ", whitePlayer=" + state.whitePlayer + ", blackPlayer=" + state.blackPlayer);
+                                            
+                                            boolean shouldContinue = shouldContinueConversation(cleanedResponse, state);
+                                            Log.d(TAG, "🔄 shouldContinueConversation(" + responder + " -> " + nextSpeaker + ") = " + shouldContinue);
                                                 
-                                            if (shouldContinueConversation(cleanedResponse, state)) {
+                                            if (shouldContinue) {
+                                                Log.d(TAG, "✅ CONTINUING: Scheduling response from " + nextSpeaker);
                                                 scheduleResponse(state, nextSpeaker, cleanedResponse, callback);
                                             } else {
+                                                Log.w(TAG, "🛑 ENDING: shouldContinueConversation=false, ending after " + responder);
                                                 endConversation(state, responder, cleanedResponse, callback);
                                             }
                                         });
@@ -599,11 +676,15 @@ public class SpectatorConversationOrchestrator {
      */
     private void endConversation(ConversationState state, String finalSpeaker, 
                                  String finalMessage, ConversationCallback callback) {
+        Log.d(TAG, "🔚 END CONVERSATION: " + state.conversationId + " with final speaker: " + finalSpeaker);
+        Log.d(TAG, "🔚 Final message: " + finalMessage.substring(0, Math.min(100, finalMessage.length())));
+        Log.d(TAG, "🔚 Total turns in conversation: " + state.turnCount);
+        Log.d(TAG, "🔚 Setting conversationInProgress = false");
+        
         state.isActive = false;
         conversationInProgress = false;
         activeConversations.remove(state.conversationId);
         
-        Log.d(TAG, "🎭 Conversation ended: " + state.conversationId);
         callback.onConversationEnd(finalSpeaker, finalMessage);
     }
     
@@ -1294,18 +1375,35 @@ public class SpectatorConversationOrchestrator {
         ConversationMemoryManager.ConversationGuidance guidance = 
             conversationMemory.getConversationGuidance(speaker, opponent, gameContext);
         
+        // 🎭 EXPRESSION PATTERNS: Get anti-repetition guidance to prevent repetitive phrasing
+        EmotionalIntelligenceManager.ExpressionGuidance expressionGuidance = 
+            emotionalIntelligence.getExpressionManager().getExpressionGuidance(speaker, triggerType, "neutral");
+        
         // Generate varied prompts to avoid repetitive responses
         Random rand = new Random();
         
         // Add personality flavor to prompts
         String speakerLower = speaker.toLowerCase();
         
-        // 🧠 Build enhanced prompt with conversation memory guidance
+        // 🧠 Build enhanced prompt with conversation memory AND expression pattern guidance
         StringBuilder enhancedPrompt = new StringBuilder();
         
         // Add conversation memory instructions first
         if (!guidance.contextInstructions.isEmpty()) {
             enhancedPrompt.append(guidance.contextInstructions).append("\n\n");
+        }
+        
+        // 🎭 NEW: Add expression diversity instructions
+        if (expressionGuidance != null && expressionGuidance.shouldUseFreshApproach) {
+            enhancedPrompt.append("🎭 EXPRESSION DIVERSITY GUIDANCE:\n");
+            enhancedPrompt.append(expressionGuidance.buildAntiRepetitionInstructions()).append("\n\n");
+        }
+        
+        // 🤝 PHASE 3: Add dynamic relationship evolution guidance
+        String relationshipGuidance = emotionalIntelligence.getExpressionManager().buildRelationshipGuidance(speaker, opponent, triggerType);
+        if (relationshipGuidance != null && !relationshipGuidance.trim().isEmpty()) {
+            enhancedPrompt.append("🤝 RELATIONSHIP DYNAMICS:\n");
+            enhancedPrompt.append(relationshipGuidance).append("\n\n");
         }
         
         // Get base prompt based on trigger type
@@ -1459,16 +1557,26 @@ public class SpectatorConversationOrchestrator {
         ConversationMemoryManager.ConversationGuidance guidance = 
             conversationMemory.getConversationGuidance(responder, opponent, buildConversationContext(state));
         
+        // 🎭 EXPRESSION PATTERNS: Get anti-repetition guidance for responses
+        EmotionalIntelligenceManager.ExpressionGuidance expressionGuidance = 
+            emotionalIntelligence.getExpressionManager().getExpressionGuidance(responder, "response", "conversational");
+        
         // Detect emotional context for the prompt
         String emotionalContext = detectEmotionalContext(state, state.currentEval, state.previousEval);
         Float evalChange = evaluationTracker.getRecentEvaluationChange();
         
-        // Build prompt with personality clash potential and conversation memory guidance
+        // Build prompt with personality clash potential, conversation memory, AND expression guidance
         StringBuilder prompt = new StringBuilder();
         
         // 🧠 Add conversation memory instructions
         if (!guidance.contextInstructions.isEmpty()) {
             prompt.append(guidance.contextInstructions).append("\n\n");
+        }
+        
+        // 🎭 NEW: Add expression diversity instructions for responses
+        if (expressionGuidance != null && expressionGuidance.shouldUseFreshApproach) {
+            prompt.append("🎭 RESPONSE VARIETY GUIDANCE:\n");
+            prompt.append(expressionGuidance.buildAntiRepetitionInstructions()).append("\n\n");
         }
         
         // Add emotional context if relevant
@@ -1727,6 +1835,429 @@ public class SpectatorConversationOrchestrator {
     /**
      * Cleanup resources
      */
+    // =========================== EXPRESSION PATTERN HELPERS ===========================
+    
+    /**
+     * 🎭 Extract the main concept being discussed from trigger type and context
+     */
+    private String extractConceptFromTrigger(String triggerType, String gameContext) {
+        switch (triggerType) {
+            case "opening":
+                return "opening_assessment";
+            case "brilliant_move":
+                return "tactical_praise";
+            case "blunder":
+                return "error_criticism";
+            case "endgame":
+                return "game_conclusion";
+            case "evaluation_swing":
+                return "position_analysis";
+            default:
+                return "general_discussion";
+        }
+    }
+    
+    /**
+     * 🎭 Extract concept from response context
+     */
+    private String extractConceptFromResponse(String previousStatement, String response) {
+        String lowerPrev = previousStatement.toLowerCase();
+        String lowerResp = response.toLowerCase();
+        
+        if (lowerPrev.contains("brilliant") || lowerResp.contains("brilliant")) {
+            return "tactical_discussion";
+        } else if (lowerPrev.contains("mistake") || lowerResp.contains("mistake") || 
+                   lowerPrev.contains("blunder") || lowerResp.contains("blunder")) {
+            return "error_analysis";
+        } else if (lowerResp.contains("disagree") || lowerResp.contains("but") || 
+                   lowerResp.contains("wrong") || lowerResp.contains("no,")) {
+            return "counterargument";
+        } else if (lowerResp.contains("exactly") || lowerResp.contains("agree") || 
+                   lowerResp.contains("precisely") || lowerResp.contains("yes")) {
+            return "agreement";
+        } else if (lowerResp.contains("truth") || lowerResp.contains("analysis") || 
+                   lowerResp.contains("perfect")) {
+            return "perfectionism"; // Fischer's favorite topics
+        } else {
+            return "position_discussion";
+        }
+    }
+    
+    /**
+     * 🎭 Extract argumentative angle from response text - critical for personality tracking
+     */
+    private String extractArgumentativeAngle(String response) {
+        String lower = response.toLowerCase();
+        
+        // Fischer-specific patterns
+        if (lower.contains("truth") && (lower.contains("board") || lower.contains("analysis"))) {
+            return "truth_appeal";
+        } else if (lower.contains("perfect") && (lower.contains("demand") || lower.contains("require"))) {
+            return "standards_rant";
+        } else if (lower.contains("disagree") || lower.contains("wrong") || lower.contains("nonsense")) {
+            return "dismissive_criticism";
+        } else if (lower.contains("conspiracy") || lower.contains("collusion") || lower.contains("cheating")) {
+            return "paranoid_accusation";
+        }
+        
+        // Carlsen-specific patterns  
+        else if (lower.contains("practical") || lower.contains("step by step")) {
+            return "methodical_approach";
+        } else if (lower.contains("pressure") && lower.contains("build")) {
+            return "pressure_builder";
+        }
+        
+        // General argumentative patterns
+        else if (lower.contains("exactly") || lower.contains("precisely") || lower.contains("agree")) {
+            return "agreement";
+        } else if (lower.contains("but") || lower.contains("however") || lower.contains("although")) {
+            return "qualified_disagreement";
+        } else if (lower.contains("?") && lower.contains("you")) {
+            return "challenging_question";
+        } else if (lower.contains("!") || lower.contains("brilliant") || lower.contains("incredible")) {
+            return "emphatic_praise";
+        } else if (lower.contains("mistake") || lower.contains("error") || lower.contains("blunder")) {
+            return "error_criticism";
+        } else {
+            return "neutral_analysis";
+        }
+    }
+    
+    /**
+     * Check if master has Responses API configured
+     */
+    private boolean hasResponsesAPIConfigured(String masterName) {
+        switch (masterName.toLowerCase()) {
+            case "alekhine":
+            case "carlsen": 
+            case "fischer":
+            case "tal":
+            case "anand":
+                return true;
+            default:
+                Log.w(TAG, "🚫 Master " + masterName + " doesn't have Responses API configured");
+                return false;
+        }
+    }
+    
+    /**
+     * Fallback dialogue generation for masters without Responses API
+     */
+    private void generateFallbackDialogue(ConversationState state, String triggerType, 
+                                        String gameContext, ConversationCallback callback) {
+        executorService.execute(() -> {
+            try {
+                String speaker = state.currentSpeaker;
+                String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                
+                Log.d(TAG, "🔄 Generating fallback dialogue for " + speaker);
+                
+                // Create a simple dialogue based on master personality and trigger
+                String dialogue = createFallbackDialogue(speaker, opponent, triggerType, gameContext);
+                
+                // 🎭 RECORD EXPRESSION PATTERNS: Track how master expressed this concept
+                String concept = extractConceptFromTrigger(triggerType, gameContext);
+                String emotionalTone = detectEmotionalContext(state, state.currentEval, state.previousEval);
+                String argumentativeAngle = extractArgumentativeAngle(dialogue);
+                emotionalIntelligence.getExpressionManager().recordExpression(
+                    speaker, concept, dialogue, emotionalTone != null ? emotionalTone : "neutral", argumentativeAngle
+                );
+                
+                // Add to conversation history
+                state.turns.add(new ConversationTurn(speaker, dialogue, triggerType));
+                state.turnCount++;
+                
+                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
+                conversationMemory.recordConversation(speaker, dialogue, gameContext);
+                
+                // Deliver dialogue
+                mainHandler.post(() -> {
+                    if (emotionalTone != null) {
+                        callback.onEmotionalResponse(speaker, emotionalTone, dialogue);
+                    } else {
+                        callback.onDialogueGenerated(speaker, dialogue);
+                    }
+                    
+                    // TTS
+                    executorService.execute(() -> {
+                        try {
+                            speakWithPersonality(speaker, dialogue);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error in fallback TTS", e);
+                        }
+                    });
+                    
+                    // Schedule response if appropriate
+                    if (shouldTriggerResponse(dialogue, state)) {
+                        scheduleResponse(state, opponent, dialogue, callback);
+                    } else {
+                        endConversation(state, speaker, dialogue, callback);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error in fallback dialogue generation", e);
+                mainHandler.post(() -> callback.onError("Fallback dialogue error: " + e.getMessage()));
+                endConversation(state, state.currentSpeaker, "[Error occurred]", callback);
+            }
+        });
+    }
+    
+    /**
+     * Fallback response generation for masters without Responses API
+     */
+    private void generateFallbackResponse(ConversationState state, String responder, 
+                                        String previousStatement, ConversationCallback callback) {
+        executorService.execute(() -> {
+            try {
+                state.currentSpeaker = responder;
+                String opponent = responder.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                
+                Log.d(TAG, "🔄 Generating fallback response for " + responder);
+                
+                // Create a response based on the previous statement and master personality
+                String response = createFallbackResponse(responder, opponent, previousStatement, state);
+                
+                // 🎭 RECORD EXPRESSION PATTERNS: Track how master expressed this concept
+                String concept = extractConceptFromResponse(previousStatement);
+                String emotionalTone = detectEmotionalContext(state, state.currentEval, state.previousEval);
+                String argumentativeAngle = extractArgumentativeAngle(response);
+                emotionalIntelligence.getExpressionManager().recordExpression(
+                    responder, concept, response, emotionalTone != null ? emotionalTone : "neutral", argumentativeAngle
+                );
+                
+                // Add to conversation history
+                state.turns.add(new ConversationTurn(responder, response, "response"));
+                state.turnCount++;
+                
+                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
+                conversationMemory.recordConversation(responder, response, buildConversationContext(state));
+                
+                // Deliver response
+                mainHandler.post(() -> {
+                    if (emotionalTone != null) {
+                        callback.onEmotionalResponse(responder, emotionalTone, response);
+                    } else {
+                        callback.onDialogueGenerated(responder, response);
+                    }
+                    
+                    // TTS
+                    executorService.execute(() -> {
+                        try {
+                            speakWithPersonality(responder, response);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error in fallback response TTS", e);
+                        }
+                    });
+                    
+                    // Continue or end conversation
+                    String nextSpeaker = responder.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                    if (shouldContinueConversation(response, state)) {
+                        scheduleResponse(state, nextSpeaker, response, callback);
+                    } else {
+                        endConversation(state, responder, response, callback);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Error in fallback response generation", e);
+                mainHandler.post(() -> callback.onError("Fallback response error: " + e.getMessage()));
+                endConversation(state, state.currentSpeaker, "[Error occurred]", callback);
+            }
+        });
+    }
+    
+    /**
+     * Create fallback response based on previous statement and master personality
+     */
+    private String createFallbackResponse(String responder, String opponent, String previousStatement, ConversationState state) {
+        String masterLower = responder.toLowerCase();
+        String statementLower = previousStatement.toLowerCase();
+        
+        // Analyze the previous statement to determine response type
+        if (statementLower.contains("?")) {
+            // Answer questions
+            return createFallbackQuestionResponse(masterLower, opponent, previousStatement);
+        } else if (statementLower.contains("brilliant") || statementLower.contains("excellent") || statementLower.contains("magnificent")) {
+            // Respond to praise
+            return createFallbackPraiseResponse(masterLower, opponent);
+        } else if (statementLower.contains("mistake") || statementLower.contains("blunder") || statementLower.contains("error")) {
+            // Respond to criticism
+            return createFallbackCriticismResponse(masterLower, opponent);
+        } else if (statementLower.contains("disagree") || statementLower.contains("wrong") || statementLower.contains("but")) {
+            // Respond to disagreement
+            return createFallbackDisagreementResponse(masterLower, opponent);
+        } else {
+            // General continuation
+            return createFallbackGeneralResponse(masterLower, opponent, previousStatement);
+        }
+    }
+    
+    /**
+     * Helper methods for different types of fallback responses
+     */
+    private String createFallbackQuestionResponse(String master, String opponent, String question) {
+        switch (master) {
+            case "kasparov": return "That's an excellent question! Chess demands both intuition and calculation.";
+            case "karpov": return "The answer lies in careful positional evaluation and patience.";
+            case "kramnik": return "Modern theory provides several insights into this matter.";
+            case "botvinnik": return "Scientific analysis reveals the optimal approach here.";
+            case "morphy": return "The natural principles of development guide us to the answer.";
+            case "lasker": return "Human psychology and practical considerations suggest...";
+            case "capablanca": return "The clearest and most logical response is evident.";
+            default: return "An interesting point that deserves careful consideration.";
+        }
+    }
+    
+    private String createFallbackPraiseResponse(String master, String opponent) {
+        switch (master) {
+            case "kasparov": return "Indeed! Dynamic play and fighting spirit create such moments.";
+            case "karpov": return "Precision and technique naturally lead to such positions.";
+            case "kramnik": return "Computer-like accuracy produces these results.";
+            case "botvinnik": return "Thorough preparation makes the complex appear simple.";
+            case "morphy": return "Natural development reveals the beauty of chess.";
+            case "lasker": return "Practical strength overcomes theoretical knowledge.";
+            case "capablanca": return "Clarity of thought produces such natural combinations.";
+            default: return "Thank you. Chess rewards deep understanding.";
+        }
+    }
+    
+    private String createFallbackCriticismResponse(String master, String opponent) {
+        switch (master) {
+            case "kasparov": return "Chess is unforgiving! We must fight harder to avoid such errors.";
+            case "karpov": return "Such imprecision disrupts the positional harmony.";
+            case "kramnik": return "The engines would immediately flag this as suboptimal.";
+            case "botvinnik": return "Insufficient preparation leads to such tactical oversights.";
+            case "morphy": return "Even strong players can fall victim to tactical blindness.";
+            case "lasker": return "Human nature reveals itself in moments of pressure.";
+            case "capablanca": return "The position was clear, yet confusion crept in somehow.";
+            default: return "Chess has a way of punishing imprecision.";
+        }
+    }
+    
+    private String createFallbackDisagreementResponse(String master, String opponent) {
+        switch (master) {
+            case "kasparov": return "I must respectfully disagree! Bold play is sometimes necessary.";
+            case "karpov": return "Perhaps, but positional factors suggest otherwise.";
+            case "kramnik": return "The computer evaluation might tell a different story.";
+            case "botvinnik": return "Scientific analysis requires examining all variations.";
+            case "morphy": return "The natural flow of the game suggests a different path.";
+            case "lasker": return "Chess allows for different approaches and philosophies.";
+            case "capablanca": return "I see the position differently, with respect.";
+            default: return "An interesting perspective, though I see it differently.";
+        }
+    }
+    
+    private String createFallbackGeneralResponse(String master, String opponent, String statement) {
+        switch (master) {
+            case "kasparov": return "The fighting spirit must continue! Every position has potential.";
+            case "karpov": return "Steady progress and sound technique will guide us forward.";
+            case "kramnik": return "Let's analyze this position with modern methods.";
+            case "botvinnik": return "Systematic study reveals the key ideas.";
+            case "morphy": return "Natural development and sound principles apply here.";
+            case "lasker": return "The psychological battle continues alongside the chess.";
+            case "capablanca": return "Simple, clear moves often prove most effective.";
+            default: return "The position offers interesting possibilities for both sides.";
+        }
+    }
+    
+    /**
+     * Extract concept from response context
+     */
+    private String extractConceptFromResponse(String previousStatement) {
+        String lower = previousStatement.toLowerCase();
+        if (lower.contains("opening")) return "opening_theory";
+        if (lower.contains("tactic")) return "tactical_discussion";
+        if (lower.contains("position")) return "position_analysis";
+        if (lower.contains("strategy")) return "strategic_planning";
+        if (lower.contains("mistake") || lower.contains("blunder")) return "error_analysis";
+        if (lower.contains("brilliant")) return "creative_play";
+        return "general_discussion";
+    }
+
+    /**
+     * Create simple fallback dialogue based on master personality
+     */
+    private String createFallbackDialogue(String speaker, String opponent, String triggerType, String gameContext) {
+        String masterLower = speaker.toLowerCase();
+        
+        // Basic personality-based responses for non-Responses API masters
+        switch (masterLower) {
+            case "kasparov":
+                switch (triggerType) {
+                    case "opening": return "This opening requires dynamic play and sharp calculation!";
+                    case "brilliant_move": return "Magnificent! This shows the true fighting spirit of chess!";
+                    case "blunder": return "A serious mistake! Chess punishes such oversights mercilessly.";
+                    case "response": return "I must respond with maximum energy and initiative!";
+                    default: return "The position demands concrete analysis and bold decisions.";
+                }
+                
+            case "karpov":
+                switch (triggerType) {
+                    case "opening": return "A solid positional approach will serve us well here.";
+                    case "brilliant_move": return "Excellent technique. Every piece finds its perfect square.";
+                    case "blunder": return "Such imprecision disturbs the harmony of the position.";
+                    case "response": return "Patience and accuracy will reveal the correct path.";
+                    default: return "The position requires careful evaluation and precise technique.";
+                }
+                
+            case "kramnik":
+                switch (triggerType) {
+                    case "opening": return "Modern theory suggests several interesting possibilities here.";
+                    case "brilliant_move": return "Computer-like precision! This is how chess should be played.";
+                    case "blunder": return "The engines would never approve of such a move.";
+                    case "response": return "Let me analyze this systematically...";
+                    default: return "Deep preparation and technical accuracy are essential.";
+                }
+                
+            case "botvinnik":
+                switch (triggerType) {
+                    case "opening": return "Scientific approach to the opening is paramount.";
+                    case "brilliant_move": return "This demonstrates proper chess understanding and preparation.";
+                    case "blunder": return "Insufficient analysis leads to such tactical oversights.";
+                    case "response": return "Systematic study reveals the correct plan.";
+                    default: return "Chess is a science that rewards methodical preparation.";
+                }
+                
+            case "morphy":
+                switch (triggerType) {
+                    case "opening": return "Rapid development and central control - the eternal principles!";
+                    case "brilliant_move": return "Beautiful! This captures the true essence of chess artistry.";
+                    case "blunder": return "Even the strongest players can fall prey to tactical blindness.";
+                    case "response": return "The position calls for swift and decisive action!";
+                    default: return "Clear thinking and natural development guide the way.";
+                }
+                
+            case "lasker":
+                switch (triggerType) {
+                    case "opening": return "Understanding the psychology of the position is crucial.";
+                    case "brilliant_move": return "Practical strength conquers theoretical knowledge!";
+                    case "blunder": return "Human nature reveals itself even in the royal game.";
+                    case "response": return "The struggle continues - every move tells a story.";
+                    default: return "Chess reflects the eternal struggle between mind and will.";
+                }
+                
+            case "capablanca":
+                switch (triggerType) {
+                    case "opening": return "Simplicity and clarity should guide our play.";
+                    case "brilliant_move": return "Natural and logical - this is how chess should flow.";
+                    case "blunder": return "The position was so clear, yet confusion crept in.";
+                    case "response": return "The clearest path forward reveals itself to patient study.";
+                    default: return "Natural moves and sound judgment surpass complex calculations.";
+                }
+                
+            default:
+                // Generic fallback for any other masters
+                switch (triggerType) {
+                    case "opening": return "An interesting opening choice with rich possibilities.";
+                    case "brilliant_move": return "Excellent play! This move shows deep understanding.";
+                    case "blunder": return "A critical error that changes the evaluation significantly.";
+                    case "response": return "The position demands careful consideration.";
+                    default: return "The game continues with interesting challenges ahead.";
+                }
+        }
+    }
+
     public void cleanup() {
         forceStop();
         executorService.shutdown();

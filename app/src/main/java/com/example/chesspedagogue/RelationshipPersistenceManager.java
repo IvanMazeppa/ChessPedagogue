@@ -621,4 +621,104 @@ public class RelationshipPersistenceManager {
             this.timestamp = timestamp;
         }
     }
+    
+    // =========================== EXPRESSION PATTERN TRACKING ===========================
+    
+    /**
+     * 🎭 Record expression pattern for anti-repetition system
+     * 
+     * This method stores how masters express concepts to enable the PersonalityExpressionManager
+     * to track and prevent repetitive phrasing patterns.
+     */
+    public void recordExpressionPattern(String masterName, String concept, 
+                                      EmotionalIntelligenceManager.ExpressionPattern pattern) {
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        
+        try {
+            // Convert lists to JSON for storage
+            JSONArray phrasesJson = new JSONArray(pattern.usedPhrases);
+            JSONArray anglesJson = new JSONArray(pattern.usedAngles);
+            JSONArray tonesJson = new JSONArray(pattern.usedEmotionalTones);
+            
+            ContentValues values = new ContentValues();
+            values.put("master_name", masterName.toLowerCase());
+            values.put("concept", concept);
+            values.put("used_phrases", phrasesJson.toString());
+            values.put("used_angles", anglesJson.toString());
+            values.put("used_tones", tonesJson.toString());
+            values.put("times_used", pattern.timesUsed);
+            values.put("diversity_score", pattern.diversityScore);
+            values.put("last_used", pattern.lastUsed);
+            values.put("updated_at", System.currentTimeMillis());
+            
+            // Use INSERT OR REPLACE to handle both new and existing patterns
+            long result = db.insertWithOnConflict("expression_patterns", null, values, 
+                                                 SQLiteDatabase.CONFLICT_REPLACE);
+            
+            if (result != -1) {
+                Log.d(TAG, String.format("🎭 Recorded expression pattern: %s -> '%s' (diversity: %.2f)",
+                       masterName, concept, pattern.diversityScore));
+            } else {
+                Log.e(TAG, "Failed to record expression pattern for " + masterName + " -> " + concept);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error recording expression pattern: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 🎯 Load expression patterns for a master to enable anti-repetition
+     */
+    public Map<String, EmotionalIntelligenceManager.ExpressionPattern> loadExpressionPatterns(String masterName) {
+        Map<String, EmotionalIntelligenceManager.ExpressionPattern> patterns = new HashMap<>();
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        
+        String query = "SELECT * FROM expression_patterns WHERE master_name = ?";
+        Cursor cursor = db.rawQuery(query, new String[]{masterName.toLowerCase()});
+        
+        while (cursor.moveToNext()) {
+            try {
+                String concept = cursor.getString(cursor.getColumnIndex("concept"));
+                
+                // Parse JSON arrays
+                JSONArray phrasesJson = new JSONArray(cursor.getString(cursor.getColumnIndex("used_phrases")));
+                JSONArray anglesJson = new JSONArray(cursor.getString(cursor.getColumnIndex("used_angles")));
+                JSONArray tonesJson = new JSONArray(cursor.getString(cursor.getColumnIndex("used_tones")));
+                
+                // Create pattern object
+                EmotionalIntelligenceManager.ExpressionPattern pattern = 
+                    new EmotionalIntelligenceManager.ExpressionPattern(concept);
+                
+                // Populate lists
+                for (int i = 0; i < phrasesJson.length(); i++) {
+                    pattern.usedPhrases.add(phrasesJson.getString(i));
+                }
+                for (int i = 0; i < anglesJson.length(); i++) {
+                    pattern.usedAngles.add(anglesJson.getString(i));
+                }
+                for (int i = 0; i < tonesJson.length(); i++) {
+                    pattern.usedEmotionalTones.add(tonesJson.getString(i));
+                }
+                
+                // Set other fields
+                pattern.timesUsed = cursor.getInt(cursor.getColumnIndex("times_used"));
+                pattern.diversityScore = cursor.getFloat(cursor.getColumnIndex("diversity_score"));
+                pattern.lastUsed = cursor.getLong(cursor.getColumnIndex("last_used"));
+                
+                patterns.put(concept, pattern);
+                
+                Log.d(TAG, String.format("🎭 Loaded expression pattern: %s -> '%s' (%d uses, diversity: %.2f)",
+                       masterName, concept, pattern.timesUsed, pattern.diversityScore));
+                
+            } catch (JSONException e) {
+                Log.e(TAG, "Error parsing expression pattern JSON: " + e.getMessage(), e);
+            }
+        }
+        
+        cursor.close();
+        Log.d(TAG, String.format("🎭 Loaded %d expression patterns for %s", patterns.size(), masterName));
+        
+        return patterns;
+    }
 }

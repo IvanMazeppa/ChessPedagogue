@@ -35,7 +35,7 @@ import java.util.Map;
 public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "GameDatabaseHelper";
     private static final String DATABASE_NAME = "chess_games.db";
-    private static final int DATABASE_VERSION = 3; // Incremented for emergent behavior features!
+    private static final int DATABASE_VERSION = 4; // Incremented for expression pattern tracking!
 
     // EXISTING: Saved games table
     private static final String TABLE_GAMES = "saved_games";
@@ -239,6 +239,33 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_TIMESTAMP + " INTEGER NOT NULL"
                     + ")";
 
+    // NEW: Expression patterns table for anti-repetition system
+    private static final String TABLE_EXPRESSION_PATTERNS = "expression_patterns";
+    private static final String COLUMN_CONCEPT = "concept";
+    private static final String COLUMN_USED_PHRASES = "used_phrases";
+    private static final String COLUMN_USED_ANGLES = "used_angles";
+    private static final String COLUMN_USED_TONES = "used_tones";
+    private static final String COLUMN_TIMES_USED = "times_used";
+    private static final String COLUMN_DIVERSITY_SCORE = "diversity_score";
+    private static final String COLUMN_LAST_USED = "last_used";
+    private static final String COLUMN_UPDATED_AT = "updated_at";
+
+    private static final String CREATE_EXPRESSION_PATTERNS_TABLE =
+            "CREATE TABLE " + TABLE_EXPRESSION_PATTERNS + "("
+                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + COLUMN_MASTER_NAME + " TEXT NOT NULL,"
+                    + COLUMN_CONCEPT + " TEXT NOT NULL,"
+                    + COLUMN_USED_PHRASES + " TEXT,"  // JSON array of used phrases
+                    + COLUMN_USED_ANGLES + " TEXT,"   // JSON array of argumentative angles
+                    + COLUMN_USED_TONES + " TEXT,"    // JSON array of emotional tones
+                    + COLUMN_TIMES_USED + " INTEGER DEFAULT 1,"
+                    + COLUMN_DIVERSITY_SCORE + " REAL DEFAULT 1.0,"
+                    + COLUMN_LAST_USED + " INTEGER,"
+                    + COLUMN_CREATED_AT + " INTEGER,"
+                    + COLUMN_UPDATED_AT + " INTEGER,"
+                    + "UNIQUE(" + COLUMN_MASTER_NAME + ", " + COLUMN_CONCEPT + ")"
+                    + ")";
+
     // =========================== INDEXES FOR PERFORMANCE ===========================
 
     // EXISTING: Lightning-fast indexes for instant lookups!
@@ -260,6 +287,9 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     
     private static final String CREATE_EMERGENT_EVENTS_INDEX =
             "CREATE INDEX idx_emergent_events ON " + TABLE_EMERGENT_EVENTS + "(" + COLUMN_EVENT_TYPE + ", " + COLUMN_TIMESTAMP + ")";
+    
+    private static final String CREATE_EXPRESSION_PATTERNS_INDEX =
+            "CREATE INDEX idx_expression_patterns ON " + TABLE_EXPRESSION_PATTERNS + "(" + COLUMN_MASTER_NAME + ", " + COLUMN_CONCEPT + ")";
 
     private final Context context;
     
@@ -290,6 +320,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_EMOTIONAL_REACTIONS_TABLE);
         db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
         db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
+        db.execSQL(CREATE_EXPRESSION_PATTERNS_TABLE);
 
         // Create all indexes for performance
         db.execSQL(CREATE_FEN_INDEX);
@@ -298,6 +329,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_TOPIC_MEMORY_INDEX);
         db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
         db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
+        db.execSQL(CREATE_EXPRESSION_PATTERNS_INDEX);
 
         Log.d(TAG, "✅ Database created with game storage, personality engine, AND emergent behavior tracking!");
     }
@@ -327,6 +359,14 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
             
             Log.d(TAG, "🎭 Database upgraded with emergent behavior tracking - relationships will now evolve!");
+        }
+        
+        if (oldVersion < 4) {
+            // Add expression patterns table for anti-repetition system
+            db.execSQL(CREATE_EXPRESSION_PATTERNS_TABLE);
+            db.execSQL(CREATE_EXPRESSION_PATTERNS_INDEX);
+            
+            Log.d(TAG, "🎭 Database upgraded with expression pattern tracking - Fischer will sound much more varied!");
         }
     }
 
