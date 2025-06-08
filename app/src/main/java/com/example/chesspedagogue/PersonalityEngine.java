@@ -7,7 +7,6 @@ import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -690,8 +689,8 @@ public class PersonalityEngine {
                 if (!hasData) {
                     Log.d(TAG, "📥 No data for " + masterName + " - attempting to import from assets...");
 
-                    // Try to import from assets (you'll put your JSON files here)
-                    String filename = masterName.toLowerCase() + "_positions.json";
+                    // Use consistent filename mapping for *surname*_full_positions.json convention
+                    String filename = getMasterPositionFilename(masterName);
                     boolean imported = databaseHelper.importMasterPositionsFromAssets(filename);
 
                     if (imported) {
@@ -730,6 +729,42 @@ public class PersonalityEngine {
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error during PersonalityEngine force stop", e);
+        }
+    }
+    
+    /**
+     * 🎯 Get the correct filename for master position data
+     * Maps master names to the consistent *surname*_full_positions.json convention
+     */
+    private String getMasterPositionFilename(String masterName) {
+        switch (masterName.toLowerCase()) {
+            case "alekhine":
+                return "alekhine_full_positions.json";
+            case "capablanca":
+                return "capablanca_full_positions.json";
+            case "anand":
+                return "anand_full_positions.json";
+            case "kramnik":
+                return "kramnik_full_positions.json";
+            case "carlsen":
+                return "carlsen_full_positions.json";
+            case "fischer":
+                return "fischer_full_positions.json";
+            case "tal":
+                return "tal_full_positions.json";
+            case "kasparov":
+                return "kasparov_full_positions.json";
+            case "karpov":
+                return "karpov_full_positions.json";
+            case "lasker":
+                return "lasker_full_positions.json";
+            case "morphy":
+                return "morphy_full_positions.json";
+            case "botvinnik":
+                return "botvinnik_full_positions.json";
+            default:
+                // Fallback to old naming convention
+                return masterName.toLowerCase() + "_positions.json";
         }
     }
 }

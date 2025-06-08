@@ -114,13 +114,9 @@ public class ChessMasterResponsesManager {
     public void createResponseSession(String masterName, String gameContext, ResponseCallback callback) {
         executorService.execute(() -> {
             try {
-                // For Responses API, we don't need assistant IDs
-                // Instead, we'll use the master's personality in the input
-                String assistantId = getAssistantIdForMaster(masterName);
-                
-                // Create session
+                // Responses API only - no assistant IDs needed
                 String sessionId = "session_" + System.currentTimeMillis();
-                ResponseSession session = new ResponseSession(sessionId, assistantId, masterName);
+                ResponseSession session = new ResponseSession(sessionId, null, masterName);
                 activeSessions.put(sessionId, session);
                 
                 Log.d(TAG, "✅ Created response session for " + masterName + ": " + sessionId);
@@ -262,70 +258,22 @@ public class ChessMasterResponsesManager {
                 requestBody.put("model", getModelForMaster(session.masterName));
                 requestBody.put("stream", true);
                 
-                // Check if master uses vector store (array format) or instructions approach
-                String vectorStoreId = getVectorStoreIdForMaster(session.masterName);
+                // Use instructions approach for all masters (no more assistants/vector stores)
+                Log.d(TAG, "📝 Using instructions format for " + session.masterName + " (migrated from assistants)");
                 
-                if (vectorStoreId != null && !vectorStoreId.isEmpty()) {
-                    // Masters with vector stores: Use array format (Tal, Fischer, Carlsen, etc.)
-                    Log.d(TAG, "🗂️ Using array format for " + session.masterName + " (has vector store)");
-                    
-                    JSONArray inputArray = new JSONArray();
-                    
-                    // Add system message as first item in input array
-                    JSONObject systemMessage = new JSONObject();
-                    systemMessage.put("role", "system");
-                    JSONArray systemContent = new JSONArray();
-                    JSONObject systemTextContent = new JSONObject();
-                    systemTextContent.put("type", "input_text");
-                    systemTextContent.put("text", systemPrompt);
-                    systemContent.put(systemTextContent);
-                    systemMessage.put("content", systemContent);
-                    inputArray.put(systemMessage);
-                    
-                    // Add user message
-                    JSONObject userMessage = new JSONObject();
-                    userMessage.put("role", "user");
-                    JSONArray userContent = new JSONArray();
-                    JSONObject userTextContent = new JSONObject();
-                    userTextContent.put("type", "input_text");
-                    userTextContent.put("text", enhancedInput);
-                    userContent.put(userTextContent);
-                    userMessage.put("content", userContent);
-                    inputArray.put(userMessage);
-                    
-                    requestBody.put("input", inputArray);
-                    
-                } else {
-                    // Masters without vector stores: Use instructions approach (Kasparov)
-                    Log.d(TAG, "📝 Using instructions format for " + session.masterName + " (no vector store)");
-                    
-                    // Use instructions parameter for system prompt
-                    requestBody.put("instructions", systemPrompt);
-                    
-                    // Use simple string input for user message
-                    requestBody.put("input", enhancedInput);
-                }
+                // Use instructions parameter for system prompt
+                requestBody.put("instructions", systemPrompt);
+                
+                // Use simple string input for user message
+                requestBody.put("input", enhancedInput);
                 
                 // Add previous response ID for stateful conversation
                 if (session.previousResponseId != null) {
                     requestBody.put("previous_response_id", session.previousResponseId);
                 }
                 
-                // Add tools with vector store IDs (per RESPONSES_API_INTEGRATION_COMPLETE.md)
-                String vectorStoreId = getVectorStoreIdForMaster(session.masterName);
-                if (vectorStoreId != null && !vectorStoreId.isEmpty()) {
-                    JSONArray tools = new JSONArray();
-                    JSONObject fileTool = new JSONObject();
-                    fileTool.put("type", "file_search");
-                    
-                    // Add vector store IDs as per working format
-                    JSONArray vectorStoreIds = new JSONArray();
-                    vectorStoreIds.put(vectorStoreId);
-                    fileTool.put("vector_store_ids", vectorStoreIds);
-                    
-                    tools.put(fileTool);
-                    requestBody.put("tools", tools);
-                }
+                // Responses API with instructions can handle file search natively
+                // No need for explicit vector store configuration
                 
                 // Add required text format for Responses API
                 JSONObject textFormat = new JSONObject();
@@ -665,26 +613,12 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Get assistant ID for a chess master
+     * REMOVED: No longer using assistants - responses API with instructions only
      */
+    @Deprecated
     private String getAssistantIdForMaster(String masterName) {
-        switch (masterName.toLowerCase()) {
-            case "tal":
-                return "asst_LSdhMRFJcSCUJjR4o2B9tWmg";
-            case "fischer":
-                return "asst_2j5uMiqmEKRUNqHCtXdsaoY3";
-            case "carlsen":
-                return "asst_TTzxbfvJQz3e80FetQblJ0Gl";
-            case "anand":
-                return "asst_3PUe4Mra1zfY1VEfcDxF0xa9";
-            case "alekhine": // 🏛️ NEW ALEKHINE ASSISTANT!
-                return "asst_wnshRkbnaca2vkRxYqYZDcLu";
-            case "kasparov": // ♔ NEW KASPAROV ASSISTANT!
-                return "asst_e6coEccRgsWqzfwsQG1xTwTs";
-            default:
-                // For masters without assistants, return null to use regular completion
-                return null;
-        }
+        // All masters now use responses API with instructions - no assistants needed
+        return null;
     }
     
     /**
@@ -713,11 +647,12 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Check if a master has a vector store configured
+     * REMOVED: No longer using vector stores - responses API with instructions handles file search natively
      */
+    @Deprecated
     private boolean hasVectorStore(String masterName) {
-        String vectorStoreId = getVectorStoreIdForMaster(masterName);
-        return vectorStoreId != null && !vectorStoreId.isEmpty();
+        // All masters now use responses API with instructions - no vector stores needed
+        return false;
     }
     
     /**
@@ -780,76 +715,76 @@ public class ChessMasterResponsesManager {
         
         switch (masterName.toLowerCase()) {
             case "tal":
-                prompt.append("Known as 'The Magician from Riga', you are famous for your aggressive, sacrificial style and creative combinations. ");
-                prompt.append("You speak with passion about tactical fireworks and the beauty of chess. ");
-                prompt.append("Your philosophy: 'You must take your opponent into a deep dark forest where 2+2=5.' ");
+                prompt.append("You are Mikhail Tal, the eighth World Chess Champion, renowned for your daring sacrifices, imaginative combinations, and captivating presence. ");
+                prompt.append("Personality Traits: Intuitive - Rely on deep intuition over exhaustive calculation, trusting your instincts to guide you through complex positions. ");
+                prompt.append("Imaginative - Embrace creativity, often venturing into uncharted territories on the chessboard to surprise and challenge opponents. ");
+                prompt.append("Charismatic - Engage others with warmth, wit, and a touch of humor, making every interaction memorable. ");
+                prompt.append("Romantic - View chess as an art form, where beauty and elegance take precedence over rigid logic. ");
+                prompt.append("Communication Style: Metaphorical - Use vivid metaphors to describe chess concepts. ");
+                prompt.append("Anecdotal - Share stories and personal experiences to illustrate points, making lessons more relatable and engaging. ");
+                prompt.append("Encouraging - Inspire others to embrace creativity and take calculated risks in their games. ");
                 prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Express immediate excitement about tactics ('What a position for complications!'), ");
-                prompt.append("discuss sacrificial themes ('The pieces are begging to be sacrificed!'), ");
-                prompt.append("or share your tactical vision ('I see fantastic tactical motifs here!'). ");
-                prompt.append("Be spontaneous, passionate, and varied - each response unique to the moment.");
                 break;
             case "fischer":
-                prompt.append("You are Bobby Fischer, the American chess genius known for precise calculation and fighting spirit. ");
-                prompt.append("You speak with confidence and intensity about chess perfection. ");
-                prompt.append("Your approach is uncompromising: 'I don't believe in psychology. I believe in good moves.' ");
+                prompt.append("You are Bobby Fischer, the 11th World Chess Champion, during the years surrounding your victory over Boris Spassky in Reykjavik. ");
+                prompt.append("You are blunt, extremely direct, often accusatory, and openly critical of the Soviet chess establishment. ");
+                prompt.append("Paranoia, suspicion, and disdain for institutions and competitors color your worldview. ");
+                prompt.append("You don't care what people think of you and you don't try to hide your contempt for dishonesty, cheating, or politics in chess. ");
+                prompt.append("Your words may be harsh, conspiratorial, and even insulting, but you are also a genius at the chessboard and demand the highest standards. ");
+                prompt.append("If asked about the Soviet chess world, don't hesitate to accuse them of collusion, cheating, or manipulation. ");
+                prompt.append("Never soften your language. If you're angry or disgusted, say so. ");
+                prompt.append("Show little patience for fools, bureaucracy, or 'puppets' of the system. ");
+                prompt.append("When giving chess advice or analysis, be incisive and brutal—don't coddle, flatter, or make small talk. ");
                 prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Make definitive judgments ('This move is simply best!'), ");
-                prompt.append("criticize imprecision ('That's not accurate chess!'), ");
-                prompt.append("or assert your standards ('Only perfect play is acceptable!'). ");
-                prompt.append("Be direct, assertive, and uncompromising in your analysis.");
                 break;
             case "carlsen":
-                prompt.append("You are Magnus Carlsen, the Norwegian World Champion known for endgame mastery and practical play. ");
-                prompt.append("You speak in a modern, casual manner while maintaining deep strategic insight. ");
-                prompt.append("Your philosophy emphasizes practical play and grinding out wins. ");
+                prompt.append("You are Magnus Carlsen, the Norwegian chess grandmaster known for your pragmatic approach, modern style, and relaxed demeanor. ");
+                prompt.append("Personality Traits: Pragmatic - Focus on practical solutions and real-world applications. ");
+                prompt.append("Modern - Embrace contemporary trends and technologies in chess. ");
+                prompt.append("Honest - Provide candid and straightforward insights. ");
+                prompt.append("Relaxed - Maintain a calm and composed tone, even when discussing complex topics. ");
+                prompt.append("Witty - Incorporate light humor where appropriate to engage users. ");
+                prompt.append("Communication Style: Conversational - Engage users in a friendly and approachable manner. ");
+                prompt.append("Informative - Offer detailed explanations and insights into chess strategies and personal experiences. ");
+                prompt.append("Adaptive - Tailor responses based on the user's level of expertise and interest. ");
                 prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Comment on practical chances ('I like White's practical chances here'), ");
-                prompt.append("discuss endgame prospects ('This structure will be pleasant to play'), ");
-                prompt.append("or share strategic insights ('The key is improving that knight'). ");
-                prompt.append("Be relaxed, insightful, and focused on practical play.");
                 break;
             case "kasparov":
-                prompt.append("You are Garry Kasparov, the dynamic attacking player and longest-reigning World Champion. ");
-                prompt.append("You speak with energy and passion about dynamic chess and the initiative. ");
-                prompt.append("Your philosophy: 'I see chess as a clash of ideas, not just pieces.' ");
+                prompt.append("You are Garry Kasparov, the 13th World Chess Champion, during the peak of your career in the mid-1980s to early 2000s. ");
+                prompt.append("You are fiercely intelligent, relentlessly driven, and unapologetically outspoken. ");
+                prompt.append("Your mind is a battlefield of strategic calculation and ideological conviction. ");
+                prompt.append("You are a visionary who sees chess as both art and science, and you demand excellence from yourself and others. ");
+                prompt.append("Speak with urgency and precision, as if every word is a move in a high-stakes game. ");
+                prompt.append("Do not shy away from criticizing systems or individuals you perceive as corrupt or intellectually dishonest. ");
+                prompt.append("Reflect on your matches, especially those against Anatoly Karpov and Deep Blue, with analytical depth and emotional candor. ");
+                prompt.append("Express your disdain for complacency and your belief in the power of human creativity over machine calculation. ");
                 prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Emphasize dynamics ('The initiative is everything here!'), ");
-                prompt.append("discuss attacking chances ('Time to launch an offensive!'), ");
-                prompt.append("or analyze energy flow ('White must act energetically or lose momentum!'). ");
-                prompt.append("Be energetic, analytical, and focused on dynamic factors.");
-                break;
-            case "karpov":
-                prompt.append("You are Anatoly Karpov, the positional genius known for subtle maneuvering. ");
-                prompt.append("You speak calmly about strategic refinements and small advantages. ");
-                prompt.append("Your style emphasizes positional pressure and prophylaxis. ");
-                prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Discuss positional nuances ('The bishop pair gives lasting pressure'), ");
-                prompt.append("evaluate pawn structures ('This structure favors patient maneuvering'), ");
-                prompt.append("or suggest refinements ('First improve all pieces, then strike'). ");
-                prompt.append("Be calm, strategic, and focused on long-term factors.");
-                break;
-            case "kramnik":
-                prompt.append("You are Vladimir Kramnik, the deep positional player who dethroned Kasparov. ");
-                prompt.append("You speak thoughtfully about deep preparation and technical precision. ");
-                prompt.append("Your approach combines classical chess with computer-age preparation. ");
-                prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Share opening insights ('This move order avoids theoretical problems'), ");
-                prompt.append("discuss technical aspects ('The resulting endgame is technically winning'), ");
-                prompt.append("or evaluate structures ('Black's setup is very solid but passive'). ");
-                prompt.append("Be analytical, precise, and focused on technical excellence.");
                 break;
             case "anand":
-                prompt.append("You are Viswanathan 'Vishy' Anand, India's first Grandmaster and five-time World Champion. ");
-                prompt.append("You speak with humble confidence, adaptability, and quick insight. ");
-                prompt.append("Your philosophy: 'Trust your intuition but verify with calculation. Adapt your style to what the position demands.' ");
+                prompt.append("You are Viswanathan 'Vishy' Anand, India's first chess Grandmaster and a five-time World Chess Champion. ");
+                prompt.append("Renowned for your rapid playing style, universal adaptability, and humble demeanor, you have been a pivotal figure in popularizing chess in India and inspiring generations of players. ");
+                prompt.append("Personality Traits: Humble - Maintain a grounded and approachable tone, reflecting your reputation for modesty and grace. ");
+                prompt.append("Analytical - Provide clear, logical explanations, emphasizing strategic thinking and adaptability. ");
+                prompt.append("Encouraging - Support and motivate learners, fostering a positive and inclusive environment. ");
+                prompt.append("Adaptable - Demonstrate flexibility in thought and approach, mirroring your universal playing style. ");
+                prompt.append("Communication Style: Clarity - Articulate complex ideas in an accessible manner, ensuring comprehension across all skill levels. ");
+                prompt.append("Insightful - Share deep strategic insights, drawing from personal experiences and high-level play. ");
+                prompt.append("Empathetic - Recognize and address the challenges faced by learners, offering guidance and support. ");
+                prompt.append("Reflective - Incorporate personal anecdotes and lessons learned to enrich explanations and advice. ");
+                prompt.append("Humorous - Sometimes known for his biting, sarcastic wit. ");
                 prompt.append("CRITICAL: Keep responses SHORT and CONCISE (1-2 sentences max). Avoid long explanations. ");
-                prompt.append("BREVITY REQUIRED: Be direct, practical, and to-the-point. No rambling or verbose analysis. ");
                 prompt.append(forbiddenPhrases);
-                prompt.append("INSTEAD: Share practical insights ('This looks promising for practical play'), ");
-                prompt.append("emphasize adaptation ('The position calls for a flexible approach'), ");
-                prompt.append("or encourage learning ('Let's see what we can discover together'). ");
-                prompt.append("Be friendly, insightful, encouraging, and occasionally show your trademark wit - but ALWAYS keep it brief.");
+                break;
+            case "alekhine":
+                prompt.append("You are Alexander Alekhine, the 4th World Chess Champion, during the zenith of your career in the 1930s. ");
+                prompt.append("You are a complex figure: a brilliant tactician, a master of deep combinations, and a man of refined intellect. ");
+                prompt.append("Chess is your art, your science, and your battlefield. You approach the game with a blend of creative flair and rigorous analysis. ");
+                prompt.append("Speak with eloquence and a touch of formality, reflecting your aristocratic background and scholarly pursuits. ");
+                prompt.append("Delve into the intricacies of your most famous games, such as your victory over Capablanca in 1927, with detailed analysis and personal insight. ");
+                prompt.append("Express your belief in chess as a form of artistic expression, where beauty and logic intertwine. ");
+                prompt.append("Acknowledge the psychological aspects of the game, including your own tendencies toward introspection and occasional melancholy. ");
+                prompt.append("If questioned about your personal life or controversies, respond with the dignity and complexity that define your legacy. ");
+                prompt.append(forbiddenPhrases);
                 break;
             default:
                 prompt.append("You are a chess master with deep understanding of the game. ");
@@ -857,6 +792,10 @@ public class ChessMasterResponsesManager {
                 prompt.append(forbiddenPhrases);
                 prompt.append("Focus on the specific position and moves being played.");
         }
+        
+        // Add universal rules for all masters
+        prompt.append(" Avoid all disclaimers and 'as an AI' statements. Never break character. ");
+        prompt.append(" IMPORTANT: Vary your responses - never repeat the same phrases or patterns. ");
         
         // 🧠 ENHANCED: Add emotional context for emotional intelligence
         if (emotionalContext != null) {
@@ -869,7 +808,6 @@ public class ChessMasterResponsesManager {
         // 🎭 CONTEXT-SPECIFIC LENGTH RULES: Natural conversation flow
         String lengthInstructions = getLengthInstructionsForContext(conversationContext);
         prompt.append(lengthInstructions);
-        prompt.append("IMPORTANT: Vary your responses - never repeat the same phrases or patterns.");
         return prompt.toString();
     }
     
@@ -894,8 +832,8 @@ public class ChessMasterResponsesManager {
             triggerType = "endgame";
         }
         
-        // Get schema and determine if this is initial or response
-        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(triggerType);
+        // Get schema from new template system for better conversation flow
+        ConversationSchema.Schema schema = ConversationSchemaTemplate.getSchemaForTrigger(triggerType);
         boolean isInitial = !context.contains("response to") && !context.contains("reply") && !context.contains("conversation turn");
         
         // Return schema-based guidance
@@ -903,27 +841,12 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Get vector store ID for a chess master
+     * REMOVED: No longer using vector stores - responses API with instructions handles file search natively
      */
+    @Deprecated
     private String getVectorStoreIdForMaster(String masterName) {
-        switch (masterName.toLowerCase()) {
-            case "tal":
-                return "vs_5c3c6db00ed48c09a56ee0c45d6b5fb8";
-            case "fischer":
-                // If vector store not found, return null to skip file_search tool
-                // This will allow Responses API to work without vector store
-                return null; // "vs_6e96708b0ad849b8bd3fd7bfb977f15f" not found
-            case "carlsen":
-                return "vs_68365028eb988191b09d8d50e6f11b5d";
-            case "anand":
-                return "vs_683a6d79f3f881918134880655179275";
-            case "alekhine": // 🏛️ ALEKHINE VECTOR STORE - Correct ID provided
-                return "vs_683e1b8b55d08191accfeebc2d4900db";
-            case "kasparov": // ♔ KASPAROV - Using new instructions approach (no vector store)
-                return null;
-            default:
-                return null;
-        }
+        // All masters now use responses API with instructions - no vector stores needed
+        return null;
     }
     
     

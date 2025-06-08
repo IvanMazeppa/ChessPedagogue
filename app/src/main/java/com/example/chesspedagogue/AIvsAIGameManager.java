@@ -818,8 +818,8 @@ public class AIvsAIGameManager {
                 });
                 return true;
 
-            } else if (gameHistory.size() >= 100) {
-                String result = "Draw by length! What an epic battle!";
+            } else if (shouldMasterResign()) {
+                String result = generateResignationResult();
 
                 mainHandler.post(() -> {
                     if (gameCallback != null) {
@@ -835,6 +835,78 @@ public class AIvsAIGameManager {
         }
 
         return false;
+    }
+
+    /**
+     * Check if a chess master should resign based on position evaluation
+     */
+    private boolean shouldMasterResign() {
+        try {
+            // Get current evaluation
+            if (gameRepository == null) return false;
+            
+            // Check if position is hopeless (beyond -5.0 for more than 3 moves)
+            Float currentEval = EvaluationTracker.getInstance(context).getCurrentEvaluation();
+            if (currentEval == null) return false;
+            
+            // Masters resign when position is hopeless
+            float resignThreshold = -6.0f; // 6 pawns down
+            boolean isWhiteTurn = gameRepository.getCurrentFEN().contains(" w ");
+            
+            // Adjust threshold based on whose turn it is
+            if (isWhiteTurn && currentEval <= resignThreshold) {
+                Log.d(TAG, "🏳️ White should resign - evaluation: " + currentEval);
+                return true;
+            } else if (!isWhiteTurn && currentEval >= -resignThreshold) {
+                Log.d(TAG, "🏳️ Black should resign - evaluation: " + currentEval);  
+                return true;
+            }
+            
+            // Also check for prolonged bad positions (3+ pawns down for 10+ moves)
+            if (gameHistory.size() > 30) { // Only after opening
+                float prolongedThreshold = -3.5f;
+                if ((isWhiteTurn && currentEval <= prolongedThreshold) || 
+                    (!isWhiteTurn && currentEval >= -prolongedThreshold)) {
+                    Log.d(TAG, "🏳️ Resignation due to prolonged disadvantage: " + currentEval);
+                    return true;
+                }
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error checking resignation conditions", e);
+        }
+        
+        return false;
+    }
+
+    /**
+     * Generate appropriate resignation message
+     */
+    private String generateResignationResult() {
+        try {
+            String currentFEN = gameRepository.getCurrentFEN();
+            boolean isWhiteTurn = currentFEN.contains(" w ");
+            
+            String resigningPlayer = isWhiteTurn ? whitePlayer : blackPlayer;
+            String winningPlayer = isWhiteTurn ? blackPlayer : whitePlayer;
+            
+            String resigningName = FineTunedModelManager.getInstance(context).getMasterDisplayName(resigningPlayer);
+            String winningName = FineTunedModelManager.getInstance(context).getMasterDisplayName(winningPlayer);
+            
+            // Professional resignation messages
+            String[] messages = {
+                resigningName + " resigns. " + winningName + " wins by resignation!",
+                "A well-fought game! " + resigningName + " resigns, " + winningName + " takes the victory.",
+                resigningName + " acknowledges defeat. " + winningName + " wins!"
+            };
+            
+            int randomIndex = (int) (Math.random() * messages.length);
+            return messages[randomIndex];
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error generating resignation result", e);
+            return "Game ended by resignation.";
+        }
     }
 
     private void handleMoveError(String error) {

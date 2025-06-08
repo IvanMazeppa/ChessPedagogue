@@ -152,7 +152,10 @@ public class SpectatorConversationOrchestrator {
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         
-        Log.d(TAG, "✅ SpectatorConversationOrchestrator fully initialized!");
+        // 🎭 INITIALIZE CONVERSATION TEMPLATES: Set engaging conversations for spectator mode
+        ConversationFlowTester.optimizeForSpectatorMode();
+        
+        Log.d(TAG, "✅ SpectatorConversationOrchestrator fully initialized with engaging conversation templates!");
     }
     
     public static synchronized SpectatorConversationOrchestrator getInstance(Context context) {
@@ -844,16 +847,16 @@ public class SpectatorConversationOrchestrator {
     }
     
     private boolean shouldTriggerResponse(String statement, ConversationState state) {
-        // Get schema for current conversation type
-        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(state.triggerType);
+        // Get schema from new template system for dynamic conversation control
+        ConversationSchema.Schema schema = ConversationSchemaTemplate.getSchemaForTrigger(state.triggerType);
         
         // Use schema-based logic instead of overly permissive triggers
         return ConversationSchema.shouldRespondToStatement(schema, statement, state.turnCount);
     }
     
     private boolean shouldContinueConversation(String response, ConversationState state) {
-        // Use schema-based logic for natural conversation flow
-        ConversationSchema.Schema schema = ConversationSchema.getSchemaForTrigger(state.triggerType);
+        // Use schema from template system for natural conversation flow
+        ConversationSchema.Schema schema = ConversationSchemaTemplate.getSchemaForTrigger(state.triggerType);
         return ConversationSchema.shouldRespondToStatement(schema, response, state.turnCount);
     }
     

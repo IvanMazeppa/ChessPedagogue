@@ -196,7 +196,7 @@ public class ElevenLabsTTSService {
      */
     public void setUsageContext(String context) {
         this.currentContext = context;
-        Log.d(TAG, "🎯 ElevenLabs context set to: " + context);
+        // Context updated
     }
     
     /**
@@ -205,10 +205,7 @@ public class ElevenLabsTTSService {
     public void setEmotionalState(EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalState) {
         this.currentEmotionalState = emotionalState;
         if (emotionalState != null) {
-            Log.d(TAG, String.format("🎭 ElevenLabs emotional state set: %s (intensity: %.2f, momentum: %.2f)", 
-                  emotionalState.emotion.name, emotionalState.intensity, emotionalState.momentum));
-        } else {
-            Log.d(TAG, "🎭 ElevenLabs emotional state cleared");
+            // Emotional state updated
         }
     }
     
@@ -216,7 +213,7 @@ public class ElevenLabsTTSService {
      * Main speak method with ElevenLabs API
      */
     public void speak(String text, OnSpeechCompletedListener listener) {
-        Log.d(TAG, "🎤 Speaking with ElevenLabs, length: " + (text != null ? text.length() : 0));
+        // Process TTS request
         
         if (text == null || text.isEmpty()) {
             if (listener != null) {
@@ -257,7 +254,7 @@ public class ElevenLabsTTSService {
         TTSCallback orderingCallback = new TTSCallback() {
             @Override
             public void onSpeechStarted() {
-                Log.d(TAG, "✅ ElevenLabs speech started successfully");
+                // Speech started
                 
                 // 🎤 Process voice emotional feedback when speech starts
                 processVoiceEmotionalFeedback(text);
@@ -265,12 +262,12 @@ public class ElevenLabsTTSService {
             
             @Override
             public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "✅ ElevenLabs audio file ready: " + audioFile.getName());
+                // Audio ready
             }
             
             @Override
             public void onSpeechCompleted() {
-                Log.d(TAG, "✅ All chunks completed successfully");
+                // All chunks completed
                 mainHandler.post(() -> {
                     cleanupCurrentSession();
                     isSpeaking = false;
@@ -297,17 +294,17 @@ public class ElevenLabsTTSService {
             }
         };
         
-        // Format text with TTS controls based on master and context
+        // Format text with TTS controls based on context
         String tempFormattedText = text;
         try {
-            String currentMaster = getCurrentChessMaster();
+            // CRITICAL FIX: Don't use global master preference, let speakWithSpecificMaster handle it
+            String currentMaster = "default"; // Will be overridden by speakWithSpecificMaster if needed
             boolean isEmotional = currentContext != null && 
                 (currentContext.contains("BRILLIANT") || 
                  currentContext.contains("BLUNDER") || 
                  currentContext.contains("SWING"));
             
             tempFormattedText = ElevenLabsTTSFormatter.formatForTTS(text, currentMaster, isEmotional);
-            Log.d(TAG, "📝 Formatted text for TTS: " + tempFormattedText.substring(0, Math.min(100, tempFormattedText.length())) + "...");
         } catch (Exception e) {
             Log.w(TAG, "Error formatting text for TTS, using original", e);
         }
@@ -422,7 +419,7 @@ public class ElevenLabsTTSService {
         TTSCallback masterSpecificCallback = new TTSCallback() {
             @Override
             public void onSpeechStarted() {
-                Log.d(TAG, "✅ ElevenLabs speech started successfully for " + masterName);
+                // Speech started for specific master
                 
                 // 🎤 Process voice emotional feedback when speech starts
                 processVoiceEmotionalFeedback(formattedText);
@@ -430,12 +427,12 @@ public class ElevenLabsTTSService {
             
             @Override
             public void onSpeechReady(File audioFile) {
-                Log.d(TAG, "✅ ElevenLabs audio file ready for " + masterName + ": " + audioFile.getName());
+                // Audio ready for specific master
             }
             
             @Override
             public void onSpeechCompleted() {
-                Log.d(TAG, "✅ Specific master speech completed successfully for " + masterName);
+                // Speech completed for master
                 mainHandler.post(() -> {
                     cleanupCurrentSession();
                     isSpeaking = false;
@@ -453,7 +450,7 @@ public class ElevenLabsTTSService {
             
             @Override
             public void onError(String error) {
-                Log.e(TAG, "❌ Specific master speech error for " + masterName + ": " + error);
+                Log.e(TAG, "❌ Speech error for " + masterName + ": " + error);
                 mainHandler.post(() -> {
                     cleanupCurrentSession();
                     isSpeaking = false;
@@ -551,15 +548,23 @@ public class ElevenLabsTTSService {
     private void generateTTSChunk(String text, int chunkId, boolean isFinalChunk, TTSCallback callback) {
         executorService.execute(() -> {
             try {
-                String selectedMaster = getCurrentChessMaster();
+                // CRITICAL FIX: Check if we're in spectator mode to avoid wrong master selection
+                android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+                boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
+                
+                String selectedMaster;
+                if (isSpectatorMode) {
+                    // In spectator mode, use a default or let specific methods handle master selection
+                    selectedMaster = "tal"; // Default fallback - should be overridden by speakWithSpecificMaster
+                    Log.w(TAG, "⚠️ generateTTSChunk called in spectator mode - using fallback master: " + selectedMaster);
+                } else {
+                    selectedMaster = getCurrentChessMaster();
+                }
+                
                 String voiceId = getVoiceIdForMaster(selectedMaster);
                 String model = getModelForContext(currentContext);
                 
-                Log.d(TAG, "🎯 ElevenLabs TTS Generation:");
-                Log.d(TAG, "   Master: " + selectedMaster);
-                Log.d(TAG, "   Voice ID: " + voiceId);
-                Log.d(TAG, "   Model: " + model);
-                Log.d(TAG, "   Text: " + text.substring(0, Math.min(50, text.length())) + "...");
+                // Generate TTS request
                 
                 // Build the ElevenLabs request
                 JSONObject payload = new JSONObject();
@@ -570,9 +575,6 @@ public class ElevenLabsTTSService {
                 JSONObject voiceSettings = getEmotionallyAwareVoiceSettings(selectedMaster);
                 
                 payload.put("voice_settings", voiceSettings);
-                
-                // Log payload for debugging
-                Log.d(TAG, "📝 ElevenLabs Payload: " + payload.toString(2));
                 
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),
@@ -588,10 +590,7 @@ public class ElevenLabsTTSService {
                         .post(body)
                         .build();
                 
-                Log.d(TAG, "🚀 Sending request to ElevenLabs API");
-                
                 try (Response response = httpClient.newCall(request).execute()) {
-                    Log.d(TAG, "📡 ElevenLabs Response Code: " + response.code());
                     
                     if (!response.isSuccessful()) {
                         String error = "ElevenLabs API error: " + response.code();
@@ -619,8 +618,7 @@ public class ElevenLabsTTSService {
                     byte[] audioData = response.body().bytes();
                     File audioFile = saveAudioToFile(audioData);
                     
-                    Log.d(TAG, "✅ Successfully generated ElevenLabs audio for " + selectedMaster);
-                    Log.d(TAG, "   File: " + audioFile.getName() + " (" + audioData.length + " bytes)");
+                    // TTS generation completed
                     
                     // Create chunk item and add to pending
                     ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(
@@ -629,11 +627,9 @@ public class ElevenLabsTTSService {
                     synchronized (pendingChunks) {
                         if (chunkId == 0) {
                             nextChunkToPlay.set(0);
-                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
                         }
                         
                         pendingChunks.put(chunkId, chunkItem);
-                        Log.d(TAG, "📦 Added chunk " + chunkId + " for " + selectedMaster + " to pending queue");
                         
                         tryPlayNextChunks();
                     }
@@ -655,11 +651,7 @@ public class ElevenLabsTTSService {
             try {
                 String model = getModelForContext(currentContext);
                 
-                Log.d(TAG, "🎯 ElevenLabs TTS Generation (Specific Voice):");
-                Log.d(TAG, "   Master: " + masterName);
-                Log.d(TAG, "   Voice ID: " + voiceId);
-                Log.d(TAG, "   Model: " + model);
-                Log.d(TAG, "   Text: " + text.substring(0, Math.min(50, text.length())) + "...");
+                // Generate TTS with specific voice
                 
                 // Build the ElevenLabs request
                 JSONObject payload = new JSONObject();
@@ -670,9 +662,6 @@ public class ElevenLabsTTSService {
                 JSONObject voiceSettings = getEmotionallyAwareVoiceSettings(masterName);
                 
                 payload.put("voice_settings", voiceSettings);
-                
-                // Log payload for debugging
-                Log.d(TAG, "📝 ElevenLabs Payload: " + payload.toString(2));
                 
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),
@@ -688,10 +677,7 @@ public class ElevenLabsTTSService {
                         .post(body)
                         .build();
                 
-                Log.d(TAG, "🚀 Sending request to ElevenLabs API");
-                
                 Response response = httpClient.newCall(request).execute();
-                Log.d(TAG, "📡 ElevenLabs Response Code: " + response.code());
                 
                 if (response.isSuccessful() && response.body() != null) {
                     // Save audio to cache
@@ -708,8 +694,7 @@ public class ElevenLabsTTSService {
                     fos.write(audioData);
                     fos.close();
                     
-                    Log.d(TAG, "✅ Successfully generated ElevenLabs audio for " + masterName);
-                    Log.d(TAG, "   File: " + audioFileName + " (" + audioData.length + " bytes)");
+                    // TTS generation completed
                     
                     // Queue for playback
                     ChunkPlaybackItem chunkItem = new ChunkPlaybackItem(chunkId, audioFile, text, callback, isFinalChunk);
@@ -717,11 +702,9 @@ public class ElevenLabsTTSService {
                     synchronized (pendingChunks) {
                         if (chunkId == 0) {
                             nextChunkToPlay.set(0);
-                            Log.d(TAG, "🔄 Reset nextChunkToPlay to 0 for new speech");
                         }
                         
                         pendingChunks.put(chunkId, chunkItem);
-                        Log.d(TAG, "📦 Added chunk " + chunkId + " for " + masterName + " to pending queue");
                         
                         tryPlayNextChunks();
                     }
@@ -753,22 +736,18 @@ public class ElevenLabsTTSService {
             case "main_game":
             case "main":
             case "game":
-                Log.d(TAG, "🏃‍♂️ Using FLASH model for main game (ultra-low latency)");
                 return MODEL_FLASH; // eleven_flash_v2_5 for main game screen
                 
             case "spectator_mode":
             case "spectator":
             case "ai_dialogue":
             case "dialogue":
-                Log.d(TAG, "🎭 Using TURBO model for spectator mode (enhanced quality)");
                 return MODEL_TURBO; // eleven_turbo_v2_5 for spectator mode
                 
             case "analysis":
-                Log.d(TAG, "🔬 Using TURBO model for analysis (balanced quality)");
                 return MODEL_TURBO; // eleven_turbo_v2_5 for analysis
                 
             default:
-                Log.d(TAG, "🔄 Using TURBO model for default context");
                 return MODEL_TURBO; // Default to turbo for backwards compatibility
         }
     }
@@ -972,7 +951,6 @@ public class ElevenLabsTTSService {
     private String getCurrentChessMaster() {
         SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
         String master = masterPrefs.getString("selected_master", "tal");
-        Log.d(TAG, "🎭 Current Chess Master: " + master);
         return master;
     }
     
@@ -981,22 +959,17 @@ public class ElevenLabsTTSService {
      */
     private void tryPlayNextChunks() {
         synchronized (pendingChunks) {
-            Log.d(TAG, "🔄 tryPlayNextChunks - pendingChunks size: " + pendingChunks.size() +
-                    ", nextChunkToPlay: " + nextChunkToPlay.get() +
-                    ", chunkQueue size: " + chunkQueue.size() +
-                    ", isPlayingChunks: " + isPlayingChunks.get());
+            // Silent chunk processing for performance
             
             // Add any ready chunks to the queue
             while (pendingChunks.containsKey(nextChunkToPlay.get())) {
                 ChunkPlaybackItem chunk = pendingChunks.remove(nextChunkToPlay.get());
                 chunkQueue.offer(chunk);
-                Log.d(TAG, "✅ Added chunk " + nextChunkToPlay.get() + " to playback queue");
                 nextChunkToPlay.incrementAndGet();
             }
             
             // Start playback if not already playing
             if (!isPlayingChunks.get() && !chunkQueue.isEmpty()) {
-                Log.d(TAG, "🎵 Starting playback - queue size: " + chunkQueue.size());
                 playNextChunk();
             }
         }
@@ -1021,7 +994,7 @@ public class ElevenLabsTTSService {
         
         mainHandler.post(() -> {
             try {
-                Log.d(TAG, "▶️ Playing chunk " + chunk.chunkId + " (" + chunk.audioFile.getName() + ")");
+                // Minimal chunk playback logging
                 
                 if (chunk.callback != null) {
                     chunk.callback.onSpeechReady(chunk.audioFile);
@@ -1044,14 +1017,13 @@ public class ElevenLabsTTSService {
                 player.setOnPreparedListener(mp -> {
                     currentPlayer = mp;
                     mp.start();
-                    Log.d(TAG, "▶️ Started playing chunk " + chunk.chunkId);
                     if (chunk.callback != null) {
                         chunk.callback.onSpeechStarted();
                     }
                 });
                 
                 player.setOnCompletionListener(mp -> {
-                    Log.d(TAG, "✅ Chunk " + chunk.chunkId + " completed successfully");
+                    // Chunk completed - minimal logging
                     
                     // Proper cleanup
                     try {
@@ -1325,7 +1297,7 @@ public class ElevenLabsTTSService {
         // Clear all pending work
         pendingSpeechQueue.clear();
         
-        Log.d(TAG, "✅ TTS FORCE STOPPED");
+        // TTS force stopped
     }
     
     /**

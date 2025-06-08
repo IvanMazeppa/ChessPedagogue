@@ -636,7 +636,7 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                         String filename;
                         // Handle special case for Anand's filename
                         if (master.equals("anand")) {
-                            filename = "viswanathan_anand_full_positions.json";
+                            filename = "anand_full_positions.json";
                         } else {
                             filename = master + "_positions.json";
                         }

@@ -1134,6 +1134,7 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             dialogueCard.setVisibility(View.VISIBLE);
 
             Log.d(TAG, "💬 AI Dialogue displayed: " + dialogue.substring(0, Math.min(50, dialogue.length())));
+            Log.d(TAG, "📜 FULL RESPONSE: " + dialogue);
         }
     }
 

@@ -376,17 +376,19 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     public long saveGame(String playerColor, List<String> moves, String finalFen, String description) {
         SQLiteDatabase db = this.getWritableDatabase();
 
-        ContentValues values = new ContentValues();
-        values.put(COLUMN_DATE, System.currentTimeMillis());
-        values.put(COLUMN_PLAYER_COLOR, playerColor);
-        values.put(COLUMN_MOVES, convertMovesToString(moves));
-        values.put(COLUMN_FINAL_FEN, finalFen);
-        values.put(COLUMN_DESCRIPTION, description);
+        try {
+            ContentValues values = new ContentValues();
+            values.put(COLUMN_DATE, System.currentTimeMillis());
+            values.put(COLUMN_PLAYER_COLOR, playerColor);
+            values.put(COLUMN_MOVES, convertMovesToString(moves));
+            values.put(COLUMN_FINAL_FEN, finalFen);
+            values.put(COLUMN_DESCRIPTION, description);
 
-        long id = db.insert(TABLE_GAMES, null, values);
-        db.close();
-
-        return id;
+            long id = db.insert(TABLE_GAMES, null, values);
+            return id;
+        } finally {
+            db.close();
+        }
     }
 
     private String convertMovesToString(List<String> moves) {
@@ -411,39 +413,44 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     public List<SavedGame> getAllGames() {
         List<SavedGame> games = new ArrayList<>();
-
-        String selectQuery = "SELECT * FROM " + TABLE_GAMES + " ORDER BY " + COLUMN_DATE + " DESC";
         SQLiteDatabase db = this.getReadableDatabase();
-        Cursor cursor = db.rawQuery(selectQuery, null);
+        Cursor cursor = null;
 
-        if (cursor.moveToFirst()) {
-            do {
-                try {
-                    SavedGame game = new SavedGame();
+        try {
+            String selectQuery = "SELECT * FROM " + TABLE_GAMES + " ORDER BY " + COLUMN_DATE + " DESC";
+            cursor = db.rawQuery(selectQuery, null);
 
-                    int idColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_ID);
-                    int dateColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DATE);
-                    int colorColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_PLAYER_COLOR);
-                    int movesColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_MOVES);
-                    int fenColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_FINAL_FEN);
-                    int descColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION);
+            if (cursor.moveToFirst()) {
+                do {
+                    try {
+                        SavedGame game = new SavedGame();
 
-                    game.setId(cursor.getLong(idColumnIndex));
-                    game.setDate(cursor.getLong(dateColumnIndex));
-                    game.setPlayerColor(cursor.getString(colorColumnIndex));
-                    game.setMoves(convertStringToMoves(cursor.getString(movesColumnIndex)));
-                    game.setFinalFen(cursor.getString(fenColumnIndex));
-                    game.setDescription(cursor.getString(descColumnIndex));
+                        int idColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_ID);
+                        int dateColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DATE);
+                        int colorColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_PLAYER_COLOR);
+                        int movesColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_MOVES);
+                        int fenColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_FINAL_FEN);
+                        int descColumnIndex = cursor.getColumnIndexOrThrow(COLUMN_DESCRIPTION);
 
-                    games.add(game);
-                } catch (IllegalArgumentException e) {
-                    Log.e(TAG, "Column not found in database", e);
-                }
-            } while (cursor.moveToNext());
+                        game.setId(cursor.getLong(idColumnIndex));
+                        game.setDate(cursor.getLong(dateColumnIndex));
+                        game.setPlayerColor(cursor.getString(colorColumnIndex));
+                        game.setMoves(convertStringToMoves(cursor.getString(movesColumnIndex)));
+                        game.setFinalFen(cursor.getString(fenColumnIndex));
+                        game.setDescription(cursor.getString(descColumnIndex));
+
+                        games.add(game);
+                    } catch (IllegalArgumentException e) {
+                        Log.e(TAG, "Column not found in database", e);
+                    }
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+            db.close();
         }
-
-        cursor.close();
-        db.close();
 
         return games;
     }
@@ -492,8 +499,11 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     public void deleteGame(long id) {
         SQLiteDatabase db = this.getWritableDatabase();
-        db.delete(TABLE_GAMES, COLUMN_ID + " = ?", new String[] { String.valueOf(id) });
-        db.close();
+        try {
+            db.delete(TABLE_GAMES, COLUMN_ID + " = ?", new String[] { String.valueOf(id) });
+        } finally {
+            db.close();
+        }
     }
 
     // ========== NEW: LIGHTNING-FAST PERSONALITY ENGINE SUPPORT! ==========
