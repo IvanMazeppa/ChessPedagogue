@@ -1,0 +1,293 @@
+/* Chess Pedagogue Configurator Stylesheet */
+
+/* Root styling */
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 16px;  /* Increased from 12px for better readability on high-DPI displays */
+    -fx-background-color: #f8f9fa;
+}
+
+/* Configuration sections */
+.config-section {
+    -fx-background-color: white;
+    -fx-background-radius: 8px;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 4, 0, 0, 2);
+}
+
+.section-description {
+    -fx-text-fill: #6c757d;
+    -fx-font-style: italic;
+}
+
+/* Button styling */
+.button {
+    -fx-background-color: #6c757d;
+    -fx-text-fill: white;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 8px 16px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #5a6268;
+}
+
+.primary-button {
+    -fx-background-color: #007bff;
+}
+
+.primary-button:hover {
+    -fx-background-color: #0056b3;
+}
+
+.success-button {
+    -fx-background-color: #28a745;
+}
+
+.success-button:hover {
+    -fx-background-color: #1e7e34;
+}
+
+.danger-button {
+    -fx-background-color: #dc3545;
+}
+
+.danger-button:hover {
+    -fx-background-color: #c82333;
+}
+
+/* Slider styling */
+.slider {
+    -fx-pref-width: 200px;
+}
+
+.slider .track {
+    -fx-background-color: #e9ecef;
+    -fx-background-radius: 2px;
+}
+
+.slider .thumb {
+    -fx-background-color: #007bff;
+    -fx-background-radius: 50%;
+}
+
+/* Text area styling */
+.text-area {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.preview-area {
+    -fx-background-color: #f8f9fa;
+    -fx-font-family: "Consolas", "Monaco", monospace;
+    -fx-font-size: 14px;  /* Increased from 11px for better readability */
+}
+
+/* Progress bar styling */
+.progress-bar .bar {
+    -fx-background-color: #007bff;
+    -fx-background-radius: 2px;
+}
+
+.progress-bar .track {
+    -fx-background-color: #e9ecef;
+    -fx-background-radius: 2px;
+}
+
+/* Simulation results */
+.simulation-results {
+    -fx-text-fill: #28a745;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+    -fx-background-color: #d4edda;
+    -fx-background-radius: 4px;
+    -fx-border-color: #c3e6cb;
+    -fx-border-radius: 4px;
+}
+
+/* Tab pane styling */
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #f8f9fa;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #e9ecef;
+    -fx-background-radius: 8px 8px 0 0;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: white;
+}
+
+/* ComboBox styling */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+/* TextField styling */
+.text-field {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 6px 12px;
+}
+
+.text-field:focused {
+    -fx-border-color: #007bff;
+    -fx-effect: dropshadow(gaussian, rgba(0,123,255,0.25), 0, 0, 0, 0);
+}
+
+/* Checkbox styling */
+.check-box {
+    -fx-text-fill: #495057;
+}
+
+.check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.check-box:selected .box {
+    -fx-background-color: #007bff;
+    -fx-border-color: #007bff;
+}
+
+/* Scroll pane styling */
+.scroll-pane {
+    -fx-background-color: transparent;
+}
+
+.scroll-pane .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Menu bar styling */
+.menu-bar {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.menu-bar .menu .label {
+    -fx-text-fill: #495057;
+}
+
+.menu-bar .menu:hover .label {
+    -fx-text-fill: #007bff;
+}
+
+/* Status bar styling */
+.status-bar {
+    -fx-background-color: #f8f9fa;
+    -fx-border-color: #dee2e6;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 5px 10px;
+    -fx-text-fill: #6c757d;
+}
+
+/* Alert dialog styling */
+.alert .header-panel {
+    -fx-background-color: #f8f9fa;
+}
+
+.alert .content.label {
+    -fx-text-fill: #495057;
+}
+
+/* Tooltip styling */
+.tooltip {
+    -fx-background-color: #495057;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+    -fx-font-size: 14px;  /* Increased from 11px for better readability */
+    -fx-padding: 6px 10px;
+}
+
+/* Custom slider with label */
+.slider-with-label {
+    -fx-spacing: 8px;
+}
+
+.slider-with-label .label {
+    -fx-min-width: 80px;
+    -fx-text-fill: #495057;
+}
+
+.slider-with-label .value-label {
+    -fx-min-width: 60px;
+    -fx-text-fill: #007bff;
+    -fx-font-weight: bold;
+}
+
+/* Grid pane spacing */
+.grid-pane {
+    -fx-hgap: 15px;
+    -fx-vgap: 10px;
+}
+
+/* Separator styling */
+.separator {
+    -fx-background-color: #dee2e6;
+}
+
+/* Focus styling */
+.button:focused,
+.text-field:focused,
+.combo-box:focused,
+.slider:focused {
+    -fx-effect: dropshadow(gaussian, rgba(0,123,255,0.25), 0, 0, 0, 0);
+}
+
+/* High-DPI Display Options */
+/* Apply .large-text class to root for 20px base font */
+.large-text {
+    -fx-font-size: 20px;
+}
+
+.large-text .preview-area {
+    -fx-font-size: 16px;
+}
+
+.large-text .tooltip {
+    -fx-font-size: 16px;
+}
+
+/* Apply .extra-large-text class to root for 24px base font */
+.extra-large-text {
+    -fx-font-size: 24px;
+}
+
+.extra-large-text .preview-area {
+    -fx-font-size: 18px;
+}
+
+.extra-large-text .tooltip {
+    -fx-font-size: 18px;
+}
+
+/* Apply .huge-text class to root for 28px base font (for 67" 4K display) */
+.huge-text {
+    -fx-font-size: 28px;
+}
+
+.huge-text .preview-area {
+    -fx-font-size: 20px;
+}
+
+.huge-text .tooltip {
+    -fx-font-size: 20px;
+}
