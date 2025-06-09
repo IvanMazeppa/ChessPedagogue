@@ -1,0 +1,339 @@
+package com.chesspedagogue.configurator;
+
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import com.chesspedagogue.configurator.tabs.ConversationTemplateTabSimple;
+import com.chesspedagogue.configurator.tabs.MasterPersonalityTab;
+import com.chesspedagogue.configurator.tabs.GameFlowTab;
+import com.chesspedagogue.configurator.tabs.LiveMonitorTab;
+import com.chesspedagogue.configurator.tabs.AdvancedSettingsTab;
+import com.chesspedagogue.configurator.managers.ConfigurationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * 🎮 Chess Pedagogue Configurator - Main Application
+ * 
+ * Standalone GUI tool for managing all configuration aspects of the Chess Pedagogue game.
+ * Allows real-time editing of conversation templates, master personalities, game flow settings,
+ * and live monitoring of active games.
+ */
+public class ChessPedagogueConfigurator extends Application {
+    
+    private static final Logger logger = LoggerFactory.getLogger(ChessPedagogueConfigurator.class);
+    private ConfigurationManager configManager;
+    
+    // Core tabs
+    private ConversationTemplateTabSimple conversationTab;
+    private MasterPersonalityTab personalityTab;
+    private GameFlowTab gameFlowTab;
+    private LiveMonitorTab liveMonitorTab;
+    private AdvancedSettingsTab advancedTab;
+    
+    @Override
+    public void start(Stage primaryStage) {
+        logger.info("🎮 Starting Chess Pedagogue Configurator...");
+        
+        try {
+            // Initialize configuration manager
+            configManager = ConfigurationManager.getInstance();
+            
+            // Create main application layout
+            BorderPane root = new BorderPane();
+            
+            // Create menu bar
+            MenuBar menuBar = createMenuBar();
+            root.setTop(menuBar);
+            
+            // Create main content area with tabs
+            TabPane tabPane = createMainTabPane();
+            root.setCenter(tabPane);
+            
+            // Create status bar
+            Label statusBar = new Label("Ready - Chess Pedagogue Configurator v1.0.0");
+            statusBar.setPadding(new Insets(5));
+            statusBar.setStyle("-fx-background-color: #f0f0f0; -fx-border-color: #cccccc;");
+            root.setBottom(statusBar);
+            
+            // Create and configure scene
+            Scene scene = new Scene(root, 1200, 800);
+            scene.getStylesheets().add(getClass().getResource("/css/application.css").toExternalForm());
+            
+            // Configure primary stage
+            primaryStage.setTitle("Chess Pedagogue Configurator");
+            primaryStage.setScene(scene);
+            primaryStage.setMinWidth(800);
+            primaryStage.setMinHeight(600);
+            
+            // Handle application close
+            primaryStage.setOnCloseRequest(event -> {
+                logger.info("🔄 Saving configuration before exit...");
+                saveAllConfigurations();
+                System.exit(0);
+            });
+            
+            // Show the application
+            primaryStage.show();
+            
+            logger.info("✅ Chess Pedagogue Configurator started successfully!");
+            
+        } catch (Exception e) {
+            logger.error("❌ Failed to start Chess Pedagogue Configurator", e);
+            showErrorAlert("Startup Error", "Failed to start the application", e.getMessage());
+        }
+    }
+    
+    /**
+     * Create the main menu bar
+     */
+    private MenuBar createMenuBar() {
+        MenuBar menuBar = new MenuBar();
+        
+        // File Menu
+        Menu fileMenu = new Menu("File");
+        
+        MenuItem newConfig = new MenuItem("New Configuration");
+        newConfig.setOnAction(e -> createNewConfiguration());
+        
+        MenuItem openConfig = new MenuItem("Open Configuration...");
+        openConfig.setOnAction(e -> openConfiguration());
+        
+        MenuItem saveConfig = new MenuItem("Save Configuration");
+        saveConfig.setOnAction(e -> saveAllConfigurations());
+        
+        MenuItem exportConfig = new MenuItem("Export for Android...");
+        exportConfig.setOnAction(e -> exportForAndroid());
+        
+        MenuItem exit = new MenuItem("Exit");
+        exit.setOnAction(e -> System.exit(0));
+        
+        fileMenu.getItems().addAll(newConfig, openConfig, new SeparatorMenuItem(), 
+                                  saveConfig, exportConfig, new SeparatorMenuItem(), exit);
+        
+        // Edit Menu
+        Menu editMenu = new Menu("Edit");
+        
+        MenuItem resetDefaults = new MenuItem("Reset to Defaults");
+        resetDefaults.setOnAction(e -> resetToDefaults());
+        
+        MenuItem validateConfig = new MenuItem("Validate Configuration");
+        validateConfig.setOnAction(e -> validateConfiguration());
+        
+        editMenu.getItems().addAll(resetDefaults, validateConfig);
+        
+        // Tools Menu
+        Menu toolsMenu = new Menu("Tools");
+        
+        MenuItem testTemplate = new MenuItem("Test Conversation Template");
+        testTemplate.setOnAction(e -> testConversationTemplate());
+        
+        MenuItem simulateGame = new MenuItem("Simulate Game Flow");
+        simulateGame.setOnAction(e -> simulateGameFlow());
+        
+        MenuItem connectAndroid = new MenuItem("Connect to Android App");
+        connectAndroid.setOnAction(e -> connectToAndroidApp());
+        
+        toolsMenu.getItems().addAll(testTemplate, simulateGame, new SeparatorMenuItem(), connectAndroid);
+        
+        // Help Menu
+        Menu helpMenu = new Menu("Help");
+        
+        MenuItem userGuide = new MenuItem("User Guide");
+        userGuide.setOnAction(e -> showUserGuide());
+        
+        MenuItem about = new MenuItem("About");
+        about.setOnAction(e -> showAboutDialog());
+        
+        helpMenu.getItems().addAll(userGuide, about);
+        
+        menuBar.getMenus().addAll(fileMenu, editMenu, toolsMenu, helpMenu);
+        
+        return menuBar;
+    }
+    
+    /**
+     * Create the main tab pane with all configuration sections
+     */
+    private TabPane createMainTabPane() {
+        TabPane tabPane = new TabPane();
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        
+        // Create tabs
+        conversationTab = new ConversationTemplateTabSimple(configManager);
+        personalityTab = new MasterPersonalityTab();
+        gameFlowTab = new GameFlowTab();
+        liveMonitorTab = new LiveMonitorTab();
+        advancedTab = new AdvancedSettingsTab();
+        
+        // Add tabs to pane
+        tabPane.getTabs().addAll(
+            conversationTab.getTab(),
+            personalityTab,
+            gameFlowTab,
+            liveMonitorTab,
+            advancedTab
+        );
+        
+        return tabPane;
+    }
+    
+    // Menu action handlers
+    private void createNewConfiguration() {
+        logger.info("📄 Creating new configuration...");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("New Configuration");
+        alert.setHeaderText("Create New Configuration");
+        alert.setContentText("This will reset all settings to defaults. Continue?");
+        
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            configManager.resetToDefaults();
+            refreshAllTabs();
+        }
+    }
+    
+    private void openConfiguration() {
+        logger.info("📂 Opening configuration file...");
+        // TODO: Implement file chooser dialog
+        showInfoAlert("Feature Coming Soon", "Configuration file import will be available in the next version.");
+    }
+    
+    private void saveAllConfigurations() {
+        logger.info("💾 Saving all configurations...");
+        try {
+            configManager.saveConfiguration();
+            showInfoAlert("Save Complete", "All configurations have been saved successfully.");
+        } catch (Exception e) {
+            logger.error("❌ Failed to save configuration", e);
+            showErrorAlert("Save Error", "Failed to save configuration", e.getMessage());
+        }
+    }
+    
+    private void exportForAndroid() {
+        logger.info("📱 Exporting configuration for Android app...");
+        try {
+            configManager.exportForAndroid();
+            showInfoAlert("Export Complete", "Configuration exported to shared directory for Android app.");
+        } catch (Exception e) {
+            logger.error("❌ Failed to export for Android", e);
+            showErrorAlert("Export Error", "Failed to export configuration", e.getMessage());
+        }
+    }
+    
+    private void resetToDefaults() {
+        logger.info("🔄 Resetting to default configuration...");
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Reset to Defaults");
+        alert.setHeaderText("Reset All Settings");
+        alert.setContentText("This will reset ALL settings to their default values. This cannot be undone. Continue?");
+        
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+            configManager.resetToDefaults();
+            refreshAllTabs();
+            showInfoAlert("Reset Complete", "All settings have been reset to defaults.");
+        }
+    }
+    
+    private void validateConfiguration() {
+        logger.info("✅ Validating configuration...");
+        try {
+            boolean isValid = configManager.validateConfiguration();
+            if (isValid) {
+                showInfoAlert("Validation Passed", "Configuration is valid and ready for use.");
+            } else {
+                showWarningAlert("Validation Issues", "Some configuration values may need attention. Check the logs for details.");
+            }
+        } catch (Exception e) {
+            logger.error("❌ Configuration validation failed", e);
+            showErrorAlert("Validation Error", "Failed to validate configuration", e.getMessage());
+        }
+    }
+    
+    private void testConversationTemplate() {
+        logger.info("🧪 Testing conversation template...");
+        conversationTab.runTemplateTest();
+    }
+    
+    private void simulateGameFlow() {
+        logger.info("🎮 Simulating game flow...");
+        gameFlowTab.runGameSimulation();
+    }
+    
+    private void connectToAndroidApp() {
+        logger.info("📱 Connecting to Android app...");
+        liveMonitorTab.connectToAndroidApp();
+    }
+    
+    private void showUserGuide() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("User Guide");
+        alert.setHeaderText("Chess Pedagogue Configurator User Guide");
+        alert.setContentText("📚 Comprehensive user guide will be available soon.\\n\\n" +
+                           "For now, each tab contains intuitive controls:\\n" +
+                           "• Conversation Templates: Design dialogue flows\\n" +
+                           "• Master Personalities: Configure AI behaviors\\n" +
+                           "• Game Flow: Control timing and triggers\\n" +
+                           "• Live Monitor: Real-time game connection\\n" +
+                           "• Advanced: Technical settings");
+        alert.showAndWait();
+    }
+    
+    private void showAboutDialog() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("About");
+        alert.setHeaderText("Chess Pedagogue Configurator v1.0.0");
+        alert.setContentText("🎮 Standalone configuration tool for Chess Pedagogue\\n\\n" +
+                           "Developed to manage the complex AI personality and conversation\\n" +
+                           "systems of the Chess Pedagogue Android game.\\n\\n" +
+                           "Features:\\n" +
+                           "• Dynamic conversation template design\\n" +
+                           "• Chess master personality editing\\n" +
+                           "• Real-time game flow control\\n" +
+                           "• Live monitoring and adjustment\\n\\n" +
+                           "Built with JavaFX for cross-platform compatibility.");
+        alert.showAndWait();
+    }
+    
+    // Utility methods
+    private void refreshAllTabs() {
+        logger.info("🔄 Refreshing all tabs with new configuration...");
+        conversationTab.refresh();
+        personalityTab.refresh();
+        gameFlowTab.refresh();
+        liveMonitorTab.refresh();
+        advancedTab.refresh();
+    }
+    
+    private void showInfoAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    private void showWarningAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    private void showErrorAlert(String title, String header, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+    
+    public static void main(String[] args) {
+        logger.info("🚀 Launching Chess Pedagogue Configurator...");
+        launch(args);
+    }
+}
