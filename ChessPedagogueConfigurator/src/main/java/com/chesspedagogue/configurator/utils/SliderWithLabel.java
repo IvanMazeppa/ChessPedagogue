@@ -25,6 +25,12 @@ public class SliderWithLabel extends VBox {
         bindProperties();
     }
     
+    public SliderWithLabel(String labelText, double min, double max, double initialValue, double stepSize) {
+        this(labelText, min, max, initialValue);
+        slider.setBlockIncrement(stepSize);
+        slider.setMajorTickUnit(stepSize * 4);
+    }
+    
     public SliderWithLabel(String labelText, double min, double max, double initialValue, String suffix) {
         this(labelText, min, max, initialValue);
         this.valueLabel.setText(formatValue(initialValue) + " " + suffix);
@@ -93,6 +99,13 @@ public class SliderWithLabel extends VBox {
      */
     public void setTooltip(Tooltip tooltip) {
         slider.setTooltip(tooltip);
+    }
+    
+    /**
+     * Set tooltip for the slider component with string
+     */
+    public void setTooltip(String tooltipText) {
+        slider.setTooltip(new Tooltip(tooltipText));
     }
     
     /**

@@ -437,7 +437,7 @@ public class EvaluationTracker {
     }
 
     /**
-     * 🎭 NEW: Trigger emotional analysis for evaluation swings
+     * 🎭 ENHANCED: Trigger emotional analysis for evaluation swings with Phase 2 integration
      * This analyzes how chess masters would emotionally react to blunders, brilliancies, etc.
      */
     private void triggerEmotionalAnalysisForSwing(EvaluationSwing swing) {
@@ -447,10 +447,33 @@ public class EvaluationTracker {
                 emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
             }
             
+            // 🎭 Phase 2: Try to get the integration bridge for advanced emotional processing
+            Phase2EmotionalIntegrationBridge phase2Bridge = null;
+            try {
+                phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(context);
+            } catch (Exception e) {
+                Log.d(TAG, "Phase 2 not available, using Phase 1 emotional analysis");
+            }
+            
             // Get current master from preferences
             String currentMaster = getCurrentSelectedMaster();
             
-            // Build emotional context for the swing
+            // 🎭 Phase 2: Process evaluation change through multi-layered emotional system
+            if (phase2Bridge != null && phase2Bridge.isIntegrationActive()) {
+                String gamePhase = determineGamePhase(swing.currentEval.moveNumber);
+                phase2Bridge.processEvaluationChange(
+                    currentMaster, 
+                    swing.currentEval.getEffectiveEvaluation(),
+                    swing.previousEval.getEffectiveEvaluation(),
+                    gamePhase
+                );
+                
+                Log.d(TAG, String.format("🎭 Phase 2: Evaluation change processed for %s - %.1f->%.1f (%s)", 
+                      currentMaster, swing.previousEval.getEffectiveEvaluation(), 
+                      swing.currentEval.getEffectiveEvaluation(), swing.quality.shortDescription));
+            }
+            
+            // Phase 1: Continue with original emotional analysis for compatibility
             String gameContext = buildSwingGameContext(swing);
             String conversationContext = buildSwingConversationContext(swing);
             
@@ -465,7 +488,7 @@ public class EvaluationTracker {
                     null
                 );
             
-            Log.d(TAG, String.format("🎭 Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)", 
+            Log.d(TAG, String.format("🎭 Phase 1: Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)", 
                   currentMaster, swing.quality.shortDescription, emotionalResult.emotion.name, 
                   emotionalResult.intensity, emotionalResult.momentum));
             
@@ -478,6 +501,21 @@ public class EvaluationTracker {
             
         } catch (Exception e) {
             Log.e(TAG, "Error in emotional analysis for evaluation swing", e);
+        }
+    }
+    
+    /**
+     * 🎭 Phase 2: Determine game phase for emotional context
+     */
+    private String determineGamePhase(int moveNumber) {
+        if (moveNumber < 12) {
+            return "opening";
+        } else if (moveNumber < 40) {
+            return "middlegame";
+        } else if (moveNumber < 60) {
+            return "endgame";
+        } else {
+            return "endgame_critical";
         }
     }
     

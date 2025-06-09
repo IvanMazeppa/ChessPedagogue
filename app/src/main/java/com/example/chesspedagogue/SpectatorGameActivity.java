@@ -66,6 +66,11 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
     // Voice status indicator
     private VoiceStatusIndicator voiceStatusIndicator;
     
+    // 🎭 Phase 2: Multi-layered emotional complexity integration
+    private Phase2EmotionalIntegrationBridge phase2Bridge;
+    private MultiLayeredEmotionalManager multiLayeredManager;
+    private VoiceEmotionalAnalyzer voiceEmotionalAnalyzer;
+    
     // Animation tracking for delayed board updates
     private boolean isAnimationInProgress = false;
     private String pendingFenUpdate = null;
@@ -96,6 +101,9 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 
                 // 🎤 Initialize always-listening voice control manager
                 initializeVoiceControlManager();
+                
+                // 🎭 Initialize Phase 2 emotional complexity system
+                initializePhase2EmotionalSystem();
                 
                 startSpectatorGame();
 
@@ -408,6 +416,21 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
 
                 displayAIDialogue(openingDialogue);
 
+                // Initialize Phase 2 emotional layers for both masters
+                if (phase2Bridge != null) {
+                    phase2Bridge.initializeSpectatorMode(whitePlayer, blackPlayer);
+                    Log.d(TAG, "🎭 Phase 2 emotional layers initialized for " + whitePlayer + " vs " + blackPlayer);
+                    
+                    // 🧪 Test Phase 2 integration
+                    try {
+                        Phase2EmotionalDemo demo = new Phase2EmotionalDemo(this);
+                        boolean testPassed = demo.testPhase2Integration(whitePlayer, blackPlayer);
+                        Log.d(TAG, "🧪 Phase 2 integration test result: " + (testPassed ? "PASSED" : "FAILED"));
+                    } catch (Exception e) {
+                        Log.e(TAG, "❌ Error running Phase 2 integration test", e);
+                    }
+                }
+                
                 // Initialize the game AND wait for it to be ready
                 viewModel.startSpectatorGame(whitePlayer, blackPlayer);
 
@@ -1390,11 +1413,53 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             // 5. Stop all AI dialogue (via ViewModel since it has the instance)
             Log.d(TAG, "🛑 Stopping dialogue via ViewModel");
             // AIDialogueManager will be stopped via ViewModel.forceStop()
+            
+            // 6. Clear Phase 2 emotional state
+            if (phase2Bridge != null) {
+                Log.d(TAG, "🛑 Clearing Phase 2 emotional state");
+                phase2Bridge.clearEmotionalState();
+            }
 
             Log.d(TAG, "✅ EMERGENCY CLEANUP COMPLETED");
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Error during emergency cleanup", e);
+        }
+    }
+
+    // ==================== Phase 2 Emotional Complexity System ====================
+
+    /**
+     * 🎭 Initialize Phase 2 multi-layered emotional complexity system
+     */
+    private void initializePhase2EmotionalSystem() {
+        try {
+            Log.d(TAG, "🎭 Initializing Phase 2 emotional complexity system");
+            
+            // Initialize core components
+            multiLayeredManager = MultiLayeredEmotionalManager.getInstance(this);
+            voiceEmotionalAnalyzer = VoiceEmotionalAnalyzer.getInstance(this);
+            phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(this);
+            
+            // Get other required components
+            SpectatorConversationOrchestrator spectatorOrchestrator = SpectatorConversationOrchestrator.getInstance(this);
+            EmotionalIntelligenceManager emotionalIntelligenceManager = EmotionalIntelligenceManager.getInstance(this);
+            EvaluationTracker evaluationTracker = EvaluationTracker.getInstance(this);
+            
+            // Initialize full integration
+            phase2Bridge.initializeIntegration(
+                multiLayeredManager,
+                spectatorOrchestrator,
+                emotionalIntelligenceManager,
+                voiceEmotionalAnalyzer,
+                evaluationTracker
+            );
+            
+            Log.d(TAG, "✅ Phase 2 emotional complexity system initialized successfully");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing Phase 2 emotional system", e);
+            // Don't fail spectator mode for this - it can work without Phase 2
         }
     }
 

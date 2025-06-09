@@ -232,7 +232,8 @@ public class EmotionalContext {
         // Determine target master and their personality
         String targetMaster = sourceMaster.equals(currentMaster) ? otherMaster : currentMaster;
         
-        // Calculate contagion effect
+        // Calculate contagion effect  
+        // Note: third parameter should be targetPersonality, but using targetMaster as personality identifier
         float contagionEffect = emotionalManager.calculateContagionEffect(
             sourceEmotion, sourceIntensity, targetMaster, sourceMaster, targetMaster
         );

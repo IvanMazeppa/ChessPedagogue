@@ -291,3 +291,236 @@
 .huge-text .tooltip {
     -fx-font-size: 20px;
 }
+
+/* ========================================
+   DARK MODE THEME
+   ======================================== */
+
+.dark-theme {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 16px;
+    -fx-background-color: #1e1e1e;
+}
+
+/* Dark mode configuration sections */
+.dark-theme .config-section {
+    -fx-background-color: #2d2d30;
+    -fx-background-radius: 8px;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 8px;
+    -fx-border-width: 1px;
+    -fx-padding: 20px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.3), 4, 0, 0, 2);
+}
+
+.dark-theme .section-description {
+    -fx-text-fill: #b4b4b4;
+    -fx-font-style: italic;
+}
+
+/* Dark mode button styling */
+.dark-theme .button {
+    -fx-background-color: #0e639c;
+    -fx-text-fill: white;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
+    -fx-padding: 8px 16px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.dark-theme .button:hover {
+    -fx-background-color: #1177bb;
+}
+
+.dark-theme .primary-button {
+    -fx-background-color: #0078d4;
+}
+
+.dark-theme .primary-button:hover {
+    -fx-background-color: #106ebe;
+}
+
+.dark-theme .success-button {
+    -fx-background-color: #107c10;
+}
+
+.dark-theme .success-button:hover {
+    -fx-background-color: #0e6a0e;
+}
+
+.dark-theme .danger-button {
+    -fx-background-color: #d83b01;
+}
+
+.dark-theme .danger-button:hover {
+    -fx-background-color: #c4360e;
+}
+
+/* Dark mode text controls */
+.dark-theme .text-area {
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: #cccccc;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+.dark-theme .text-field {
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: #cccccc;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-padding: 6px 12px;
+}
+
+.dark-theme .text-field:focused {
+    -fx-border-color: #0078d4;
+    -fx-effect: dropshadow(gaussian, rgba(0,120,212,0.25), 0, 0, 0, 0);
+}
+
+.dark-theme .combo-box {
+    -fx-background-color: #1e1e1e;
+    -fx-text-fill: #cccccc;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+
+/* Dark mode labels and text */
+.dark-theme .label {
+    -fx-text-fill: #cccccc;
+}
+
+.dark-theme .title {
+    -fx-text-fill: #ffffff;
+}
+
+/* Dark mode progress controls */
+.dark-theme .progress-bar .bar {
+    -fx-background-color: #0078d4;
+    -fx-background-radius: 2px;
+}
+
+.dark-theme .progress-bar .track {
+    -fx-background-color: #3c3c3c;
+    -fx-background-radius: 2px;
+}
+
+.dark-theme .slider .track {
+    -fx-background-color: #3c3c3c;
+    -fx-background-radius: 2px;
+}
+
+.dark-theme .slider .thumb {
+    -fx-background-color: #0078d4;
+    -fx-background-radius: 50%;
+}
+
+/* Dark mode checkboxes */
+.dark-theme .check-box {
+    -fx-text-fill: #cccccc;
+}
+
+.dark-theme .check-box .box {
+    -fx-background-color: #1e1e1e;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 3px;
+    -fx-background-radius: 3px;
+}
+
+.dark-theme .check-box:selected .box {
+    -fx-background-color: #0078d4;
+    -fx-border-color: #0078d4;
+}
+
+/* Dark mode tabs */
+.dark-theme .tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #2d2d30;
+}
+
+.dark-theme .tab-pane .tab {
+    -fx-background-color: #3c3c3c;
+    -fx-text-fill: #cccccc;
+    -fx-background-radius: 8px 8px 0 0;
+}
+
+.dark-theme .tab-pane .tab:selected {
+    -fx-background-color: #2d2d30;
+    -fx-text-fill: #ffffff;
+}
+
+.dark-theme .tab-pane .tab-content-area {
+    -fx-background-color: #2d2d30;
+}
+
+/* Dark mode menu bar */
+.dark-theme .menu-bar {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #3c3c3c;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.dark-theme .menu-bar .menu .label {
+    -fx-text-fill: #cccccc;
+}
+
+.dark-theme .menu-bar .menu:hover .label {
+    -fx-text-fill: #0078d4;
+}
+
+/* Dark mode status bar */
+.dark-theme .status-bar {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #3c3c3c;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 5px 10px;
+    -fx-text-fill: #b4b4b4;
+}
+
+/* Dark mode tooltips */
+.dark-theme .tooltip {
+    -fx-background-color: #484848;
+    -fx-text-fill: white;
+    -fx-background-radius: 4px;
+    -fx-font-size: 14px;
+    -fx-padding: 6px 10px;
+}
+
+/* Dark mode scroll panes */
+.dark-theme .scroll-pane {
+    -fx-background-color: #2d2d30;
+}
+
+.dark-theme .scroll-pane .viewport {
+    -fx-background-color: #2d2d30;
+}
+
+/* Dark mode separators */
+.dark-theme .separator {
+    -fx-background-color: #3c3c3c;
+}
+
+/* Dark mode specific card styles for analytics */
+.dark-theme .analytics-card {
+    -fx-background-color: #2d2d30;
+    -fx-border-color: #3c3c3c;
+    -fx-border-radius: 8px;
+    -fx-padding: 20px;
+}
+
+.dark-theme .warning-card {
+    -fx-background-color: #332b00;
+    -fx-border-color: #7a6f00;
+}
+
+.dark-theme .info-card {
+    -fx-background-color: #001f3d;
+    -fx-border-color: #0078d4;
+}
+
+.dark-theme .success-card {
+    -fx-background-color: #0f3b0f;
+    -fx-border-color: #107c10;
+}

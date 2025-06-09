@@ -17,11 +17,14 @@ import com.chesspedagogue.configurator.tabs.ConversationAnalyticsTab;
 import com.chesspedagogue.configurator.managers.ConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import javafx.scene.control.CheckMenuItem;
 
 public class ChessPedagogueConfiguratorSimple extends Application {
     
     private static final Logger logger = LoggerFactory.getLogger(ChessPedagogueConfiguratorSimple.class);
     private ConfigurationManager configManager;
+    private Scene scene;
+    private boolean isDarkMode = false;
     
     // Core tabs
     private ConversationTemplateTabSimple conversationTab;
@@ -39,6 +42,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         try {
             // Initialize configuration manager
             configManager = ConfigurationManager.getInstance();
+            isDarkMode = configManager.isDarkMode();
             
             // Create main application layout
             BorderPane root = new BorderPane();
@@ -57,8 +61,13 @@ public class ChessPedagogueConfiguratorSimple extends Application {
             root.setBottom(statusBar);
             
             // Setup main scene
-            Scene scene = new Scene(root, 1200, 800);
+            scene = new Scene(root, 1200, 800);
             scene.getStylesheets().add(getClass().getResource("/css/application.css").toExternalForm());
+            
+            // Apply dark mode if enabled
+            if (isDarkMode) {
+                scene.getRoot().getStyleClass().add("dark-theme");
+            }
             
             primaryStage.setTitle("🎮 Chess Pedagogue Configurator v1.0");
             primaryStage.setScene(scene);
@@ -106,6 +115,14 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         
         editMenu.getItems().add(resetItem);
         
+        // View menu with theme options
+        Menu viewMenu = new Menu("View");
+        CheckMenuItem darkModeItem = new CheckMenuItem("🌙 Dark Mode");
+        darkModeItem.setSelected(isDarkMode);
+        darkModeItem.setOnAction(e -> toggleDarkMode());
+        
+        viewMenu.getItems().add(darkModeItem);
+        
         // Help menu
         Menu helpMenu = new Menu("Help");
         MenuItem aboutItem = new MenuItem("ℹ️ About");
@@ -113,7 +130,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         
         helpMenu.getItems().add(aboutItem);
         
-        menuBar.getMenus().addAll(fileMenu, editMenu, helpMenu);
+        menuBar.getMenus().addAll(fileMenu, editMenu, viewMenu, helpMenu);
         return menuBar;
     }
     
@@ -170,6 +187,21 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+    
+    private void toggleDarkMode() {
+        isDarkMode = !isDarkMode;
+        
+        if (isDarkMode) {
+            scene.getRoot().getStyleClass().add("dark-theme");
+            logger.info("🌙 Switched to dark mode");
+        } else {
+            scene.getRoot().getStyleClass().remove("dark-theme");
+            logger.info("☀️ Switched to light mode");
+        }
+        
+        // Save theme preference
+        configManager.setDarkMode(isDarkMode);
     }
     
     public static void main(String[] args) {

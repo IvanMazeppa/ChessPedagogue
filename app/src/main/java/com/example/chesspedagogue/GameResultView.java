@@ -76,7 +76,7 @@ public class GameResultView extends View {
     }
     
     /**
-     * 🏆 Display game result with animation
+     * 🏆 Display game result with animation and celebration
      */
     public void showResult(GameResult result, String winner, String description) {
         this.currentResult = result;
@@ -88,17 +88,61 @@ public class GameResultView extends View {
             return;
         }
         
-        // Update colors based on result
-        backgroundPaint.setColor(result.color);
-        backgroundPaint.setAlpha(180);
-        borderPaint.setColor(result.color);
+        // 🎉 Enhanced colors based on result with celebration effect
+        switch (result) {
+            case WHITE_WINS:
+                backgroundPaint.setColor(Color.parseColor("#4CAF50")); // Victory green
+                borderPaint.setColor(Color.parseColor("#388E3C"));
+                break;
+            case BLACK_WINS:
+                backgroundPaint.setColor(Color.parseColor("#2196F3")); // Victory blue
+                borderPaint.setColor(Color.parseColor("#1976D2"));
+                break;
+            case DRAW:
+                backgroundPaint.setColor(Color.parseColor("#FF9800")); // Draw orange
+                borderPaint.setColor(Color.parseColor("#F57C00"));
+                break;
+            default:
+                backgroundPaint.setColor(result.color);
+                borderPaint.setColor(result.color);
+        }
         
-        // Show with animation
+        backgroundPaint.setAlpha(200); // Slightly more opaque for celebration
+        
+        // Show with enhanced animation
         setVisibility(View.VISIBLE);
-        animateShow();
+        animateShowWithCelebration();
         
-        android.util.Log.d(TAG, String.format("🏆 Game result: %s - %s (%s)", 
+        android.util.Log.d(TAG, String.format("🏆 Game result with celebration: %s - %s (%s)", 
                                             result.display, winner, description));
+    }
+    
+    /**
+     * 🎊 Enhanced animation with celebration effect
+     */
+    private void animateShowWithCelebration() {
+        if (showAnimator != null) {
+            showAnimator.cancel();
+        }
+        
+        // Create a bouncy entrance effect
+        showAnimator = ValueAnimator.ofFloat(0f, 1f);
+        showAnimator.setDuration(800); // Longer duration for celebration
+        showAnimator.setInterpolator(new android.view.animation.BounceInterpolator());
+        showAnimator.addUpdateListener(animation -> {
+            animationAlpha = (float) animation.getAnimatedValue();
+            
+            // Add scale effect during animation
+            float scale = 0.5f + (animationAlpha * 0.5f);
+            setScaleX(scale);
+            setScaleY(scale);
+            
+            invalidate();
+        });
+        showAnimator.start();
+        
+        // Auto-hide after 8 seconds (longer for celebration)
+        postDelayed(this::hideResult, 8000);
     }
     
     /**
@@ -155,24 +199,33 @@ public class GameResultView extends View {
         canvas.drawRoundRect(backgroundRect, 12f, 12f, backgroundPaint);
         canvas.drawRoundRect(backgroundRect, 12f, 12f, borderPaint);
         
-        // Draw result text
+        // Draw result text with celebration formatting
         float centerX = width / 2f;
         float centerY = height / 2f;
         
-        // Main result (1-0, 0-1, ½-½)
-        textPaint.setTextSize(36f);
-        canvas.drawText(currentResult.display, centerX, centerY - 20, textPaint);
+        // 🎊 Enhanced celebration text based on result type
+        String celebrationEmoji = getCelebrationEmoji();
         
-        // Winner name
+        // Main result (1-0, 0-1, ½-½) with celebration emoji
+        textPaint.setTextSize(32f);
+        textPaint.setFakeBoldText(true);
+        String mainResultText = celebrationEmoji + " " + currentResult.display + " " + celebrationEmoji;
+        canvas.drawText(mainResultText, centerX, centerY - 25, textPaint);
+        
+        // Winner name with enhanced formatting
         if (!winnerName.isEmpty()) {
-            textPaint.setTextSize(20f);
-            canvas.drawText(winnerName + " wins!", centerX, centerY + 15, textPaint);
+            textPaint.setTextSize(18f);
+            textPaint.setFakeBoldText(false);
+            String winnerText = currentResult == GameResult.DRAW ? 
+                "Great game by both players!" : winnerName + " wins!";
+            canvas.drawText(winnerText, centerX, centerY + 5, textPaint);
         }
         
-        // Description (checkmate, resignation, etc.)
+        // Description (checkmate, resignation, etc.) with victory context
         if (!resultDescription.isEmpty()) {
-            textPaint.setTextSize(16f);
-            canvas.drawText(resultDescription, centerX, centerY + 40, textPaint);
+            textPaint.setTextSize(14f);
+            String enhancedDescription = getEnhancedDescription();
+            canvas.drawText(enhancedDescription, centerX, centerY + 30, textPaint);
         }
     }
     
@@ -201,5 +254,70 @@ public class GameResultView extends View {
     
     public void showDraw(String reason) {
         showResult(GameResult.DRAW, "", reason);
+    }
+    
+    /**
+     * 🎊 Get celebration emoji based on result
+     */
+    private String getCelebrationEmoji() {
+        switch (currentResult) {
+            case WHITE_WINS:
+                return "🏆";
+            case BLACK_WINS:
+                return "🎉";
+            case DRAW:
+                return "🤝";
+            default:
+                return "♟️";
+        }
+    }
+    
+    /**
+     * 🎭 Get enhanced description with celebration context
+     */
+    private String getEnhancedDescription() {
+        if (resultDescription.contains("checkmate")) {
+            return "Magnificent checkmate! " + resultDescription;
+        } else if (resultDescription.contains("resignation")) {
+            return "Decisive victory " + resultDescription;
+        } else if (resultDescription.contains("stalemate")) {
+            return "Clever stalemate! " + resultDescription;
+        } else if (resultDescription.contains("time")) {
+            return "Victory on time! " + resultDescription;
+        } else {
+            return resultDescription;
+        }
+    }
+    
+    /**
+     * 🎪 Show victory celebration with custom message
+     */
+    public void showVictoryCelebration(GameResult result, String celebrationMessage) {
+        this.currentResult = result;
+        this.winnerName = "";
+        this.resultDescription = celebrationMessage;
+        
+        // Extra flashy colors for celebration
+        switch (result) {
+            case WHITE_WINS:
+                backgroundPaint.setColor(Color.parseColor("#4CAF50"));
+                borderPaint.setColor(Color.parseColor("#FFD700")); // Gold border
+                break;
+            case BLACK_WINS:
+                backgroundPaint.setColor(Color.parseColor("#2196F3"));
+                borderPaint.setColor(Color.parseColor("#FFD700")); // Gold border
+                break;
+            case DRAW:
+                backgroundPaint.setColor(Color.parseColor("#FF9800"));
+                borderPaint.setColor(Color.parseColor("#4CAF50")); // Green border
+                break;
+        }
+        
+        backgroundPaint.setAlpha(220);
+        setVisibility(View.VISIBLE);
+        animateShowWithCelebration();
+        
+        android.util.Log.d(TAG, String.format("🎪 Victory celebration: %s - %s", 
+                                            result.display, celebrationMessage));
     }
 }

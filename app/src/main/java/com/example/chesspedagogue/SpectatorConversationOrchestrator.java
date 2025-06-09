@@ -34,6 +34,9 @@ public class SpectatorConversationOrchestrator {
     private final ExecutorService executorService;
     private final Handler mainHandler;
     
+    // 🎭 Phase 2: Multi-layered emotional complexity integration
+    private Phase2EmotionalIntegrationBridge phase2Bridge;
+    
     // Conversation state
     private final Map<String, ConversationState> activeConversations = new HashMap<>();
     private boolean conversationInProgress = false;
@@ -154,6 +157,15 @@ public class SpectatorConversationOrchestrator {
         
         // 🎭 INITIALIZE CONVERSATION TEMPLATES: Set engaging conversations for spectator mode
         ConversationFlowTester.optimizeForSpectatorMode();
+        
+        // 🎭 Phase 2: Initialize multi-layered emotional complexity integration
+        try {
+            this.phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(context);
+            Log.d(TAG, "🎭 Phase 2 emotional complexity bridge initialized");
+        } catch (Exception e) {
+            Log.d(TAG, "Phase 2 not available, using Phase 1 emotional intelligence only");
+            this.phase2Bridge = null;
+        }
         
         Log.d(TAG, "✅ SpectatorConversationOrchestrator fully initialized with engaging conversation templates!");
     }
@@ -962,7 +974,7 @@ public class SpectatorConversationOrchestrator {
     }
     
     /**
-     * Build conversation context for emotional analysis
+     * 🎭 ENHANCED: Build conversation context for emotional analysis with Phase 2 integration
      */
     private String buildConversationContext(ConversationState state) {
         if (state.turns.isEmpty()) {
@@ -972,7 +984,27 @@ public class SpectatorConversationOrchestrator {
         StringBuilder context = new StringBuilder();
         context.append("spectator_conversation");
         
-        // Add recent conversation themes
+        // 🎭 Phase 2: Try to get enhanced emotional context
+        Phase2EmotionalIntegrationBridge phase2Bridge = null;
+        try {
+            phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(this.context);
+        } catch (Exception e) {
+            Log.d(TAG, "Phase 2 not available, using Phase 1 conversation context");
+        }
+        
+        // 🎭 Phase 2: Generate enhanced conversation context if available
+        if (phase2Bridge != null && phase2Bridge.isIntegrationActive()) {
+            String baseContext = context.toString();
+            String enhancedContext = phase2Bridge.generateEnhancedConversationContext(
+                state.currentSpeaker, baseContext);
+            
+            if (enhancedContext != null && !enhancedContext.equals(baseContext)) {
+                Log.d(TAG, "🎭 Phase 2: Enhanced conversation context generated for " + state.currentSpeaker);
+                return enhancedContext;
+            }
+        }
+        
+        // Phase 1: Continue with original conversation context analysis
         if (state.turns.size() >= 2) {
             String lastMessage = state.turns.get(state.turns.size() - 1).message.toLowerCase();
             if (lastMessage.contains("brilliant") || lastMessage.contains("amazing")) {

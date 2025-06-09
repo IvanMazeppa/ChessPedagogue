@@ -203,18 +203,29 @@ public class ConfigurationManager {
         return !currentConfig.conversationTemplates.isEmpty();
     }
     
+    public void setDarkMode(boolean darkMode) {
+        currentConfig.darkMode = darkMode;
+        saveConfiguration();
+    }
+    
+    public boolean isDarkMode() {
+        return currentConfig.darkMode;
+    }
+    
     // Configuration data class
     public static class Configuration {
         public Map<String, ConversationTemplate> conversationTemplates;
         public String activeTemplate;
         public boolean voiceEnabled;
         public boolean realTimeUpdates;
+        public boolean darkMode;
         
         public Configuration() {
             this.conversationTemplates = new HashMap<>();
             this.activeTemplate = "engaging";
             this.voiceEnabled = true;
             this.realTimeUpdates = true;
+            this.darkMode = false;
         }
         
         public static Configuration getDefaults() {
