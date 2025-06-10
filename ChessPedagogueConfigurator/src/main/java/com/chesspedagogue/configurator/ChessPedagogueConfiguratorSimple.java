@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 import com.chesspedagogue.configurator.tabs.ConversationTemplateTabSimple;
 import com.chesspedagogue.configurator.tabs.TemplateLibraryTab;
 import com.chesspedagogue.configurator.tabs.MasterPersonalityTab;
+import com.chesspedagogue.configurator.tabs.MasterBuilderTabV2;
 import com.chesspedagogue.configurator.tabs.GameFlowTab;
 import com.chesspedagogue.configurator.tabs.LiveMonitorTab;
 import com.chesspedagogue.configurator.tabs.AdvancedSettingsTab;
@@ -30,6 +31,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
     private ConversationTemplateTabSimple conversationTab;
     private TemplateLibraryTab templateLibraryTab;
     private MasterPersonalityTab personalityTab;
+    private MasterBuilderTabV2 masterBuilderTab;
     private GameFlowTab gameFlowTab;
     private LiveMonitorTab liveMonitorTab;
     private AdvancedSettingsTab advancedTab;
@@ -142,6 +144,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         conversationTab = new ConversationTemplateTabSimple(configManager);
         templateLibraryTab = new TemplateLibraryTab(configManager);
         personalityTab = new MasterPersonalityTab();
+        masterBuilderTab = new MasterBuilderTabV2();
         gameFlowTab = new GameFlowTab();
         liveMonitorTab = new LiveMonitorTab();
         advancedTab = new AdvancedSettingsTab();
@@ -152,6 +155,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
             conversationTab.getTab(),
             templateLibraryTab,
             personalityTab,
+            masterBuilderTab,
             gameFlowTab,
             liveMonitorTab,
             analyticsTab,
@@ -171,6 +175,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
             "• 🎭 Conversation Template Designer\\n" +
             "• 📚 Template Library Management\\n" +
             "• 👥 Master Personality Editor\\n" +
+            "• 🏗️ Master Builder (Automated Master Creation)\\n" +
             "• ⚙️ Game Flow Controller\\n" +
             "• 📊 Live Game Monitoring\\n" +
             "• 📈 Conversation Analytics & Sophistication Tracking\\n" +

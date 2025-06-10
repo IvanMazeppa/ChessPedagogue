@@ -76,12 +76,25 @@
                     android:id="@+id/speakButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
                     android:contentDescription="Speak to Coach"
                     android:src="@drawable/ic_speak_to_coach"
                     app:backgroundTint="@color/warning_amber"
                     app:elevation="6dp"
                     app:fabSize="mini"
                     app:rippleColor="@color/cream"
+                    app:tint="@color/brown_dark" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/competitiveModeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Competitive Mode vs Master"
+                    android:src="@android:drawable/ic_media_play"
+                    app:backgroundTint="@color/chess_light_square"
+                    app:elevation="6dp"
+                    app:fabSize="mini"
+                    app:rippleColor="#FF4444"
                     app:tint="@color/brown_dark" />
 
             </LinearLayout>

@@ -55,20 +55,21 @@ public class ElevenLabsTTSService {
     // Voice IDs for chess masters - using carefully selected voices from ElevenLabs
     private static final Map<String, String> MASTER_VOICE_IDS = new HashMap<>();
     static {
-        // Voices selected to match each chess master's personality and accent - ALTERNATE ACCOUNT
-        MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // NEW: Tal voice for alternate account
-
-        MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // NEW: Fischer voice for alternate account
-        MASTER_VOICE_IDS.put("kasparov", "rT6zdbVnOt0GO9v5OiWr"); // Azeri  - recorded
-        MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // Martin Carlsen voice for alternate account
-        MASTER_VOICE_IDS.put("karpov", "Charli"); // Charlie - refined, measured
-        MASTER_VOICE_IDS.put("kramnik", "Antoni"); // Antoni - analytical, precise
-        MASTER_VOICE_IDS.put("capablanca", "Arnold"); // Arnold - elegant,
-        MASTER_VOICE_IDS.put("alekhine", "3EuKHIEZbSzrHGNmdYsx"); // Ivan - Russian - calm
-        MASTER_VOICE_IDS.put("morphy", "Arnold"); // Nikolai (modified - gentlemanly American
-        MASTER_VOICE_IDS.put("lasker", "Adam"); // Adam - wise, philosophical
-        MASTER_VOICE_IDS.put("anand", "Mgih2jslgx7pUv85yYYU"); // Maksud - conversational, friendly, optimistic
-        MASTER_VOICE_IDS.put("botvinnik", "Harry"); // Harry - methodical British
+        // FIXED: Consistent ElevenLabs voice IDs - no more built-in names that cause volume/quality issues
+        MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // Tal - passionate and expressive
+        MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // Fischer - intense and precise
+        MASTER_VOICE_IDS.put("kasparov", "rT6zdbVnOt0GO9v5OiWr"); // Kasparov - dynamic and energetic
+        MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // Carlsen - calm and modern
+        
+        // FIXED: Convert built-in names to proper ElevenLabs voice IDs for consistent quality
+        MASTER_VOICE_IDS.put("karpov", "pNInz6obpgDQGcFmaJgB"); // Adam - refined, measured (was "Charli")
+        MASTER_VOICE_IDS.put("kramnik", "ErXwobaYiN019PkySvjV"); // Antoni - analytical, precise
+        MASTER_VOICE_IDS.put("capablanca", "VR6AewLTigWG4xSOukaG"); // Arnold - elegant, smooth
+        MASTER_VOICE_IDS.put("alekhine", "3EuKHIEZbSzrHGNmdYsx"); // Ivan - Russian, calm
+        MASTER_VOICE_IDS.put("morphy", "VR6AewLTigWG4xSOukaG"); // Arnold - gentlemanly American
+        MASTER_VOICE_IDS.put("lasker", "pNInz6obpgDQGcFmaJgB"); // Adam - wise, philosophical  
+        MASTER_VOICE_IDS.put("anand", "Mgih2jslgx7pUv85yYYU"); // Maksud - friendly, optimistic
+        MASTER_VOICE_IDS.put("botvinnik", "JBFqnCBsd6RMkjVDRZzb"); // George - methodical British (was "Harry")
     }
 
     private static ElevenLabsTTSService instance;
@@ -165,9 +166,16 @@ public class ElevenLabsTTSService {
         // 🎤 Initialize Voice-Emotion Feedback System
         this.voiceEmotionalAnalyzer = VoiceEmotionalAnalyzer.getInstance(context);
         
-        // Get API key from preferences - ALTERNATE ACCOUNT
+        // FIXED: Get API key from preferences only - removed hardcoded fallback
         // Note: System.getenv() doesn't work on Android - use SharedPreferences instead
-        this.apiKey = prefs.getString("elevenlabs_api_key", "sk_788fa3710ea8bb4363f71f110a7b360a50f48beb4168fbf4");
+        this.apiKey = prefs.getString("elevenlabs_api_key", "");
+        
+        // Warn if no API key is set
+        if (this.apiKey == null || this.apiKey.isEmpty()) {
+            Log.w(TAG, "⚠️ No ElevenLabs API key found in preferences - TTS may not work properly");
+        } else {
+            Log.d(TAG, "✅ ElevenLabs API key loaded from preferences");
+        }
     }
     
     public static synchronized ElevenLabsTTSService getInstance(Context context) {
@@ -576,6 +584,19 @@ public class ElevenLabsTTSService {
                 
                 payload.put("voice_settings", voiceSettings);
                 
+                // 🔧 ENHANCED DEBUGGING: Log voice configuration details
+                Log.d(TAG, String.format("🎤 TTS Request Details:\n" +
+                    "  Master: %s\n" +
+                    "  Voice ID: %s\n" +
+                    "  Model: %s\n" +
+                    "  Stability: %.2f\n" +
+                    "  Similarity: %.2f\n" +
+                    "  Text length: %d chars", 
+                    selectedMaster, voiceId, model,
+                    voiceSettings.getDouble("stability"),
+                    voiceSettings.getDouble("similarity_boost"),
+                    text.length()));
+                
                 RequestBody body = RequestBody.create(
                         MediaType.parse("application/json"),
                         payload.toString()
@@ -767,35 +788,63 @@ public class ElevenLabsTTSService {
     /**
      * Get stability setting for master (0.0 - 1.0)
      * Lower = more expressive, Higher = more consistent
-     * Based on ElevenLabs docs: most common setting is around 0.5
+     * FIXED: Optimized for better volume and consistency
      */
     private double getStabilityForMaster(String master) {
         switch (master.toLowerCase()) {
             case "tal":
-                return 0.35; // More expressive for Tal's passionate style
+                return 0.45; // FIXED: Slightly more stable for better audio quality
             case "fischer":
-                return 0.70; // More consistent for Fischer's precision
+                return 0.60; // FIXED: Reduced for better expressiveness 
             case "kasparov":
-                return 0.4; // Dynamic and intense
+                return 0.50; // FIXED: More balanced for consistent volume
             case "carlsen":
-                return 0.5; // Balanced modern style
+                return 0.55; // FIXED: Slightly increased for clarity
             case "karpov":
-                return 0.6; // Controlled and measured
+                return 0.55; // FIXED: Optimal balance
             case "kramnik":
-                return 0.65; // Methodical and precise
+                return 0.55; // FIXED: Consistent with others
+            case "alekhine":
+                return 0.50; // FIXED: Added explicit setting for Alekhine
+            case "capablanca":
+                return 0.55; // FIXED: Elegant and clear
+            case "anand":
+                return 0.50; // FIXED: Friendly and accessible
+            case "morphy":
+                return 0.55; // FIXED: Gentlemanly and clear
+            case "lasker":
+                return 0.60; // FIXED: Wise and measured
+            case "botvinnik":
+                return 0.60; // FIXED: Methodical and precise
             default:
-                return 0.5; // Recommended default
+                return 0.55; // FIXED: Better default for all voices
         }
     }
     
     /**
      * Get similarity boost for master (0.0 - 1.0)
      * Higher = more similar to original voice
-     * Based on ElevenLabs docs: most common setting is around 0.75
+     * FIXED: Optimized settings for better voice quality and consistency
      */
     private double getSimilarityBoostForMaster(String master) {
-        // Keep at recommended 0.75 for all masters
-        return 0.75;
+        switch (master.toLowerCase()) {
+            case "tal":
+            case "fischer":
+            case "kasparov":
+            case "carlsen":
+                return 0.80; // FIXED: Higher similarity for custom voices
+            case "karpov":
+            case "kramnik":
+            case "capablanca":
+            case "alekhine":
+            case "anand":
+            case "morphy":
+            case "lasker":
+            case "botvinnik":
+                return 0.75; // FIXED: Standard similarity for built-in voices
+            default:
+                return 0.75; // Standard default
+        }
     }
     
     /**
@@ -1007,10 +1056,12 @@ public class ElevenLabsTTSService {
                     activePlayers.put(chunk.chunkId, player);
                 }
                 
+                // FIXED: Improved audio attributes for consistent volume and quality
                 player.setAudioAttributes(
                         new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY) // Better for TTS speech
                                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED) // Ensure audible volume
                                 .build()
                 );
                 
@@ -1342,6 +1393,51 @@ public class ElevenLabsTTSService {
     
     public boolean hasApiKey() {
         return apiKey != null && !apiKey.isEmpty();
+    }
+    
+    /**
+     * 🔧 DIAGNOSTIC: Test ElevenLabs voice configuration and report issues
+     */
+    public void diagnoseVoiceConfiguration() {
+        Log.i(TAG, "🔧 ============ ELEVENLABS VOICE DIAGNOSTIC ============");
+        
+        // Check API key
+        if (apiKey == null || apiKey.isEmpty()) {
+            Log.e(TAG, "❌ CRITICAL: No ElevenLabs API key configured");
+        } else {
+            Log.i(TAG, "✅ API Key: Configured (length: " + apiKey.length() + ")");
+        }
+        
+        // Check voice mappings
+        Log.i(TAG, "🎭 Voice ID Mappings:");
+        for (Map.Entry<String, String> entry : MASTER_VOICE_IDS.entrySet()) {
+            String master = entry.getKey();
+            String voiceId = entry.getValue();
+            double stability = getStabilityForMaster(master);
+            double similarity = getSimilarityBoostForMaster(master);
+            
+            Log.i(TAG, String.format("  %s: %s (stability: %.2f, similarity: %.2f)", 
+                master, voiceId, stability, similarity));
+        }
+        
+        // Check current settings
+        SharedPreferences prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
+        boolean useElevenLabs = prefs.getBoolean("use_elevenlabs_tts", true);
+        Log.i(TAG, "⚙️ ElevenLabs enabled: " + useElevenLabs);
+        
+        String currentMaster = getCurrentChessMaster();
+        Log.i(TAG, "👤 Current master: " + currentMaster);
+        Log.i(TAG, "🎤 Current voice ID: " + getVoiceIdForMaster(currentMaster));
+        
+        // Check emotional state
+        if (currentEmotionalState != null) {
+            Log.i(TAG, String.format("🎭 Emotional state: %s (intensity: %.2f)", 
+                currentEmotionalState.emotion.name, currentEmotionalState.intensity));
+        } else {
+            Log.i(TAG, "🎭 No emotional state set");
+        }
+        
+        Log.i(TAG, "🔧 ================================================");
     }
     
     public interface TTSCallback {

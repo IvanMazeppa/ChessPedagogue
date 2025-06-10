@@ -80,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
     private FloatingActionButton speakButton;
     private FloatingActionButton gameAnalysisButton;  // FIXED: Changed from Button to FloatingActionButton
     private FloatingActionButton coachButton;         // FIXED: Changed from Button to FloatingActionButton
+    private FloatingActionButton competitiveModeButton;  // NEW: Competitive mode vs chess masters
     private ChessBoardView chessBoardView;
 
     // NEW: Evaluation Bar UI Elements! 🎯
@@ -432,6 +433,25 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             Log.d(TAG, "✅ Speak button listener set");
         } else {
             Log.w(TAG, "⚠️ speakButton is null!");
+        }
+
+        // NEW: Competitive Mode Button - launch competitive mode vs chess masters
+        if (competitiveModeButton != null) {
+            competitiveModeButton.setOnClickListener(v -> {
+                Log.d(TAG, "🏆 Competitive Mode button clicked");
+                launchCompetitiveMode();
+            });
+            
+            // Add long-press for red highlight toggle
+            competitiveModeButton.setOnLongClickListener(v -> {
+                Log.d(TAG, "🔥 Competitive Mode button long-pressed - toggling highlight");
+                toggleCompetitiveModeHighlight();
+                return true;
+            });
+            
+            Log.d(TAG, "✅ Competitive Mode button listener set");
+        } else {
+            Log.w(TAG, "⚠️ competitiveModeButton is null!");
         }
 
         // Additional buttons in the coach panel
@@ -2241,6 +2261,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             speakButton = findViewById(R.id.speakButton);
             Log.d(TAG, "speakButton: " + (speakButton != null ? "✅ Found" : "❌ NULL"));
 
+            competitiveModeButton = findViewById(R.id.competitiveModeButton);
+            Log.d(TAG, "competitiveModeButton: " + (competitiveModeButton != null ? "✅ Found" : "❌ NULL"));
+
             // The critical one - let's see what happens here
             Log.d(TAG, "🎯 Looking for chessBoardView...");
             chessBoardView = findViewById(R.id.chessBoardView);
@@ -2899,6 +2922,96 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         } else {
             Log.e(TAG, "❌ Record service not available for voice input processing");
             Toast.makeText(this, "Voice service not ready", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // ==================== COMPETITIVE MODE IMPLEMENTATION ====================
+    
+    /**
+     * 🏆 Launch competitive mode - play against a chess master with full emotional intelligence
+     */
+    private void launchCompetitiveMode() {
+        Log.d(TAG, "🏆 Launching competitive mode!");
+        
+        // Create competitive mode selection dialog
+        String[] masters = {
+            "Tal - The Magician of Riga", 
+            "Fischer - The American Chess Legend",
+            "Carlsen - The Modern Chess Machine",
+            "Kasparov - The Beast from Baku",
+            "Karpov - The Python",
+            "Kramnik - The Stone Wall",
+            "Alekhine - The Attacking Genius",
+            "Capablanca - The Chess Machine",
+            "Morphy - The Pride and Sorrow",
+            "Lasker - The Fighting Machine",
+            "Anand - The Lightning Kid",
+            "Botvinnik - The Patriarch"
+        };
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🏆 Choose Your Opponent")
+               .setItems(masters, (dialog, which) -> {
+                   String selectedMaster = masters[which].split(" - ")[0].toLowerCase();
+                   Log.d(TAG, "🎯 Selected master: " + selectedMaster);
+                   startCompetitiveGame(selectedMaster);
+               })
+               .setNegativeButton("Cancel", null);
+        
+        builder.create().show();
+    }
+    
+    /**
+     * 🔥 Toggle competitive mode button highlight (red when active)
+     */
+    private void toggleCompetitiveModeHighlight() {
+        if (competitiveModeButton != null) {
+            // Get current background tint
+            boolean isHighlighted = competitiveModeButton.getTag() != null && 
+                                   competitiveModeButton.getTag().equals("highlighted");
+            
+            if (isHighlighted) {
+                // Remove highlight - back to normal
+                competitiveModeButton.setBackgroundTintList(getColorStateList(R.color.chess_light_square));
+                competitiveModeButton.setTag(null);
+                Log.d(TAG, "🔥 Competitive mode highlight REMOVED");
+                Toast.makeText(this, "Competitive mode highlight OFF", Toast.LENGTH_SHORT).show();
+            } else {
+                // Add bright red highlight
+                competitiveModeButton.setBackgroundTintList(getColorStateList(android.R.color.holo_red_light));
+                competitiveModeButton.setTag("highlighted");
+                Log.d(TAG, "🔥 Competitive mode highlight ACTIVATED");
+                Toast.makeText(this, "Competitive mode highlight ON - Ready to battle!", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    
+    /**
+     * 🎯 Start competitive game against selected master
+     */
+    private void startCompetitiveGame(String masterName) {
+        Log.d(TAG, "🏁 Starting competitive game vs " + masterName);
+        
+        try {
+            // Create intent for competitive mode activity
+            Intent competitiveIntent = new Intent(this, CompetitiveModeActivity.class);
+            competitiveIntent.putExtra("selectedMaster", masterName);
+            competitiveIntent.putExtra("enableEmotionalIntelligence", true);
+            competitiveIntent.putExtra("enableEmergentBehavior", true);
+            competitiveIntent.putExtra("enableAdaptiveLearning", true);
+            competitiveIntent.putExtra("enableResponsesAPI", true);
+            
+            // Pass current game configuration
+            competitiveIntent.putExtra("playerColor", configuredPlayerColor);
+            competitiveIntent.putExtra("skillLevel", configuredSkillLevel);
+            competitiveIntent.putExtra("engineElo", configuredEngineElo);
+            
+            Log.d(TAG, "🚀 Launching CompetitiveModeActivity with master: " + masterName);
+            startActivity(competitiveIntent);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error launching competitive mode", e);
+            Toast.makeText(this, "Error launching competitive mode: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 }

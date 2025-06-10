@@ -71,6 +71,8 @@ public class ChessBoardView extends View {
     
     // 🎯 BOARD SCALING FIX: Track when size is properly calculated
     private boolean sizeInitialized = false;
+    private int lastMeasuredWidth = -1;
+    private int lastMeasuredHeight = -1;
 
     /* ───── ctor ───── */
     public ChessBoardView(Context c) {
@@ -124,16 +126,46 @@ public class ChessBoardView extends View {
     
     /* ───────── 🎯 BOARD SCALING FIX ───────── */
     @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        
+        int measuredWidth = getMeasuredWidth();
+        int measuredHeight = getMeasuredHeight();
+        
+        // Only proceed if measurements have actually changed significantly
+        if (Math.abs(measuredWidth - lastMeasuredWidth) > 5 || 
+            Math.abs(measuredHeight - lastMeasuredHeight) > 5 || 
+            lastMeasuredWidth == -1) {
+            
+            lastMeasuredWidth = measuredWidth;
+            lastMeasuredHeight = measuredHeight;
+            
+            Log.d("ChessBoardView", "🎯 Measure: " + measuredWidth + "x" + measuredHeight);
+        } else {
+            // Keep previous measurements to prevent micro-adjustments
+            setMeasuredDimension(lastMeasuredWidth, lastMeasuredHeight);
+        }
+    }
+    
+    /* ───────── 🎯 BOARD SCALING FIX ───────── */
+    @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         
         if (w > 0 && h > 0) {
-            // Calculate square size based on smallest dimension to maintain square board
+            // Only recalculate if size actually changed significantly
             int minDimension = Math.min(w, h);
-            squareSize = minDimension / 8;
-            sizeInitialized = true;
+            int newSquareSize = minDimension / 8;
             
-            Log.d("ChessBoardView", "🎯 Board size calculated: " + squareSize + "px squares (view: " + w + "x" + h + ")");
+            if (Math.abs(newSquareSize - squareSize) > 2) { // Only update if difference > 2px
+                squareSize = newSquareSize;
+                sizeInitialized = true;
+                Log.d("ChessBoardView", "🎯 Board size recalculated: " + squareSize + "px squares (view: " + w + "x" + h + ")");
+            } else if (!sizeInitialized) {
+                squareSize = newSquareSize;
+                sizeInitialized = true;
+                Log.d("ChessBoardView", "🎯 Board size initialized: " + squareSize + "px squares (view: " + w + "x" + h + ")");
+            }
         }
     }
 
@@ -238,7 +270,7 @@ public class ChessBoardView extends View {
         /* 5) moving sprite */
         if (!movingPieces.isEmpty()) {
             Iterator<MovingPiece> it = movingPieces.iterator();
-            while (it.hasNext()) if (it.next().draw(canvas, squareSize, pad)) it.remove();
+            while (it.hasNext()) if (it.next().draw(canvas, squareSize, pad, boardState)) it.remove();
             if (!movingPieces.isEmpty()) postInvalidateOnAnimation();
         }
 
@@ -262,7 +294,15 @@ public class ChessBoardView extends View {
     }
 
     public void updateBoardFromFen(String fen) {
-        if (fen == null || fen.isEmpty()) return;
+        if (fen == null || fen.isEmpty()) {
+            Log.w("ChessBoardView", "⚠️ Received null/empty FEN");
+            return;
+        }
+
+        Log.d("ChessBoardView", "🔄 Updating board from FEN: " + fen);
+
+        // CRITICAL: Store current real FEN for proper turn detection
+        setRealCurrentFEN(fen);
 
         // Create a temporary copy of the current board state
         char[][] newBoardState = new char[8][8];
@@ -274,14 +314,25 @@ public class ChessBoardView extends View {
         String[] parts = fen.split("\\s+");
         String[] ranks = parts[0].split("/");
 
+        // CRITICAL: Validate FEN structure before parsing
+        if (ranks.length != 8) {
+            Log.e("ChessBoardView", "❌ Invalid FEN - wrong number of ranks: " + ranks.length);
+            return;
+        }
+
         // For each of the 8 ranks...
         for (int r = 0; r < 8; r++) {
             int c = 0;
             for (char ch : ranks[r].toCharArray()) {
+                if (c >= 8) {
+                    Log.e("ChessBoardView", "❌ FEN rank " + r + " has too many squares");
+                    break;
+                }
+                
                 if (Character.isDigit(ch)) {
                     // e.g. '3' means three empty squares
                     int empty = ch - '0';
-                    for (int i = 0; i < empty; i++) {
+                    for (int i = 0; i < empty && c < 8; i++) {
                         newBoardState[r][c++] = ' ';
                     }
                 } else {
@@ -304,6 +355,11 @@ public class ChessBoardView extends View {
 
         // Only update if something changed
         if (boardChanged) {
+            Log.d("ChessBoardView", "📋 Board state changed - updating display");
+            
+            // CRITICAL: Clear animations BEFORE updating board state to prevent ghost pieces
+            movingPieces.clear();
+            
             // Update the board state
             for (int r = 0; r < 8; r++) {
                 System.arraycopy(newBoardState[r], 0, boardState[r], 0, 8);
@@ -324,14 +380,22 @@ public class ChessBoardView extends View {
     }
 
     public void setSelectedSquare(int br, int bc) {
-        selectedRow = flipped ? 7 - br : br;
-        selectedCol = flipped ? 7 - bc : bc;
-        invalidate();
+        int newRow = flipped ? 7 - br : br;
+        int newCol = flipped ? 7 - bc : bc;
+        
+        // Only invalidate if selection actually changed
+        if (selectedRow != newRow || selectedCol != newCol) {
+            selectedRow = newRow;
+            selectedCol = newCol;
+            postInvalidate(); // Use postInvalidate to avoid immediate layout calculations
+        }
     }
 
     public void clearSelectionHighlight() {
-        selectedRow = selectedCol = -1;
-        invalidate();
+        if (selectedRow != -1 || selectedCol != -1) {
+            selectedRow = selectedCol = -1;
+            postInvalidate(); // Use postInvalidate to avoid immediate layout calculations
+        }
     }
 
     public void addHighlightedSquare(int r, int c) {
@@ -340,10 +404,12 @@ public class ChessBoardView extends View {
     }
 
     public void clearHighlightedSquares() {
-        highlightSquares.clear();
-        legalMovePaint.setAlpha(0);
-        legalAlpha = 0;
-        invalidate();
+        if (!highlightSquares.isEmpty()) {
+            highlightSquares.clear();
+            legalMovePaint.setAlpha(0);
+            legalAlpha = 0;
+            postInvalidate(); // Use postInvalidate to avoid immediate layout calculations
+        }
     }
 
     /**
@@ -352,42 +418,52 @@ public class ChessBoardView extends View {
     // In ChessBoardView.java
     public void animateMove(int fromR, int fromC, int toR, int toC) {
         // Log to help diagnose issues
-        Log.d("ChessBoardView", "Animating move from " + fromR + "," + fromC + " to " + toR + "," + toC);
+        Log.d("ChessBoardView", "🎬 Animating move from " + fromR + "," + fromC + " to " + toR + "," + toC);
+
+        // CRITICAL: Clear any existing animations to prevent ghost pieces
+        movingPieces.clear();
 
         int vfr = flipped ? 7 - fromR : fromR;
         int vfc = flipped ? 7 - fromC : fromC;
         int vtr = flipped ? 7 - toR : toR;
         int vtc = flipped ? 7 - toC : toC;
 
-        // FIXED: Try to get piece from destination first (for post-move animation)
-        // If not there, try source (for pre-move animation)
+        // CRITICAL: Get piece from DESTINATION (post-move state) since FEN was already updated
         char pc = boardState[toR][toC];
         if (pc == ' ') {
-            // Piece not at destination, check if it's still at source
-            pc = boardState[fromR][fromC];
+            Log.w("ChessBoardView", "⚠️ No piece at destination " + toR + "," + toC + " for animation");
+            return;
         }
         
         int res = getDrawableForPiece(pc);
         if (res == 0) {
-            Log.d("ChessBoardView", "No drawable found for piece '" + pc + "' at either source or destination");
+            Log.w("ChessBoardView", "⚠️ No drawable found for piece '" + pc + "'");
             return;
         }
 
         Drawable d = ContextCompat.getDrawable(getContext(), res);
         if (d == null) {
-            Log.d("ChessBoardView", "Failed to get drawable resource");
+            Log.w("ChessBoardView", "⚠️ Failed to get drawable resource");
             return;
         }
 
-        // Add the moving piece to the list
-        movingPieces.add(new MovingPiece(
+        // CRITICAL: Temporarily remove piece from destination during animation
+        char originalPiece = boardState[toR][toC];
+        boardState[toR][toC] = ' ';
+
+        Log.d("ChessBoardView", "✅ Starting animation for piece '" + pc + "' from " + fromR + "," + fromC + " to " + toR + "," + toC);
+
+        // Add the moving piece to the list with completion callback
+        MovingPiece movingPiece = new MovingPiece(
                 d,
                 vfc * squareSize, vfr * squareSize,
                 vtc * squareSize, vtr * squareSize,
-                toR, toC));
+                toR, toC, originalPiece); // Pass original piece for restoration
+        
+        movingPieces.add(movingPiece);
 
         // This is crucial - tell the view to animate
-        Log.d("ChessBoardView", "Added animation, calling postInvalidateOnAnimation");
+        Log.d("ChessBoardView", "✅ Added animation, calling postInvalidateOnAnimation");
         postInvalidateOnAnimation();
     }
 
@@ -569,6 +645,13 @@ public class ChessBoardView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent e) {
         if (e.getAction() != MotionEvent.ACTION_DOWN) return super.onTouchEvent(e);
+        
+        // 🎯 BOARD SCALING FIX: Prevent touch events when size isn't stable
+        if (squareSize <= 0 || !sizeInitialized) {
+            Log.w("ChessBoardView", "⚠️ Ignoring touch - board not ready (squareSize=" + squareSize + ")");
+            return true;
+        }
+        
         int vc = (int) (e.getX() / squareSize), vr = (int) (e.getY() / squareSize);
         if (vr < 0 || vr > 7 || vc < 0 || vc > 7) return true;
         int br = flipped ? 7 - vr : vr, bc = flipped ? 7 - vc : vc;
@@ -705,11 +788,12 @@ public class ChessBoardView extends View {
         final Drawable d;
         final float sx, sy, ex, ey;
         final int toRow, toCol;
+        final char originalPiece;
         final long startT;
         final long dur = 250;   // ms - keep consistent with activity timing
 
         MovingPiece(Drawable d, float sx, float sy, float ex, float ey,
-                    int toRow, int toCol) {
+                    int toRow, int toCol, char originalPiece) {
             this.d = d;
             this.sx = sx;
             this.sy = sy;
@@ -717,6 +801,7 @@ public class ChessBoardView extends View {
             this.ey = ey;
             this.toRow = toRow;
             this.toCol = toCol;
+            this.originalPiece = originalPiece;
             startT = System.currentTimeMillis();
         }
 
@@ -728,7 +813,7 @@ public class ChessBoardView extends View {
         /**
          * Draws at interpolated position; returns true when finished.
          */
-        boolean draw(Canvas c, int sq, int pad) {
+        boolean draw(Canvas c, int sq, int pad, char[][] boardState) {
             float t = Math.min(1f, (System.currentTimeMillis() - startT) / (float) dur);
 
             // Apply easing function for smoother motion
@@ -740,6 +825,13 @@ public class ChessBoardView extends View {
             d.setBounds(Math.round(x) + pad, Math.round(y) + pad,
                     Math.round(x) + sq - pad, Math.round(y) + sq - pad);
             d.draw(c);
+            
+            // CRITICAL: Restore piece when animation completes
+            if (t == 1f) {
+                boardState[toRow][toCol] = originalPiece;
+                Log.d("ChessBoardView", "🎬 Animation completed - restored piece '" + originalPiece + "' to " + toRow + "," + toCol);
+            }
+            
             return t == 1f;
         }
     }

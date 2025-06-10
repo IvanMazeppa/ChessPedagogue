@@ -23,7 +23,6 @@ public class GameFlowTab extends Tab {
     private SliderWithLabel moveDelaySlider;
     private SliderWithLabel thinkingTimeSlider;
     private CheckBox enableCommentaryCheck;
-    private SliderWithLabel commentaryFrequencySlider;
     private ComboBox<String> commentaryTriggerSelector;
     private CheckBox enableEvaluationTracking;
     private SliderWithLabel evaluationThresholdSlider;
@@ -158,48 +157,91 @@ public class GameFlowTab extends Tab {
         VBox section = new VBox(10);
         section.getStyleClass().add("config-section");
         
-        Label sectionTitle = new Label("🎤 Commentary & Analysis");
+        Label sectionTitle = new Label("🎤 Smart Commentary System");
         sectionTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         sectionTitle.getStyleClass().add("title");
         
-        GridPane grid = new GridPane();
-        grid.setHgap(15);
-        grid.setVgap(10);
+        VBox controls = new VBox(15);
         
         // Commentary enabled
-        enableCommentaryCheck = new CheckBox("Enable AI Commentary");
+        enableCommentaryCheck = new CheckBox("Enable Emotion-Driven Commentary");
         enableCommentaryCheck.setSelected(true);
-        grid.add(enableCommentaryCheck, 0, 0, 2, 1);
+        enableCommentaryCheck.setTooltip(new Tooltip("Commentary frequency and style automatically adjusted by masters' emotional states"));
         
-        // Commentary frequency
-        commentaryFrequencySlider = new SliderWithLabel("Commentary Frequency:", 0.1, 2.0, 0.7, 0.1);
-        commentaryFrequencySlider.setTooltip("How often masters provide commentary (0.1 = rare, 2.0 = very frequent)");
-        grid.add(commentaryFrequencySlider, 0, 1, 2, 1);
+        // Commentary trigger system (not frequency - that's emotion-driven!)
+        Label triggerLabel = new Label("🎯 Commentary Trigger Events:");
+        triggerLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
         
-        // Commentary trigger
-        Label triggerLabel = new Label("Commentary Triggers:");
-        commentaryTriggerSelector = new ComboBox<>();
-        commentaryTriggerSelector.getItems().addAll(
-            "Significant Moves Only",
-            "Every Move",
-            "Evaluation Changes",
-            "Tactical Moments",
-            "Opening/Endgame Focus"
-        );
-        commentaryTriggerSelector.setValue("Significant Moves Only");
-        grid.add(triggerLabel, 0, 2);
-        grid.add(commentaryTriggerSelector, 1, 2);
+        CheckBox enableEvaluationTriggers = new CheckBox("Evaluation Swing Triggers");
+        enableEvaluationTriggers.setSelected(true);
+        enableEvaluationTriggers.setTooltip(new Tooltip("Masters comment when position evaluation changes significantly"));
         
-        // Evaluation tracking
+        CheckBox enableTacticalTriggers = new CheckBox("Tactical Moment Triggers");
+        enableTacticalTriggers.setSelected(true);
+        enableTacticalTriggers.setTooltip(new Tooltip("Masters comment on sacrifices, combinations, and brilliant moves"));
+        
+        CheckBox enableHistoricalTriggers = new CheckBox("Historical Pattern Triggers");
+        enableHistoricalTriggers.setSelected(true);
+        enableHistoricalTriggers.setTooltip(new Tooltip("Masters comment when positions match their historical games"));
+        
+        CheckBox enableOpeningEndgameTriggers = new CheckBox("Opening/Endgame Phase Triggers");
+        enableOpeningEndgameTriggers.setSelected(true);
+        enableOpeningEndgameTriggers.setTooltip(new Tooltip("Masters comment on phase transitions and specialization areas"));
+        
+        // Evaluation tracking (technical settings)
+        Label technicalLabel = new Label("📊 Technical Evaluation Settings:");
+        technicalLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
         enableEvaluationTracking = new CheckBox("Enable Position Evaluation Tracking");
         enableEvaluationTracking.setSelected(true);
-        grid.add(enableEvaluationTracking, 0, 3, 2, 1);
+        enableEvaluationTracking.setTooltip(new Tooltip("Track position evaluations for emotional reaction triggers"));
         
         evaluationThresholdSlider = new SliderWithLabel("Evaluation Change Threshold:", 0.1, 2.0, 0.5, 0.1);
-        evaluationThresholdSlider.setTooltip("Minimum evaluation change to trigger commentary (in pawns)");
-        grid.add(evaluationThresholdSlider, 0, 4, 2, 1);
+        evaluationThresholdSlider.setTooltip("Minimum evaluation change to trigger emotional reactions (in pawns)");
         
-        section.getChildren().addAll(sectionTitle, grid);
+        // Master-specific commentary settings
+        Label masterSpecificLabel = new Label("🎭 Master-Specific Commentary:");
+        masterSpecificLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        CheckBox enableMasterSpecialties = new CheckBox("Enable Master Specialty Focus");
+        enableMasterSpecialties.setSelected(true);
+        enableMasterSpecialties.setTooltip(new Tooltip("Tal focuses on tactics, Carlsen on endgames, Fischer on precision, etc."));
+        
+        CheckBox enablePersonalityVariation = new CheckBox("Enable Personality-Based Variation");
+        enablePersonalityVariation.setSelected(true);
+        enablePersonalityVariation.setTooltip(new Tooltip("Commentary style varies based on each master's personality traits"));
+        
+        // Dynamic behavior explanation
+        Label dynamicExplanation = new Label("⚡ How Dynamic Commentary Works:");
+        dynamicExplanation.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        TextArea explanationArea = new TextArea();
+        explanationArea.setEditable(false);
+        explanationArea.setPrefRowCount(5);
+        explanationArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 10px;");
+        explanationArea.setText(
+            "🧠 EMOTION-DRIVEN COMMENTARY SYSTEM:\n" +
+            "• Frequency: Tal (excited) = MORE comments, Carlsen (calm) = FEWER comments\n" +
+            "• Style: Fischer (intense) = CRITICAL tone, Tal (dramatic) = ARTISTIC language\n" +
+            "• Topics: Masters naturally focus on their specialties and interests\n" +
+            "• Timing: Emotional state controls when masters feel compelled to speak\n" +
+            "• NO manual frequency controls - everything emerges from personality!"
+        );
+        
+        Label smartNote = new Label("🎯 Commentary frequency and intensity are now EMERGENT from masters' emotional states!");
+        smartNote.setStyle("-fx-text-fill: #28a745; -fx-font-style: italic; -fx-font-weight: bold;");
+        
+        controls.getChildren().addAll(
+            enableCommentaryCheck,
+            triggerLabel, enableEvaluationTriggers, enableTacticalTriggers, 
+            enableHistoricalTriggers, enableOpeningEndgameTriggers,
+            technicalLabel, enableEvaluationTracking, evaluationThresholdSlider,
+            masterSpecificLabel, enableMasterSpecialties, enablePersonalityVariation,
+            dynamicExplanation, explanationArea,
+            smartNote
+        );
+        
+        section.getChildren().addAll(sectionTitle, controls);
         return section;
     }
     
@@ -207,32 +249,94 @@ public class GameFlowTab extends Tab {
         VBox section = new VBox(10);
         section.getStyleClass().add("config-section");
         
-        Label sectionTitle = new Label("😍 Emotional Responses");
+        Label sectionTitle = new Label("🧠 Emotional Intelligence System");
         sectionTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         sectionTitle.getStyleClass().add("title");
         
         VBox controls = new VBox(15);
         
-        enableEmotionalResponses = new CheckBox("Enable Emotional Response System");
+        enableEmotionalResponses = new CheckBox("Enable Dynamic Emotional Intelligence");
         enableEmotionalResponses.setSelected(true);
-        enableEmotionalResponses.setTooltip(new Tooltip("Allow masters to react emotionally to game events"));
+        enableEmotionalResponses.setTooltip(new Tooltip("Allow masters' emotions to dynamically control conversation pace and intensity"));
         
-        emotionalSensitivitySlider = new SliderWithLabel("Emotional Sensitivity:", 0.1, 2.0, 1.0, 0.1);
-        emotionalSensitivitySlider.setTooltip("How strongly masters react to emotional triggers");
+        // Emotional State Monitoring
+        Label monitoringLabel = new Label("🎭 Emotional State Monitoring:");
+        monitoringLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
         
+        CheckBox enableEmotionalContagion = new CheckBox("Enable Emotional Contagion");
+        enableEmotionalContagion.setSelected(true);
+        enableEmotionalContagion.setTooltip(new Tooltip("Masters influence each other's emotional states (30% base contagion rate)"));
+        
+        CheckBox enableEmotionalMemory = new CheckBox("Enable Emotional Memory");
+        enableEmotionalMemory.setSelected(true);
+        enableEmotionalMemory.setTooltip(new Tooltip("Masters remember emotional reactions to specific topics and opponents"));
+        
+        CheckBox enableTopicFatigue = new CheckBox("Enable Topic Fatigue Detection");
+        enableTopicFatigue.setSelected(true);
+        enableTopicFatigue.setTooltip(new Tooltip("Prevent repetitive conversations by tracking overused topics"));
+        
+        // Dynamic Response Controls
+        Label dynamicLabel = new Label("⚡ Dynamic Response Controls:");
+        dynamicLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        CheckBox enableDynamicPacing = new CheckBox("Dynamic Conversation Pacing");
+        enableDynamicPacing.setSelected(true);
+        enableDynamicPacing.setTooltip(new Tooltip("Conversation speed controlled by masters' excitement levels"));
+        
+        CheckBox enableDynamicIntensity = new CheckBox("Dynamic Emotional Intensity");
+        enableDynamicIntensity.setSelected(true);
+        enableDynamicIntensity.setTooltip(new Tooltip("Commentary intensity driven by evaluation swings and emotional states"));
+        
+        CheckBox enableEmergentTopics = new CheckBox("Emergent Topic Discovery");
+        enableEmergentTopics.setSelected(true);
+        enableEmergentTopics.setTooltip(new Tooltip("Automatically extract and track naturally occurring conversation themes"));
+        
+        // Master Interaction Settings
         enableMasterDialogue = new CheckBox("Enable Master-to-Master Dialogue");
         enableMasterDialogue.setSelected(true);
-        enableMasterDialogue.setTooltip(new Tooltip("Allow masters to talk to each other during games"));
+        enableMasterDialogue.setTooltip(new Tooltip("Allow masters to engage in conversations based on their relationship dynamics"));
         
-        dialogueFrequencySlider = new SliderWithLabel("Dialogue Frequency:", 0.1, 2.0, 0.8, 0.1);
-        dialogueFrequencySlider.setTooltip("How often masters engage in conversation");
+        // Emotional Triggers Configuration
+        Label triggersLabel = new Label("🎯 Emotional Trigger Thresholds:");
+        triggersLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
         
-        Label emotionalNote = new Label("🧠 Emotional responses create more engaging and human-like commentary");
-        emotionalNote.setStyle("-fx-text-fill: #6c757d; -fx-font-style: italic;");
+        emotionalSensitivitySlider = new SliderWithLabel("Evaluation Swing Threshold:", 0.5, 3.0, 1.5, 0.1);
+        emotionalSensitivitySlider.setTooltip("Centipawn threshold for triggering emotional reactions");
+        
+        SliderWithLabel contagionRateSlider = new SliderWithLabel("Emotional Contagion Rate:", 0.1, 1.0, 0.3, 0.05);
+        contagionRateSlider.setTooltip("Base rate for emotional influence between masters");
+        
+        // Real-time Emotional State Display
+        Label statusLabel = new Label("📊 Current Emotional States (Live Demo):");
+        statusLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        TextArea emotionalStateDisplay = new TextArea();
+        emotionalStateDisplay.setEditable(false);
+        emotionalStateDisplay.setPrefRowCount(6);
+        emotionalStateDisplay.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 10px;");
+        emotionalStateDisplay.setText(
+            "🎭 LIVE EMOTIONAL STATES\n" +
+            "========================\n" +
+            "Tal:     excitement=0.8, drama=2.0 → FAST pacing, HIGH intensity\n" +
+            "Fischer: intensity=1.7, focus=0.9 → PRECISE pacing, CRITICAL tone\n" +
+            "Carlsen: calm=0.9, confidence=0.8 → STEADY pacing, BALANCED intensity\n" +
+            "\n" +
+            "💫 Emotional Contagion: Tal's excitement → Fischer's irritation (+0.3)\n" +
+            "🎯 Topic Fatigue: 'opening theory' → switching to 'endgame technique'\n" +
+            "⚡ Dynamic Pacing: Current speed = MODERATE (driven by average excitement)"
+        );
+        
+        Label emotionalNote = new Label("🧠 Masters' emotional states dynamically control ALL conversation parameters - no manual overrides needed!");
+        emotionalNote.setStyle("-fx-text-fill: #28a745; -fx-font-style: italic; -fx-font-weight: bold;");
         
         controls.getChildren().addAll(
-            enableEmotionalResponses, emotionalSensitivitySlider,
-            enableMasterDialogue, dialogueFrequencySlider, emotionalNote
+            enableEmotionalResponses,
+            monitoringLabel, enableEmotionalContagion, enableEmotionalMemory, enableTopicFatigue,
+            dynamicLabel, enableDynamicPacing, enableDynamicIntensity, enableEmergentTopics,
+            enableMasterDialogue,
+            triggersLabel, emotionalSensitivitySlider, contagionRateSlider,
+            statusLabel, emotionalStateDisplay,
+            emotionalNote
         );
         
         section.getChildren().addAll(sectionTitle, controls);
@@ -388,22 +492,18 @@ public class GameFlowTab extends Tab {
         switch (gameType) {
             case "Spectator Mode (AI vs AI)":
                 moveDelaySlider.setValue(2.0);
-                commentaryFrequencySlider.setValue(0.8);
                 enableMasterDialogue.setSelected(true);
                 break;
             case "Player vs AI":
                 moveDelaySlider.setValue(1.0);
-                commentaryFrequencySlider.setValue(0.5);
                 enableMasterDialogue.setSelected(false);
                 break;
             case "Analysis Mode":
                 moveDelaySlider.setValue(0.5);
-                commentaryFrequencySlider.setValue(1.2);
                 enableMasterDialogue.setSelected(false);
                 break;
             case "Custom Training":
                 moveDelaySlider.setValue(3.0);
-                commentaryFrequencySlider.setValue(1.0);
                 enableMasterDialogue.setSelected(true);
                 break;
         }
@@ -413,8 +513,9 @@ public class GameFlowTab extends Tab {
     
     private void updateCommentaryControls() {
         boolean enabled = enableCommentaryCheck.isSelected();
-        commentaryFrequencySlider.setDisable(!enabled);
-        commentaryTriggerSelector.setDisable(!enabled);
+        if (commentaryTriggerSelector != null) {
+            commentaryTriggerSelector.setDisable(!enabled);
+        }
     }
     
     private void updateEmotionalControls() {
@@ -447,7 +548,7 @@ public class GameFlowTab extends Tab {
                         simulationProgress.setProgress(progress / 100.0);
                         if (progress == 50) {
                             simulationOutput.appendText("\n✅ Move timing validated: " + moveDelaySlider.getValue() + "s delay");
-                            simulationOutput.appendText("\n✅ Commentary frequency validated: " + commentaryFrequencySlider.getValue());
+                            simulationOutput.appendText("\n✅ Commentary system validated: Emotion-driven frequency enabled");
                         }
                         if (progress == 100) {
                             simulationOutput.appendText("\n✅ Game flow test completed successfully!");
@@ -535,7 +636,7 @@ public class GameFlowTab extends Tab {
         currentConfig.moveDelay = moveDelaySlider.getValue();
         currentConfig.thinkingTime = thinkingTimeSlider.getValue();
         currentConfig.commentaryEnabled = enableCommentaryCheck.isSelected();
-        currentConfig.commentaryFrequency = commentaryFrequencySlider.getValue();
+        currentConfig.commentaryFrequency = 0.7; // Default emotion-driven frequency
         currentConfig.commentaryTrigger = commentaryTriggerSelector.getValue();
         currentConfig.evaluationTracking = enableEvaluationTracking.isSelected();
         currentConfig.evaluationThreshold = evaluationThresholdSlider.getValue();

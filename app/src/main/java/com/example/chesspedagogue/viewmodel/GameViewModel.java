@@ -1195,6 +1195,9 @@ public class GameViewModel extends AndroidViewModel {
     public LiveData<Boolean> getPersonalityEngineEnabled() { return personalityEngineEnabled; }
     public LiveData<String> getPersonalityMaster() { return personalityMaster; }
     public LiveData<Float> getPersonalityWeight() { return personalityWeight; }
+    
+    // Add getter for game repository access
+    public GameRepository getGameRepository() { return gameRepository; }
 
     @Override
     protected void onCleared() {

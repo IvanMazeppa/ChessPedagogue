@@ -35,7 +35,7 @@ import java.util.Map;
 public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "GameDatabaseHelper";
     private static final String DATABASE_NAME = "chess_games.db";
-    private static final int DATABASE_VERSION = 4; // Incremented for expression pattern tracking!
+    private static final int DATABASE_VERSION = 5; // Incremented for emotional strategy learning!
 
     // EXISTING: Saved games table
     private static final String TABLE_GAMES = "saved_games";
@@ -291,6 +291,32 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String CREATE_EXPRESSION_PATTERNS_INDEX =
             "CREATE INDEX idx_expression_patterns ON " + TABLE_EXPRESSION_PATTERNS + "(" + COLUMN_MASTER_NAME + ", " + COLUMN_CONCEPT + ")";
 
+    // Table: emotional_strategy_learning - Track adaptive learning for optimal emotional strategies
+    private static final String TABLE_EMOTIONAL_STRATEGY_LEARNING = "emotional_strategy_learning";
+    private static final String COLUMN_APPROACH_TYPE = "approach_type";
+    private static final String COLUMN_SUCCESS_RATE = "success_rate";
+    private static final String COLUMN_ATTEMPTS = "attempts";
+    private static final String COLUMN_EXPLORATION_RATE = "exploration_rate";
+    private static final String COLUMN_STRATEGY_DATA = "strategy_data";
+
+    private static final String CREATE_EMOTIONAL_STRATEGY_LEARNING_TABLE =
+            "CREATE TABLE " + TABLE_EMOTIONAL_STRATEGY_LEARNING + "("
+                    + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT,"
+                    + COLUMN_MASTER_NAME + " TEXT NOT NULL,"
+                    + "opponent_name TEXT NOT NULL,"
+                    + COLUMN_APPROACH_TYPE + " TEXT NOT NULL,"
+                    + COLUMN_SUCCESS_RATE + " REAL DEFAULT 0.5,"
+                    + COLUMN_ATTEMPTS + " INTEGER DEFAULT 0,"
+                    + COLUMN_EXPLORATION_RATE + " REAL DEFAULT 0.4,"
+                    + COLUMN_STRATEGY_DATA + " TEXT,"  // JSON data for full strategy profile
+                    + COLUMN_LAST_UPDATED + " INTEGER,"
+                    + COLUMN_CREATED_AT + " INTEGER,"
+                    + "UNIQUE(" + COLUMN_MASTER_NAME + ", opponent_name, " + COLUMN_APPROACH_TYPE + ")"
+                    + ")";
+
+    private static final String CREATE_EMOTIONAL_STRATEGY_LEARNING_INDEX =
+            "CREATE INDEX idx_emotional_strategy_learning ON " + TABLE_EMOTIONAL_STRATEGY_LEARNING + "(" + COLUMN_MASTER_NAME + ", opponent_name, " + COLUMN_LAST_UPDATED + ")";
+
     private final Context context;
     
     // Performance optimization: LRU cache for position lookups
@@ -321,6 +347,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_CONVERSATION_EVOLUTION_TABLE);
         db.execSQL(CREATE_EMERGENT_EVENTS_TABLE);
         db.execSQL(CREATE_EXPRESSION_PATTERNS_TABLE);
+        db.execSQL(CREATE_EMOTIONAL_STRATEGY_LEARNING_TABLE);
 
         // Create all indexes for performance
         db.execSQL(CREATE_FEN_INDEX);
@@ -330,6 +357,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_EMOTIONAL_REACTIONS_INDEX);
         db.execSQL(CREATE_EMERGENT_EVENTS_INDEX);
         db.execSQL(CREATE_EXPRESSION_PATTERNS_INDEX);
+        db.execSQL(CREATE_EMOTIONAL_STRATEGY_LEARNING_INDEX);
 
         Log.d(TAG, "✅ Database created with game storage, personality engine, AND emergent behavior tracking!");
     }
@@ -367,6 +395,14 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(CREATE_EXPRESSION_PATTERNS_INDEX);
             
             Log.d(TAG, "🎭 Database upgraded with expression pattern tracking - Fischer will sound much more varied!");
+        }
+        
+        if (oldVersion < 5) {
+            // Add emotional strategy learning table for adaptive learning
+            db.execSQL(CREATE_EMOTIONAL_STRATEGY_LEARNING_TABLE);
+            db.execSQL(CREATE_EMOTIONAL_STRATEGY_LEARNING_INDEX);
+            
+            Log.d(TAG, "🧠🎯 Database upgraded with emotional strategy learning - Masters will now adapt and learn optimal approaches!");
         }
     }
 

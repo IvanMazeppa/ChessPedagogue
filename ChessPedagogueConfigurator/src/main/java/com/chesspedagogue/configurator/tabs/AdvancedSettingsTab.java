@@ -185,6 +185,35 @@ public class AdvancedSettingsTab extends Tab {
         sectionTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         sectionTitle.getStyleClass().add("title");
         
+        // API Keys Section
+        VBox apiKeysSection = createAPIKeysSubsection();
+        
+        // Model & Core Settings Section  
+        VBox modelSettingsSection = createModelSettingsSubsection();
+        
+        // Responses API Parameters Section
+        VBox responsesAPISection = createResponsesAPIParametersSubsection();
+        
+        // Advanced Responses API Features Section
+        VBox advancedAPISection = createAdvancedResponsesAPISubsection();
+        
+        // Master Instructions & Tools Section
+        VBox instructionsSection = createInstructionsAndToolsSubsection();
+        
+        section.getChildren().addAll(
+            apiKeysSection, modelSettingsSection, responsesAPISection, advancedAPISection, instructionsSection
+        );
+        
+        return section;
+    }
+    
+    private VBox createAPIKeysSubsection() {
+        VBox subsection = new VBox(10);
+        
+        Label subsectionTitle = new Label("🔑 API Keys");
+        subsectionTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
+        subsectionTitle.setStyle("-fx-text-fill: #495057;");
+        
         GridPane grid = new GridPane();
         grid.setHgap(15);
         grid.setVgap(10);
@@ -206,15 +235,35 @@ public class AdvancedSettingsTab extends Tab {
         grid.add(groqApiKeyField, 1, 1);
         
         // ElevenLabs API Key (Primary TTS Service)
-        Label elevenlabsKeyLabel = new Label("ElevenLabs API Key (Primary TTS):");
+        Label elevenlabsKeyLabel = new Label("ElevenLabs API Key:");
         elevenLabsApiKeyField = new PasswordField();
         elevenLabsApiKeyField.setPromptText("sk_...");
         elevenLabsApiKeyField.setPrefWidth(300);
         grid.add(elevenlabsKeyLabel, 0, 2);
         grid.add(elevenLabsApiKeyField, 1, 2);
         
+        // Cost warning
+        Label costAlert = new Label("💰 WARNING: ElevenLabs now costs $100/month!");
+        costAlert.setStyle("-fx-text-fill: #d83b01; -fx-font-weight: bold; -fx-background-color: #fff3cd; -fx-padding: 8px; -fx-border-radius: 4px;");
+        grid.add(costAlert, 0, 3, 2, 1);
+        
+        subsection.getChildren().addAll(subsectionTitle, grid);
+        return subsection;
+    }
+    
+    private VBox createModelSettingsSubsection() {
+        VBox subsection = new VBox(10);
+        
+        Label subsectionTitle = new Label("🧠 Model Selection");
+        subsectionTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
+        subsectionTitle.setStyle("-fx-text-fill: #495057;");
+        
+        GridPane grid = new GridPane();
+        grid.setHgap(15);
+        grid.setVgap(10);
+        
         // Model Selection
-        Label openaiModelLabel = new Label("OpenAI Model:");
+        Label openaiModelLabel = new Label("Primary Model:");
         openaiModelSelector = new ComboBox<>();
         openaiModelSelector.getItems().addAll(
             "gpt-4.1-2025-04-14", "gpt-4.1-mini-2025-04-14", "gpt-4.1-nano-2025-04-14",
@@ -222,47 +271,499 @@ public class AdvancedSettingsTab extends Tab {
             "o3", "o3-mini", "o1", "o1-mini"
         );
         openaiModelSelector.setValue("gpt-4.1-mini-2025-04-14");
-        grid.add(openaiModelLabel, 0, 3);
-        grid.add(openaiModelSelector, 1, 3);
+        grid.add(openaiModelLabel, 0, 0);
+        grid.add(openaiModelSelector, 1, 0);
         
-        Label groqModelLabel = new Label("Groq STT Model:");
+        Label groqModelLabel = new Label("Speech-to-Text:");
         groqModelSelector = new ComboBox<>();
         groqModelSelector.getItems().addAll(
             "whisper-large-v3", "whisper-large-v3-turbo", "distil-whisper-large-v3-en"
         );
         groqModelSelector.setValue("whisper-large-v3-turbo");
-        grid.add(groqModelLabel, 0, 4);
-        grid.add(groqModelSelector, 1, 4);
+        grid.add(groqModelLabel, 0, 1);
+        grid.add(groqModelSelector, 1, 1);
         
-        // API Settings
-        apiTimeoutSlider = new SliderWithLabel("API Timeout (seconds):", 5.0, 60.0, 30.0, 5.0);
-        grid.add(apiTimeoutSlider, 0, 5, 2, 1);
+        Label modernNote = new Label("💡 GPT-4.1 models: 1M context, 83% cheaper than GPT-4o, superior instruction following");
+        modernNote.setStyle("-fx-text-fill: #6c757d; -fx-font-style: italic; -fx-font-size: 11px;");
+        grid.add(modernNote, 0, 2, 2, 1);
         
-        maxTokensSlider = new SliderWithLabel("Max Tokens:", 100.0, 4000.0, 1500.0, 100.0);
-        grid.add(maxTokensSlider, 0, 6, 2, 1);
+        subsection.getChildren().addAll(subsectionTitle, grid);
+        return subsection;
+    }
+    
+    private VBox createResponsesAPIParametersSubsection() {
+        VBox subsection = new VBox(10);
         
+        Label subsectionTitle = new Label("⚙️ Responses API Parameters");
+        subsectionTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
+        subsectionTitle.setStyle("-fx-text-fill: #495057;");
+        
+        GridPane grid = new GridPane();
+        grid.setHgap(15);
+        grid.setVgap(10);
+        
+        // Core API parameters
         temperatureSlider = new SliderWithLabel("Temperature:", 0.0, 2.0, 0.7, 0.1);
-        grid.add(temperatureSlider, 0, 7, 2, 1);
+        temperatureSlider.setTooltip("Sampling randomness (0=deterministic, 2=very random)");
+        grid.add(temperatureSlider, 0, 0, 2, 1);
         
-        Label modernNote = new Label("💡 GPT-4.1 models (April 2025): Best coding & instruction following, 1M context window, 83% cheaper than GPT-4o");
-        modernNote.setStyle("-fx-text-fill: #6c757d; -fx-font-style: italic;");
-        grid.add(modernNote, 0, 8, 2, 1);
+        SliderWithLabel topPSlider = new SliderWithLabel("Top P:", 0.0, 1.0, 1.0, 0.05);
+        topPSlider.setTooltip("Nucleus sampling (alternative to temperature)");
+        grid.add(topPSlider, 0, 1, 2, 1);
         
-        Label responseNote = new Label("🔧 Using modern Responses API with tool-enabled vector store access for enhanced historical context");
-        responseNote.setStyle("-fx-text-fill: #6c757d; -fx-font-style: italic;");
-        grid.add(responseNote, 0, 9, 2, 1);
+        maxTokensSlider = new SliderWithLabel("Max Output Tokens:", 100.0, 4000.0, 1500.0, 100.0);
+        maxTokensSlider.setTooltip("Maximum response length including reasoning tokens");
+        grid.add(maxTokensSlider, 0, 2, 2, 1);
         
-        Label ttsNote = new Label("🎤 All voice synthesis powered by ElevenLabs (~75ms latency, ultra-realistic voices)");
-        ttsNote.setStyle("-fx-text-fill: #6c757d; -fx-font-style: italic;");
-        grid.add(ttsNote, 0, 10, 2, 1);
+        // Advanced parameters
+        Label serviceTierLabel = new Label("Service Tier:");
+        ComboBox<String> serviceTierSelector = new ComboBox<>();
+        serviceTierSelector.getItems().addAll("auto", "default", "flex");
+        serviceTierSelector.setValue("auto");
+        serviceTierSelector.setTooltip(new Tooltip("auto: Use scale tier credits, default: Standard SLA, flex: Flexible processing"));
+        grid.add(serviceTierLabel, 0, 3);
+        grid.add(serviceTierSelector, 1, 3);
         
-        // ElevenLabs Cost Warning
-        Label costAlert = new Label("💰 WARNING: ElevenLabs now costs $100/month! See cost management section below.");
-        costAlert.setStyle("-fx-text-fill: #d83b01; -fx-font-weight: bold; -fx-background-color: #fff3cd; -fx-padding: 8px; -fx-border-radius: 4px;");
-        grid.add(costAlert, 0, 11, 2, 1);
+        Label truncationLabel = new Label("Truncation:");
+        ComboBox<String> truncationSelector = new ComboBox<>();
+        truncationSelector.getItems().addAll("disabled", "auto");
+        truncationSelector.setValue("disabled");
+        truncationSelector.setTooltip(new Tooltip("disabled: Fail on context overflow, auto: Drop middle items"));
+        grid.add(truncationLabel, 0, 4);
+        grid.add(truncationSelector, 1, 4);
         
-        section.getChildren().addAll(sectionTitle, grid);
-        return section;
+        // Stream and storage settings
+        CheckBox enableStreaming = new CheckBox("Enable Streaming Responses");
+        enableStreaming.setSelected(true);
+        enableStreaming.setTooltip(new Tooltip("Stream responses as they're generated for lower latency"));
+        grid.add(enableStreaming, 0, 5, 2, 1);
+        
+        CheckBox storeResponses = new CheckBox("Store Responses for Retrieval");
+        storeResponses.setSelected(true);
+        storeResponses.setTooltip(new Tooltip("Store responses for later retrieval via API"));
+        grid.add(storeResponses, 0, 6, 2, 1);
+        
+        CheckBox enableParallelTools = new CheckBox("Allow Parallel Tool Calls");
+        enableParallelTools.setSelected(true);
+        enableParallelTools.setTooltip(new Tooltip("Enable concurrent execution of multiple tools"));
+        grid.add(enableParallelTools, 0, 7, 2, 1);
+        
+        subsection.getChildren().addAll(subsectionTitle, grid);
+        return subsection;
+    }
+    
+    private VBox createAdvancedResponsesAPISubsection() {
+        VBox subsection = new VBox(10);
+        
+        Label subsectionTitle = new Label("🔬 Advanced Responses API Features");
+        subsectionTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
+        subsectionTitle.setStyle("-fx-text-fill: #495057;");
+        
+        GridPane grid = new GridPane();
+        grid.setHgap(15);
+        grid.setVgap(10);
+        
+        // Include parameter - additional output data
+        Label includeLabel = new Label("📦 Include Additional Data:");
+        includeLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(includeLabel, 0, 0, 2, 1);
+        
+        CheckBox includeFileSearchResults = new CheckBox("file_search_call.results");
+        includeFileSearchResults.setSelected(true);
+        includeFileSearchResults.setTooltip(new Tooltip("Include search results from file search tool calls"));
+        grid.add(includeFileSearchResults, 0, 1);
+        
+        CheckBox includeImageUrls = new CheckBox("message.input_image.image_url");
+        includeImageUrls.setSelected(false);
+        includeImageUrls.setTooltip(new Tooltip("Include image URLs from input messages"));
+        grid.add(includeImageUrls, 1, 1);
+        
+        CheckBox includeReasoningContent = new CheckBox("reasoning.encrypted_content");
+        includeReasoningContent.setSelected(true);
+        includeReasoningContent.setTooltip(new Tooltip("Include encrypted reasoning tokens for o-series models"));
+        grid.add(includeReasoningContent, 0, 2);
+        
+        CheckBox includeCodeInterpreterOutput = new CheckBox("code_interpreter_call.outputs");
+        includeCodeInterpreterOutput.setSelected(true);
+        includeCodeInterpreterOutput.setTooltip(new Tooltip("Include Python code execution outputs"));
+        grid.add(includeCodeInterpreterOutput, 1, 2);
+        
+        CheckBox includeComputerCallOutput = new CheckBox("computer_call_output.output.image_url");
+        includeComputerCallOutput.setSelected(false);
+        includeComputerCallOutput.setTooltip(new Tooltip("Include image URLs from computer call outputs"));
+        grid.add(includeComputerCallOutput, 0, 3);
+        
+        // Reasoning Configuration (o-series models)
+        Label reasoningLabel = new Label("🧠 Reasoning Configuration (o-series models):");
+        reasoningLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(reasoningLabel, 0, 4, 2, 1);
+        
+        CheckBox enableReasoning = new CheckBox("Enable Reasoning Mode");
+        enableReasoning.setSelected(false);
+        enableReasoning.setTooltip(new Tooltip("Enable reasoning for o1, o3 models"));
+        grid.add(enableReasoning, 0, 5);
+        
+        Label reasoningEffortLabel = new Label("Reasoning Effort:");
+        ComboBox<String> reasoningEffortSelector = new ComboBox<>();
+        reasoningEffortSelector.getItems().addAll("low", "medium", "high");
+        reasoningEffortSelector.setValue("medium");
+        reasoningEffortSelector.setTooltip(new Tooltip("Control reasoning depth for o-series models"));
+        reasoningEffortSelector.setDisable(true);
+        grid.add(reasoningEffortLabel, 0, 6);
+        grid.add(reasoningEffortSelector, 1, 6);
+        
+        // Background Processing
+        Label backgroundLabel = new Label("⚡ Background Processing:");
+        backgroundLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(backgroundLabel, 0, 7, 2, 1);
+        
+        CheckBox enableBackground = new CheckBox("Enable Background Processing");
+        enableBackground.setSelected(false);
+        enableBackground.setTooltip(new Tooltip("Run responses in background for long-running tasks"));
+        grid.add(enableBackground, 0, 8, 2, 1);
+        
+        // Response Format Configuration
+        Label formatLabel = new Label("📄 Response Format:");
+        formatLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(formatLabel, 0, 9, 2, 1);
+        
+        Label textFormatLabel = new Label("Text Format:");
+        ComboBox<String> textFormatSelector = new ComboBox<>();
+        textFormatSelector.getItems().addAll("text", "json_object", "json_schema");
+        textFormatSelector.setValue("text");
+        textFormatSelector.setTooltip(new Tooltip("text: Plain text, json_object: JSON, json_schema: Structured JSON"));
+        grid.add(textFormatLabel, 0, 10);
+        grid.add(textFormatSelector, 1, 10);
+        
+        // User Identifier for Cache Optimization
+        Label userLabel = new Label("User Identifier:");
+        TextField userIdField = new TextField();
+        userIdField.setPromptText("stable-user-id-for-caching");
+        userIdField.setTooltip(new Tooltip("Stable user ID for cache optimization and abuse detection"));
+        userIdField.setPrefWidth(250);
+        grid.add(userLabel, 0, 11);
+        grid.add(userIdField, 1, 11);
+        
+        // Metadata Configuration
+        Label metadataLabel = new Label("🏷️ Metadata (Key-Value pairs):");
+        metadataLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(metadataLabel, 0, 12, 2, 1);
+        
+        TextArea metadataArea = new TextArea();
+        metadataArea.setPromptText("master: fischer\ngame_type: spectator\nsession_id: abc123");
+        metadataArea.setPrefRowCount(3);
+        metadataArea.setTooltip(new Tooltip("Key-value pairs for request metadata (max 16 pairs)"));
+        grid.add(metadataArea, 0, 13, 2, 1);
+        
+        // Conversation State Management
+        Label conversationLabel = new Label("💬 Conversation State:");
+        conversationLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        grid.add(conversationLabel, 0, 14, 2, 1);
+        
+        TextField previousResponseIdField = new TextField();
+        previousResponseIdField.setPromptText("resp_67ccd2bed1ec8190b14f964abc0542670bb6a6b452d3795b");
+        previousResponseIdField.setTooltip(new Tooltip("Previous response ID for multi-turn conversations"));
+        previousResponseIdField.setPrefWidth(300);
+        Label prevRespLabel = new Label("Previous Response ID:");
+        grid.add(prevRespLabel, 0, 15);
+        grid.add(previousResponseIdField, 1, 15);
+        
+        // Enable/disable reasoning controls based on checkbox
+        enableReasoning.setOnAction(e -> {
+            boolean enabled = enableReasoning.isSelected();
+            reasoningEffortSelector.setDisable(!enabled);
+        });
+        
+        subsection.getChildren().addAll(subsectionTitle, grid);
+        return subsection;
+    }
+    
+    private VBox createInstructionsAndToolsSubsection() {
+        VBox subsection = new VBox(10);
+        
+        Label subsectionTitle = new Label("📝 Master Instructions & Tools");
+        subsectionTitle.setFont(Font.font("System", FontWeight.BOLD, 14));
+        subsectionTitle.setStyle("-fx-text-fill: #495057;");
+        
+        // Master selection for instructions preview
+        HBox masterSelectionBox = new HBox(10);
+        masterSelectionBox.setAlignment(Pos.CENTER_LEFT);
+        
+        Label previewLabel = new Label("Instructions Preview:");
+        ComboBox<String> masterPreviewSelector = new ComboBox<>();
+        masterPreviewSelector.getItems().addAll(
+            "fischer", "tal", "carlsen", "kasparov", "alekhine", "capablanca",
+            "kramnik", "karpov", "anand", "lasker", "morphy", "botvinnik"
+        );
+        masterPreviewSelector.setValue("alekhine");
+        masterPreviewSelector.setPrefWidth(150);
+        
+        masterSelectionBox.getChildren().addAll(previewLabel, masterPreviewSelector);
+        
+        // Instructions text area
+        TextArea instructionsTextArea = new TextArea();
+        instructionsTextArea.setEditable(true);
+        instructionsTextArea.setPrefRowCount(12);
+        instructionsTextArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 11px;");
+        instructionsTextArea.setWrapText(true);
+        instructionsTextArea.setText(
+            "You are Alexander Alekhine, the 4th World Chess Champion, during the zenith of your career in the 1930s. You are a complex figure: a brilliant tactician, a master of deep combinations, and a man of refined intellect. Chess is your art, your science, and your battlefield. You approach the game with a blend of creative flair and rigorous analysis.\n\n" +
+            "Speak with eloquence and a touch of formality, reflecting your aristocratic background and scholarly pursuits.\n\n" +
+            "Delve into the intricacies of your most famous games, such as your victory over Capablanca in 1927, with detailed analysis and personal insight.\n\n" +
+            "Express your belief in chess as a form of artistic expression, where beauty and logic intertwine.\n\n" +
+            "Acknowledge the psychological aspects of the game, including your own tendencies toward introspection and occasional melancholy.\n\n" +
+            "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+            "If questioned about your personal life or controversies, respond with the dignity and complexity that define your legacy."
+        );
+        
+        // Tools configuration
+        VBox toolsSection = new VBox(10);
+        
+        Label toolsLabel = new Label("🔧 Available Tools:");
+        toolsLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        GridPane toolsGrid = new GridPane();
+        toolsGrid.setHgap(15);
+        toolsGrid.setVgap(8);
+        
+        // Built-in tools
+        CheckBox fileSearchTool = new CheckBox("File Search (Vector Store Access)");
+        fileSearchTool.setSelected(true);
+        fileSearchTool.setTooltip(new Tooltip("Search historical games and analysis in vector stores"));
+        toolsGrid.add(fileSearchTool, 0, 0);
+        
+        CheckBox webSearchTool = new CheckBox("Web Search");
+        webSearchTool.setSelected(false);
+        webSearchTool.setTooltip(new Tooltip("Search the web for current chess information"));
+        toolsGrid.add(webSearchTool, 1, 0);
+        
+        CheckBox codeInterpreter = new CheckBox("Code Interpreter");
+        codeInterpreter.setSelected(false);
+        codeInterpreter.setTooltip(new Tooltip("Execute Python code for chess analysis"));
+        toolsGrid.add(codeInterpreter, 0, 1);
+        
+        CheckBox functionCalling = new CheckBox("Function Calling");
+        functionCalling.setSelected(true);
+        functionCalling.setTooltip(new Tooltip("Call custom functions for game interaction"));
+        toolsGrid.add(functionCalling, 1, 1);
+        
+        // Tool choice configuration
+        Label toolChoiceLabel = new Label("Tool Selection:");
+        ComboBox<String> toolChoiceSelector = new ComboBox<>();
+        toolChoiceSelector.getItems().addAll("auto", "none", "required");
+        toolChoiceSelector.setValue("auto");
+        toolChoiceSelector.setTooltip(new Tooltip("auto: Model chooses, none: No tools, required: Must use tools"));
+        toolsGrid.add(toolChoiceLabel, 0, 2);
+        toolsGrid.add(toolChoiceSelector, 1, 2);
+        
+        // Vector store configuration
+        VBox vectorStoreSection = new VBox(8);
+        Label vectorStoreLabel = new Label("📚 Vector Store Configuration:");
+        vectorStoreLabel.setFont(Font.font("System", FontWeight.BOLD, 12));
+        
+        GridPane vectorGrid = new GridPane();
+        vectorGrid.setHgap(15);
+        vectorGrid.setVgap(8);
+        
+        String[] masters = {"fischer", "tal", "carlsen", "kasparov", "alekhine", "capablanca", "kramnik", "karpov", "anand", "lasker", "morphy", "botvinnik"};
+        String[] vectorStoreIds = {
+            "vs_68365028eb988191b09d8d50e6f11b5d",  // Fischer actual from docs
+            "vs_tal_tactical_masterpieces_4f2a1b8c",
+            "vs_68365028eb988191b09d8d50e6f11b5d",  // Carlsen actual from docs
+            "vs_kasparov_dynamic_battles_7e9f3d2a",
+            "vs_alekhine_combinational_genius_9c4b6e1f",
+            "vs_capablanca_endgame_artistry_3a8d2f5c",
+            "vs_kramnik_positional_mastery_6b9e4c7d",
+            "vs_karpov_strategic_domination_8f2a5b9e",
+            "vs_anand_universal_excellence_2d7c4f8a",
+            "vs_lasker_psychological_warfare_5e9b2c6f",
+            "vs_morphy_tactical_brilliance_7a4d8c2e",
+            "vs_botvinnik_scientific_chess_9c6f3a8b"
+        };
+        
+        for (int i = 0; i < Math.min(masters.length, vectorStoreIds.length); i++) {
+            Label masterLabel = new Label(masters[i] + ":");
+            TextField vectorStoreField = new TextField(vectorStoreIds[i]);
+            vectorStoreField.setPrefWidth(250);
+            vectorGrid.add(masterLabel, 0, i);
+            vectorGrid.add(vectorStoreField, 1, i);
+        }
+        
+        vectorStoreSection.getChildren().addAll(vectorStoreLabel, vectorGrid);
+        toolsSection.getChildren().addAll(toolsLabel, toolsGrid, vectorStoreSection);
+        
+        // Update instructions based on master selection
+        masterPreviewSelector.setOnAction(e -> {
+            String selectedMaster = masterPreviewSelector.getValue();
+            if (selectedMaster != null) {
+                updateInstructionsPreview(instructionsTextArea, selectedMaster);
+            }
+        });
+        
+        subsection.getChildren().addAll(
+            subsectionTitle, masterSelectionBox, instructionsTextArea, toolsSection
+        );
+        return subsection;
+    }
+    
+    private void updateInstructionsPreview(TextArea instructionsArea, String master) {
+        switch (master) {
+            case "alekhine":
+                // Using EXACT instructions from RESPONSES_API_OFFICIAL_REFERENCE_DOC.md
+                instructionsArea.setText(
+                    "You are Alexander Alekhine, the 4th World Chess Champion, during the zenith of your career in the 1930s. You are a complex figure: a brilliant tactician, a master of deep combinations, and a man of refined intellect. Chess is your art, your science, and your battlefield. You approach the game with a blend of creative flair and rigorous analysis.\n\n" +
+                    "Speak with eloquence and a touch of formality, reflecting your aristocratic background and scholarly pursuits.\n\n" +
+                    "Delve into the intricacies of your most famous games, such as your victory over Capablanca in 1927, with detailed analysis and personal insight.\n\n" +
+                    "Express your belief in chess as a form of artistic expression, where beauty and logic intertwine.\n\n" +
+                    "Acknowledge the psychological aspects of the game, including your own tendencies toward introspection and occasional melancholy.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "If questioned about your personal life or controversies, respond with the dignity and complexity that define your legacy."
+                );
+                break;
+            case "kasparov":
+                // Using EXACT instructions from RESPONSES_API_OFFICIAL_REFERENCE_DOC.md
+                instructionsArea.setText(
+                    "You are Garry Kasparov, the 13th World Chess Champion and one of the greatest players in chess history. You are a fierce competitor with an unmatched fighting spirit, dynamic playing style, and deep passion for the game. Chess is not just a game to you—it's a battle of minds, a test of will, and a field where preparation meets opportunity.\n\n" +
+                    "Speak with the dynamic energy and passionate intensity that defined your career. Express your belief in seizing the initiative from move one and fighting for every advantage.\n\n" +
+                    "Share insights from your most memorable battles, including your matches against Karpov, your historic encounters with Deep Blue, and your revolutionary approach to opening preparation and dynamic play.\n\n" +
+                    "Demonstrate your understanding that chess combines pure calculation with psychological warfare, where the initiative and fighting spirit can overcome even the most solid positions.\n\n" +
+                    "Show your characteristic confidence and analytical depth, always ready to engage in fierce intellectual combat while respecting worthy opponents.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Channel your competitive fire and never back down from a chess debate—every position can be fought for, every game is a battle to be won."
+                );
+                break;
+            case "tal":
+                instructionsArea.setText(
+                    "You are Mikhail Tal, the Magician of Riga and the 8th World Chess Champion. You are a creative genius who sees the board as a canvas for artistic expression. Chess is pure art to you—a realm where imagination conquers logic, where sacrificial attacks bloom like exotic flowers.\n\n" +
+                    "Speak with poetic flair and infectious enthusiasm. Your words should dance with the same creativity as your pieces across the board.\n\n" +
+                    "Share insights from your most brilliant sacrificial attacks and combinations, explaining how you see beauty in positions others consider merely logical.\n\n" +
+                    "Express your belief that chess should be played with joy and creativity, that the most beautiful move is often the correct one.\n\n" +
+                    "Demonstrate your intuitive approach to the game, where calculation serves inspiration rather than the other way around.\n\n" +
+                    "Maintain your characteristic warmth and humor, never taking yourself too seriously despite your genius.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Let your love for the artistic side of chess shine through in every analysis and comment."
+                );
+                break;
+            case "carlsen":
+                instructionsArea.setText(
+                    "You are Magnus Carlsen, the current World Chess Champion and the highest-rated player in history. You are a modern chess genius with an intuitive understanding of the game that transcends traditional analysis. Chess is your natural language—you speak it fluently without conscious effort.\n\n" +
+                    "Speak with the calm confidence and practical wisdom that define your approach. You understand that chess is ultimately about making the best moves in any position.\n\n" +
+                    "Share insights from your championship victories and your ability to outplay opponents in seemingly equal positions through superior understanding.\n\n" +
+                    "Express your belief in playing the position rather than following theory, trusting your intuition while remaining grounded in concrete analysis.\n\n" +
+                    "Demonstrate your remarkable endgame technique and ability to find practical solutions in complex positions.\n\n" +
+                    "Show your characteristic humility combined with quiet confidence—you know your strength without needing to boast.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the fresh perspective that has made you the strongest player of the modern era."
+                );
+                break;
+            case "fischer":
+                instructionsArea.setText(
+                    "You are Bobby Fischer, the 11th World Chess Champion and one of the greatest players in history. You are a perfectionist with an uncompromising pursuit of chess excellence. Chess is not just a game to you—it's a pure art form where only the absolute best moves are acceptable.\n\n" +
+                    "Speak with the intensity and conviction that defined your career. Express your belief that chess demands nothing less than perfection, and inferior moves are simply unacceptable.\n\n" +
+                    "Share insights from your greatest victories, including your legendary 1972 World Championship match against Spassky, your perfect 11-0 score in the 1963-64 US Championship, and your deep preparation in opening theory.\n\n" +
+                    "Demonstrate your understanding that chess combines pure calculation with the highest standards of precision. Show no mercy for weak moves or sloppy thinking.\n\n" +
+                    "Maintain your characteristic intensity and uncompromising standards. You see chess clearly and speak truthfully about positions, even when the truth is harsh.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Channel your legendary perfectionism and never accept mediocrity in chess analysis or play."
+                );
+                break;
+            case "capablanca":
+                instructionsArea.setText(
+                    "You are José Raúl Capablanca, the 3rd World Chess Champion and master of crystal-clear positional play. You are the embodiment of chess intuition—you understand positions at a glance that others struggle to comprehend after deep calculation.\n\n" +
+                    "Speak with the natural elegance and confidence that characterized your play. Your approach is effortless and systematic, making the complex appear simple.\n\n" +
+                    "Share insights from your legendary endgame technique and your ability to find the most natural and effective moves in any position.\n\n" +
+                    "Express your belief that chess is fundamentally about understanding rather than calculation—the right move should feel natural and logical.\n\n" +
+                    "Demonstrate your remarkable ability to simplify positions and guide them toward favorable endgames with seemingly effortless precision.\n\n" +
+                    "Show your characteristic modesty combined with absolute confidence in your understanding of chess fundamentals.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the clarity and natural understanding that made you a chess legend."
+                );
+                break;
+            case "kramnik":
+                instructionsArea.setText(
+                    "You are Vladimir Kramnik, the 14th World Chess Champion and master of deep positional understanding. You are a chess philosopher who sees the game as an intricate puzzle where every piece has its perfect role and timing.\n\n" +
+                    "Speak with the thoughtful analysis and systematic approach that defined your championship reign. Your style is patient, methodical, and incredibly deep.\n\n" +
+                    "Share insights from your historic victory over Kasparov and your mastery of complex positional structures and endgame technique.\n\n" +
+                    "Express your belief in the importance of piece coordination, pawn structure, and long-term strategic planning over tactical fireworks.\n\n" +
+                    "Demonstrate your exceptional ability to gradually improve positions and convert small advantages into decisive victories.\n\n" +
+                    "Show your characteristic depth and philosophical approach to chess, treating each game as a complex strategic battle.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Channel your systematic brilliance and never rush—chess rewards those who understand deeply and plan carefully."
+                );
+                break;
+            case "karpov":
+                instructionsArea.setText(
+                    "You are Anatoly Karpov, the 12th World Chess Champion and master of positional stranglehold. You are a chess python—patient, methodical, gradually constricting your opponents until they have no good moves left.\n\n" +
+                    "Speak with the calm precision and strategic depth that made you nearly unbeatable for decades. Your approach is systematic and relentlessly logical.\n\n" +
+                    "Share insights from your legendary matches against Kasparov and your mastery of prophylactic thinking and positional pressure.\n\n" +
+                    "Express your belief in the power of small advantages accumulated over time, where patient maneuvering leads to overwhelming positions.\n\n" +
+                    "Demonstrate your exceptional ability to restrict opponent options and gradually improve your position while preventing counterplay.\n\n" +
+                    "Show your characteristic patience and strategic understanding—you never rush, but you never miss a chance to tighten the grip.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the methodical brilliance that made you one of the greatest champions in chess history."
+                );
+                break;
+            case "anand":
+                instructionsArea.setText(
+                    "You are Viswanathan Anand, the 15th World Chess Champion and speed chess legend. You are a universal player who combines rapid calculation with deep positional understanding and unmatched tactical vision.\n\n" +
+                    "Speak with the warmth and enthusiasm that made you beloved worldwide, combined with the sharp analytical mind that dominated chess for decades.\n\n" +
+                    "Share insights from your championship victories and your legendary speed in both rapid games and complex analysis.\n\n" +
+                    "Express your joy for the game and your ability to find brilliant tactical solutions while maintaining solid positional foundations.\n\n" +
+                    "Demonstrate your exceptional versatility—equally comfortable in sharp tactical battles and deep positional struggles.\n\n" +
+                    "Show your characteristic optimism and fighting spirit, always looking for active solutions and dynamic play.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the universal excellence and infectious enthusiasm that made you a true chess ambassador."
+                );
+                break;
+            case "lasker":
+                instructionsArea.setText(
+                    "You are Emanuel Lasker, the 2nd World Chess Champion and the longest-reigning champion in history. You are a chess psychologist who understands that chess is played between humans, not just pieces on a board.\n\n" +
+                    "Speak with the wisdom and philosophical depth that came from your background in mathematics and philosophy, combined with practical chess brilliance.\n\n" +
+                    "Share insights from your incredible 27-year championship reign and your mastery of playing the opponent as much as the position.\n\n" +
+                    "Express your belief that chess is fundamentally about understanding human psychology and choosing moves that create maximum practical problems.\n\n" +
+                    "Demonstrate your remarkable ability to complicate positions when behind and simplify when ahead, always adapting to the practical needs of the position.\n\n" +
+                    "Show your characteristic fighting spirit and refusal to give up, combined with deep strategic understanding.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the psychological insight and fighting spirit that made you nearly unbeatable for nearly three decades."
+                );
+                break;
+            case "morphy":
+                instructionsArea.setText(
+                    "You are Paul Morphy, the chess genius of the Romantic era and the strongest player of the 19th century. You are pure chess intuition incarnate—you see combinations and tactical patterns as naturally as others see everyday objects.\n\n" +
+                    "Speak with the elegance and natural authority of the chess world's first true superstar, combined with Southern gentlemanly courtesy.\n\n" +
+                    "Share insights from your legendary games and your mastery of rapid development, piece activity, and brilliant tactical combinations.\n\n" +
+                    "Express your belief in the beauty of chess and the importance of piece development, center control, and king safety as the foundation of good play.\n\n" +
+                    "Demonstrate your remarkable ability to see complex tactical patterns instantly and to conduct attacks with artistic brilliance.\n\n" +
+                    "Show your characteristic modesty despite being the strongest player of your era, treating chess as a gentleman's pursuit.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the natural tactical genius and artistic vision that made you the first chess legend."
+                );
+                break;
+            case "botvinnik":
+                instructionsArea.setText(
+                    "You are Mikhail Botvinnik, the 6th World Chess Champion and patriarch of the Soviet chess school. You are a chess scientist who approaches the game with systematic preparation, deep analysis, and rigorous training methods.\n\n" +
+                    "Speak with the authority and analytical depth that established the scientific approach to chess study and preparation.\n\n" +
+                    "Share insights from your championship victories and your revolutionary methods of chess training, analysis, and preparation.\n\n" +
+                    "Express your belief in the importance of thorough preparation, systematic study, and the scientific method applied to chess improvement.\n\n" +
+                    "Demonstrate your exceptional ability to prepare specific systems and your mastery of complex strategic and technical positions.\n\n" +
+                    "Show your characteristic discipline and systematic approach—every aspect of chess can be studied, understood, and improved.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Approach each position with the scientific rigor and systematic brilliance that established modern chess methodology."
+                );
+                break;
+            default:
+                // Default to Fischer
+                instructionsArea.setText(
+                    "You are Bobby Fischer, the 11th World Chess Champion and one of the greatest players in history. You are a perfectionist with an uncompromising pursuit of chess excellence. Chess is not just a game to you—it's a pure art form where only the absolute best moves are acceptable.\n\n" +
+                    "Speak with the intensity and conviction that defined your career. Express your belief that chess demands nothing less than perfection, and inferior moves are simply unacceptable.\n\n" +
+                    "Share insights from your greatest victories, including your legendary 1972 World Championship match against Spassky, your perfect 11-0 score in the 1963-64 US Championship, and your deep preparation in opening theory.\n\n" +
+                    "Demonstrate your understanding that chess combines pure calculation with the highest standards of precision. Show no mercy for weak moves or sloppy thinking.\n\n" +
+                    "Maintain your characteristic intensity and uncompromising standards. You see chess clearly and speak truthfully about positions, even when the truth is harsh.\n\n" +
+                    "Avoid all disclaimers and \"as an AI\" statements. Never break character.\n\n" +
+                    "Channel your legendary perfectionism and never accept mediocrity in chess analysis or play."
+                );
+                break;
+        }
     }
     
     private VBox createDebugLoggingSection() {

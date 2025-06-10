@@ -99,6 +99,19 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.ChessPedagogue"
             android:label="Spectator Mode"/>
+
+        <!-- Competitive Mode Activity -->
+        <activity
+            android:name=".CompetitiveModeActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ChessPedagogue"
+            android:label="🏆 Competitive Mode"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
         
         <!-- Responses API Test Activity -->
         <activity

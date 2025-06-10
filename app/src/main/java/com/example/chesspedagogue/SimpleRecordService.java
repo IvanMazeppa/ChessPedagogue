@@ -1249,11 +1249,15 @@ public class SimpleRecordService extends Service {
     }
 
     /**
-     * Gets the selected chess coach profile
+     * Gets the selected chess coach profile - FIXED to use correct SharedPreferences
      */
     private String getSelectedChessMaster() {
-        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
-        return prefs.getString("selected_master", "tal");
+        // CRITICAL: Use the same SharedPreferences that FineTunedModelManager uses
+        SharedPreferences prefs = getSharedPreferences("ChessFineTunedModels", MODE_PRIVATE);
+        String master = prefs.getString("selected_master", "tal");
+        
+        Log.d(TAG, "🔍 SimpleRecordService getting master from SharedPreferences: " + master);
+        return master;
     }
 
     private String getApiKeyFromPreferences() {
