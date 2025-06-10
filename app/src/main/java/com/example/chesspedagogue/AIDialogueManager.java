@@ -29,7 +29,7 @@ public class AIDialogueManager {
     private static final String TAG = "AIDialogueManager";
 
     private final Context context;
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final Handler mainHandler;
     private final OpenAIService openAIService;
     private final FineTunedModelManager modelManager;
@@ -98,7 +98,7 @@ public class AIDialogueManager {
 
     public AIDialogueManager(Context context) {
         this.context = context.getApplicationContext();
-        this.executorService = Executors.newCachedThreadPool();
+        this.executorService = createManagedExecutorService();
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
@@ -121,6 +121,49 @@ public class AIDialogueManager {
         TTSServiceManager.setUsageContext(context, "spectator_mode");
 
         Log.d(TAG, "🎭 ENHANCED AI Dialogue Manager initialized with emotional intelligence!");
+    }
+    
+    /**
+     * Create a managed executor service with proper lifecycle handling
+     */
+    private ExecutorService createManagedExecutorService() {
+        ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable, "AIDialogue-" + System.currentTimeMillis());
+            thread.setDaemon(true); // Allow JVM to exit even if threads are running
+            thread.setUncaughtExceptionHandler((t, e) -> {
+                Log.e(TAG, "Uncaught exception in AIDialogue thread: " + t.getName(), e);
+            });
+            return thread;
+        });
+        
+        Log.d(TAG, "✅ Created managed executor service for AIDialogueManager");
+        return executor;
+    }
+    
+    /**
+     * Check if executor service is available and healthy
+     */
+    private boolean isExecutorHealthy() {
+        if (executorService == null) {
+            Log.e(TAG, "❌ ExecutorService is null!");
+            return false;
+        }
+        
+        if (executorService.isShutdown()) {
+            Log.e(TAG, "❌ ExecutorService is shutdown - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        if (executorService.isTerminated()) {
+            Log.e(TAG, "❌ ExecutorService is terminated - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        return true;
     }
 
     /**
@@ -284,13 +327,16 @@ public class AIDialogueManager {
             isSpeaking = true;
             currentlySpeaking = speaker;
 
-            // Set master preference for TTS
+            // Set master preference for TTS - FIXED: Update BOTH SharedPreferences stores
             SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            SharedPreferences fineTunedPrefs = context.getSharedPreferences("ChessFineTunedModels", Context.MODE_PRIVATE);
+            
             String currentMaster = masterPrefs.getString("selected_master", "tal");
+            String currentFineTunedMaster = fineTunedPrefs.getString("selected_master", "tal");
 
-            SharedPreferences.Editor editor = masterPrefs.edit();
-            editor.putString("selected_master", speaker.toLowerCase());
-            editor.apply();
+            // Temporarily set speaker in BOTH stores for TTS
+            masterPrefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
+            fineTunedPrefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
 
             OpenAITTSService.OnSpeechCompletedListener enhancedCallback = new OpenAITTSService.OnSpeechCompletedListener() {
                 @Override
@@ -298,10 +344,9 @@ public class AIDialogueManager {
                     // CRITICAL FIX: Always clean up TTS state
                     Log.d(TAG, "✅ " + speaker + " finished speaking");
 
-                    // Restore original master selection
-                    SharedPreferences.Editor restoreEditor = masterPrefs.edit();
-                    restoreEditor.putString("selected_master", currentMaster);
-                    restoreEditor.apply();
+                    // Restore original master selection in BOTH stores
+                    masterPrefs.edit().putString("selected_master", currentMaster).apply();
+                    fineTunedPrefs.edit().putString("selected_master", currentFineTunedMaster).apply();
 
                     isSpeaking = false;
                     currentlySpeaking = "";
@@ -398,12 +443,16 @@ public class AIDialogueManager {
                 lastPlayerEvaluations.put(speaker.toLowerCase(), currentEvaluation);
             }
 
+            // FIXED: Update BOTH SharedPreferences stores for consistency
             SharedPreferences masterPrefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            SharedPreferences fineTunedPrefs = context.getSharedPreferences("ChessFineTunedModels", Context.MODE_PRIVATE);
+            
             String currentMaster = masterPrefs.getString("selected_master", "tal");
+            String currentFineTunedMaster = fineTunedPrefs.getString("selected_master", "tal");
 
-            SharedPreferences.Editor editor = masterPrefs.edit();
-            editor.putString("selected_master", speaker.toLowerCase());
-            editor.apply();
+            // Temporarily set speaker in BOTH stores for TTS
+            masterPrefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
+            fineTunedPrefs.edit().putString("selected_master", speaker.toLowerCase()).apply();
 
             // 🎭 NEW: Use EmotionalIntelligenceManager for sophisticated emotional analysis
             EmotionalIntelligenceManager emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
@@ -415,10 +464,9 @@ public class AIDialogueManager {
                 public void onSpeechCompleted() {
                     Log.d(TAG, "🎭 " + speaker + " finished emotional speech (" + emotionalContext + ")");
 
-                    // Restore original master selection
-                    SharedPreferences.Editor restoreEditor = masterPrefs.edit();
-                    restoreEditor.putString("selected_master", currentMaster);
-                    restoreEditor.apply();
+                    // Restore original master selection in BOTH stores
+                    masterPrefs.edit().putString("selected_master", currentMaster).apply();
+                    fineTunedPrefs.edit().putString("selected_master", currentFineTunedMaster).apply();
 
                     isSpeaking = false;
                     currentlySpeaking = "";

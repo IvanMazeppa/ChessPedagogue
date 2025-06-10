@@ -35,7 +35,8 @@
         <!-- MainActivity -->
         <activity
             android:name=".MainActivity"
-            android:exported="false">
+            android:exported="false"
+            android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
@@ -44,12 +45,14 @@
         <!-- Game Analysis Activity -->
         <activity
             android:name=".GameAnalysisActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <!-- Chess Conversation Activity -->
         <activity
             android:name=".ChessConversationActivity"
             android:label="Chess Coach"
+            android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

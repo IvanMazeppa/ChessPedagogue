@@ -105,7 +105,8 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 // 🎭 Initialize Phase 2 emotional complexity system
                 initializePhase2EmotionalSystem();
                 
-                startSpectatorGame();
+                // ✋ Auto-start disabled - user can manually start spectator games
+                // startSpectatorGame();
 
             } else {
                 Log.e(TAG, "❌ Failed to initialize components");

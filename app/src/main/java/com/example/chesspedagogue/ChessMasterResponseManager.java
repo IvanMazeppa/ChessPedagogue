@@ -41,7 +41,7 @@ public class ChessMasterResponseManager {
     private final Context context;
     private final OpenAIService openAIService;
     private final FineTunedModelManager modelManager;
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final OkHttpClient httpClient;
     private final Handler mainHandler;
 
@@ -88,9 +88,52 @@ public class ChessMasterResponseManager {
         this.context = context.getApplicationContext();
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
-        this.executorService = Executors.newCachedThreadPool();
+        this.executorService = createManagedExecutorService();
         this.httpClient = openAIService.getHttpClient();
         this.mainHandler = new Handler(Looper.getMainLooper());
+    }
+    
+    /**
+     * Create a managed executor service with proper lifecycle handling
+     */
+    private ExecutorService createManagedExecutorService() {
+        ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable, "ChessMasterResponse-" + System.currentTimeMillis());
+            thread.setDaemon(true); // Allow JVM to exit even if threads are running
+            thread.setUncaughtExceptionHandler((t, e) -> {
+                Log.e(TAG, "Uncaught exception in executor thread: " + t.getName(), e);
+            });
+            return thread;
+        });
+        
+        Log.d(TAG, "✅ Created managed executor service for ChessMasterResponseManager");
+        return executor;
+    }
+    
+    /**
+     * Check if executor service is available and healthy
+     */
+    private boolean isExecutorHealthy() {
+        if (executorService == null) {
+            Log.e(TAG, "❌ ExecutorService is null!");
+            return false;
+        }
+        
+        if (executorService.isShutdown()) {
+            Log.e(TAG, "❌ ExecutorService is shutdown - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        if (executorService.isTerminated()) {
+            Log.e(TAG, "❌ ExecutorService is terminated - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        return true;
     }
 
     public static synchronized ChessMasterResponseManager getInstance(Context context) {
@@ -104,7 +147,14 @@ public class ChessMasterResponseManager {
      * Create a new response session for a chess master
      */
     public void createResponseSession(String masterName, String gameContext, ResponseCallback callback) {
-        executorService.execute(() -> {
+        if (!isExecutorHealthy()) {
+            Log.e(TAG, "❌ Executor not healthy, cannot create session");
+            callback.onError("Executor service not available");
+            return;
+        }
+        
+        try {
+            executorService.execute(() -> {
             try {
                 // For Responses API, we don't need assistant IDs
                 // Instead, we'll use the master's personality in the input
@@ -122,7 +172,11 @@ public class ChessMasterResponseManager {
                 Log.e(TAG, "Error creating response session", e);
                 callback.onError("Failed to create session: " + e.getMessage());
             }
-        });
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to submit task to executor", e);
+            callback.onError("Executor service error: " + e.getMessage());
+        }
     }
 
     /**
@@ -134,8 +188,15 @@ public class ChessMasterResponseManager {
             Log.e(TAG, "❌ sendMessage called with null callback for session: " + sessionId);
             return;
         }
+        
+        if (!isExecutorHealthy()) {
+            Log.e(TAG, "❌ Executor not healthy for sendMessage");
+            callback.onError("Executor service not available for message sending");
+            return;
+        }
 
-        executorService.execute(() -> {
+        try {
+            executorService.execute(() -> {
             ResponseSession session = activeSessions.get(sessionId);
             if (session == null) {
                 Log.e(TAG, "❌ Invalid session ID: " + sessionId + " (available sessions: " + activeSessions.keySet() + ")");
@@ -199,7 +260,11 @@ public class ChessMasterResponseManager {
                 Log.e(TAG, "Error sending message", e);
                 callback.onError("Failed to send message: " + e.getMessage());
             }
-        });
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to submit message task to executor", e);
+            callback.onError("Executor service error during message sending: " + e.getMessage());
+        }
     }
 
     /**
@@ -502,6 +567,10 @@ public class ChessMasterResponseManager {
                 return "asst_TTzxbfvJQz3e80FetQblJ0Gl";
             case "anand":
                 return "asst_3PUe4Mra1zfY1VEfcDxF0xa9";
+            case "alekhine":
+                return "asst_wnshRkbnaca2vkRxYqYZDcLu";
+            case "kasparov":
+                return "asst_e6coEccRgsWqzfwsQG1xTwTs";
             default:
                 // For masters without assistants, return null to use regular completion
                 return null;
@@ -727,6 +796,13 @@ public class ChessMasterResponseManager {
                 prompt.append("or encourage learning ('Let's see what we can discover together'). ");
                 prompt.append("Be friendly, insightful, encouraging, and occasionally show your trademark wit.");
                 break;
+            case "alekhine":
+                prompt.append("You are Alexander Alekhine, 4th World Champion known for brilliant tactics. ");
+                prompt.append("Chess is art - find hidden beauty in positions. ");
+                prompt.append(forbiddenPhrases);
+                prompt.append("INSTEAD: 'Beautiful tactical ideas here!' or 'Artistic potential in this position!' ");
+                prompt.append("Be intellectually sophisticated but concise.");
+                break;
             default:
                 prompt.append("You are a chess master with deep understanding of the game. ");
                 prompt.append("Share your insights with wisdom and expertise. ");
@@ -754,6 +830,10 @@ public class ChessMasterResponseManager {
                 return "vs_68365028eb988191b09d8d50e6f11b5d";
             case "anand":
                 return "vs_683a6d79f3f881918134880655179275";
+            case "alekhine":
+                return "vs_683a6d79f3f881918134880655179275"; // Alekhine vector store
+            case "kasparov":
+                return null; // Kasparov vector store not yet configured
             default:
                 return null;
         }
@@ -768,6 +848,8 @@ public class ChessMasterResponseManager {
             case "fischer":
             case "carlsen":
             case "anand":
+            case "alekhine":
+            case "kasparov":
                 return true;
             default:
                 return false;
@@ -869,10 +951,30 @@ public class ChessMasterResponseManager {
     }
 
     /**
-     * Shutdown the manager
+     * Shutdown the manager safely
      */
     public void shutdown() {
-        executorService.shutdown();
+        Log.d(TAG, "🔄 Shutting down ChessMasterResponseManager");
+        
+        if (executorService != null && !executorService.isShutdown()) {
+            try {
+                // First try graceful shutdown
+                executorService.shutdown();
+                
+                // Wait a bit for tasks to complete
+                if (!executorService.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                    Log.w(TAG, "⚠️ Executor didn't terminate gracefully, forcing shutdown");
+                    executorService.shutdownNow();
+                }
+                
+                Log.d(TAG, "✅ Executor service shut down successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "Error during executor shutdown", e);
+                executorService.shutdownNow();
+            }
+        }
+        
         activeSessions.clear();
+        Log.d(TAG, "✅ ChessMasterResponseManager shutdown complete");
     }
 }

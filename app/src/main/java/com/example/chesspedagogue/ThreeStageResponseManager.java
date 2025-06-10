@@ -62,6 +62,12 @@ public class ThreeStageResponseManager {
     private final AtomicInteger currentResponseId = new AtomicInteger(0);
     private volatile boolean isStage1Speaking = false;
     private volatile boolean isStage2Speaking = false;
+    
+    // ANTI-DUPLICATE: Prevent multiple parallel responses for the same input
+    private volatile boolean isProcessingResponse = false;
+    private String lastProcessedInput = "";
+    private long lastProcessedTime = 0;
+    private static final long DUPLICATE_THRESHOLD_MS = 2000; // 2 seconds
 
     /**
      * Response stages enumeration
@@ -268,6 +274,20 @@ public class ThreeStageResponseManager {
      */
     public void processThreeStageResponse(String userInput, String gameContext,
                                           ResponseMode mode, ThreeStageCallback callback) {
+        // ANTI-DUPLICATE: Check if we're already processing the same input
+        long currentTime = System.currentTimeMillis();
+        if (isProcessingResponse && 
+            userInput.equals(lastProcessedInput) && 
+            (currentTime - lastProcessedTime) < DUPLICATE_THRESHOLD_MS) {
+            Log.w(TAG, "🚫 DUPLICATE REQUEST BLOCKED: Same input within " + DUPLICATE_THRESHOLD_MS + "ms");
+            return;
+        }
+        
+        // Mark as processing and update tracking
+        isProcessingResponse = true;
+        lastProcessedInput = userInput;
+        lastProcessedTime = currentTime;
+        
         // ThreeStageResponseManager now works in both main game and spectator mode
         // Uses Responses API for supported masters, with fallbacks as needed
         SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
@@ -286,41 +306,70 @@ public class ThreeStageResponseManager {
         // Reset speaking flags
         isStage1Speaking = false;
         isStage2Speaking = false;
+        
+        // Wrap callback to reset processing flag when any stage completes
+        ThreeStageCallback wrappedCallback = new ThreeStageCallback() {
+            @Override
+            public void onStageResponse(ResponseStage stage, String response, boolean isFinal) {
+                callback.onStageResponse(stage, response, isFinal);
+                if (isFinal || stage == ResponseStage.STAGE_1_QUICK) {
+                    // Reset processing flag after first response or final response
+                    isProcessingResponse = false;
+                    Log.d(TAG, "🔓 Processing flag reset after " + stage.getDisplayName());
+                }
+            }
+
+            @Override
+            public void onStageError(ResponseStage stage, String error) {
+                callback.onStageError(stage, error);
+                // Reset on error too
+                isProcessingResponse = false;
+                Log.d(TAG, "🔓 Processing flag reset after " + stage.getDisplayName() + " error");
+            }
+
+            @Override
+            public void onAllStagesComplete(String finalResponse) {
+                callback.onAllStagesComplete(finalResponse);
+                // Ensure processing flag is reset
+                isProcessingResponse = false;
+                Log.d(TAG, "🔓 Processing flag reset after all stages complete");
+            }
+        };
 
         // Continue with stages based on mode
         switch (mode) {
             case FAST_ONLY:
                 Log.d(TAG, "⚡ Fast-only mode: Stage 1 only");
-                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 return;
 
             case ENHANCED_ONLY:
                 Log.d(TAG, "🎭 Enhanced mode: Stages 1-2");
-                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
-                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 return;
 
             case FULL_ANALYSIS:
                 Log.d(TAG, "🧠 Full analysis mode: All 3 stages - PARALLEL EXECUTION! 🚀");
                 // PARALLEL EXECUTION: Start Stage 1, then both Stage 2 and Stage 3 simultaneously
-                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
-                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
-                processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, callback);
+                processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 return;
 
             case ADAPTIVE:
                 if (isSimpleQuestion(userInput)) {
                     Log.d(TAG, "🤖 Adaptive: simple question, using Stage 1 (with Responses API support)");
-                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 } else if (isChessAnalysisQuestion(userInput, gameContext)) {
                     Log.d(TAG, "🤖 Adaptive: chess analysis, Stages 1-2 with enhanced context");
-                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
-                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 } else {
                     Log.d(TAG, "🤖 Adaptive: complex question, full 3-stage analysis");
-                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, callback);
-                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, callback);
-                    processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, callback);
+                    processOptimizedStage1Quick(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                    processOptimizedStage2Enhanced(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
+                    processOptimizedStage3Deep(responseId, userInput, gameContext, normalizedMaster, wrappedCallback);
                 }
                 return;
         }
@@ -1228,6 +1277,10 @@ public class ThreeStageResponseManager {
         // Reset flags
         isStage1Speaking = false;
         isStage2Speaking = false;
+        
+        // ANTI-DUPLICATE: Reset processing flag on interrupt
+        isProcessingResponse = false;
+        Log.d(TAG, "🔓 Processing flag reset due to interrupt");
 
         // Increment response ID to effectively cancel callbacks for current response
         currentResponseId.incrementAndGet();

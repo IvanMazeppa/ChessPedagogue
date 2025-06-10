@@ -52,7 +52,7 @@ import okhttp3.Response;
 
 public class SimpleRecordService extends Service {
     private static final String TAG = "SimpleRecordService";
-    private static final String groqApiKey = "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";
+    // Groq API key now retrieved from centralized ApiKeys class
     private static final int SAMPLE_RATE = 16000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
@@ -95,6 +95,8 @@ public class SimpleRecordService extends Service {
     private ChessMasterResponsesManager responsesManager;
     private ResponsesAPIIntegrationHelper integrationHelper;
     private String currentVoiceSessionId = null;
+    private String lastSessionMaster = null; // Track master consistency
+    private boolean conversationThreadActive = false; // Track if auto-conversation is ongoing
 
     // NEW: Pre-warming for ultra-fast response
     private OpenAITTSService ttsService;
@@ -111,6 +113,12 @@ public class SimpleRecordService extends Service {
     // NEW: Track current response stage for UI updates
     private ThreeStageResponseManager.ResponseStage currentStage = null;
     private String latestResponse = "";
+    
+    // ANTI-DUPLICATE: Prevent multiple fallback calls for same input
+    private volatile boolean isProcessingInput = false;
+    private String lastProcessedInput = "";
+    private long lastProcessingTime = 0;
+    private static final long PROCESSING_COOLDOWN_MS = 3000; // 3 seconds
 
     public boolean isCurrentlySpeaking() {
         return TTSServiceManager.getOpenAITTSService(this) != null && TTSServiceManager.getOpenAITTSService(this).isSpeaking();
@@ -134,6 +142,9 @@ public class SimpleRecordService extends Service {
         // NEW: Initialize Responses API integration for enhanced voice interactions
         responsesManager = ChessMasterResponsesManager.getInstance(this);
         integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
+        
+        // CONVERSATION THREADING FIX: Restore session state for conversation continuity
+        restoreSessionState();
 
         // Initialize services in parallel
         CompletableFuture<Void> initFuture = CompletableFuture.runAsync(() -> {
@@ -156,7 +167,7 @@ public class SimpleRecordService extends Service {
                 // Pre-warm Groq connection with proper resource management
                 Request warmupRequest = new Request.Builder()
                         .url("https://api.groq.com/openai/v1/models")
-                        .header("Authorization", "Bearer " + groqApiKey)
+                        .header("Authorization", "Bearer " + ApiKeys.getGroqKey())
                         .build();
 
                 // CRITICAL: Use try-with-resources to ensure connection is closed
@@ -536,48 +547,26 @@ public class SimpleRecordService extends Service {
     }
     
     /**
-     * NEW: Process voice input directly with Responses API (like spectator mode)
+     * ENHANCED: Voice processing with Responses API and CONVERSATION THREADING (FIXED!)
      */
     private void processVoiceWithResponsesAPI(String masterName, String transcribedText, String gameContext) {
         try {
             Log.d(TAG, "🎙️ Processing voice with Responses API: " + masterName);
             
-            if (currentVoiceSessionId == null) {
-                // Create new voice session
-                responsesManager.createResponseSession(masterName, "voice_main_game",
-                    new ChessMasterResponsesManager.ResponseCallback() {
-                        @Override
-                        public void onResponseStart(String sessionId) {
-                            currentVoiceSessionId = sessionId;
-                            Log.d(TAG, "✅ Voice session created: " + sessionId);
-                            sendVoiceMessageToSession(sessionId, transcribedText, gameContext);
-                        }
-                        
-                        @Override
-                        public void onResponseChunk(String chunk, boolean isFirst) {
-                            // Not used for session creation
-                        }
-                        
-                        @Override
-                        public void onResponseComplete(String fullResponse) {
-                            // Not used for session creation
-                        }
-                        
-                        @Override
-                        public void onConversationTurn(String speaker, String message) {
-                            // Not used for session creation
-                        }
-                        
-                        @Override
-                        public void onError(String error) {
-                            Log.e(TAG, "❌ Voice session creation failed: " + error);
-                            // Fallback to 3-stage system
-                            processWithThreeStageSystem(transcribedText, gameContext);
-                        }
-                    });
+            // 🔄 CRITICAL FIX: Check session validity and master consistency
+            boolean needNewSession = shouldCreateNewSession(masterName);
+            
+            if (needNewSession) {
+                Log.d(TAG, "🆕 Creating new voice session - reason: " + 
+                           (currentVoiceSessionId == null ? "no_session" : 
+                            !masterName.equals(lastSessionMaster) ? "master_changed" : "session_invalid"));
+                
+                // Create new voice session with conversation threading enabled
+                createNewVoiceSession(masterName, transcribedText, gameContext);
             } else {
-                // Use existing session
-                sendVoiceMessageToSession(currentVoiceSessionId, transcribedText, gameContext);
+                Log.d(TAG, "🔄 Continuing existing voice session: " + currentVoiceSessionId);
+                // Use existing session for conversation threading
+                continueVoiceConversation(currentVoiceSessionId, transcribedText, gameContext);
             }
             
         } catch (Exception e) {
@@ -585,6 +574,196 @@ public class SimpleRecordService extends Service {
             // Fallback to 3-stage system
             processWithThreeStageSystem(transcribedText, gameContext);
         }
+    }
+    
+    /**
+     * 🔍 Check if we need to create a new session
+     */
+    private boolean shouldCreateNewSession(String masterName) {
+        // Need new session if no current session exists
+        if (currentVoiceSessionId == null) {
+            return true;
+        }
+        
+        // Need new session if master changed
+        if (!masterName.equals(lastSessionMaster)) {
+            Log.d(TAG, "🔄 Master changed: " + lastSessionMaster + " → " + masterName);
+            return true;
+        }
+        
+        // Check if session is still valid in responsesManager
+        if (responsesManager != null && !responsesManager.isSessionActive(currentVoiceSessionId)) {
+            Log.d(TAG, "💀 Current session expired or invalid: " + currentVoiceSessionId);
+            return true;
+        }
+        
+        // Session is valid and master is consistent
+        return false;
+    }
+    
+    /**
+     * 🆕 Create new voice session with threading support
+     */
+    private void createNewVoiceSession(String masterName, String transcribedText, String gameContext) {
+        // Save session state for persistence
+        saveSessionState(masterName);
+        
+        responsesManager.createResponseSession(masterName, "voice_conversation_thread",
+            new ChessMasterResponsesManager.ResponseCallback() {
+                @Override
+                public void onResponseStart(String sessionId) {
+                    currentVoiceSessionId = sessionId;
+                    lastSessionMaster = masterName;
+                    conversationThreadActive = true;
+                    
+                    Log.d(TAG, "✅ Voice conversation thread started: " + sessionId);
+                    saveSessionState(masterName); // Persist immediately
+                    
+                    // Send initial message to start the conversation thread
+                    sendVoiceMessageToSession(sessionId, transcribedText, gameContext);
+                }
+                
+                @Override
+                public void onResponseChunk(String chunk, boolean isFirst) {
+                    // Handle streaming response in conversation thread
+                    handleConversationChunk(chunk, isFirst);
+                }
+                
+                @Override
+                public void onResponseComplete(String fullResponse) {
+                    // Mark conversation turn complete, but keep thread active for auto-continuation
+                    Log.d(TAG, "🎯 Conversation turn complete, thread remains active for auto-replies");
+                    notifyConversationTurnComplete(masterName, fullResponse);
+                }
+                
+                @Override
+                public void onConversationTurn(String speaker, String message) {
+                    Log.d(TAG, "💬 Conversation turn: " + speaker + " → " + message);
+                }
+                
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ Voice conversation thread failed: " + error);
+                    conversationThreadActive = false;
+                    // Fallback to 3-stage system
+                    processWithThreeStageSystem(transcribedText, gameContext);
+                }
+            });
+    }
+    
+    /**
+     * 🔄 Continue existing voice conversation thread
+     */
+    private void continueVoiceConversation(String sessionId, String transcribedText, String gameContext) {
+        Log.d(TAG, "🔄 Continuing conversation thread: " + sessionId);
+        conversationThreadActive = true;
+        
+        // Send message to existing session with threading context
+        sendVoiceMessageToSession(sessionId, transcribedText, gameContext);
+    }
+    
+    /**
+     * 💾 Save session state for persistence across service restarts
+     */
+    private void saveSessionState(String masterName) {
+        try {
+            SharedPreferences prefs = getSharedPreferences("VoiceConversationState", MODE_PRIVATE);
+            SharedPreferences.Editor editor = prefs.edit();
+            
+            editor.putString("currentVoiceSessionId", currentVoiceSessionId);
+            editor.putString("lastSessionMaster", masterName);
+            editor.putBoolean("conversationThreadActive", conversationThreadActive);
+            editor.putLong("sessionTimestamp", System.currentTimeMillis());
+            
+            editor.apply();
+            Log.d(TAG, "💾 Voice session state saved for master: " + masterName);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to save session state", e);
+        }
+    }
+    
+    /**
+     * 📂 Restore session state from persistence
+     */
+    private void restoreSessionState() {
+        try {
+            SharedPreferences prefs = getSharedPreferences("VoiceConversationState", MODE_PRIVATE);
+            
+            String savedSessionId = prefs.getString("currentVoiceSessionId", null);
+            String savedMaster = prefs.getString("lastSessionMaster", null);
+            boolean savedThreadActive = prefs.getBoolean("conversationThreadActive", false);
+            long sessionTimestamp = prefs.getLong("sessionTimestamp", 0);
+            
+            // Check if saved session is recent (within last 10 minutes)
+            long ageMs = System.currentTimeMillis() - sessionTimestamp;
+            boolean isRecentSession = ageMs < 10 * 60 * 1000; // 10 minutes
+            
+            if (savedSessionId != null && savedMaster != null && isRecentSession) {
+                // Validate that the session still exists
+                if (responsesManager != null && responsesManager.isSessionActive(savedSessionId)) {
+                    currentVoiceSessionId = savedSessionId;
+                    lastSessionMaster = savedMaster;
+                    conversationThreadActive = savedThreadActive;
+                    
+                    Log.d(TAG, "📂 Voice session state restored: " + savedSessionId + " (master: " + savedMaster + ")");
+                } else {
+                    Log.d(TAG, "💀 Saved session no longer active, will create new one");
+                    clearSessionState();
+                }
+            } else {
+                Log.d(TAG, "⏰ No recent session to restore");
+                clearSessionState();
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to restore session state", e);
+            clearSessionState();
+        }
+    }
+    
+    /**
+     * 🗑️ Clear saved session state
+     */
+    private void clearSessionState() {
+        currentVoiceSessionId = null;
+        lastSessionMaster = null;
+        conversationThreadActive = false;
+        
+        SharedPreferences prefs = getSharedPreferences("VoiceConversationState", MODE_PRIVATE);
+        prefs.edit().clear().apply();
+    }
+    
+    /**
+     * 🔄 Handle conversation chunk streaming
+     */
+    private void handleConversationChunk(String chunk, boolean isFirst) {
+        if (callback != null) {
+            if (isFirst) {
+                callback.onProcessingStateChanged(true);
+            }
+            // Stream the chunk to the UI
+            mainHandler.post(() -> {
+                if (callback != null) {
+                    // Pass chunk to existing callback system
+                    callback.onResponseReceived(chunk);
+                }
+            });
+        }
+    }
+    
+    /**
+     * 🎯 Notify when conversation turn is complete
+     */
+    private void notifyConversationTurnComplete(String masterName, String fullResponse) {
+        if (callback != null) {
+            mainHandler.post(() -> {
+                callback.onResponseCompleted(fullResponse);
+            });
+        }
+        
+        // Note: Thread remains active for potential follow-up questions
+        Log.d(TAG, "💬 " + masterName + " conversation turn complete, thread active for follow-ups");
     }
     
     /**
@@ -667,6 +846,20 @@ public class SimpleRecordService extends Service {
      * LEGACY: Process with the 3-stage system (fallback)
      */
     private void processWithThreeStageSystem(String transcribedText, String gameContext) {
+        // ANTI-DUPLICATE: Check if we're already processing the same input
+        long currentTime = System.currentTimeMillis();
+        if (isProcessingInput && 
+            transcribedText.equals(lastProcessedInput) && 
+            (currentTime - lastProcessingTime) < PROCESSING_COOLDOWN_MS) {
+            Log.w(TAG, "🚫 DUPLICATE FALLBACK BLOCKED: Same input within " + PROCESSING_COOLDOWN_MS + "ms");
+            return;
+        }
+        
+        // Mark as processing
+        isProcessingInput = true;
+        lastProcessedInput = transcribedText;
+        lastProcessingTime = currentTime;
+        
         try {
             Log.d(TAG, "🎭 Starting 3-stage response system");
 
@@ -768,6 +961,10 @@ public class SimpleRecordService extends Service {
 
                             // Clear stage indicator
                             updateStageIndicator("");
+                            
+                            // ANTI-DUPLICATE: Reset processing flag
+                            isProcessingInput = false;
+                            Log.d(TAG, "🔓 SimpleRecordService processing flag reset after completion");
 
                             // Final callback
                             ServiceCallback callback = getCallback();
@@ -779,6 +976,11 @@ public class SimpleRecordService extends Service {
 
         } catch (Exception e) {
             Log.e(TAG, "Error in 3-stage system", e);
+            
+            // ANTI-DUPLICATE: Reset processing flag on error
+            isProcessingInput = false;
+            Log.d(TAG, "🔓 SimpleRecordService processing flag reset due to error");
+            
             mainHandler.post(() -> {
                 updateUIForProcessing(false);
                 String errorMsg = getPersonalityErrorMessage(getSelectedChessMaster());
@@ -869,37 +1071,43 @@ public class SimpleRecordService extends Service {
 
         String lowerQuestion = question.toLowerCase();
 
-        // Keywords that indicate position-specific questions
+        // CRITICAL FIX: Check position-specific keywords FIRST (they have priority)
         String[] positionKeywords = {
                 "this position", "current position", "this move", "what should i play",
                 "best move", "analyze", "evaluation", "this board", "here",
                 "what do you think of", "how about", "should i take", "can i play",
-                "is it good to", "what if i"
+                "is it good to", "what if i", "better in this position", "who is better",
+                "advantage", "who has", "position evaluation", "better here", "winning",
+                "losing", "equal position", "assessment"
         };
 
-        // Keywords that indicate general chess questions
-        String[] generalKeywords = {
-                "tell me about", "who won", "championship", "history", "explain",
-                "what is", "how to", "rules", "opening theory", "endgame theory",
-                "famous game", "chess master", "biography", "when did", "where was"
-        };
-
-        // Check for general questions first
-        for (String keyword : generalKeywords) {
-            if (lowerQuestion.contains(keyword)) {
-                return false;
-            }
-        }
-
-        // Then check for position-specific questions
+        // PRIORITY: Position context always takes precedence
         for (String keyword : positionKeywords) {
             if (lowerQuestion.contains(keyword)) {
+                Log.d(TAG, "🎯 Position-related question detected: '" + keyword + "' in '" + question + "'");
                 return true;
             }
         }
 
-        // Default to false for ambiguous questions
-        return false;
+        // Keywords that indicate general chess questions (only checked if no position context)
+        String[] generalKeywords = {
+                "tell me about", "who won", "championship", "history", "explain",
+                "what is", "how to", "rules", "opening theory", "endgame theory",
+                "famous game", "chess master", "biography", "when did", "where was",
+                "who was the", "greatest player", "world champion"
+        };
+
+        // Only check general keywords if no position context was found
+        for (String keyword : generalKeywords) {
+            if (lowerQuestion.contains(keyword)) {
+                Log.d(TAG, "💭 General chess question detected: '" + keyword + "' in '" + question + "'");
+                return false;
+            }
+        }
+
+        // IMPROVED: Default to position-related for ambiguous questions in competitive mode
+        Log.d(TAG, "🤔 Ambiguous question, defaulting to position-related: '" + question + "'");
+        return true;
     }
 
     /**
@@ -927,7 +1135,7 @@ public class SimpleRecordService extends Service {
 
             Request request = new Request.Builder()
                     .url("https://api.groq.com/openai/v1/audio/transcriptions")
-                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("Authorization", "Bearer " + ApiKeys.getGroqKey())
                     .post(requestBody)
                     .build();
 
@@ -1065,6 +1273,10 @@ public class SimpleRecordService extends Service {
         if (threeStageManager != null) {
             threeStageManager.interruptCurrentResponse();
         }
+        
+        // ANTI-DUPLICATE: Reset processing flag on interrupt
+        isProcessingInput = false;
+        Log.d(TAG, "🔓 SimpleRecordService processing flag reset due to speech interrupt");
     }
 
     // Helper method to convert PCM to WAV

@@ -325,11 +325,17 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     public GameDatabaseHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        
+        Log.d(TAG, "🔧 GameDatabaseHelper constructor starting...");
         this.context = context.getApplicationContext();
+        Log.d(TAG, "✅ SQLiteOpenHelper and context initialized");
         
         // Initialize the cache with 100 entries max
         // Each entry uses approximately 1KB, so total cache size ~100KB
         this.positionCache = new LruCache<>(100);
+        Log.d(TAG, "✅ Position cache initialized");
+        
+        Log.d(TAG, "🗄️ GameDatabaseHelper constructor completed!");
     }
 
     @Override
@@ -693,15 +699,21 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
      * This is how you'll load all the FEN data into your local database.
      */
     public boolean importMasterPositions(String jsonData) {
+        // 🚨 CRITICAL FIX: Add immediate entry logging
+        Log.d(TAG, "🎯 ENTRY: importMasterPositions called with data length: " + 
+              (jsonData != null ? jsonData.length() : "NULL") + " characters");
+        
         SQLiteDatabase db = this.getWritableDatabase();
 
         try {
             Log.d(TAG, "🚀 Starting master positions import...");
 
             JSONArray chunks = new JSONArray(jsonData);
+            Log.d(TAG, "📊 Found " + chunks.length() + " positions to import");
 
             db.beginTransaction();
 
+            int importedCount = 0;
             for (int i = 0; i < chunks.length(); i++) {
                 JSONObject chunk = chunks.getJSONObject(i);
 
@@ -709,6 +721,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 // 🎯 CRITICAL FIX: Map full names to standardized short names for lookup compatibility
                 String playerName = chunk.optString("player_name", "");
                 String standardizedName = getStandardizedMasterName(playerName);
+                
+                // Log the first few entries for debugging
+                if (i < 3 || (i % 100 == 0)) {
+                    Log.d(TAG, "📥 Entry " + i + ": '" + playerName + "' -> '" + standardizedName + "'");
+                }
+                
                 values.put(COLUMN_MASTER_NAME, standardizedName);
                 values.put(COLUMN_FEN, chunk.optString("fen", ""));
                 values.put(COLUMN_OPPONENT, chunk.optString("opponent", ""));
@@ -727,11 +745,16 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     values.put(COLUMN_TAGS, "[]"); // Empty array as fallback
                 }
 
-                db.insert(TABLE_MASTER_POSITIONS, null, values);
+                long insertId = db.insert(TABLE_MASTER_POSITIONS, null, values);
+                if (insertId != -1) {
+                    importedCount++;
+                } else {
+                    Log.w(TAG, "❌ Failed to insert position " + i + " for " + standardizedName);
+                }
             }
 
             db.setTransactionSuccessful();
-            Log.d(TAG, "✅ Successfully imported " + chunks.length() + " master positions!");
+            Log.d(TAG, "✅ Successfully imported " + importedCount + "/" + chunks.length() + " master positions!");
             
             // Clear the cache since we have new data
             positionCache.evictAll();
@@ -751,46 +774,83 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
 
     /**
      * Import from assets folder (put your JSON file in assets/)
+     * ENHANCED: With detailed logging for debugging
      */
     public boolean importMasterPositionsFromAssets(String filename) {
+        // 🚨 CRITICAL FIX: Add immediate entry logging
+        Log.d(TAG, "🎯 ENTRY: importMasterPositionsFromAssets called with filename: " + filename);
+        
         try {
+            Log.d(TAG, "📁 Attempting to import from assets file: " + filename);
+            
             InputStream inputStream = context.getAssets().open(filename);
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder jsonBuilder = new StringBuilder();
             String line;
+            int lineCount = 0;
 
             while ((line = reader.readLine()) != null) {
                 jsonBuilder.append(line);
+                lineCount++;
             }
 
             reader.close();
             inputStream.close();
+            
+            Log.d(TAG, "📖 Read " + lineCount + " lines from " + filename + " (total " + jsonBuilder.length() + " characters)");
 
-            return importMasterPositions(jsonBuilder.toString());
+            boolean result = importMasterPositions(jsonBuilder.toString());
+            Log.d(TAG, "📥 Import result for " + filename + ": " + (result ? "SUCCESS" : "FAILED"));
+            
+            return result;
 
         } catch (IOException e) {
-            Log.e(TAG, "Error reading from assets: " + filename, e);
+            Log.e(TAG, "❌ IOException reading from assets: " + filename, e);
+            return false;
+        } catch (Exception e) {
+            Log.e(TAG, "❌ General exception importing from assets: " + filename, e);
             return false;
         }
     }
 
     /**
      * Check if we have master data (used by PersonalityEngine)
-     * OPTIMIZED: Quick existence check without detailed logging
+     * ENHANCED: With detailed logging for debugging
      */
     public boolean hasMasterData(String masterName) {
+        // 🚨 CRITICAL FIX: Add immediate entry logging
+        Log.d(TAG, "🎯 ENTRY: hasMasterData called for master: " + masterName);
+        
         SQLiteDatabase db = this.getReadableDatabase();
 
         try {
             String query = "SELECT 1 FROM " + TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = ? LIMIT 1";
+            Log.d(TAG, "🔍 Executing query: " + query + " with parameter: " + masterName);
+            
             Cursor cursor = db.rawQuery(query, new String[]{masterName});
 
             boolean hasData = cursor.moveToFirst();
             cursor.close();
+            
+            Log.d(TAG, "🔍 hasMasterData('" + masterName + "'): " + hasData);
+            
+            // If no data found, let's see what master names we DO have
+            if (!hasData) {
+                String statsQuery = "SELECT DISTINCT " + COLUMN_MASTER_NAME + " FROM " + TABLE_MASTER_POSITIONS + " LIMIT 10";
+                Cursor statsCursor = db.rawQuery(statsQuery, null);
+                StringBuilder availableMasters = new StringBuilder();
+                while (statsCursor.moveToNext()) {
+                    if (availableMasters.length() > 0) availableMasters.append(", ");
+                    availableMasters.append("'").append(statsCursor.getString(0)).append("'");
+                }
+                statsCursor.close();
+                Log.d(TAG, "📋 Available master names in database: [" + availableMasters.toString() + "]");
+            }
+            
             return hasData;
 
         } catch (Exception e) {
-            Log.e(TAG, "Error checking master data", e);
+            Log.e(TAG, "❌ Error checking master data for '" + masterName + "'", e);
         }
 
         return false;

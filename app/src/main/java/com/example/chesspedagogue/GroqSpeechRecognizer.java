@@ -40,7 +40,7 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
     // Groq API endpoint
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/audio/transcriptions";
     private static final String GROQ_MODEL = "whisper-large-v3-turbo";
-    private static final String GROQ_API_KEY_FALLBACK = "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";
+    // Removed hardcoded fallback - now uses centralized ApiKeys class
 
     private final Context context;
     private final ExecutorService executorService;
@@ -48,7 +48,7 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
     private final OkHttpClient httpClient;
     
     /**
-     * Get Groq API key from environment variable or fallback to hardcoded
+     * Get Groq API key from environment variable or fallback to centralized ApiKeys
      */
     private String getGroqApiKey() {
         String apiKey = System.getenv("GROQ_API_KEY");
@@ -56,8 +56,8 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
             Log.d(TAG, "Using environment variable GROQ_API_KEY");
             return apiKey;
         } else {
-            Log.d(TAG, "Using hardcoded fallback GROQ_API_KEY");
-            return GROQ_API_KEY_FALLBACK;
+            Log.d(TAG, "Using centralized ApiKeys GROQ_API_KEY");
+            return ApiKeys.getGroqKey();
         }
     }
 

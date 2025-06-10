@@ -1,6 +1,7 @@
 package com.example.chesspedagogue;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -43,7 +44,7 @@ public class ChessMasterResponsesManager {
     private final Context context;
     private final OpenAIService openAIService;
     private final FineTunedModelManager modelManager;
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
     private final OkHttpClient httpClient;
     private final Handler mainHandler;
     
@@ -54,11 +55,13 @@ public class ChessMasterResponsesManager {
     private static final int MAX_RETRIES = 2;
     private static final long INITIAL_RETRY_DELAY = 1000; // 1 second
     
-    // CONVERSATION THROTTLING - Reduced for more dynamic conversations
-    private static final long MIN_CONVERSATION_INTERVAL = 2000; // 2 seconds between responses
-    private static final long MIN_MASTER_SWITCH_INTERVAL = 3000; // 3 seconds when switching masters
+    // CONVERSATION THROTTLING - Optimized for faster responses
+    private static final long MIN_CONVERSATION_INTERVAL = 800; // 0.8 seconds between responses
+    private static final long MIN_MASTER_SWITCH_INTERVAL = 1200; // 1.2 seconds when switching masters
+    private static final long COMPETITIVE_MIN_INTERVAL = 400; // Fast mode for competitive gameplay
     private long lastResponseTime = 0;
     private String lastRespondingMaster = null;
+    private boolean competitiveSpeedMode = false;
     
     /**
      * Response session tracking
@@ -96,14 +99,39 @@ public class ChessMasterResponsesManager {
         this.context = context.getApplicationContext();
         this.openAIService = OpenAIService.getInstance();
         this.modelManager = FineTunedModelManager.getInstance(context);
-        this.executorService = Executors.newCachedThreadPool();
+        this.executorService = createManagedExecutorService();
         this.httpClient = openAIService.getHttpClient();
         this.mainHandler = new Handler(Looper.getMainLooper());
+    }
+    
+    /**
+     * Create a managed executor service with proper lifecycle handling
+     */
+    private ExecutorService createManagedExecutorService() {
+        ExecutorService executor = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable, "ChessMasterResponse-" + System.currentTimeMillis());
+            thread.setDaemon(true); // Allow JVM to exit even if threads are running
+            thread.setUncaughtExceptionHandler((t, e) -> {
+                Log.e(TAG, "Uncaught exception in executor thread: " + t.getName(), e);
+            });
+            return thread;
+        });
+        
+        Log.d(TAG, "✅ Created managed executor service for ChessMasterResponsesManager");
+        return executor;
     }
     
     public static synchronized ChessMasterResponsesManager getInstance(Context context) {
         if (instance == null) {
             instance = new ChessMasterResponsesManager(context);
+            
+            // Auto-enable speed mode for competitive gameplay
+            SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
+            boolean isCompetitiveMode = context.getClass().getSimpleName().contains("Competitive");
+            if (isCompetitiveMode) {
+                instance.setCompetitiveSpeedMode(true);
+                Log.d(TAG, "⚡ Auto-enabled speed mode for competitive gameplay");
+            }
         }
         return instance;
     }
@@ -112,7 +140,14 @@ public class ChessMasterResponsesManager {
      * Create a new response session for a chess master
      */
     public void createResponseSession(String masterName, String gameContext, ResponseCallback callback) {
-        executorService.execute(() -> {
+        if (!isExecutorHealthy()) {
+            Log.e(TAG, "❌ Executor not healthy, cannot create session");
+            callback.onError("Executor service not available");
+            return;
+        }
+        
+        try {
+            executorService.execute(() -> {
             try {
                 // Responses API only - no assistant IDs needed
                 String sessionId = "session_" + System.currentTimeMillis();
@@ -126,7 +161,11 @@ public class ChessMasterResponsesManager {
                 Log.e(TAG, "Error creating response session", e);
                 callback.onError("Failed to create session: " + e.getMessage());
             }
-        });
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to submit task to executor", e);
+            callback.onError("Executor service error: " + e.getMessage());
+        }
     }
     
     /**
@@ -184,6 +223,32 @@ public class ChessMasterResponsesManager {
     }
     
     /**
+     * Check if executor service is available and healthy
+     */
+    private boolean isExecutorHealthy() {
+        if (executorService == null) {
+            Log.e(TAG, "❌ ExecutorService is null!");
+            return false;
+        }
+        
+        if (executorService.isShutdown()) {
+            Log.e(TAG, "❌ ExecutorService is shutdown - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        if (executorService.isTerminated()) {
+            Log.e(TAG, "❌ ExecutorService is terminated - recreating...");
+            // Recreate the executor service
+            this.executorService = createManagedExecutorService();
+            return true;
+        }
+        
+        return true;
+    }
+    
+    /**
      * 🧠 ENHANCED: Send message with emotional context integration
      */
     public void sendMessage(String sessionId, String message, String conversationContext, 
@@ -205,12 +270,12 @@ public class ChessMasterResponsesManager {
             return;
         }
         
-        // Determine minimum interval based on master switching
-        long requiredInterval = MIN_CONVERSATION_INTERVAL;
+        // Determine minimum interval based on master switching and speed mode
+        long requiredInterval = competitiveSpeedMode ? COMPETITIVE_MIN_INTERVAL : MIN_CONVERSATION_INTERVAL;
         if (lastRespondingMaster != null && !lastRespondingMaster.equals(session.masterName)) {
-            requiredInterval = MIN_MASTER_SWITCH_INTERVAL;
+            requiredInterval = competitiveSpeedMode ? COMPETITIVE_MIN_INTERVAL : MIN_MASTER_SWITCH_INTERVAL;
             Log.d(TAG, "🔄 Master switch detected: " + lastRespondingMaster + " → " + session.masterName + 
-                  " (requiring " + requiredInterval + "ms interval)");
+                  " (requiring " + requiredInterval + "ms interval)" + (competitiveSpeedMode ? " [SPEED MODE]" : ""));
         }
         
         if (timeSinceLastResponse < requiredInterval) {
@@ -230,12 +295,39 @@ public class ChessMasterResponsesManager {
     }
     
     /**
+     * Checks if a response session is currently active
+     * @param sessionId The session ID to check
+     * @return true if the session exists and is active, false otherwise
+     */
+    public boolean isSessionActive(String sessionId) {
+        if (sessionId == null || sessionId.trim().isEmpty()) {
+            return false;
+        }
+        return activeSessions.containsKey(sessionId);
+    }
+    
+    /**
+     * Enable/disable competitive speed mode for faster responses
+     */
+    public void setCompetitiveSpeedMode(boolean enabled) {
+        this.competitiveSpeedMode = enabled;
+        Log.d(TAG, "⚡ Competitive speed mode: " + (enabled ? "ENABLED (faster responses)" : "DISABLED (normal timing)"));
+    }
+    
+    /**
      * Internal method that actually sends the message (after throttling check)
      */
     private void sendMessageInternal(String sessionId, String message, String conversationContext, ResponseCallback callback) {
         Log.d(TAG, "🚀 Sending message for " + sessionId + " after throttling check");
         
-        executorService.execute(() -> {
+        if (!isExecutorHealthy()) {
+            Log.e(TAG, "❌ Executor not healthy for sendMessageInternal");
+            callback.onError("Executor service not available for message sending");
+            return;
+        }
+        
+        try {
+            executorService.execute(() -> {
             ResponseSession session = activeSessions.get(sessionId);
             if (session == null) {
                 Log.e(TAG, "❌ Session lost during throttling for: " + sessionId);
@@ -282,10 +374,10 @@ public class ChessMasterResponsesManager {
                 textFormat.put("format", formatType);
                 requestBody.put("text", textFormat);
                 
-                // Add other required parameters
-                requestBody.put("temperature", 1);
-                requestBody.put("max_output_tokens", 2048);
-                requestBody.put("top_p", 1);
+                // Add optimized parameters for faster responses
+                requestBody.put("temperature", competitiveSpeedMode ? 0.8 : 1); // Lower temp for speed
+                requestBody.put("max_output_tokens", competitiveSpeedMode ? 512 : 2048); // Shorter responses for speed
+                requestBody.put("top_p", competitiveSpeedMode ? 0.9 : 1); // More focused for speed
                 requestBody.put("store", true);
                 
                 // Add metadata for conversation context
@@ -304,7 +396,11 @@ public class ChessMasterResponsesManager {
                 Log.e(TAG, "Error sending message", e);
                 callback.onError("Failed to send message: " + e.getMessage());
             }
-        });
+            });
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to submit message task to executor", e);
+            callback.onError("Executor service error during message sending: " + e.getMessage());
+        }
     }
     
     /**
@@ -604,7 +700,7 @@ public class ChessMasterResponsesManager {
                     eventSource.cancel();
                     callback.onError("Timeout: No response received from Responses API");
                 }
-            }, 20000); // 20 second timeout - much more reasonable for complex models
+            }, 12000); // 12 second timeout - faster response for better UX
                 
         } catch (Exception e) {
             Log.e(TAG, "Error streaming response", e);
@@ -1188,10 +1284,30 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Shutdown the manager
+     * Shutdown the manager safely
      */
     public void shutdown() {
-        executorService.shutdown();
+        Log.d(TAG, "🔄 Shutting down ChessMasterResponsesManager");
+        
+        if (executorService != null && !executorService.isShutdown()) {
+            try {
+                // First try graceful shutdown
+                executorService.shutdown();
+                
+                // Wait a bit for tasks to complete
+                if (!executorService.awaitTermination(2, java.util.concurrent.TimeUnit.SECONDS)) {
+                    Log.w(TAG, "⚠️ Executor didn't terminate gracefully, forcing shutdown");
+                    executorService.shutdownNow();
+                }
+                
+                Log.d(TAG, "✅ Executor service shut down successfully");
+            } catch (Exception e) {
+                Log.e(TAG, "Error during executor shutdown", e);
+                executorService.shutdownNow();
+            }
+        }
+        
         activeSessions.clear();
+        Log.d(TAG, "✅ ChessMasterResponsesManager shutdown complete");
     }
 }

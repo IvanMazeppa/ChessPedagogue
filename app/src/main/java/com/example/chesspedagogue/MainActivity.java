@@ -649,17 +649,13 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                     runOnUiThread(() -> {
                         updateStatusMessage("Loading chess master data...");
                     });
-                    // Import all your master data files
-                    String[] masters = {"tal", "fischer", "kasparov", "carlsen", "anand", "kramnik", "karpov", "alekhine", "capablanca", "morphy", "lasker", "botvinnik"};
+                    // Import all your master data files (using correct _full_positions.json format)
+                    // Only include masters that actually have data files available
+                    String[] masters = {"tal", "fischer", "kasparov", "carlsen", "anand", "kramnik", "karpov", "alekhine", "capablanca"};
 
                     for (String master : masters) {
-                        String filename;
-                        // Handle special case for Anand's filename
-                        if (master.equals("anand")) {
-                            filename = "anand_full_positions.json";
-                        } else {
-                            filename = master + "_positions.json";
-                        }
+                        // Use consistent _full_positions.json naming convention
+                        String filename = master + "_full_positions.json";
                         Log.d("MainActivity", "📥 Importing " + filename + "...");
                         
                         // Update progress on UI thread
@@ -928,6 +924,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
 
             Log.d(TAG, "📝 Configuration from splash: Color=" + configuredPlayerColor +
                     ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
+                    
+            // CRITICAL FIX: Synchronize master selection to fix SharedPreferences inconsistencies
+            synchronizeMasterSelectionOnStartup();
         } else {
             // Fallback to SharedPreferences
             SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
@@ -1478,12 +1477,20 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                     }
 
                     // Otherwise, try to make a move from the selected piece to this square
-                    String move = algebraicNotation(fromRow, fromCol) + algebraicNotation(row, col);
+                    String baseMove = algebraicNotation(fromRow, fromCol) + algebraicNotation(row, col);
 
                     boolean isPlayerWhite = "white".equals(configuredPlayerColor);
                     boolean isPlayersTurn = (isPlayerWhite && chessBoardView.isWhiteTurn()) ||
                             (!isPlayerWhite && !chessBoardView.isWhiteTurn());
 
+                    // Check for pawn promotion
+                    if (isPawnPromotion(fromRow, fromCol, row)) {
+                        Log.d(TAG, "♟️ PAWN PROMOTION DETECTED: " + baseMove);
+                        showPromotionDialog(baseMove, fromRow, fromCol, row, col, isPlayersTurn);
+                        return;
+                    }
+
+                    String move = baseMove;
                     Log.d(TAG, "🎯 ATTEMPTING MOVE: " + move);
                     Log.d(TAG, "📝 Player color: " + configuredPlayerColor);
                     Log.d(TAG, "🔄 Is player's turn: " + isPlayersTurn);
@@ -2987,6 +2994,67 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
     }
     
     /**
+     * 🔄 Synchronize master selection across SharedPreferences stores on app startup
+     * This fixes the common issue where voice system reads from a different SharedPreferences than other parts
+     */
+    private void synchronizeMasterSelectionOnStartup() {
+        try {
+            Log.d(TAG, "🔄 Synchronizing master selection on startup...");
+            
+            // Read from both SharedPreferences stores
+            SharedPreferences chessAppPrefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+            SharedPreferences fineTunedPrefs = getSharedPreferences("ChessFineTunedModels", MODE_PRIVATE);
+            
+            String appMaster = chessAppPrefs.getString("selected_master", null);
+            String voiceMaster = fineTunedPrefs.getString("selected_master", null);
+            String fineTunedMaster = null;
+            
+            // Get FineTunedModelManager master (if available)
+            try {
+                fineTunedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+            } catch (Exception e) {
+                Log.w(TAG, "Could not get FineTunedModelManager master: " + e.getMessage());
+            }
+            
+            Log.d(TAG, "📋 Current master selections:");
+            Log.d(TAG, "  - ChessAppPrefs: " + appMaster);
+            Log.d(TAG, "  - ChessFineTunedModels: " + voiceMaster);
+            Log.d(TAG, "  - FineTunedModelManager: " + fineTunedMaster);
+            
+            // Determine which master to use (priority: FineTunedModelManager > ChessAppPrefs > default)
+            String masterToUse = null;
+            if (fineTunedMaster != null && !fineTunedMaster.isEmpty()) {
+                masterToUse = fineTunedMaster.toLowerCase();
+            } else if (appMaster != null && !appMaster.isEmpty()) {
+                masterToUse = appMaster.toLowerCase();
+            } else if (voiceMaster != null && !voiceMaster.isEmpty()) {
+                masterToUse = voiceMaster.toLowerCase();
+            } else {
+                masterToUse = "tal"; // Default
+            }
+            
+            Log.d(TAG, "🎯 Using master: " + masterToUse);
+            
+            // Synchronize ALL stores to use the same master
+            chessAppPrefs.edit().putString("selected_master", masterToUse).apply();
+            fineTunedPrefs.edit().putString("selected_master", masterToUse).apply();
+            
+            if (fineTunedMaster == null || !fineTunedMaster.toLowerCase().equals(masterToUse)) {
+                try {
+                    FineTunedModelManager.getInstance(this).setSelectedChessMaster(masterToUse);
+                } catch (Exception e) {
+                    Log.w(TAG, "Could not set FineTunedModelManager master: " + e.getMessage());
+                }
+            }
+            
+            Log.d(TAG, "✅ Master selection synchronized to: " + masterToUse);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to synchronize master selection", e);
+        }
+    }
+
+    /**
      * 🎯 Start competitive game against selected master
      */
     private void startCompetitiveGame(String masterName) {
@@ -3012,6 +3080,86 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         } catch (Exception e) {
             Log.e(TAG, "❌ Error launching competitive mode", e);
             Toast.makeText(this, "Error launching competitive mode: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * ♟️ Check if a move is a pawn promotion
+     */
+    private boolean isPawnPromotion(int fromRow, int fromCol, int toRow) {
+        try {
+            char piece = chessBoardView.getPieceAt(fromRow, fromCol);
+            boolean isPawn = (piece == 'P' || piece == 'p');
+            
+            if (!isPawn) return false;
+            
+            // White pawn reaching rank 8 (row 0) or black pawn reaching rank 1 (row 7)
+            boolean reachesPromotionRank = (Character.isUpperCase(piece) && toRow == 0) || 
+                                          (Character.isLowerCase(piece) && toRow == 7);
+            
+            Log.d(TAG, "♟️ Promotion check: piece=" + piece + ", fromRow=" + fromRow + ", toRow=" + toRow + ", reaches=" + reachesPromotionRank);
+            return reachesPromotionRank;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error checking pawn promotion", e);
+            return false;
+        }
+    }
+
+    /**
+     * 👑 Show pawn promotion dialog
+     */
+    private void showPromotionDialog(String baseMove, int fromRow, int fromCol, int toRow, int toCol, boolean isPlayersTurn) {
+        try {
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("♟️ Promote Pawn");
+            builder.setMessage("Choose piece to promote to:");
+            builder.setCancelable(false);
+            
+            String[] promotionPieces = {"👑 Queen", "🏰 Rook", "⛪ Bishop", "🐴 Knight"};
+            String[] promotionCodes = {"q", "r", "b", "n"};
+            
+            builder.setItems(promotionPieces, (dialog, which) -> {
+                String promotionMove = baseMove + promotionCodes[which];
+                Log.d(TAG, "♟️ PAWN PROMOTION: " + promotionMove);
+                
+                // Proceed with the promotion move
+                makePromotionMove(promotionMove, fromRow, fromCol, toRow, toCol, isPlayersTurn);
+            });
+            
+            builder.show();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing promotion dialog", e);
+            // Fallback to queen promotion
+            String promotionMove = baseMove + "q";
+            makePromotionMove(promotionMove, fromRow, fromCol, toRow, toCol, isPlayersTurn);
+        }
+    }
+
+    /**
+     * ♛ Execute the pawn promotion move
+     */
+    private void makePromotionMove(String promotionMove, int fromRow, int fromCol, int toRow, int toCol, boolean isPlayersTurn) {
+        try {
+            Log.d(TAG, "🎯 ATTEMPTING PROMOTION MOVE: " + promotionMove);
+            Log.d(TAG, "📝 Player color: " + configuredPlayerColor);
+            Log.d(TAG, "🔄 Is player's turn: " + isPlayersTurn);
+            Log.d(TAG, "🔄 Is white's turn: " + chessBoardView.isWhiteTurn());
+
+            if (!isPlayersTurn) {
+                Log.d(TAG, "❌ Not player's turn, ignoring promotion move");
+                return;
+            }
+
+            // Reset selection
+            chessBoardView.setSelectedSquare(-1, -1);
+
+            // Make the promotion move
+            gameViewModel.makePlayerMove(promotionMove);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error making promotion move", e);
         }
     }
 }

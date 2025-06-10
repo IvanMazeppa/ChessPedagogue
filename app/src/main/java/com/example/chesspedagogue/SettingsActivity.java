@@ -72,10 +72,14 @@ public class SettingsActivity extends AppCompatActivity {
 
                 String selectedCoach = checkedId == R.id.radio_coach_kramnik ? "kramnik" : "tal";
 
-                // Save the selection
+                // CRITICAL FIX: Save to BOTH SharedPreferences stores for consistency
                 SharedPreferences.Editor editor = chessPrefs.edit();
                 editor.putString("selected_master", selectedCoach);
                 editor.apply();
+                
+                // Also save to ChessFineTunedModels (where voice system reads from)
+                SharedPreferences fineTunedPrefs = getSharedPreferences("ChessFineTunedModels", MODE_PRIVATE);
+                fineTunedPrefs.edit().putString("selected_master", selectedCoach).apply();
 
                 // Show feedback to the user
                 String coachName = selectedCoach.equals("tal") ? "Mikhail Tal" : "Vladimir Kramnik";

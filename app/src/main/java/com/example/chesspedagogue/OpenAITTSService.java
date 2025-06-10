@@ -861,6 +861,17 @@ public class OpenAITTSService {
                     Log.d(TAG, "   ✅ CARLSEN INSTRUCTIONS CREATED");
                     break;
 
+                case "alekhine":
+                    Log.d(TAG, "   Processing ALEKHINE accent instructions...");
+                    instructions.append("Voice Affect: Refined aristocratic intelligence and artistic passion; convey the soul of a chess poet and tactician. ");
+                    instructions.append("Accent: Cultured Russian with refined Moscow pronunciation, soft rolled 'r' sounds, and elegant Slavic vowel structure. ");
+                    instructions.append("Tone: Sophisticated and intellectually elegant with underlying creative fire; speak with the voice of chess artistry. ");
+                    instructions.append("Pacing: Thoughtful and deliberate with artistic flourishes; build suspense when describing combinations. ");
+                    instructions.append("Emotion: Deeply passionate about chess beauty with philosophical reflection; convey the artistry and logic of the game. ");
+                    instructions.append("Emphasis: Highlight combinatorial words like 'sacrifice,' 'harmony,' 'combinations,' and 'beauty' with artistic intensity.");
+                    Log.d(TAG, "   ✅ ALEKHINE INSTRUCTIONS CREATED");
+                    break;
+
                 default:
                     Log.d(TAG, "🚨 HITTING DEFAULT CASE FOR: '" + master.toLowerCase() + "'");
                     instructions.append("Speak with the natural confidence and wisdom of a chess grandmaster. ");
@@ -1021,6 +1032,9 @@ public class OpenAITTSService {
                 break;
             case "carlsen":
                 instructions.append("Speak with a clear Norwegian accent with modern confidence. ");
+                break;
+            case "alekhine":
+                instructions.append("Speak with a cultured Russian accent reflecting aristocratic refinement. ");
                 break;
             default:
                 instructions.append("Speak with natural chess master authority. ");

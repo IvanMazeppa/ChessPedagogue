@@ -121,21 +121,39 @@ public class PersonalityEngine {
     }
 
     private PersonalityEngine(Context context, StockfishManager stockfishManager) {
+        Log.d(TAG, "🔧 PersonalityEngine constructor starting...");
+        
         this.context = context.getApplicationContext();
+        Log.d(TAG, "✅ Context initialized");
+        
         this.mainHandler = new Handler(Looper.getMainLooper());
+        Log.d(TAG, "✅ MainHandler initialized");
+        
         this.executorService = Executors.newCachedThreadPool();
+        Log.d(TAG, "✅ ExecutorService initialized");
+        
         this.stockfishManager = stockfishManager;
+        Log.d(TAG, "✅ StockfishManager assigned");
 
         // 🚀 Initialize with your enhanced database helper!
+        Log.d(TAG, "🗄️ Initializing GameDatabaseHelper...");
         this.databaseHelper = new GameDatabaseHelper(context);
+        Log.d(TAG, "✅ GameDatabaseHelper initialized");
 
         Log.d(TAG, "🎭 PersonalityEngine initialized with LIGHTNING-FAST local database!");
     }
 
     public static synchronized PersonalityEngine getInstance(Context context, StockfishManager stockfishManager) {
+        Log.d(TAG, "🎯 ENTRY: PersonalityEngine.getInstance called");
+        
         if (instance == null) {
+            Log.d(TAG, "🎭 Creating new PersonalityEngine instance...");
             instance = new PersonalityEngine(context, stockfishManager);
+            Log.d(TAG, "✅ PersonalityEngine instance created successfully");
+        } else {
+            Log.d(TAG, "♻️ Returning existing PersonalityEngine instance");
         }
+        
         return instance;
     }
 
@@ -682,32 +700,76 @@ public class PersonalityEngine {
      * 🚀 NEW: Check database status and import data if needed
      */
     public void initializeMasterData(String masterName) {
+        // 🚨 CRITICAL FIX: Add immediate logging to verify method is called
+        Log.d(TAG, "🎯 ENTRY: initializeMasterData called for master: " + masterName);
+        
+        // 🚨 CRITICAL FIX: Check executor service state
+        if (executorService == null) {
+            Log.e(TAG, "❌ CRITICAL: ExecutorService is NULL! Cannot initialize master data.");
+            return;
+        }
+        
+        if (executorService.isShutdown()) {
+            Log.e(TAG, "❌ CRITICAL: ExecutorService is SHUT DOWN! Cannot initialize master data.");
+            return;
+        }
+        
+        Log.d(TAG, "✅ ExecutorService is healthy, submitting background task...");
+        
         executorService.execute(() -> {
             try {
+                Log.d(TAG, "🔍 BACKGROUND TASK STARTED: Initializing master data for: " + masterName);
+                
+                // 🚨 CRITICAL FIX: Check database helper state
+                if (databaseHelper == null) {
+                    Log.e(TAG, "❌ CRITICAL: DatabaseHelper is NULL! Cannot proceed.");
+                    return;
+                }
+                
+                Log.d(TAG, "✅ DatabaseHelper is healthy, checking for existing data...");
+                
                 boolean hasData = databaseHelper.hasMasterData(masterName);
+                Log.d(TAG, "📊 Has existing data for " + masterName + ": " + hasData);
 
                 if (!hasData) {
                     Log.d(TAG, "📥 No data for " + masterName + " - attempting to import from assets...");
 
                     // Use consistent filename mapping for *surname*_full_positions.json convention
                     String filename = getMasterPositionFilename(masterName);
+                    Log.d(TAG, "📁 Looking for file: " + filename);
+                    
                     boolean imported = databaseHelper.importMasterPositionsFromAssets(filename);
 
                     if (imported) {
-                        Log.d(TAG, "✅ Successfully imported data for " + masterName + "!");
+                        Log.d(TAG, "✅ Successfully imported data for " + masterName + " from " + filename);
+                        
+                        // Verify the import worked
+                        int positionCount = databaseHelper.getMasterPositionCount(masterName);
+                        Log.d(TAG, "📊 Imported " + positionCount + " positions for " + masterName);
                     } else {
-                        Log.w(TAG, "⚠️ Could not import data for " + masterName + " from " + filename);
+                        Log.e(TAG, "❌ FAILED to import data for " + masterName + " from " + filename);
+                        
+                        // Run database diagnostics to help debug
+                        String diagnostics = databaseHelper.getDatabaseDiagnostics();
+                        Log.e(TAG, "🔬 Database diagnostics: " + diagnostics);
                     }
+                } else {
+                    int positionCount = databaseHelper.getMasterPositionCount(masterName);
+                    Log.d(TAG, "✅ Found existing data for " + masterName + ": " + positionCount + " positions");
                 }
 
                 // Log current database stats
                 Map<String, Integer> stats = databaseHelper.getDatabaseStats();
-                Log.d(TAG, "📊 Database stats: " + stats.toString());
+                Log.d(TAG, "📊 Final database stats: " + stats.toString());
+                
+                Log.d(TAG, "🎯 BACKGROUND TASK COMPLETED for master: " + masterName);
 
             } catch (Exception e) {
-                Log.e(TAG, "Error initializing master data", e);
+                Log.e(TAG, "❌ Exception initializing master data for " + masterName, e);
             }
         });
+        
+        Log.d(TAG, "🎯 EXIT: initializeMasterData method completed (background task submitted)");
     }
 
     /**

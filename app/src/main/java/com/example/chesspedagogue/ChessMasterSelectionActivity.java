@@ -256,13 +256,16 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
     }
 
     private void saveMasterSelection(String master) {
-        // Save the selection to SharedPreferences
-        SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString("selected_master", master);
-        editor.apply();
+        // CRITICAL FIX: Save to BOTH SharedPreferences to ensure consistency
+        // Save to ChessAppPrefs (for compatibility with existing code)
+        SharedPreferences chessAppPrefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
+        chessAppPrefs.edit().putString("selected_master", master).apply();
+        
+        // CRITICAL: Also save to ChessFineTunedModels (where voice system reads from)
+        SharedPreferences fineTunedPrefs = getSharedPreferences("ChessFineTunedModels", MODE_PRIVATE);
+        fineTunedPrefs.edit().putString("selected_master", master).apply();
 
-        // Update the FineTunedModelManager
+        // Update the FineTunedModelManager (this also updates ChessFineTunedModels)
         FineTunedModelManager.getInstance(this).setSelectedChessMaster(master);
 
         // Show feedback
