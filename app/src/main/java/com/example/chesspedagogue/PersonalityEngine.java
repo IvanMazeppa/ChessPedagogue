@@ -677,11 +677,13 @@ public class PersonalityEngine {
         // Check if we have data for this master
         boolean hasData = databaseHelper.hasMasterData(master.toLowerCase());
         if (!hasData) {
-            Log.w(TAG, "⚠️ No local data found for " + master + " - consider importing data!");
+            Log.w(TAG, "⚠️ No local data found for " + master + " - AUTOMATICALLY IMPORTING!");
+            // 🔧 FIX: Automatically initialize master data when it's missing
+            initializeMasterData(master.toLowerCase());
         }
 
         Log.d(TAG, "🎭 Current master set to: " + getCurrentMasterDisplayName() +
-                (hasData ? " (data available)" : " (no data)"));
+                (hasData ? " (data available)" : " (importing...)"));
     }
 
     public void setPersonalityPlayEnabled(boolean enabled) {

@@ -50,7 +50,10 @@ public class OpenAIService {
     private static final String RESPONSES_API_URL = "https://api.openai.com/v1/assistants";
 
     static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
-    private static final String DEFAULT_MODEL = "gpt-4-turbo-preview";
+    
+    // 🚨 DEPRECATED: Default model should never be used - fine-tuned models only!
+    @Deprecated
+    private static final String DEFAULT_MODEL = "DEPRECATED_USE_FINE_TUNED_MODELS_ONLY";
 
     private static OpenAIService instance;
 
@@ -170,13 +173,18 @@ public class OpenAIService {
     }
 
     /**
-     * Select chess master (for fine-tuned models)
+     * 🚨 GUARDRAIL: Select chess master (for fine-tuned models ONLY)
+     * NEVER falls back to default models - always uses fine-tuned
      */
     public void selectChessMaster(String master) {
         if (fineTunedModels.containsKey(master.toLowerCase())) {
             this.model = fineTunedModels.get(master.toLowerCase());
+            Log.d(TAG, "✅ Selected fine-tuned model for " + master + ": " + this.model);
         } else {
-            this.model = DEFAULT_MODEL;
+            // 🚨 GUARDRAIL: NEVER use DEFAULT_MODEL - always use a fine-tuned model
+            this.model = fineTunedModels.get("tal"); // Safe fine-tuned fallback
+            Log.e(TAG, "🚨 GUARDRAIL: Master '" + master + "' not found in fine-tuned models");
+            Log.w(TAG, "🔄 GUARDRAIL CORRECTION: Using Tal's fine-tuned model as fallback: " + this.model);
         }
     }
 
@@ -195,14 +203,17 @@ public class OpenAIService {
     }
 
     /**
-     * Get chat completion with conversation history and variety management
+     * 🚨 GUARDRAIL: Get chat completion with conversation history and variety management
+     * ALWAYS uses fine-tuned models - NEVER vanilla chat completions
      */
     public String getChatCompletionWithHistory(ConversationManager conversationManager) {
+        Log.w(TAG, "🚨 GUARDRAIL: Redirecting chat completion to fine-tuned model system");
         return getChatCompletionWithHistoryAndVariety(conversationManager, null, null);
     }
 
     /**
-     * Enhanced chat completion with variety management
+     * 🚨 GUARDRAIL: Enhanced chat completion with variety management
+     * ENFORCES fine-tuned models only - NO vanilla chat completions allowed
      */
     public String getChatCompletionWithHistoryAndVariety(ConversationManager conversationManager, 
                                                          String masterName, String conversationContext) {
@@ -213,6 +224,9 @@ public class OpenAIService {
 
         try {
             String modelToUse = getModelForRequest();
+            
+            // 🚨 CRITICAL GUARDRAIL: Use central validation system
+            modelToUse = validateAndCorrectModel(modelToUse, "getChatCompletionWithHistoryAndVariety");
 
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", modelToUse);
@@ -318,14 +332,18 @@ public class OpenAIService {
     // REPLACE the getChatCompletionWithModel method in OpenAIService.java with this corrected version:
 
     /**
-     * Get chat completion using a specific model with variety management
+     * 🚨 GUARDRAIL: Get chat completion using a specific model with variety management
+     * ENFORCES fine-tuned models only
      */
     public String getChatCompletionWithModel(String modelId, String systemPrompt, String userMessage) {
+        // 🚨 GUARDRAIL: Use central validation system
+        modelId = validateAndCorrectModel(modelId, "getChatCompletionWithModel");
         return getChatCompletionWithModelAndVariety(modelId, systemPrompt, userMessage, null, null);
     }
 
     /**
-     * Get chat completion using a specific model with enhanced variety management
+     * 🚨 GUARDRAIL: Get chat completion using a specific model with enhanced variety management
+     * ENFORCES fine-tuned models only - NO vanilla chat completions
      */
     public String getChatCompletionWithModelAndVariety(String modelId, String systemPrompt, String userMessage,
                                                         String masterName, String conversationContext) {
@@ -334,8 +352,11 @@ public class OpenAIService {
             return "API key not configured";
         }
 
+        // 🚨 CRITICAL GUARDRAIL: Use central validation system
+        modelId = validateAndCorrectModel(modelId, "getChatCompletionWithModelAndVariety");
+
         try {
-            Log.d(TAG, "🎭 Using model with variety: " + modelId);
+            Log.d(TAG, "🎭 Using FINE-TUNED model with variety: " + modelId);
 
             JSONObject requestBody = new JSONObject();
             requestBody.put("model", modelId);
@@ -460,7 +481,8 @@ public class OpenAIService {
     }
 
     /**
-     * Streaming chat completion for ultra-low latency
+     * 🚨 GUARDRAIL: Streaming chat completion for ultra-low latency
+     * ENFORCES fine-tuned models only for streaming
      */
     public void generateStreamingChatResponse(String systemPrompt, String userMessage,
                                               StreamingChatCallback callback) {
@@ -469,9 +491,16 @@ public class OpenAIService {
             BufferedReader reader = null;
 
             try {
+                String modelToUse = getModelForRequest();
+                
+                // 🚨 CRITICAL GUARDRAIL: Use central validation system for streaming
+                modelToUse = validateAndCorrectModel(modelToUse, "generateStreamingChatResponse");
+                
                 JSONObject requestJson = new JSONObject();
-                requestJson.put("model", getModelForRequest());
+                requestJson.put("model", modelToUse);
                 requestJson.put("stream", true);
+                
+                Log.d(TAG, "🚀 Starting FINE-TUNED streaming with model: " + modelToUse);
 
                 JSONArray messages = new JSONArray();
 
@@ -850,17 +879,109 @@ public class OpenAIService {
     }
 
     /**
-     * Helper methods
+     * 🚨 COMPREHENSIVE API GUARDRAIL SYSTEM
+     * 
+     * This system enforces the user's critical requirements:
+     * 1. ALWAYS use fine-tuned models, NEVER chat completions with base models
+     * 2. ALWAYS use ElevenLabs TTS, NEVER OpenAI TTS
+     * 
+     * Guardrails prevent regression and ensure consistent behavior.
+     * 
+     * FINE-TUNED MODELS ONLY:
+     * - All API calls are intercepted and validated
+     * - Non-fine-tuned models are automatically redirected
+     * - Comprehensive logging tracks all violations and corrections
+     * - Fallback to Tal's model ensures system never breaks
+     */
+    
+    /**
+     * 🚨 CENTRAL GUARDRAIL VALIDATION - Call this before ANY OpenAI API request
+     */
+    private String validateAndCorrectModel(String modelId, String context) {
+        if (modelId == null) {
+            Log.e(TAG, "🚨 GUARDRAIL: NULL model provided in " + context);
+            modelId = fineTunedModels.get("tal");
+            Log.w(TAG, "🔄 GUARDRAIL CORRECTION: Using Tal fallback model");
+            return modelId;
+        }
+        
+        if (!isFineTunedModel(modelId)) {
+            Log.e(TAG, "🚨 GUARDRAIL VIOLATION in " + context + ": Non-fine-tuned model: " + modelId);
+            
+            // Try to get appropriate fine-tuned model for current master
+            String currentMaster = getCurrentMasterName();
+            String fineTunedModel = getFineTunedModelForMaster(currentMaster);
+            
+            if (fineTunedModel != null) {
+                Log.w(TAG, "🔄 GUARDRAIL CORRECTION: Using fine-tuned model for " + currentMaster + ": " + fineTunedModel);
+                return fineTunedModel;
+            } else {
+                Log.w(TAG, "🔄 GUARDRAIL FALLBACK: Using Tal's fine-tuned model as last resort");
+                return fineTunedModels.get("tal");
+            }
+        }
+        
+        Log.d(TAG, "✅ GUARDRAIL PASSED: Fine-tuned model validated: " + modelId);
+        return modelId;
+    }
+    
+    /**
+     * 🚨 GUARDRAIL HELPER METHODS
+     */
+    
+    /**
+     * Check if a model ID represents a fine-tuned model
+     */
+    private boolean isFineTunedModel(String modelId) {
+        if (modelId == null) return false;
+        
+        // Fine-tuned models start with "ft:" prefix
+        boolean isFineTuned = modelId.startsWith("ft:");
+        
+        // Also check if it's in our known fine-tuned models
+        boolean isKnownFineTuned = fineTunedModels.containsValue(modelId);
+        
+        Log.d(TAG, "🔍 Model check: " + modelId + " - isFineTuned: " + isFineTuned + ", isKnown: " + isKnownFineTuned);
+        
+        return isFineTuned || isKnownFineTuned;
+    }
+    
+    /**
+     * Get the current master name from context
+     */
+    private String getCurrentMasterName() {
+        if (context != null) {
+            try {
+                return FineTunedModelManager.getInstance(context).getSelectedChessMaster();
+            } catch (Exception e) {
+                Log.w(TAG, "Error getting current master name", e);
+            }
+        }
+        return "tal"; // Safe fallback
+    }
+    
+    /**
+     * Get fine-tuned model for a specific master
+     */
+    private String getFineTunedModelForMaster(String masterName) {
+        if (masterName == null) return null;
+        return fineTunedModels.get(masterName.toLowerCase());
+    }
+    
+    /**
+     * 🚨 GUARDRAIL: Helper methods - ALWAYS returns fine-tuned models
      */
     private String getModelForRequest() {
         if (context == null) {
-            Log.w(TAG, "Context not initialized, using default model");
-            return model;
+            Log.w(TAG, "Context not initialized, using Tal fallback fine-tuned model");
+            return fineTunedModels.get("tal"); // Never use DEFAULT_MODEL
         }
 
         String selectedModel = FineTunedModelManager.getInstance(context).getSelectedModelId();
-        Log.d(TAG, "Selected model: " + selectedModel);
-        return selectedModel;
+        Log.d(TAG, "Selected model from FineTunedModelManager: " + selectedModel);
+        
+        // 🚨 CRITICAL GUARDRAIL: Use central validation system
+        return validateAndCorrectModel(selectedModel, "getModelForRequest");
     }
 
     /**
@@ -915,6 +1036,41 @@ public class OpenAIService {
         void onPartialResponse(String partialText, boolean isFirst);
         void onComplete(String fullResponse);
         void onError(Exception e);
+    }
+
+    /**
+     * 🚨 GUARDRAIL DIAGNOSTIC: Verify all guardrails are working correctly
+     */
+    public void runGuardrailDiagnostic() {
+        Log.i(TAG, "🚨 ============ GUARDRAIL DIAGNOSTIC REPORT ============");
+        
+        // Test fine-tuned model validation
+        Log.i(TAG, "🔍 Testing fine-tuned model validation:");
+        Log.i(TAG, "   - Tal model valid: " + isFineTunedModel(fineTunedModels.get("tal")));
+        Log.i(TAG, "   - Fischer model valid: " + isFineTunedModel(fineTunedModels.get("fischer")));
+        Log.i(TAG, "   - GPT-4 model invalid: " + !isFineTunedModel("gpt-4"));
+        Log.i(TAG, "   - Default model invalid: " + !isFineTunedModel(DEFAULT_MODEL));
+        
+        // Test central validation system
+        Log.i(TAG, "🛡️ Testing central validation system:");
+        String invalidModel = "gpt-4-turbo-preview";
+        String validatedModel = validateAndCorrectModel(invalidModel, "diagnostic");
+        Log.i(TAG, "   - Invalid '" + invalidModel + "' corrected to: " + validatedModel);
+        Log.i(TAG, "   - Correction is fine-tuned: " + isFineTunedModel(validatedModel));
+        
+        // Test current model selection
+        Log.i(TAG, "🎯 Current model selection:");
+        String currentModel = getModelForRequest();
+        Log.i(TAG, "   - Current model: " + currentModel);
+        Log.i(TAG, "   - Is fine-tuned: " + isFineTunedModel(currentModel));
+        
+        // List all available fine-tuned models
+        Log.i(TAG, "📋 Available fine-tuned models:");
+        for (Map.Entry<String, String> entry : fineTunedModels.entrySet()) {
+            Log.i(TAG, "   - " + entry.getKey() + ": " + entry.getValue());
+        }
+        
+        Log.i(TAG, "🚨 =============== DIAGNOSTIC COMPLETE ===============");
     }
 
     /**

@@ -661,7 +661,7 @@ public class ChessMasterResponsesManager {
                     Log.e(TAG, "🔍 Request was: " + finalRequestBody.toString());
                     
                     // Check if we timed out without receiving content
-                    long startTime = 0;
+                    long startTime = 03;
                     long elapsed = System.currentTimeMillis() - startTime;
                     if (!hasReceivedContent && elapsed > 5000) {
                         Log.w(TAG, "⏱️ No content received after 5 seconds from Responses API");

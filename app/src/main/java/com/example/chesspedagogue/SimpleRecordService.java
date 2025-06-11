@@ -847,15 +847,16 @@ public class SimpleRecordService extends Service {
                                 callback.onResponseCompleted(finalResponse);
                             }
                             
-                            // FIXED: Always speak the complete response for voice interactions
-                            if (ttsService != null) {
-                                ttsService.speak(finalResponse, new OnSpeechCompletedListener() {
+                            // 🎭 FIXED: Use master-specific voice to maintain accent and personality
+                            String selectedMaster = getSelectedChessMaster();
+                            Log.d(TAG, "🎭 Speaking response with " + selectedMaster + "'s voice");
+                            TTSServiceManager.speakWithSpecificMaster(SimpleRecordService.this, selectedMaster, finalResponse, 
+                                new OpenAITTSService.OnSpeechCompletedListener() {
                                     @Override
                                     public void onSpeechCompleted() {
-                                        Log.d(TAG, "🎵 Complete voice response speech finished");
+                                        Log.d(TAG, "🎵 Complete voice response speech finished with " + selectedMaster + "'s accent");
                                     }
                                 });
-                            }
                         });
                         
                         // Save to conversation manager
@@ -934,16 +935,19 @@ public class SimpleRecordService extends Service {
                                     updateResponseUI(response);
                                     updateStageIndicator("Enhanced Analysis");
 
-                                    // Interrupt current TTS and speak enhanced response
+                                    // 🎭 FIXED: Interrupt current TTS and speak enhanced response with master voice
                                     if (ttsService != null) {
                                         ttsService.interrupt();
-                                        ttsService.speak(response, new OnSpeechCompletedListener() {
+                                    }
+                                    String selectedMaster = getSelectedChessMaster();
+                                    Log.d(TAG, "🎭 Speaking Stage 2 response with " + selectedMaster + "'s voice");
+                                    TTSServiceManager.speakWithSpecificMaster(SimpleRecordService.this, selectedMaster, response,
+                                        new OpenAITTSService.OnSpeechCompletedListener() {
                                             @Override
                                             public void onSpeechCompleted() {
-                                                Log.d(TAG, "🎵 Stage 2 speech completed");
+                                                Log.d(TAG, "🎵 Stage 2 speech completed with " + selectedMaster + "'s accent");
                                             }
                                         });
-                                    }
                                     break;
 
                                 case STAGE_3_DEEP:
@@ -951,17 +955,20 @@ public class SimpleRecordService extends Service {
                                     updateResponseUI(response);
                                     updateStageIndicator("Master Insights");
 
-                                    // Use the final response for TTS if it's significantly different
+                                    // 🎭 FIXED: Use the final response for TTS if it's significantly different with master voice
                                     if (isFinal && isSignificantlyDifferent(latestResponse, response)) {
                                         if (ttsService != null) {
                                             ttsService.interrupt();
-                                            ttsService.speak(response, new OnSpeechCompletedListener() {
+                                        }
+                                        selectedMaster = getSelectedChessMaster();
+                                        Log.d(TAG, "🎭 Speaking Stage 3 final response with " + selectedMaster + "'s voice");
+                                        TTSServiceManager.speakWithSpecificMaster(SimpleRecordService.this, selectedMaster, response,
+                                            new OpenAITTSService.OnSpeechCompletedListener() {
                                                 @Override
                                                 public void onSpeechCompleted() {
-                                                    Log.d(TAG, "🎵 Final stage speech completed");
+                                                    Log.d(TAG, "🎵 Final stage speech completed with " + selectedMaster + "'s accent");
                                                 }
                                             });
-                                        }
                                     }
                                     break;
                             }
@@ -979,11 +986,12 @@ public class SimpleRecordService extends Service {
 
                             // Don't show errors for later stages if we already have a response
                             if (stage == ThreeStageResponseManager.ResponseStage.STAGE_1_QUICK || latestResponse.isEmpty()) {
-                                String errorMsg = getPersonalityErrorMessage(getSelectedChessMaster());
+                                String selectedMaster = getSelectedChessMaster();
+                                String errorMsg = getPersonalityErrorMessage(selectedMaster);
                                 updateResponseUI(errorMsg);
-                                if (ttsService != null) {
-                                    ttsService.speak(errorMsg);
-                                }
+                                // 🎭 FIXED: Use master-specific voice for error messages
+                                Log.d(TAG, "🎭 Speaking error message with " + selectedMaster + "'s voice");
+                                TTSServiceManager.speakWithSpecificMaster(SimpleRecordService.this, selectedMaster, errorMsg, null);
                             }
                         }
 
@@ -1025,10 +1033,11 @@ public class SimpleRecordService extends Service {
             
             mainHandler.post(() -> {
                 updateUIForProcessing(false);
-                String errorMsg = getPersonalityErrorMessage(getSelectedChessMaster());
-                if (ttsService != null) {
-                    ttsService.speak(errorMsg);
-                }
+                String selectedMaster = getSelectedChessMaster();
+                String errorMsg = getPersonalityErrorMessage(selectedMaster);
+                // 🎭 FIXED: Use master-specific voice for error messages
+                Log.d(TAG, "🎭 Speaking fallback error message with " + selectedMaster + "'s voice");
+                TTSServiceManager.speakWithSpecificMaster(SimpleRecordService.this, selectedMaster, errorMsg, null);
                 updateResponseUI(errorMsg);
             });
         }
@@ -1469,9 +1478,6 @@ public class SimpleRecordService extends Service {
         return rms < 200;
     }
 
-    /**
-     * Clean up resources
-     */
     /**
      * Clean up recording resources
      */

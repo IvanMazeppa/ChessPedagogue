@@ -110,19 +110,19 @@ public class GameViewModel extends AndroidViewModel {
 
     /**
      * MISSING METHOD 1: Initialize personality-related LiveData
-     * FIXED: Default to vanilla Stockfish, personality is OPTIONAL
+     * CRITICAL FIX: Default to personality engine - this is the core feature!
      */
     private void initializePersonalityLiveData() {
         Log.d(TAG, "🎭 Initializing personality LiveData...");
 
-        personalityEngineEnabled.setValue(false); // FIXED: Default to vanilla Stockfish
+        personalityEngineEnabled.setValue(true); // FIXED: Default to personality engine
         personalityMaster.setValue("tal"); // Default to Tal when enabled
         personalityWeight.setValue(0.3f); // Balanced personality influence
         lastMoveExplanation.setValue("");
         masterQuote.setValue("");
         isHistoricalMove.setValue(false);
 
-        Log.d(TAG, "✅ Personality LiveData initialized - Default: Vanilla Stockfish");
+        Log.d(TAG, "✅ Personality LiveData initialized - Default: Tal Personality Engine");
     }
 
     /**

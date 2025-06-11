@@ -23,7 +23,20 @@ public class TTSServiceManager {
     private static OpenAITTSService openAIService;
     private static ElevenLabsTTSService elevenLabsService;
     
+    // 🎤 TTS STATE TRACKING to prevent voice feedback loops
+    private static volatile boolean isTTSSpeaking = false;
+    private static final Object ttsStateLock = new Object();
+    private static TTSStateListener ttsStateListener;
+    
     private Context context;
+    
+    /**
+     * Interface for TTS state change notifications
+     */
+    public interface TTSStateListener {
+        void onTTSStarted();
+        void onTTSStopped();
+    }
     
     /**
      * Get singleton instance - FIXED: Non-blocking initialization
@@ -48,6 +61,61 @@ public class TTSServiceManager {
     }
     
     /**
+     * 🎤 Check if TTS is currently speaking (prevents voice feedback loops)
+     */
+    public static boolean isTTSSpeaking() {
+        synchronized (ttsStateLock) {
+            return isTTSSpeaking;
+        }
+    }
+    
+    /**
+     * 🎤 Set TTS state listener for voice feedback prevention
+     */
+    public static void setTTSStateListener(TTSStateListener listener) {
+        ttsStateListener = listener;
+        Log.d(TAG, "🎤 TTS state listener set for voice feedback prevention");
+    }
+    
+    /**
+     * 🎤 Notify that TTS has started speaking
+     */
+    public static void notifyTTSStarted() {
+        synchronized (ttsStateLock) {
+            if (!isTTSSpeaking) {
+                isTTSSpeaking = true;
+                Log.d(TAG, "🔊 TTS STARTED - Voice recognition should pause");
+                if (ttsStateListener != null) {
+                    try {
+                        ttsStateListener.onTTSStarted();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error notifying TTS started", e);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * 🎤 Notify that TTS has stopped speaking
+     */
+    public static void notifyTTSStopped() {
+        synchronized (ttsStateLock) {
+            if (isTTSSpeaking) {
+                isTTSSpeaking = false;
+                Log.d(TAG, "🔇 TTS STOPPED - Voice recognition can resume");
+                if (ttsStateListener != null) {
+                    try {
+                        ttsStateListener.onTTSStopped();
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error notifying TTS stopped", e);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
      * Get ElevenLabs TTS Service directly - FIXED: Async initialization
      */
     public static ElevenLabsTTSService getElevenLabsTTSService(Context context) {
@@ -59,31 +127,14 @@ public class TTSServiceManager {
     }
     
     /**
-     * Get the appropriate TTS service based on configuration - FIXED: Async initialization
+     * 🎤 ALWAYS returns ElevenLabs TTS Service - no OpenAI fallback allowed
      */
     public static Object getTTSService(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        useElevenLabs = prefs.getBoolean(KEY_USE_ELEVENLABS, true);
-        
-        if (useElevenLabs) {
-            Log.d(TAG, "🎤 Using ElevenLabs TTS Service");
-            if (elevenLabsService == null) {
-                // FIXED: Initialize service on background thread to prevent ANR
-                initializeElevenLabsServiceAsync(context, prefs);
-                // Return a placeholder that will be replaced when initialization completes
-                if (openAIService == null) {
-                    openAIService = OpenAITTSService.getInstance(context);
-                }
-                return openAIService; // Fallback during async initialization
-            }
-            return elevenLabsService;
-        } else {
-            Log.d(TAG, "🎤 Using OpenAI TTS Service");
-            if (openAIService == null) {
-                openAIService = OpenAITTSService.getInstance(context);
-            }
-            return openAIService;
+        Log.d(TAG, "🎤 Using ElevenLabs TTS Service (ONLY option)");
+        if (elevenLabsService == null) {
+            elevenLabsService = ElevenLabsTTSService.getInstance(context);
         }
+        return elevenLabsService;
     }
     
     /**
@@ -115,23 +166,22 @@ public class TTSServiceManager {
     }
     
     /**
-     * Get OpenAI TTS Service (for compatibility)
+     * 🚨 GUARDRAIL: Returns ElevenLabs wrapped as OpenAI-compatible interface
      */
+    public static OpenAITTSService getElevenLabsAsOpenAICompatible(Context context) {
+        Log.d(TAG, "🎤 GUARDRAIL: Creating ElevenLabs-only OpenAI-compatible wrapper");
+        return new ElevenLabsOnlyWrapper(context);
+    }
+    
+    /**
+     * 🚨 DEPRECATED: This method should not be used - ElevenLabs only!
+     * Always returns ElevenLabs service wrapped in compatibility interface
+     */
+    @Deprecated
     public static OpenAITTSService getOpenAITTSService(Context context) {
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        useElevenLabs = prefs.getBoolean(KEY_USE_ELEVENLABS, true);
-        
-        if (useElevenLabs) {
-            Log.d(TAG, "🔄 Using ElevenLabs via OpenAI wrapper");
-            // Return a wrapper that adapts ElevenLabs to OpenAI interface
-            return new OpenAITTSServiceWrapper(context);
-        }
-        
-        Log.d(TAG, "🔄 Using OpenAI TTS service");
-        if (openAIService == null) {
-            openAIService = OpenAITTSService.getInstance(context);
-        }
-        return openAIService;
+        Log.w(TAG, "⚠️ DEPRECATED: getOpenAITTSService called - redirecting to ElevenLabs");
+        // ALWAYS use ElevenLabs - no OpenAI TTS allowed
+        return getElevenLabsAsOpenAICompatible(context);
     }
     
     /**
@@ -251,26 +301,42 @@ public class TTSServiceManager {
     }
     
     /**
-     * Wrapper class that adapts ElevenLabs service to OpenAI interface
-     * This allows seamless switching without changing all the calling code
+     * 🎤 ElevenLabs-only wrapper that extends OpenAI interface but OVERRIDES everything
+     * This ensures ALL methods use ElevenLabs and NEVER call super (OpenAI) methods
      */
-    private static class OpenAITTSServiceWrapper extends OpenAITTSService {
+    public static class ElevenLabsOnlyWrapper extends OpenAITTSService {
         private final ElevenLabsTTSService elevenLabsService;
         
-        public OpenAITTSServiceWrapper(Context context) {
+        public ElevenLabsOnlyWrapper(Context context) {
             super(context);
             this.elevenLabsService = ElevenLabsTTSService.getInstance(context);
+            Log.d(TAG, "🎤 ElevenLabs-ONLY wrapper created - ALL methods overridden");
         }
+        
+        // 🚨 OVERRIDE ALL METHODS TO PREVENT ANY OpenAI TTS CODE FROM RUNNING
         
         @Override
         public void speak(String text, OnSpeechCompletedListener listener) {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: speak with listener");
+            TTSServiceManager.notifyTTSStarted();
+            
             // Adapt OpenAI listener to ElevenLabs listener
             ElevenLabsTTSService.OnSpeechCompletedListener elevenLabsListener = null;
             if (listener != null) {
                 elevenLabsListener = new ElevenLabsTTSService.OnSpeechCompletedListener() {
                     @Override
                     public void onSpeechCompleted() {
+                        // 🎤 Notify TTS stopped when speech completes
+                        TTSServiceManager.notifyTTSStopped();
                         listener.onSpeechCompleted();
+                    }
+                };
+            } else {
+                elevenLabsListener = new ElevenLabsTTSService.OnSpeechCompletedListener() {
+                    @Override
+                    public void onSpeechCompleted() {
+                        // 🎤 Notify TTS stopped even without listener
+                        TTSServiceManager.notifyTTSStopped();
                     }
                 };
             }
@@ -279,7 +345,35 @@ public class TTSServiceManager {
         
         @Override
         public void speak(String text) {
-            elevenLabsService.speak(text);
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: speak without listener");
+            TTSServiceManager.notifyTTSStarted();
+            
+            elevenLabsService.speak(text, new ElevenLabsTTSService.OnSpeechCompletedListener() {
+                @Override
+                public void onSpeechCompleted() {
+                    TTSServiceManager.notifyTTSStopped();
+                }
+            });
+        }
+        
+        // 🚑 CRITICAL: Override ALL other methods to prevent OpenAI fallbacks
+        
+        @Override
+        public void speakStreamingText(String text, TTSCallback callback) {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: speakStreamingText redirected to simple speak");
+            speak(text); // Redirect to our ElevenLabs implementation
+        }
+        
+        @Override
+        public void speakDirect(String text, TTSCallback callback) {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: speakDirect redirected to simple speak");
+            speak(text); // Redirect to our ElevenLabs implementation
+        }
+        
+        @Override
+        public void speak(String text, String voice, String model, TTSCallback callback) {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: speak with voice/model redirected - ignoring OpenAI params");
+            speak(text); // Redirect to our ElevenLabs implementation
         }
         
         @Override
@@ -289,21 +383,28 @@ public class TTSServiceManager {
         
         @Override
         public void stopSpeech() {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: stopSpeech");
             elevenLabsService.stopSpeech();
+            TTSServiceManager.notifyTTSStopped();
         }
         
         @Override
         public void interrupt() {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: interrupt");
             elevenLabsService.interrupt();
+            TTSServiceManager.notifyTTSStopped();
         }
         
         @Override
         public void stopSpeaking() {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: stopSpeaking");
             elevenLabsService.stopSpeaking();
+            TTSServiceManager.notifyTTSStopped();
         }
         
         @Override
         public void shutdown() {
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: shutdown");
             elevenLabsService.shutdown();
         }
         
@@ -314,7 +415,8 @@ public class TTSServiceManager {
         
         @Override
         public void setSpeechCallback(SpeechCallback callback) {
-            // Adapt the callback
+            Log.d(TAG, "🎤 ElevenLabs-ONLY: setSpeechCallback");
+            // Adapt callback to ElevenLabs format
             elevenLabsService.setSpeechCallback(new ElevenLabsTTSService.SpeechCallback() {
                 @Override
                 public void onSpeechCompleted(String text) {

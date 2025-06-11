@@ -74,6 +74,10 @@ public class AlwaysListeningService extends Service {
     private long conversationModeStartTime = 0;
     private boolean inConversationMode = false;
     
+    // 🎤 TTS FEEDBACK PREVENTION
+    private boolean ttsIsSpeaking = false;
+    private final Object ttsStateLock = new Object();
+    
     // Wake word detection callback
     private WakeWordCallback callback;
     
@@ -121,6 +125,9 @@ public class AlwaysListeningService extends Service {
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
             bufferSize = SAMPLE_RATE * 2;
         }
+        
+        // 🎤 Set up TTS state tracking to prevent voice feedback loops
+        setupTTSFeedbackPrevention();
     }
     
     @Override
@@ -149,6 +156,48 @@ public class AlwaysListeningService extends Service {
         
         stopListening();
         executorService.shutdown();
+    }
+    
+    /**
+     * 🎤 Set up TTS feedback prevention system
+     */
+    private void setupTTSFeedbackPrevention() {
+        TTSServiceManager.setTTSStateListener(new TTSServiceManager.TTSStateListener() {
+            @Override
+            public void onTTSStarted() {
+                synchronized (ttsStateLock) {
+                    ttsIsSpeaking = true;
+                    Log.d(TAG, "🔊 TTS STARTED - Pausing voice recognition to prevent feedback");
+                    updateNotification("🔊 AI is speaking...");
+                }
+            }
+            
+            @Override
+            public void onTTSStopped() {
+                synchronized (ttsStateLock) {
+                    ttsIsSpeaking = false;
+                    Log.d(TAG, "🔇 TTS STOPPED - Resuming voice recognition");
+                    
+                    // Resume normal notification based on conversation mode
+                    if (inConversationMode) {
+                        updateNotification("💬 Conversation active - speak normally...");
+                    } else {
+                        updateNotification("📢 Speak UP to chat with your chess master...");
+                    }
+                }
+            }
+        });
+        
+        Log.d(TAG, "✅ TTS feedback prevention system initialized");
+    }
+    
+    /**
+     * 🎤 Check if we should ignore audio due to TTS speaking
+     */
+    private boolean shouldIgnoreAudioDueToTTS() {
+        synchronized (ttsStateLock) {
+            return ttsIsSpeaking;
+        }
     }
     
     /**
@@ -249,6 +298,15 @@ public class AlwaysListeningService extends Service {
                     double rms = calculateRMS(buffer, read);
                     long currentTime = System.currentTimeMillis();
                     
+                    // 🎤 CRITICAL: Skip audio processing if TTS is speaking to prevent feedback
+                    if (shouldIgnoreAudioDueToTTS()) {
+                        // Log throttled to avoid spam
+                        if (currentTime % 1000 < 100) { // Log roughly once per second
+                            Log.d(TAG, "🔊 Ignoring audio input - TTS is speaking (feedback prevention)");
+                        }
+                        continue; // Skip this audio frame entirely
+                    }
+                    
                     // Check if we're still in conversation mode
                     if (inConversationMode && currentTime - conversationModeStartTime > CONVERSATION_MODE_DURATION) {
                         inConversationMode = false;
@@ -343,6 +401,12 @@ public class AlwaysListeningService extends Service {
      * 🧠 Process potential wake word using Groq STT
      */
     private void processPotentialWakeWord(String speechData) {
+        // 🎤 DOUBLE-CHECK: Don't process if TTS is speaking
+        if (shouldIgnoreAudioDueToTTS()) {
+            Log.d(TAG, "🔊 Skipping wake word processing - TTS is speaking");
+            return;
+        }
+        
         Log.d(TAG, "🧠 Processing potential wake word with Groq STT...");
         updateVoiceStatus(VoiceStatus.PROCESSING_SPEECH); // Red - transcribing
         
@@ -363,6 +427,12 @@ public class AlwaysListeningService extends Service {
      * 🎤 Process all speech directly without wake word requirement
      */
     private void processDirectSpeechCommand() {
+        // 🎤 FINAL CHECK: Abort if TTS started speaking during processing
+        if (shouldIgnoreAudioDueToTTS()) {
+            Log.d(TAG, "🔊 Aborting direct speech - TTS started speaking");
+            return;
+        }
+        
         Log.d(TAG, "🎤 Direct speech command mode - capturing audio for transcription");
         
         try {
@@ -374,6 +444,12 @@ public class AlwaysListeningService extends Service {
                 @Override
                 public void onSpeechRecognized(String transcribedText) {
                     Log.d(TAG, "🗣️ Direct speech transcribed: " + transcribedText);
+                    
+                    // 🎤 LAST DEFENSE: Ignore transcription if TTS is speaking
+                    if (shouldIgnoreAudioDueToTTS()) {
+                        Log.d(TAG, "🔊 Ignoring transcription - TTS is speaking: '" + transcribedText + "'");
+                        return;
+                    }
                     
                     // Enhanced noise filtering to reduce false triggers
                     if (isTranscriptionNoise(transcribedText)) {

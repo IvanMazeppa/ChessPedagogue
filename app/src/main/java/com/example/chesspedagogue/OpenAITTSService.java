@@ -49,9 +49,11 @@ public class OpenAITTSService {
     public static final String VOICE_ONYX = "onyx";
     public static final String VOICE_NOVA = "nova";
 
-    // Model constants
-    public static final String MODEL_STANDARD = "tts-1";
-    public static final String MODEL_PREMIUM = "tts-1-hd";
+    // 🚨 DEPRECATED: OpenAI TTS models - DO NOT USE - ElevenLabs only!
+    @Deprecated
+    public static final String MODEL_STANDARD = "DEPRECATED_USE_ELEVENLABS";
+    @Deprecated  
+    public static final String MODEL_PREMIUM = "DEPRECATED_USE_ELEVENLABS";
 
     private static OpenAITTSService instance;
 
@@ -118,11 +120,13 @@ public class OpenAITTSService {
         this.executorService = Executors.newFixedThreadPool(4);
     }
 
+    /**
+     * 🚨 CRITICAL GUARDRAIL: Always redirect to ElevenLabs - NO OpenAI TTS allowed
+     */
     public static synchronized OpenAITTSService getInstance(Context context) {
-        if (instance == null) {
-            instance = new OpenAITTSService(context);
-        }
-        return instance;
+        Log.w(TAG, "🚨 GUARDRAIL: OpenAI TTS requested - REDIRECTING to ElevenLabs");
+        // Return ElevenLabs wrapped in OpenAI interface - NEVER create actual OpenAI TTS
+        return TTSServiceManager.getElevenLabsAsOpenAICompatible(context);
     }
 
     // Simple speech callback interface
@@ -164,6 +168,9 @@ public class OpenAITTSService {
 
         isSpeaking = true;
         interruptRequested = false;
+        
+        // 🎤 Notify TTS started to prevent voice feedback loops
+        TTSServiceManager.notifyTTSStarted();
 
         // Reset chunk counter for this speech session
         chunkIdCounter.set(0);
@@ -189,6 +196,10 @@ public class OpenAITTSService {
                 mainHandler.post(() -> {
                     cleanupCurrentSession(); // ADDED: Clean up after completion
                     isSpeaking = false;
+                    
+                    // 🎤 Notify TTS stopped to allow voice recognition to resume
+                    TTSServiceManager.notifyTTSStopped();
+                    
                     if (listener != null) {
                         listener.onSpeechCompleted();
                     }
@@ -203,6 +214,10 @@ public class OpenAITTSService {
                 mainHandler.post(() -> {
                     cleanupCurrentSession(); // ADDED: Clean up after error
                     isSpeaking = false;
+                    
+                    // 🎤 Notify TTS stopped even on error to allow voice recognition to resume
+                    TTSServiceManager.notifyTTSStopped();
+                    
                     if (listener != null) {
                         listener.onSpeechCompleted();
                     }
@@ -508,7 +523,8 @@ public class OpenAITTSService {
                 Log.d(TAG, "🔄 Using fallback TTS without instructions");
 
                 JSONObject payload = new JSONObject();
-                payload.put("model", "gpt-4o-mini-tts");
+                // 🚨 GUARDRAIL: Log warning but allow compilation
+                Log.w(TAG, "🚨 WARNING: OpenAI TTS fallback - should use ElevenLabs instead");
                 payload.put("voice", voiceToUse);
                 payload.put("speed", 1.0);
                 payload.put("input", text);
@@ -563,12 +579,14 @@ public class OpenAITTSService {
         executorService.execute(() -> {
             try {
                 String voiceToUse = getVoiceForCurrentMaster();
+                String modelToUse = "tts-1"; // Default OpenAI model (but should never be used due to guardrails)
                 String selectedMaster = getCurrentChessMaster();
 
                 // CRITICAL DEBUG: Log everything for Tal specifically
                 Log.d(TAG, "🔍 DEBUG TTS GENERATION:");
                 Log.d(TAG, "   Master: " + selectedMaster);
                 Log.d(TAG, "   Voice: " + voiceToUse);
+                Log.d(TAG, "   Model: " + modelToUse);
                 Log.d(TAG, "   Text: " + text.substring(0, Math.min(50, text.length())) + "...");
                 Log.d(TAG, "   Chunk ID: " + chunkId);
 
@@ -576,7 +594,8 @@ public class OpenAITTSService {
                 boolean isTal = "tal".equalsIgnoreCase(selectedMaster);
                 Log.d(TAG, "   Is Tal: " + isTal);
 
-                String modelToUse = "gpt-4o-mini-tts";
+                // 🚑 GUARDRAIL: Log warning but allow compilation
+                Log.w(TAG, "🚑 WARNING: OpenAI TTS code path - should use ElevenLabs instead");
 
                 // Create enhanced instructions with special handling for Tal and Carlsen
                 String enhancedInstructions = null;
@@ -934,14 +953,17 @@ public class OpenAITTSService {
         executorService.execute(() -> {
             try {
                 String voiceToUse = getVoiceForCurrentMaster();
+                String modelToUse = "tts-1"; // Default OpenAI model (but should never be used due to guardrails)
                 String selectedMaster = getCurrentChessMaster();
 
                 Log.d(TAG, "🎭 EMOTIONAL TTS GENERATION:");
                 Log.d(TAG, "   Master: " + selectedMaster);
+                Log.d(TAG, "   Model: " + modelToUse);
                 Log.d(TAG, "   Emotional State: " + emotionalState);
                 Log.d(TAG, "   Evaluation Change: " + evaluationChange);
 
-                String modelToUse = "gpt-4o-mini-tts";
+                // 🚑 GUARDRAIL: Log warning but allow compilation
+                Log.w(TAG, "🚑 WARNING: OpenAI TTS code path - should use ElevenLabs instead");
 
                 // Create emotion-enhanced instructions
                 String emotionalInstructions = createEmotionalVoiceInstructions(
@@ -1455,6 +1477,9 @@ public class OpenAITTSService {
 
         isSpeaking = false;
         isPlayingChunks.set(false);
+        
+        // 🎤 Notify TTS stopped to allow voice recognition to resume
+        TTSServiceManager.notifyTTSStopped();
 
         if (speechCallback != null) {
             speechCallback.onSpeechInterrupted();
@@ -1559,6 +1584,9 @@ public class OpenAITTSService {
         
         interruptRequested = true;
         isSpeaking = false;
+        
+        // 🎤 Notify TTS stopped to allow voice recognition to resume
+        TTSServiceManager.notifyTTSStopped();
         
         // Stop all audio immediately
         cleanupPreviousSession();

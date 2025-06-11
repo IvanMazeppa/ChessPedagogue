@@ -97,7 +97,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
@@ -131,7 +131,7 @@ public class RelationshipPersistenceManager {
                        relationship.master1, relationship.master2));
             }
         } finally {
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
@@ -162,7 +162,7 @@ public class RelationshipPersistenceManager {
                        relationship.master1, relationship.master2));
             }
         } finally {
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
@@ -339,7 +339,7 @@ public class RelationshipPersistenceManager {
                 }
             }
         } finally {
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
@@ -452,7 +452,7 @@ public class RelationshipPersistenceManager {
                 updateRelationship(relationship);
             }
         } finally {
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
@@ -716,7 +716,7 @@ public class RelationshipPersistenceManager {
         } catch (Exception e) {
             Log.e(TAG, "Error recording expression pattern: " + e.getMessage(), e);
         } finally {
-            db.close();
+            // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
     }
     
