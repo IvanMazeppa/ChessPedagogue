@@ -176,16 +176,13 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * DEBUG: Alternative method name to test if method resolution is the issue
+     * DEBUG: Direct test of Responses API bypassing all throttling and complexity
      */
     public void sendMessageAlternative(String sessionId, String message, String conversationContext, ResponseCallback callback) {
-        // The method IS being called - the custom error message proves this
-        // Now let's implement a working version to bypass the original sendMessage
+        Log.e(TAG, "🚀 ALTERNATIVE: Starting direct API test");
         
         executorService.execute(() -> {
             try {
-                Log.e(TAG, "🚀 ALTERNATIVE: Method executing in background thread");
-                
                 ResponseSession session = activeSessions.get(sessionId);
                 if (session == null) {
                     Log.e(TAG, "❌ ALTERNATIVE: Invalid session ID: " + sessionId);
@@ -193,24 +190,34 @@ public class ChessMasterResponsesManager {
                     return;
                 }
                 
-                // Create simple request for testing
-                String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext, null);
-                String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
+                Log.e(TAG, "🚀 ALTERNATIVE: Building direct API request");
                 
-                Log.e(TAG, "🚀 ALTERNATIVE: About to test Responses API call");
+                // FIXED: Create minimal test request with correct format
+                JSONObject requestBody = new JSONObject();
+                requestBody.put("model", getModelForMaster(session.masterName));
+                requestBody.put("stream", true);
                 
-                // Use proper Responses API call instead of chat completions
-                try {
-                    Log.e(TAG, "🚀 ALTERNATIVE: Using Responses API");
-                    sendMessageInternal(sessionId, message, conversationContext, callback);
-                } catch (Exception e) {
-                    Log.e(TAG, "🚀 ALTERNATIVE: Responses API error: " + e.getMessage());
-                    callback.onError("Responses API error: " + e.getMessage());
-                }
+                // FIXED: Combine instructions and input into single input field
+                String combinedInput = "You are " + session.masterName + ". Respond briefly and in character.\n\nUser: " + message;
+                requestBody.put("input", combinedInput);
+                
+                // FIXED: Only supported parameters
+                requestBody.put("temperature", 0.8);
+                requestBody.put("tools", new JSONArray());
+                
+                // REMOVED: Unsupported parameters:
+                // - instructions (combined into input)
+                // - text format object (not supported)
+                // - max_output_tokens (not supported)
+                
+                Log.e(TAG, "🚀 ALTERNATIVE: Request body: " + requestBody.toString());
+                
+                // Make direct API call
+                streamResponse(session, requestBody, callback);
                 
             } catch (Exception e) {
-                Log.e(TAG, "🚀 ALTERNATIVE: Exception in method: " + e.getMessage(), e);
-                callback.onError("Alternative method error: " + e.getMessage());
+                Log.e(TAG, "🚀 ALTERNATIVE: Exception: " + e.getMessage(), e);
+                callback.onError("Alternative test error: " + e.getMessage());
             }
         });
     }
@@ -339,56 +346,51 @@ public class ChessMasterResponsesManager {
                 // Update throttling tracking
                 lastResponseTime = System.currentTimeMillis();
                 lastRespondingMaster = session.masterName;
-                Log.d(TAG, "⏱️ Updated throttling: last response time set for " + session.masterName);
+                LogThrottler.d(TAG, "⏱️ Updated throttling: last response time set for " + session.masterName);
                 
                 // Create enhanced input with master personality and context-specific length rules
                 String systemPrompt = buildSystemPromptForMaster(session.masterName, conversationContext, null);
                 String enhancedInput = buildEnhancedInput(session.masterName, message, conversationContext);
                 
-                // Create response request using CORRECT Responses API format
+                // FIXED: Create response request using CORRECT Responses API format
                 JSONObject requestBody = new JSONObject();
                 requestBody.put("model", getModelForMaster(session.masterName));
                 requestBody.put("stream", true);
                 
-                // Use instructions approach for all masters (no more assistants/vector stores)
-                Log.d(TAG, "📝 Using instructions format for " + session.masterName + " (migrated from assistants)");
+                // FIXED: Combine system prompt and user input in a single input field
+                // The Responses API doesn't have separate "instructions" parameter
+                String combinedInput = systemPrompt + "\n\nUser: " + enhancedInput;
+                requestBody.put("input", combinedInput);
                 
-                // Use instructions parameter for system prompt
-                requestBody.put("instructions", systemPrompt);
-                
-                // Use simple string input for user message
-                requestBody.put("input", enhancedInput);
-                
-                // Add previous response ID for stateful conversation
+                // Add previous response ID for stateful conversation (this is correct)
                 if (session.previousResponseId != null) {
                     requestBody.put("previous_response_id", session.previousResponseId);
                 }
                 
-                // Responses API with instructions can handle file search natively
-                // No need for explicit vector store configuration
+                // FIXED: Only include supported optional parameters
+                requestBody.put("temperature", competitiveSpeedMode ? 0.8 : 1.0);
                 
-                // Add required text format for Responses API
-                JSONObject textFormat = new JSONObject();
-                JSONObject formatType = new JSONObject();
-                formatType.put("type", "text");
-                textFormat.put("format", formatType);
-                requestBody.put("text", textFormat);
+                // FIXED: Add empty tools array (required by API)
+                requestBody.put("tools", new JSONArray());
                 
-                // Add optimized parameters for faster responses
-                requestBody.put("temperature", competitiveSpeedMode ? 0.8 : 1); // Lower temp for speed
-                requestBody.put("max_output_tokens", competitiveSpeedMode ? 512 : 2048); // Shorter responses for speed
-                requestBody.put("top_p", competitiveSpeedMode ? 0.9 : 1); // More focused for speed
-                requestBody.put("store", true);
+                // REMOVED: All unsupported parameters that were causing HTTP 400:
+                // - instructions (not supported - combined into input instead)
+                // - text format object (not supported)  
+                // - max_output_tokens (not supported)
+                // - top_p (not supported)
+                // - store (not supported)
+                // - metadata (not supported)
                 
-                // Add metadata for conversation context
-                if (conversationContext != null && !conversationContext.isEmpty()) {
-                    JSONObject metadata = new JSONObject();
-                    metadata.put("context", conversationContext);
-                    metadata.put("master", session.masterName);
-                    requestBody.put("metadata", metadata);
-                }
-                
+                // DEBUG: Log the exact request being sent
                 Log.d(TAG, "🚀 Sending throttled request for " + session.masterName);
+                Log.d(TAG, "📋 Request body model: " + requestBody.optString("model"));
+                Log.d(TAG, "📋 Request body input length: " + combinedInput.length());
+                Log.d(TAG, "📋 Full request structure: " + requestBody.toString());
+                
+                // PERFORMANCE: Add timing to measure API response time
+                long startTime = System.currentTimeMillis();
+                Log.d(TAG, "⏱️ API request start time: " + startTime);
+                
                 // Make streaming request with retry logic
                 streamResponseWithRetry(session, requestBody, callback, 0);
                 
@@ -506,19 +508,19 @@ public class ChessMasterResponsesManager {
                 private boolean isFirstChunk = true;
                 private String responseId = null;
                 boolean hasReceivedContent = false;
-                private long startTime = System.currentTimeMillis();
+                private final long listenerStartTime = System.currentTimeMillis();
                 private boolean hasCompletedResponse = false; // ADDED: Track if we've already completed a response
                 
                 @Override
                 public void onEvent(EventSource eventSource, String id, String type, String data) {
-                    // Log all events for debugging
-                    Log.d(TAG, "🔔 SSE Event - Type: " + type + ", ID: " + id + ", Data length: " + 
+                    // Log all events for debugging (throttled)
+                    LogThrottler.v(TAG, "🔔 SSE Event - Type: " + type + ", ID: " + id + ", Data length: " + 
                         (data != null ? data.length() : 0));
                     
                     // The Responses API might send events differently than expected
                     // Let's check if we're still getting text content but not parsing it correctly
                     if (data != null && !data.trim().isEmpty()) {
-                        Log.d(TAG, "📄 SSE Data: " + (data.length() > 200 ? data.substring(0, 200) + "..." : data));
+                        LogThrottler.v(TAG, "📄 SSE Data: " + (data.length() > 200 ? data.substring(0, 200) + "..." : data));
                     }
                     
                     try {
@@ -526,13 +528,15 @@ public class ChessMasterResponsesManager {
                         if ("[DONE]".equals(data)) {
                             // FIXED: Only process if we haven't already completed
                             if (hasCompletedResponse) {
-                                Log.d(TAG, "🔄 [DONE] received but already completed - ignoring");
+                                LogThrottler.v(TAG, "🔄 [DONE] received but already completed - ignoring");
                                 return;
                             }
                             
                             // Response complete
                             String fullResponse = responseBuilder.toString();
+                            long responseTime = System.currentTimeMillis() - listenerStartTime;
                             Log.d(TAG, "✅ Response complete: " + fullResponse);
+                            Log.d(TAG, "⏱️ API response time: " + responseTime + "ms");
                             session.lastActivityTime = System.currentTimeMillis();
                             hasCompletedResponse = true; // ADDED: Mark as completed
                             
@@ -582,7 +586,9 @@ public class ChessMasterResponsesManager {
                             
                             // Response complete - handle both possible event names
                             String fullResponse = responseBuilder.toString();
+                            long responseTime = System.currentTimeMillis() - listenerStartTime;
                             Log.d(TAG, "✅ Response complete event - Full response: " + fullResponse);
+                            Log.d(TAG, "⏱️ API response time: " + responseTime + "ms");
                             session.lastActivityTime = System.currentTimeMillis();
                             hasCompletedResponse = true; // ADDED: Mark as completed
                             
@@ -650,7 +656,12 @@ public class ChessMasterResponsesManager {
                 public void onFailure(EventSource eventSource, Throwable t, Response response) {
                     String errorMessage = "Unknown streaming error";
                     
+                    // CRITICAL: Log the complete request details for debugging
+                    Log.e(TAG, "🚨 FULL FAILURE DETAILS:");
+                    Log.e(TAG, "🔍 Request was: " + finalRequestBody.toString());
+                    
                     // Check if we timed out without receiving content
+                    long startTime = 0;
                     long elapsed = System.currentTimeMillis() - startTime;
                     if (!hasReceivedContent && elapsed > 5000) {
                         Log.w(TAG, "⏱️ No content received after 5 seconds from Responses API");
@@ -670,6 +681,19 @@ public class ChessMasterResponsesManager {
                         try {
                             String errorBody = response.body() != null ? response.body().string() : "No error body";
                             Log.e(TAG, "❌ Responses API Error Body: " + errorBody);
+                            
+                            // Special handling for HTTP 400 errors
+                            if (response.code() == 400) {
+                                Log.e(TAG, "🚨 HTTP 400 BAD REQUEST DETAILS:");
+                                Log.e(TAG, "🔍 This usually means invalid request format or unsupported model");
+                                Log.e(TAG, "🔍 Error body content: " + errorBody);
+                                
+                                // Check if it's a model-related error
+                                if (errorBody.toLowerCase().contains("model") || errorBody.toLowerCase().contains("ft:")) {
+                                    Log.e(TAG, "💡 This appears to be a fine-tuned model compatibility issue!");
+                                    Log.e(TAG, "💡 The fine-tuned model may not support Responses API");
+                                }
+                            }
                         } catch (IOException e) {
                             Log.e(TAG, "Failed to read error body", e);
                         }
@@ -718,28 +742,44 @@ public class ChessMasterResponsesManager {
     }
     
     /**
-     * Get model for a chess master
+     * Get model for a chess master - RESTORED: Using your fine-tuned models
      */
     private String getModelForMaster(String masterName) {
-        // Get the specific fine-tuned model for this master
-        String modelId = modelManager.getModelIdForMaster(masterName);
-        Log.d(TAG, "🔍 Model lookup for " + masterName + ": " + modelId);
+        // TEMPORARY: Use base models for Responses API compatibility testing
+        // Your fine-tuned models may not be compatible with Responses API
+        boolean useFineTunedModels = true; // RESTORED: Your fine-tuned models work with Responses API
         
-        if (modelId != null && !modelId.equals("gpt-4.1")) {
-            Log.d(TAG, "🎯 Using fine-tuned model for " + masterName + ": " + modelId);
-            return modelId;
+        if (useFineTunedModels) {
+            // Get the specific fine-tuned model for this master from FineTunedModelManager
+            String modelId = modelManager.getModelIdForMaster(masterName);
+            Log.d(TAG, "🔍 Model lookup for " + masterName + ": " + modelId);
+            
+            if (modelId != null && !modelId.equals("gpt-4.1")) {
+                Log.d(TAG, "🎯 Using fine-tuned model for " + masterName + ": " + modelId);
+                return modelId;
+            }
+            
+            // Fallback to specific fine-tuned models if FineTunedModelManager doesn't have them
+            switch (masterName.toLowerCase()) {
+                case "tal":
+                    return "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
+                case "fischer":
+                    return "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4";
+                case "carlsen":
+                    return "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
+                case "alekhine":
+                    return "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD";
+                case "kasparov":
+                    return "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz";
+                default:
+                    Log.w(TAG, "⚠️ Unknown master: " + masterName + ", using base model");
+                    return "gpt-4o";
+            }
+        } else {
+            // TEMPORARY: Use base models to test Responses API compatibility
+            Log.w(TAG, "🧪 TESTING: Using base model instead of fine-tuned for " + masterName);
+            return "gpt-4o"; // Use base model for all masters temporarily
         }
-        
-        // TEMPORARY: Force Carlsen's fine-tuned model if not found
-        if ("carlsen".equals(masterName.toLowerCase())) {
-            String carlsenModel = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
-            Log.d(TAG, "🔧 FORCING Carlsen model: " + carlsenModel);
-            return carlsenModel;
-        }
-        
-        // Fallback to gpt-4o-mini for Responses API
-        Log.d(TAG, "📋 Using default model for " + masterName);
-        return "gpt-4o-mini";
     }
     
     /**

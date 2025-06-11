@@ -1,5 +1,6 @@
 package com.chesspedagogue.configurator.tabs;
 
+import com.chesspedagogue.configurator.utils.LiveMonitorWebSocketServer;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
@@ -44,23 +45,37 @@ public class LiveMonitorTab extends Tab {
     private TextArea systemLogsArea;
     private Timeline updateTimeline;
     
-    // Monitoring state
+    // WebSocket Server and Real Monitoring State
+    private LiveMonitorWebSocketServer webSocketServer;
+    private static final int WEBSOCKET_PORT = 8080;
+    private boolean isServerRunning = false;
     private boolean isConnected = false;
     private boolean isGameActive = false;
-    private Random random = new Random();
+    
+    // Real game state (updated from Android app)
     private int totalApiCalls = 0;
     private int errorCount = 0;
     private double currentEvaluation = 0.0;
-    private String[] activeMasters = {"Carlsen", "Alekhine"};
+    private String[] activeMasters = {};
     private String currentPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    private String currentMoveNotation = "Game not started";
+    private String gameMode = "Unknown";
+    private String primaryMaster = "None";
+    private String emotionalStates = "Waiting for data...";
+    private double sophisticationLevel = 0.0;
+    
+    // Demo fallback (for development only)
+    private Random random = new Random();
+    private boolean useDemoData = false;
     
     public LiveMonitorTab() {
         super("📊 Live Monitor");
         initializeUI();
         setupEventHandlers();
+        initializeWebSocketServer();
         startUpdateTimer();
         
-        logger.info("📊 Live Monitor initialized");
+        logger.info("📊 Live Monitor initialized with WebSocket server on port {}", WEBSOCKET_PORT);
     }
     
     private void initializeUI() {
@@ -379,23 +394,21 @@ public class LiveMonitorTab extends Tab {
     }
     
     private void updateMonitoringData() {
-        // Update time display in status bar
+        // Update time display and basic monitoring
         Platform.runLater(() -> {
-            if (isConnected) {
-                // Simulate real-time updates
-                updateGameState();
-                updateMasterActivity();
-                updatePerformanceMetrics();
-                
-                // Occasionally add conversation entries
-                if (random.nextDouble() < 0.1) { // 10% chance each second
-                    addRandomConversationEntry();
-                }
+            // Update timestamp in status bar if needed
+            
+            // If using demo data (fallback when no real connection)
+            if (useDemoData && isConnected) {
+                updateDemoData();
             }
+            
+            // Real data comes through WebSocket handlers, no simulation needed
         });
     }
     
-    private void updateGameState() {
+    // Demo data fallback (only used during development/testing)
+    private void updateDemoData() {
         // Simulate move progression
         int moveNumber = random.nextInt(40) + 1;
         String[] moves = {"e4", "Nf3", "Bc4", "d3", "0-0", "Re1", "Bg5"};
@@ -409,58 +422,24 @@ public class LiveMonitorTab extends Tab {
         evaluationLabel.setText(String.format("%+.1f", currentEvaluation));
         evaluationLabel.setTextFill(currentEvaluation > 0 ? Color.GREEN : Color.RED);
         
-        double barValue = (currentEvaluation + 3.0) / 6.0; // Normalize to 0-1
+        double barValue = (currentEvaluation + 3.0) / 6.0;
         evaluationBar.setProgress(barValue);
-    }
-    
-    private void updateMasterActivity() {
-        String[] emotions = {"Excited", "Focused", "Contemplative", "Surprised", "Pleased"};
-        String carlsenEmotion = emotions[random.nextInt(emotions.length)];
-        String alekhineEmotion = emotions[random.nextInt(emotions.length)];
         
-        emotionalStateLabel.setText("Carlsen: " + carlsenEmotion + " | Alekhine: " + alekhineEmotion);
-        
-        // Update sophistication (gradually increases)
-        double currentSoph = sophisticationProgress.getProgress();
-        sophisticationProgress.setProgress(Math.min(1.0, currentSoph + random.nextDouble() * 0.01));
-    }
-    
-    private void updatePerformanceMetrics() {
-        if (random.nextDouble() < 0.3) { // 30% chance to increment
-            totalApiCalls++;
-            apiCallsLabel.setText(String.valueOf(totalApiCalls));
-        }
-        
-        if (random.nextDouble() < 0.05 && errorCount < 3) { // 5% chance of error
-            errorCount++;
-            errorCountLabel.setText(String.valueOf(errorCount));
-            errorCountLabel.setTextFill(errorCount > 0 ? Color.ORANGE : Color.GREEN);
-            
-            addSystemLog("[WARN] API timeout occurred, retrying...");
+        // Occasionally add demo conversation entries
+        if (random.nextDouble() < 0.1) {
+            addDemoConversationEntry();
         }
     }
     
-    private void addRandomConversationEntry() {
-        String[] carlsenComments = {
-            "This position requires precise calculation",
-            "I prefer the more direct approach here",
-            "The pawn structure is critical"
-        };
-        
-        String[] alekhineComments = {
-            "What a beautiful tactical motif!",
-            "I can see a brilliant sacrifice coming",
-            "This position has so much potential energy!"
+    private void addDemoConversationEntry() {
+        String[] demoComments = {
+            "Demo: Waiting for real Android app connection...",
+            "Demo: This would show live master conversations",
+            "Demo: Real-time game analysis would appear here"
         };
         
         String timestamp = LocalDateTime.now().format(TIME_FORMAT);
-        String comment;
-        
-        if (random.nextBoolean()) {
-            comment = "[" + timestamp + "] Carlsen: " + carlsenComments[random.nextInt(carlsenComments.length)];
-        } else {
-            comment = "[" + timestamp + "] Alekhine: " + alekhineComments[random.nextInt(alekhineComments.length)];
-        }
+        String comment = "[" + timestamp + "] DEMO: " + demoComments[random.nextInt(demoComments.length)];
         
         conversationFeed.appendText("\n" + comment);
         
@@ -469,39 +448,174 @@ public class LiveMonitorTab extends Tab {
         }
     }
     
+    private void initializeWebSocketServer() {
+        try {
+            webSocketServer = new LiveMonitorWebSocketServer(WEBSOCKET_PORT);
+            
+            // Set up handlers for different message types
+            webSocketServer.setGameStateHandler(this::handleGameStateUpdate);
+            webSocketServer.setMasterActivityHandler(this::handleMasterActivityUpdate);
+            webSocketServer.setConversationHandler(this::handleConversationUpdate);
+            webSocketServer.setPerformanceHandler(this::handlePerformanceUpdate);
+            webSocketServer.setSystemLogHandler(this::addSystemLog);
+            webSocketServer.setConnectionStatusHandler(this::updateConnectionStatus);
+            
+            logger.info("🌐 WebSocket server initialized on port {}", WEBSOCKET_PORT);
+            addSystemLog("[INFO] WebSocket server initialized on port " + WEBSOCKET_PORT);
+            
+        } catch (Exception e) {
+            logger.error("❌ Failed to initialize WebSocket server: {}", e.getMessage(), e);
+            addSystemLog("[ERROR] Failed to initialize WebSocket server: " + e.getMessage());
+        }
+    }
+    
     private void connectToAndroidApp() {
-        isConnected = true;
-        isGameActive = true;
-        
-        connectionStatusLabel.setText("🟢 Connected");
-        connectionStatusLabel.setTextFill(Color.GREEN);
-        gameStatusLabel.setText("Spectator Game: Carlsen vs Alekhine");
-        
-        connectButton.setDisable(true);
-        disconnectButton.setDisable(false);
-        emergencyStopButton.setDisable(false);
-        
-        addSystemLog("[INFO] Successfully connected to Android app");
-        addSystemLog("[INFO] Monitoring active spectator game");
-        
-        logger.info("🔌 Connected to Android app simulation");
+        try {
+            if (!isServerRunning) {
+                webSocketServer.start();
+                isServerRunning = true;
+                addSystemLog("[INFO] WebSocket server started, waiting for Android app...");
+                logger.info("🚀 WebSocket server started");
+            }
+            
+            connectButton.setDisable(true);
+            disconnectButton.setDisable(false);
+            emergencyStopButton.setDisable(false);
+            
+            // Note: Connection status will be updated by the WebSocket handler
+            connectionStatusLabel.setText("🟡 Waiting for Android app...");
+            connectionStatusLabel.setTextFill(Color.ORANGE);
+            gameStatusLabel.setText("Server ready, waiting for connection");
+            
+        } catch (Exception e) {
+            logger.error("❌ Failed to start WebSocket server: {}", e.getMessage(), e);
+            addSystemLog("[ERROR] Failed to start server: " + e.getMessage());
+            
+            connectButton.setDisable(false);
+            disconnectButton.setDisable(true);
+            emergencyStopButton.setDisable(true);
+        }
     }
     
     private void disconnectFromAndroidApp() {
-        isConnected = false;
-        isGameActive = false;
-        
-        connectionStatusLabel.setText("🔴 Disconnected");
-        connectionStatusLabel.setTextFill(Color.RED);
-        gameStatusLabel.setText("No active game");
-        
-        connectButton.setDisable(false);
-        disconnectButton.setDisable(true);
-        emergencyStopButton.setDisable(true);
-        
-        addSystemLog("[INFO] Disconnected from Android app");
-        
-        logger.info("🚫 Disconnected from Android app");
+        try {
+            if (isServerRunning && webSocketServer != null) {
+                webSocketServer.stop();
+                isServerRunning = false;
+                addSystemLog("[INFO] WebSocket server stopped");
+                logger.info("🛑 WebSocket server stopped");
+            }
+            
+            isConnected = false;
+            isGameActive = false;
+            
+            connectionStatusLabel.setText("🔴 Disconnected");
+            connectionStatusLabel.setTextFill(Color.RED);
+            gameStatusLabel.setText("No active game");
+            
+            connectButton.setDisable(false);
+            disconnectButton.setDisable(true);
+            emergencyStopButton.setDisable(true);
+            
+        } catch (Exception e) {
+            logger.error("❌ Error stopping WebSocket server: {}", e.getMessage(), e);
+            addSystemLog("[ERROR] Error stopping server: " + e.getMessage());
+        }
+    }
+    
+    // WebSocket message handlers
+    private void handleGameStateUpdate(LiveMonitorWebSocketServer.GameStateUpdate update) {
+        Platform.runLater(() -> {
+            currentMoveNotation = update.currentMove != null ? update.currentMove : "Unknown";
+            currentPosition = update.fen != null ? update.fen : currentPosition;
+            currentEvaluation = update.evaluation;
+            gameMode = update.gameMode != null ? update.gameMode : "Unknown";
+            isGameActive = update.isGameActive;
+            
+            // Update UI
+            currentMoveLabel.setText(currentMoveNotation);
+            evaluationLabel.setText(String.format("%+.1f", currentEvaluation));
+            evaluationLabel.setTextFill(currentEvaluation > 0 ? Color.GREEN : Color.RED);
+            
+            double barValue = Math.max(0, Math.min(1, (currentEvaluation + 3.0) / 6.0));
+            evaluationBar.setProgress(barValue);
+            
+            if (isGameActive) {
+                gameStatusLabel.setText(gameMode + " - Active");
+            }
+            
+            logger.debug("🎯 Game state updated: {} eval={}", currentMoveNotation, currentEvaluation);
+        });
+    }
+    
+    private void handleMasterActivityUpdate(LiveMonitorWebSocketServer.MasterActivityUpdate update) {
+        Platform.runLater(() -> {
+            if (update.activeMasters != null) {
+                activeMasters = update.activeMasters;
+                activeMastersList.getItems().clear();
+                for (String master : activeMasters) {
+                    activeMastersList.getItems().add("🤖 " + master);
+                }
+            }
+            
+            primaryMaster = update.primaryMaster != null ? update.primaryMaster : "None";
+            emotionalStates = update.emotionalState != null ? update.emotionalState : "Unknown";
+            sophisticationLevel = update.sophisticationLevel;
+            
+            emotionalStateLabel.setText(emotionalStates);
+            sophisticationProgress.setProgress(sophisticationLevel);
+            
+            logger.debug("🎭 Master activity updated: {} masters active", activeMasters.length);
+        });
+    }
+    
+    private void handleConversationUpdate(LiveMonitorWebSocketServer.ConversationUpdate update) {
+        Platform.runLater(() -> {
+            String timestamp = LocalDateTime.now().format(TIME_FORMAT);
+            String speaker = update.speaker != null ? update.speaker : "Unknown";
+            String message = update.message != null ? update.message : "";
+            String emotion = update.emotion != null ? " (" + update.emotion + ")" : "";
+            
+            String conversationEntry = String.format("[%s] %s%s: %s", 
+                timestamp, speaker, emotion, message);
+            
+            conversationFeed.appendText("\n" + conversationEntry);
+            
+            if (autoScrollCheck.isSelected()) {
+                conversationFeed.positionCaret(conversationFeed.getLength());
+            }
+            
+            logger.debug("💬 Conversation update from {}: {}", speaker, message);
+        });
+    }
+    
+    private void handlePerformanceUpdate(LiveMonitorWebSocketServer.PerformanceUpdate update) {
+        Platform.runLater(() -> {
+            totalApiCalls = update.totalApiCalls;
+            errorCount = update.errorCount;
+            
+            apiCallsLabel.setText(String.valueOf(totalApiCalls));
+            errorCountLabel.setText(String.valueOf(errorCount));
+            errorCountLabel.setTextFill(errorCount > 0 ? Color.ORANGE : Color.GREEN);
+            
+            logger.debug("📈 Performance updated: {} API calls, {} errors", totalApiCalls, errorCount);
+        });
+    }
+    
+    private void updateConnectionStatus(boolean connected) {
+        Platform.runLater(() -> {
+            isConnected = connected;
+            
+            if (connected) {
+                connectionStatusLabel.setText("🟢 Connected");
+                connectionStatusLabel.setTextFill(Color.GREEN);
+                gameStatusLabel.setText("Monitoring live data from Android app");
+            } else {
+                connectionStatusLabel.setText("🟡 Server running, no clients");
+                connectionStatusLabel.setTextFill(Color.ORANGE);
+                gameStatusLabel.setText("Waiting for Android app connection");
+            }
+        });
     }
     
     private void emergencyStop() {
@@ -547,6 +661,17 @@ public class LiveMonitorTab extends Tab {
     public void cleanup() {
         if (updateTimeline != null) {
             updateTimeline.stop();
+        }
+        
+        // Stop WebSocket server
+        try {
+            if (webSocketServer != null && isServerRunning) {
+                webSocketServer.stop();
+                isServerRunning = false;
+                logger.info("🛑 WebSocket server stopped during cleanup");
+            }
+        } catch (Exception e) {
+            logger.error("❌ Error stopping WebSocket server during cleanup: {}", e.getMessage());
         }
     }
 }

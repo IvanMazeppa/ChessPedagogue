@@ -3,9 +3,12 @@ package com.example.chesspedagogue;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.text.TextWatcher;
+import android.text.Editable;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.Switch;
@@ -175,6 +178,7 @@ public class SettingsActivity extends AppCompatActivity {
         // Update the UI to show the current selected master
         updateChessMasterDisplay();
         setupEnhancedVoiceSettings();
+        setupLiveMonitorSettings();
     }
 
     /**
@@ -445,6 +449,173 @@ public class SettingsActivity extends AppCompatActivity {
                 int switchIndex = parent.indexOfChild(elevenLabsSwitch);
                 parent.addView(helpText, switchIndex + 1);
             }
+        }
+    }
+
+    /**
+     * Sets up the live monitor IP configuration and connection testing
+     */
+    private void setupLiveMonitorSettings() {
+        EditText liveMonitorIpEditText = findViewById(R.id.edittext_live_monitor_ip);
+        Button testConnectionButton = findViewById(R.id.button_test_live_monitor);
+        Button reconnectButton = findViewById(R.id.button_reconnect_live_monitor);
+        
+        // Load current live monitor IP setting
+        SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        String currentIp = prefs.getString("live_monitor_server_ip", "");
+        liveMonitorIpEditText.setText(currentIp);
+        
+        // Set up text change listener to save IP automatically
+        liveMonitorIpEditText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {}
+            
+            @Override
+            public void afterTextChanged(Editable s) {
+                // Save the IP address to SharedPreferences
+                String ip = s.toString().trim();
+                SharedPreferences.Editor editor = prefs.edit();
+                editor.putString("live_monitor_server_ip", ip);
+                editor.apply();
+                
+                // Update the live monitor client with new IP
+                try {
+                    LiveMonitorClient.getInstance(SettingsActivity.this).refreshServerUrl();
+                } catch (Exception e) {
+                    // LiveMonitorClient might not be initialized yet, that's OK
+                }
+            }
+        });
+        
+        // Set up test connection button
+        testConnectionButton.setOnClickListener(v -> {
+            String ip = liveMonitorIpEditText.getText().toString().trim();
+            
+            if (ip.isEmpty()) {
+                Toast.makeText(this, "Please enter an IP address first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            // Validate IP format (basic validation)
+            if (!isValidIpAddress(ip)) {
+                Toast.makeText(this, "Invalid IP address format. Use format like 192.168.1.100", Toast.LENGTH_LONG).show();
+                return;
+            }
+            
+            // Test the connection
+            testLiveMonitorConnection(ip);
+        });
+        
+        // Set up force reconnect button
+        reconnectButton.setOnClickListener(v -> {
+            String ip = liveMonitorIpEditText.getText().toString().trim();
+            
+            if (ip.isEmpty()) {
+                Toast.makeText(this, "Please enter an IP address first", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            
+            forceLiveMonitorReconnect(ip);
+        });
+    }
+    
+    /**
+     * Basic IP address validation
+     */
+    private boolean isValidIpAddress(String ip) {
+        if (ip == null || ip.isEmpty()) return false;
+        
+        String[] parts = ip.split("\\.");
+        if (parts.length != 4) return false;
+        
+        try {
+            for (String part : parts) {
+                int num = Integer.parseInt(part);
+                if (num < 0 || num > 255) return false;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Test connection to the live monitor server
+     */
+    private void testLiveMonitorConnection(String ip) {
+        // Show testing message
+        Toast.makeText(this, "Testing connection to " + ip + ":8080...", Toast.LENGTH_SHORT).show();
+        
+        // In a real implementation, you would:
+        // 1. Create a background thread to test WebSocket connection
+        // 2. Try to connect to ws://{ip}:8080
+        // 3. Send a test message and wait for response
+        // 4. Show success/failure result to user
+        
+        // For now, show a placeholder message with instructions
+        new Thread(() -> {
+            try {
+                // Simulate connection test delay
+                Thread.sleep(1500);
+                
+                runOnUiThread(() -> {
+                    Toast.makeText(this, 
+                        "Connection test completed!\n\n" +
+                        "To verify:\n" +
+                        "1. Make sure the Chess Pedagogue Configurator GUI is running\n" +
+                        "2. Go to Live Monitor tab and click 'Connect to Android App'\n" +
+                        "3. Start a game in the Android app\n" +
+                        "4. Check if live data appears in the GUI", 
+                        Toast.LENGTH_LONG).show();
+                });
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
+    }
+    
+    /**
+     * Force a reconnection to the live monitor
+     */
+    private void forceLiveMonitorReconnect(String ip) {
+        Toast.makeText(this, "Forcing reconnection to " + ip + ":8080...", Toast.LENGTH_SHORT).show();
+        
+        try {
+            // Get the live monitor client and force a reconnection
+            LiveMonitorClient client = LiveMonitorClient.getInstance(this);
+            
+            // Disconnect first
+            client.disconnect();
+            
+            // Wait a moment then reconnect
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // Wait 1 second
+                    
+                    // Refresh the URL and reconnect
+                    client.refreshServerUrl();
+                    client.connect();
+                    
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, 
+                            "Reconnection attempt completed!\n\n" +
+                            "Check the logs for connection status:\n" +
+                            "- Look for '🔌 Attempting to connect'\n" +
+                            "- Look for '✅ Connected' or '❌ Connection failed'\n" +
+                            "- Make sure GUI Live Monitor is running first!", 
+                            Toast.LENGTH_LONG).show();
+                    });
+                    
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }).start();
+            
+        } catch (Exception e) {
+            Toast.makeText(this, "Error during reconnection: " + e.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
 

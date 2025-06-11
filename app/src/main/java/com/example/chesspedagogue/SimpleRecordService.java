@@ -475,6 +475,21 @@ public class SimpleRecordService extends Service {
                 byte[] pcmData = readFileToBytes(outputFile);
                 String transcribedText = transcribeWithGroq(pcmData);
 
+                // CRITICAL FIX: Handle null transcription results to prevent sending to AI
+                if (transcribedText == null || transcribedText.trim().isEmpty()) {
+                    Log.w(TAG, "❌ Transcription failed or returned empty - stopping processing");
+                    mainHandler.post(() -> {
+                        updateUIForProcessing(false);
+                        ServiceCallback transcriptionCallback = getCallback();
+                        if (transcriptionCallback != null) {
+                            transcriptionCallback.onTranscriptionReceived(""); // Send empty string, not null
+                        }
+                        // Don't show error to user, just silently fail
+                        Log.d(TAG, "🔇 Transcription failed silently - no user message");
+                    });
+                    return; // Exit processing here - don't send null to AI
+                }
+
                 long transcriptionTime = System.currentTimeMillis() - startTime;
                 Log.d(TAG, "⏱️ GROQ Transcription completed in " + transcriptionTime + "ms");
 
@@ -537,12 +552,39 @@ public class SimpleRecordService extends Service {
         String selectedMaster = getSelectedChessMaster();
         boolean useResponsesAPI = integrationHelper.shouldUseResponsesAPI(selectedMaster);
         
+        // 👤 ENHANCED: Add user profile context to game context
+        String enhancedGameContext = addUserProfileContext(selectedMaster, gameContext);
+        
         if (useResponsesAPI) {
             Log.d(TAG, "🚀 Using direct Responses API for voice: " + selectedMaster);
-            processVoiceWithResponsesAPI(selectedMaster, transcribedText, gameContext);
+            processVoiceWithResponsesAPI(selectedMaster, transcribedText, enhancedGameContext);
         } else {
             Log.d(TAG, "⚠️ Fallback to 3-stage system for: " + selectedMaster);
-            processWithThreeStageSystem(transcribedText, gameContext);
+            processWithThreeStageSystem(transcribedText, enhancedGameContext);
+        }
+    }
+    
+    /**
+     * 👤 ENHANCED: Add user profile context to game context for personalized AI responses
+     */
+    private String addUserProfileContext(String masterName, String gameContext) {
+        try {
+            UserProfileManager profileManager = UserProfileManager.getInstance(this);
+            
+            if (profileManager.hasProfile()) {
+                String userContext = profileManager.getAIContextForMaster(masterName);
+                Log.d(TAG, "👤 Adding user profile context for " + masterName);
+                
+                // Prepend user context to game context
+                return userContext + "\n\n" + gameContext;
+            } else {
+                Log.d(TAG, "👤 No user profile found - using standard context");
+                return gameContext;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error adding user profile context", e);
+            // Return original context if there's an error
+            return gameContext;
         }
     }
     
@@ -1154,20 +1196,20 @@ public class SimpleRecordService extends Service {
                         return transcribedText;
                     } catch (Exception e) {
                         Log.e(TAG, "Error parsing Groq response", e);
-                        return "Error transcribing speech";
+                        return null; // Return null instead of error message
                     }
                 } else {
                     Log.e(TAG, "Groq API error: " + response.code());
                     if (response.body() != null) {
                         Log.e(TAG, "Error details: " + response.body().string());
                     }
-                    return "Error transcribing speech";
+                    return null; // Return null instead of error message
                 }
             } // Response is automatically closed here by try-with-resources
 
         } catch (Exception e) {
             Log.e(TAG, "Error in Groq transcription", e);
-            return "Error transcribing speech";
+            return null; // Return null instead of error message
         }
     }
 

@@ -43,6 +43,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_user_profile"
+        android:title="👤 My Chess Profile"
+        android:icon="@android:drawable/ic_menu_myplaces"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_chess_set_selection"
         android:title="Choose Chess Set"
         android:icon="@drawable/ic_chess_puzzle"

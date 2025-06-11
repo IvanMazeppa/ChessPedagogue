@@ -15,11 +15,11 @@ import com.chesspedagogue.configurator.tabs.GameFlowTab;
 import com.chesspedagogue.configurator.tabs.LiveMonitorTab;
 import com.chesspedagogue.configurator.tabs.AdvancedSettingsTab;
 import com.chesspedagogue.configurator.tabs.ConversationAnalyticsTab;
+import com.chesspedagogue.configurator.tabs.DatabaseExplorerTab;
 import com.chesspedagogue.configurator.managers.ConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import javafx.scene.control.CheckMenuItem;
-
 public class ChessPedagogueConfiguratorSimple extends Application {
     
     private static final Logger logger = LoggerFactory.getLogger(ChessPedagogueConfiguratorSimple.class);
@@ -36,6 +36,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
     private LiveMonitorTab liveMonitorTab;
     private AdvancedSettingsTab advancedTab;
     private ConversationAnalyticsTab analyticsTab;
+    private DatabaseExplorerTab databaseExplorerTab;
     
     @Override
     public void start(Stage primaryStage) {
@@ -149,6 +150,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
         liveMonitorTab = new LiveMonitorTab();
         advancedTab = new AdvancedSettingsTab();
         analyticsTab = new ConversationAnalyticsTab();
+        databaseExplorerTab = new DatabaseExplorerTab();
         
         // Add tabs to pane
         tabPane.getTabs().addAll(
@@ -158,6 +160,7 @@ public class ChessPedagogueConfiguratorSimple extends Application {
             masterBuilderTab,
             gameFlowTab,
             liveMonitorTab,
+            databaseExplorerTab,
             analyticsTab,
             advancedTab
         );

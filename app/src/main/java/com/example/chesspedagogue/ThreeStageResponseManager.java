@@ -697,7 +697,7 @@ public class ThreeStageResponseManager {
                     // Use the same async pattern as Stage 1
                     // Create a simple session and get response
                     String sessionId = "stage2_" + System.currentTimeMillis();
-                    responsesManager.sendMessageAlternative(sessionId, contextualUserMessage, gameContext, 
+                    responsesManager.sendMessage(sessionId, contextualUserMessage, gameContext, 
                         new ChessMasterResponsesManager.ResponseCallback() {
                             private StringBuilder fullResponse = new StringBuilder();
                             
@@ -1326,14 +1326,8 @@ public class ThreeStageResponseManager {
                         Log.d(TAG, "🚨 responsesManager instance: " + responsesManager);
                         Log.d(TAG, "🚨 contextualMessage length: " + (contextualMessage != null ? contextualMessage.length() : "null"));
                         
-                        // DEBUG: Test static method call first
-                        Log.d(TAG, "🔧 TESTING: Calling static debugTest method...");
-                        ChessMasterResponsesManager.debugTest();
-                        Log.d(TAG, "🔧 TESTING: Static debugTest call completed");
-                        
-                        // DEBUG: Test alternative method name
-                        Log.d(TAG, "🔧 TESTING: Calling sendMessageAlternative...");
-                        responsesManager.sendMessageAlternative(sessionId, contextualMessage, gameContext,
+                        // Use the normal sendMessage method (not debug alternative)
+                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
                             new ChessMasterResponsesManager.ResponseCallback() {
                                 private StringBuilder response = new StringBuilder();
                                 

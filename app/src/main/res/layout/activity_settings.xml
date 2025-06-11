@@ -373,7 +373,102 @@
             android:background="?attr/selectableItemBackground"
             android:layout_marginBottom="16dp" />
 
-        <!-- SECTION 5: ANALYTICS DASHBOARD -->
+        <!-- SECTION 5: LIVE MONITOR CONFIGURATION -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#E0E0E0"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:layout_marginLeft="16dp"
+            android:layout_marginRight="16dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Live Monitor Configuration"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="8dp"
+            android:text="Configure connection to Chess Pedagogue Configurator GUI for real-time monitoring."
+            android:textSize="14sp"
+            android:textStyle="italic" />
+
+        <!-- Live Monitor Server IP -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Live Monitor Server IP Address"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/edittext_live_monitor_ip"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:hint="Enter your computer's IP address (e.g., 192.168.1.100)"
+            android:inputType="text"
+            android:maxLines="1"
+            android:padding="12dp"
+            android:background="@android:drawable/editbox_background" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="8dp"
+            android:text="Find your computer's IP with: Windows (ipconfig), Mac/Linux (ifconfig). Use the local network IP (192.168.x.x or 10.x.x.x)."
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:textColor="#757575" />
+
+        <!-- Connection Control Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/button_test_live_monitor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="🔗 Test Connection"
+                android:backgroundTint="#9C27B0" />
+
+            <Button
+                android:id="@+id/button_reconnect_live_monitor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="🔄 Force Reconnect"
+                android:backgroundTint="#FF9800" />
+
+        </LinearLayout>
+
+        <!-- SECTION 6: ANALYTICS DASHBOARD -->
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"

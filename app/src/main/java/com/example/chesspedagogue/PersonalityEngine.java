@@ -40,6 +40,7 @@ public class PersonalityEngine {
     // Core services
     private final StockfishManager stockfishManager;
     private final GameDatabaseHelper databaseHelper; // 🚀 Now using your enhanced database!
+    private final FENCommentaryHooks commentaryHooks; // NEW: FEN-driven commentary system
 
     // Personality settings
     private float personalityWeight = DEFAULT_PERSONALITY_WEIGHT;
@@ -139,6 +140,11 @@ public class PersonalityEngine {
         Log.d(TAG, "🗄️ Initializing GameDatabaseHelper...");
         this.databaseHelper = new GameDatabaseHelper(context);
         Log.d(TAG, "✅ GameDatabaseHelper initialized");
+        
+        // Initialize FEN commentary hooks
+        Log.d(TAG, "🎯 Initializing FEN Commentary Hooks...");
+        this.commentaryHooks = new FENCommentaryHooks(context);
+        Log.d(TAG, "✅ FEN Commentary Hooks initialized");
 
         Log.d(TAG, "🎭 PersonalityEngine initialized with LIGHTNING-FAST local database!");
     }
@@ -309,6 +315,10 @@ public class PersonalityEngine {
             List<PersonalityMove> scoredMoves = applyPersonalityScoring(engineCandidates, compatibleResults);
             PersonalityMove selectedMove = selectBestPersonalityMove(scoredMoves);
             generateMoveExplanation(selectedMove, compatibleResults, callback);
+            
+            // NEW: Trigger FEN-driven commentary hooks
+            triggerFENCommentaryHooks(currentFen, selectedMove.move, 
+                currentMaster, 0.0, 0.0); // TODO: Add evaluation parameters
 
             mainHandler.post(() -> {
                 callback.onPersonalityMoveSelected(selectedMove, scoredMoves);
@@ -827,6 +837,32 @@ public class PersonalityEngine {
             default:
                 // Fallback to old naming convention
                 return masterName.toLowerCase() + "_positions.json";
+        }
+    }
+    
+    /**
+     * NEW: Trigger FEN-driven commentary hooks
+     */
+    private void triggerFENCommentaryHooks(String currentFEN, String lastMove, 
+                                         String masterName, double currentEval, double previousEval) {
+        LogThrottler.d(TAG, "🎯 Triggering FEN commentary hooks for position analysis");
+        
+        if (commentaryHooks != null) {
+            try {
+                commentaryHooks.analyzePosition(currentFEN, lastMove, masterName, 
+                                              currentEval, previousEval);
+            } catch (Exception e) {
+                LogThrottler.e(TAG, "Error in FEN commentary hooks", e);
+            }
+        }
+    }
+    
+    /**
+     * Set callback for FEN commentary events
+     */
+    public void setCommentaryCallback(FENCommentaryHooks.CommentaryCallback callback) {
+        if (commentaryHooks != null) {
+            commentaryHooks.setCommentaryCallback(callback);
         }
     }
 }

@@ -235,6 +235,8 @@
         android:padding="8dp"
         android:background="#2A2A2A">
 
+        <!-- Start Game Button (Added Dynamically) Will Appear Here -->
+        
         <!-- Primary Controls Row -->
         <LinearLayout
             android:layout_width="match_parent"

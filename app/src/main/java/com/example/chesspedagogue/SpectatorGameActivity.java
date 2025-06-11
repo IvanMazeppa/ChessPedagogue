@@ -9,6 +9,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,12 +51,14 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
     private Button ttsToggleButton;
     private TextView currentSpeakerTextView;
     private Button userCommentButton;
+    private Button startGameButton;
 
     // Game state
     private SpectatorGameViewModel viewModel;
     private String whitePlayer;
     private String blackPlayer;
     private boolean isPaused = false;
+    private boolean gameStarted = false;
     private int gameSpeed = 3000;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
@@ -105,8 +108,9 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 // 🎭 Initialize Phase 2 emotional complexity system
                 initializePhase2EmotionalSystem();
                 
-                // ✋ Auto-start disabled - user can manually start spectator games
-                // startSpectatorGame();
+                // 🎮 IMMEDIATE AUTO-START: Start the game right away
+                Log.d(TAG, "🚀 Starting spectator game immediately...");
+                startSpectatorGame();
 
             } else {
                 Log.e(TAG, "❌ Failed to initialize components");
@@ -377,6 +381,11 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 Log.w(TAG, "⚠️ Quick type button not found in layout");
             }
 
+            // Start game button setup - CRITICAL FIX
+            // Button doesn't exist in layout, so add it dynamically
+            Log.d(TAG, "🎯 Adding start game button dynamically");
+            addStartButtonDynamically();
+
             Log.d(TAG, "✅ Controls set up successfully");
             return true;
 
@@ -403,8 +412,71 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
         }
     }
 
+    /**
+     * 🚀 FIXED: Add dynamic start button if not found in layout
+     */
+    private void addStartButtonDynamically() {
+        try {
+            Log.d(TAG, "🎯 Adding start button dynamically to controls");
+            
+            // Find the controls container
+            LinearLayout controlsContainer = findViewById(R.id.controlsContainer);
+            if (controlsContainer != null) {
+                // Create start button
+                startGameButton = new Button(this);
+                startGameButton.setText("🎬 Start AI Battle");
+                startGameButton.setTextSize(14f);
+                startGameButton.setTextColor(getColor(android.R.color.white));
+                startGameButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
+                startGameButton.setOnClickListener(v -> startSpectatorGame());
+                
+                // Set layout params
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    (int) (48 * getResources().getDisplayMetrics().density) // 48dp
+                );
+                params.setMargins(16, 8, 16, 8);
+                
+                // Add to controls container
+                controlsContainer.addView(startGameButton, 0, params); // Add at top
+                
+                Log.d(TAG, "✅ Start button added dynamically");
+            } else {
+                Log.e(TAG, "❌ Could not find controls container for dynamic start button");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error adding start button dynamically", e);
+        }
+    }
+    
+    /**
+     * 🎮 Update start button text based on game state
+     */
+    private void updateStartButtonText() {
+        if (startGameButton != null) {
+            if (gameStarted) {
+                startGameButton.setText("🎭 Game Running");
+                startGameButton.setEnabled(false);
+                startGameButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.darker_gray)));
+            } else {
+                startGameButton.setText("🎬 Start AI Battle");
+                startGameButton.setEnabled(true);
+                startGameButton.setBackgroundTintList(android.content.res.ColorStateList.valueOf(getColor(android.R.color.holo_green_dark)));
+            }
+        }
+    }
+
     private void startSpectatorGame() {
         Log.d(TAG, "🚀 Starting spectator game!");
+        
+        // Prevent multiple starts
+        if (gameStarted) {
+            Log.d(TAG, "⚠️ Game already started, ignoring duplicate start request");
+            return;
+        }
+        
+        gameStarted = true;
+        updateStartButtonText();
 
         try {
             if (viewModel != null) {
@@ -1009,9 +1081,10 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             if (viewModel != null) {
                 SpectatorConversationOrchestrator orchestrator = SpectatorConversationOrchestrator.getInstance(this);
 
-                // Create game context from current state
-                String gameContext = String.format("Game: %s vs %s\nPhase: %s\nUser comment: %s", 
+                // 👤 ENHANCED: Create game context with user profile information
+                String baseGameContext = String.format("Game: %s vs %s\nPhase: %s\nUser comment: %s", 
                     whitePlayer, blackPlayer, gamePhase, comment);
+                String gameContext = addUserProfileContextToSpectator(baseGameContext);
 
                 orchestrator.startConversation(
                         "user_comment",
@@ -1070,6 +1143,35 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
         } catch (Exception e) {
             Log.e(TAG, "❌ Error submitting user comment", e);
             Toast.makeText(this, "Error sending comment to masters", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    /**
+     * 👤 ENHANCED: Add user profile context for spectator mode conversations
+     */
+    private String addUserProfileContextToSpectator(String gameContext) {
+        try {
+            UserProfileManager profileManager = UserProfileManager.getInstance(this);
+            
+            if (profileManager.hasProfile()) {
+                UserProfileManager.UserProfile profile = profileManager.getProfile();
+                Log.d(TAG, "👤 Adding user profile context for spectator conversation");
+                
+                // Add user context for both masters
+                String userContext = String.format(
+                    "USER CONTEXT: %s is watching this game. %s",
+                    profile.getDisplayName(),
+                    profile.generateAIContext()
+                );
+                
+                return userContext + "\n\n" + gameContext;
+            } else {
+                Log.d(TAG, "👤 No user profile found - using standard spectator context");
+                return gameContext;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error adding user profile context to spectator mode", e);
+            return gameContext;
         }
     }
 
@@ -1380,42 +1482,46 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
         try {
             Log.d(TAG, "🚨 EMERGENCY CLEANUP STARTING");
 
-            // 0. CRITICAL FIX: Clear spectator mode flag to re-enable EvaluationTracker in normal mode
+            // 0. Reset game state
+            gameStarted = false;
+            updateStartButtonText();
+
+            // 1. CRITICAL FIX: Clear spectator mode flag to re-enable EvaluationTracker in normal mode
             android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
             prefs.edit().putBoolean("is_spectator_mode", false).apply();
             Log.d(TAG, "✅ Spectator mode flag cleared - EvaluationTracker auto-commentary re-enabled for normal mode");
 
-            // 1. Stop ViewModel immediately
+            // 2. Stop ViewModel immediately
             if (viewModel != null) {
                 Log.d(TAG, "🛑 Stopping ViewModel");
                 viewModel.forceStop();
                 viewModel.cleanup();
             }
 
-            // 2. Stop all executors immediately
+            // 3. Stop all executors immediately
             if (executorService != null && !executorService.isShutdown()) {
                 Log.d(TAG, "🛑 Shutting down executors");
                 executorService.shutdownNow();
             }
 
-            // 3. Clear all handlers
+            // 4. Clear all handlers
             if (mainHandler != null) {
                 Log.d(TAG, "🛑 Clearing all handler callbacks");
                 mainHandler.removeCallbacksAndMessages(null);
             }
 
-            // 4. Stop TTS services
+            // 5. Stop TTS services
             OpenAITTSService ttsService = TTSServiceManager.getOpenAITTSService(this);
             if (ttsService != null) {
                 Log.d(TAG, "🛑 Stopping TTS service");
                 ttsService.stopSpeaking();
             }
 
-            // 5. Stop all AI dialogue (via ViewModel since it has the instance)
+            // 6. Stop all AI dialogue (via ViewModel since it has the instance)
             Log.d(TAG, "🛑 Stopping dialogue via ViewModel");
             // AIDialogueManager will be stopped via ViewModel.forceStop()
             
-            // 6. Clear Phase 2 emotional state
+            // 7. Clear Phase 2 emotional state
             if (phase2Bridge != null) {
                 Log.d(TAG, "🛑 Clearing Phase 2 emotional state");
                 phase2Bridge.clearEmotionalState();

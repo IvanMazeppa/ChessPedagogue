@@ -1,8 +1,10 @@
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\models\TemplateCategory.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\ChessPedagogueConfiguratorSimple.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\models\ConversationTemplate.java
+D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\tabs\DatabaseExplorerTab.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\models\ConversationIntensity.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\models\TriggerCondition.java
+D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\utils\LiveMonitorWebSocketServer.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\managers\ConfigurationManager.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\tabs\GameFlowTab.java
 D:\Users\dilli\AndroidStudioProjects\ChessPedagogue\ChessPedagogueConfigurator\src\main\java\com\chesspedagogue\configurator\managers\LocalDateTimeAdapter.java

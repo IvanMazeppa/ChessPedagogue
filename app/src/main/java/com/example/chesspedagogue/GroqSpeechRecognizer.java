@@ -77,8 +77,12 @@ public class GroqSpeechRecognizer implements SpeechRecognizer {
         this.executorService = Executors.newSingleThreadExecutor();
         this.mainHandler = new Handler(Looper.getMainLooper());
 
-        // Use shared HTTP client if available
-        this.httpClient = OpenAIService.getInstance().getHttpClient();
+        // Create dedicated HTTP client with longer timeouts for speech recognition
+        this.httpClient = new OkHttpClient.Builder()
+                .connectTimeout(10, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)   // Longer for large audio files
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)    // Longer for processing
+                .build();
 
         // Calculate buffer size
         bufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, AUDIO_FORMAT);

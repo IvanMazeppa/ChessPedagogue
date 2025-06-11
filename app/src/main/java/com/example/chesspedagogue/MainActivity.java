@@ -69,6 +69,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
     private ResponsesAPIIntegrationHelper integrationHelper;
     private ChessMasterResponseManager responsesManager;
     
+    // NEW: Live monitoring integration with configurator
+    private LiveMonitorClient liveMonitorClient;
+    
     private String selectedSquare = null;
     private boolean isSpeaking = false;
 
@@ -285,8 +288,12 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             Log.d(TAG, "🚀 MainActivity onCreate starting...");
             setContentView(R.layout.activity_main);
             Log.d(TAG, "✅ setContentView completed!");
+            
+            // Initialize log throttling system early
+            LogThrottlerConfig.initialize(this);
+            
             preWarmSpeechServices();
-            Log.d(TAG, "✅ preWarmSpeechServices completed!");
+            LogThrottler.d(TAG, "✅ preWarmSpeechServices completed!");
 
         // NEW: Get configuration from splash screen
         loadGameConfiguration();
@@ -357,6 +364,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         // NEW: Initialize game with proper configuration
         initializeGameWithConfiguration();
 
+        // NEW: Initialize live monitoring client
+        initializeLiveMonitoring();
+        
         // Bind to the SimpleRecordService
         Log.d(TAG, "📞 About to call bindRecordService...");
         bindRecordService();
@@ -364,12 +374,52 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         // 🎤 Initialize always-listening voice control manager
         initializeVoiceControlManager();
         
+        // 👤 Initialize user profile system and check for profile creation
+        initializeUserProfileSystem();
+        
         Log.d(TAG, "✅ MainActivity onCreate completed!");
         
         } catch (Exception e) {
             Log.e(TAG, "💥 CRITICAL: Exception in onCreate!", e);
             // Try to show error to user
             Toast.makeText(this, "App initialization failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * 👤 Initialize user profile system and prompt for profile creation if needed
+     */
+    private void initializeUserProfileSystem() {
+        try {
+            Log.d(TAG, "👤 Initializing user profile system...");
+            
+            UserProfileManager profileManager = UserProfileManager.getInstance(this);
+            
+            // Check if user has a profile
+            if (!profileManager.hasProfile()) {
+                Log.d(TAG, "👤 No user profile found - checking if we should prompt");
+                
+                // Check if user has dismissed the profile prompt permanently
+                SharedPreferences prefs = getSharedPreferences("UserProfile", MODE_PRIVATE);
+                boolean promptDismissed = prefs.getBoolean("profile_prompt_dismissed", false);
+                
+                if (!promptDismissed) {
+                    // Show profile creation prompt after a short delay to ensure UI is ready
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        if (!isFinishing() && !isDestroyed()) {
+                            UserProfileActivity.showProfilePrompt(this);
+                        }
+                    }, 2000); // 2 second delay
+                }
+            } else {
+                Log.d(TAG, "👤 User profile found: " + profileManager.getProfile().getDisplayName());
+                // Profile exists - masters already know about the user
+            }
+            
+            Log.d(TAG, "✅ User profile system initialized");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing user profile system", e);
         }
     }
 
@@ -855,6 +905,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
         gameViewModel.getMoveHistory().observe(this, moves -> {
             Log.d(TAG, "📝 Move history changed, updating display: " + (moves != null ? moves.size() : 0) + " moves");
             updateMoveHistoryDisplay();
+            
+            // NEW: Send live monitoring update for game state
+            sendLiveGameStateUpdate();
         });
     }
 
@@ -936,6 +989,83 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
 
             Log.d(TAG, "📝 Configuration from prefs: Color=" + configuredPlayerColor +
                     ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
+        }
+    }
+    
+    /**
+     * NEW METHOD: Send live game state update to configurator monitor
+     */
+    private void sendLiveGameStateUpdate() {
+        if (liveMonitorClient == null || !liveMonitorClient.isConnected()) {
+            return;
+        }
+        
+        try {
+            // Get current game state
+            List<String> moves = GameHistoryManager.getInstance().getCurrentGameMoves();
+            String currentMove = moves.isEmpty() ? "Game not started" : moves.get(moves.size() - 1);
+            String currentFen = chessBoardView != null ? chessBoardView.getCurrentFEN() : "Unknown";
+            
+            // Get evaluation if available (you might need to add this from your evaluation system)
+            double evaluation = 0.0; // TODO: Get from evaluation system
+            
+            // Determine game mode
+            String gameMode = "Main Game";
+            boolean isGameActive = !moves.isEmpty();
+            String currentPlayer = (moves.size() % 2 == 0) ? "White" : "Black";
+            int moveNumber = (moves.size() / 2) + 1;
+            
+            liveMonitorClient.sendGameState(
+                currentMove, 
+                currentFen, 
+                evaluation, 
+                gameMode, 
+                isGameActive, 
+                currentPlayer, 
+                moveNumber
+            );
+            
+            Log.d(TAG, "📡 Live monitoring: Game state sent");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error sending live game state: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * NEW METHOD: Send live conversation update to configurator monitor
+     */
+    private void sendLiveConversationUpdate(String speaker, String message, String messageType) {
+        if (liveMonitorClient == null || !liveMonitorClient.isConnected()) {
+            return;
+        }
+        
+        try {
+            // Get current master for emotion context
+            SharedPreferences prefs = getSharedPreferences("chess_master_prefs", MODE_PRIVATE);
+            String currentMaster = prefs.getString("selected_master", "Tal");
+            
+            // Determine emotion based on message content (basic sentiment analysis)
+            String emotion = "neutral";
+            if (message.contains("excellent") || message.contains("brilliant")) {
+                emotion = "excited";
+            } else if (message.contains("mistake") || message.contains("error")) {
+                emotion = "critical";
+            } else if (message.contains("think") || message.contains("consider")) {
+                emotion = "contemplative";
+            }
+            
+            liveMonitorClient.sendConversation(
+                speaker.equals("Coach") ? currentMaster : speaker,
+                message,
+                emotion,
+                messageType
+            );
+            
+            Log.d(TAG, "📡 Live monitoring: Conversation sent from " + speaker);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error sending live conversation: " + e.getMessage());
         }
     }
 
@@ -1291,6 +1421,28 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             }
         });
     }
+    
+    private void initializeLiveMonitoring() {
+        try {
+            liveMonitorClient = LiveMonitorClient.getInstance(this);
+            
+            // Try to connect to the configurator (if it's running)
+            // Users can configure the IP address in settings
+            SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+            String serverIp = prefs.getString("live_monitor_server_ip", "192.168.0.237"); // Default to your IP
+            String serverUrl = "ws://" + serverIp + ":8080";
+            
+            liveMonitorClient.connect(serverUrl);
+            
+            Log.i(TAG, "🔗 Live monitoring client initialized and attempting connection");
+            
+            // Send initial system log
+            liveMonitorClient.sendSystemLog("MainActivity initialized", "INFO");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize live monitoring: " + e.getMessage(), e);
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -1339,6 +1491,12 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
 
         } else if (itemId == R.id.action_chess_master_selection) {
             Intent intent = new Intent(this, ChessMasterSelectionActivity.class);
+            startActivity(intent);
+            return true;
+
+        } else if (itemId == R.id.action_user_profile) {
+            Log.d(TAG, "👤 Opening user profile");
+            Intent intent = new Intent(this, UserProfileActivity.class);
             startActivity(intent);
             return true;
 
@@ -2146,6 +2304,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
                     coachMessageText.setText("I heard: " + text + "\nThinking...");
                 } else if (state == ProcessingState.SPEAKING) {
                     coachMessageText.setText(text);
+                    
+                    // NEW: Send live monitoring update for conversation
+                    sendLiveConversationUpdate("Coach", text, "response");
                 }
             }
         }

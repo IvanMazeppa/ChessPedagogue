@@ -60,18 +60,12 @@ public class FineTunedModelManager {
     private static final String KASPAROV_ASSISTANT_ID = "asst_e6coEccRgsWqzfwsQG1xTwTs"; // Your Kasparov assistant  
     private static final String KASPAROV_VECTOR_STORE_ID = "vs_kasparov_original_id"; // Kasparov vector store
 
-    // Model constants - updated for enhanced models
+    // Model constants - only the 5 working fine-tuned models
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
-    private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4"; // 🆕 UPDATED!
-    private static final String MODEL_KRAMNIK = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_KARPOV = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_LASKER = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz"; // NEW GPT-4.1 KASPAROV MODEL!
-    private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
+    private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4";
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
-    private static final String MODEL_MORPHY = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-    private static final String MODEL_ANAND = "gpt-4o-mini"; // Changed from gpt-4.1 to reduce verbosity
-    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD"; // 🆕 UPDATED ALEKHINE MODEL!
+    private static final String MODEL_ALEKHINE = "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD";
+    private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz";
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
     // Voice model options2
@@ -450,16 +444,10 @@ public class FineTunedModelManager {
     public String getModelIdForMaster(String master) {
         switch (master.toLowerCase()) {
             case "tal": return MODEL_TAL;
-            case "fischer": return MODEL_FISCHER; // 🆕 UPDATED MODEL!
-            case "kramnik": return MODEL_KRAMNIK;
-            case "karpov": return MODEL_KARPOV;
-            case "lasker": return MODEL_LASKER;
-            case "kasparov": return MODEL_KASPAROV;
-            case "capablanca": return MODEL_CAPABLANCA;
+            case "fischer": return MODEL_FISCHER;
             case "carlsen": return MODEL_CARLSEN;
-            case "morphy": return MODEL_MORPHY;
-            case "anand": return MODEL_ANAND;
             case "alekhine": return MODEL_ALEKHINE;
+            case "kasparov": return MODEL_KASPAROV;
             default: return DEFAULT_MODEL;
         }
     }

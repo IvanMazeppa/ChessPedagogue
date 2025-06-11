@@ -115,5 +115,6 @@
   },
   "activeTemplate": "engaging",
   "voiceEnabled": true,
-  "realTimeUpdates": true
+  "realTimeUpdates": true,
+  "darkMode": false
 }

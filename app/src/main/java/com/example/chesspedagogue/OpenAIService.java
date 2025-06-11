@@ -181,24 +181,17 @@ public class OpenAIService {
     }
 
     /**
-     * Initialize fine-tuned models
+     * Initialize fine-tuned models - only the 5 working models
      */
     private void initFineTunedModels() {
-        // Use your actual fine-tuned model IDs here
-        String actualModelId = "ft:gpt-4.1-2025-04-14:personal::BYJrWx0V";
-
-        fineTunedModels.put("tal", "ft:gpt-4.1-2025-04-14:personal:tal:BaC4mVTl");
-        fineTunedModels.put("kramnik", actualModelId);
-        fineTunedModels.put("karpov", actualModelId);
-        fineTunedModels.put("fischer", actualModelId);
-        fineTunedModels.put("lasker", actualModelId);
-        fineTunedModels.put("kasparov", actualModelId);
-        fineTunedModels.put("capablanca", actualModelId);
-        fineTunedModels.put("carlsen", "gpt-4o"); // Using base model until fine-tuned model is ready
-        fineTunedModels.put("morphy", actualModelId);
-        fineTunedModels.put("anand", actualModelId);
-        fineTunedModels.put("alekhine", "ft:gpt-4.1-2025-04-14:personal:alekhine:BZoqsSDe");
-        fineTunedModels.put("botvinnik", "gpt-4.1"); // Uses Assistants API
+        // Only include the 5 working fine-tuned models
+        fineTunedModels.put("tal", "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT");
+        fineTunedModels.put("fischer", "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4");
+        fineTunedModels.put("carlsen", "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe");
+        fineTunedModels.put("alekhine", "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD");
+        fineTunedModels.put("kasparov", "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz");
+        
+        // All other masters will fall back to base models
     }
 
     /**
