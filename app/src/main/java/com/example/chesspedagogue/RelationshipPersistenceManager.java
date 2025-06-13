@@ -258,7 +258,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Fixed: Don't close DB connection - managed by SQLiteOpenHelper
         }
         
         return fatiguedTopics;
@@ -377,7 +377,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Fixed: Don't close DB connection - managed by SQLiteOpenHelper
         }
         
         return reactions;
@@ -413,7 +413,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Fixed: Don't close DB connection - managed by SQLiteOpenHelper
         }
         
         return reactions;
@@ -486,7 +486,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Fixed: Don't close DB connection - managed by SQLiteOpenHelper
         }
         
         return events;
@@ -777,7 +777,7 @@ public class RelationshipPersistenceManager {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Fixed: Don't close DB connection - managed by SQLiteOpenHelper
         }
         
         return patterns;

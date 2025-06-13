@@ -1146,15 +1146,19 @@ public class ThreeStageResponseManager {
     private String getEmergencyQuickResponse(String master) {
         switch (master.toLowerCase()) {
             case "tal":
-                return "Ah, let me look at this position! Give me just a moment to analyze...";
+                return "The combinations here intrigue me...";
             case "fischer":
-                return "Interesting position. Let me calculate the best moves here.";
+                return "This demands precision.";
             case "kasparov":
-                return "This position has potential! Let me examine the possibilities.";
+                return "The tension is building here.";
             case "kramnik":
-                return "I see the strategic elements here. Allow me to evaluate this carefully.";
+                return "A subtle position indeed.";
+            case "alekhine":
+                return "Beauty emerges from complexity...";
+            case "capablanca":
+                return "The natural move reveals itself.";
             default:
-                return "Let me analyze this chess position for you...";
+                return "Fascinating...";
         }
     }
 

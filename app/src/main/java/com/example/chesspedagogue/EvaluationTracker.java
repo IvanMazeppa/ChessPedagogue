@@ -302,19 +302,9 @@ public class EvaluationTracker {
      * Determine if we should trigger automatic commentary
      */
     private boolean shouldTriggerCommentary(MoveQuality quality, float swingAmount) {
-        switch (quality) {
-            case BRILLIANT:
-            case BLUNDER:
-                return true; // Always comment on brilliant moves and blunders
-            case EXCELLENT:
-            case MISTAKE:
-                return Math.abs(swingAmount) >= 1.2f; // Only if swing is substantial
-            case GOOD:
-            case INACCURACY:
-                return false; // Don't comment on minor swings to avoid spam
-            default:
-                return false;
-        }
+        // FIXED: Disabled automatic commentary to eliminate canned phrases
+        // Emotional system and personality engine handle all natural responses
+        return false;
     }
 
     /**

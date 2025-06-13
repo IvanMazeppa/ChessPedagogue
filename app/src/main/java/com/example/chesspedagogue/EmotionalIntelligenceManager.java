@@ -60,7 +60,9 @@ public class EmotionalIntelligenceManager {
         NOSTALGIC(0, "nostalgic", "This reminds me of..."),
         COMPETITIVE(0, "competitive", "Game on!"),
         PHILOSOPHICAL(0, "philosophical", "Chess teaches us..."),
-        PLAYFUL(0, "playful", "Let's have some fun!");
+        PLAYFUL(0, "playful", "Let's have some fun!"),
+        CONTEMPLATIVE(0, "contemplative", "Let me ponder this deeply..."),
+        CALM(0, "calm", "Everything is under control.");
         
         public final int intensity;
         public final String name;
@@ -475,7 +477,7 @@ public class EmotionalIntelligenceManager {
                                     k -> new EmotionalHistory());
         
         // Step 1: Analyze evaluation-based emotions (building on existing system)
-        EmotionalState baseEmotion = analyzeEvaluationBasedEmotion(currentEval, evalChange);
+        EmotionalState baseEmotion = analyzeEvaluationBasedEmotion(masterName, currentEval, evalChange);
         
         // Step 2: Apply master-specific modifications
         EmotionalState adjustedEmotion = applyMasterPersonality(baseEmotion, profile, gameContext);
@@ -510,7 +512,7 @@ public class EmotionalIntelligenceManager {
     /**
      * Analyze emotions based on evaluation changes (integrates with existing system)
      */
-    private EmotionalState analyzeEvaluationBasedEmotion(Float currentEval, Float evalChange) {
+    private EmotionalState analyzeEvaluationBasedEmotion(String masterName, Float currentEval, Float evalChange) {
         // Use passed parameters first, then fallback to tracker
         if (currentEval == null || evalChange == null) {
             evalChange = evaluationTracker.getRecentEvaluationChange();
@@ -518,8 +520,9 @@ public class EmotionalIntelligenceManager {
         }
         
         if (evalChange == null || currentEval == null) {
-            Log.d(TAG, "🎭 No evaluation data available - defaulting to ANALYTICAL");
-            return EmotionalState.ANALYTICAL;
+            Log.d(TAG, "🎭 No evaluation data available - using personality-driven emotion for " + masterName);
+            // FIXED: Use personality-driven emotions instead of always ANALYTICAL
+            return getCurrentEmotionalState(masterName);
         }
         
         Log.d(TAG, String.format("🎭 Evaluation analysis: current=%.2f, change=%.2f", currentEval, evalChange));
@@ -900,7 +903,27 @@ public class EmotionalIntelligenceManager {
      */
     public EmotionalState getCurrentEmotionalState(String masterName) {
         EmotionalHistory history = sessionHistory.get(masterName.toLowerCase());
-        return history != null ? history.getCurrentDominantEmotion() : EmotionalState.ANALYTICAL;
+        if (history != null) {
+            return history.getCurrentDominantEmotion();
+        }
+        
+        // FIXED: Use personality-driven default emotions instead of always ANALYTICAL
+        switch (masterName.toLowerCase()) {
+            case "fischer":
+                return EmotionalState.CONFIDENT; // Fischer's natural intensity
+            case "tal":
+                return EmotionalState.EXCITED; // Tal's natural enthusiasm  
+            case "alekhine":
+                return EmotionalState.PLEASED; // Alekhine's artistic satisfaction
+            case "kasparov":
+                return EmotionalState.CONFIDENT; // Kasparov's natural confidence
+            case "kramnik":
+                return EmotionalState.CONTEMPLATIVE; // Kramnik's deep thinking
+            case "capablanca":
+                return EmotionalState.CALM; // Capablanca's natural ease
+            default:
+                return EmotionalState.ANALYTICAL; // Safe fallback for others
+        }
     }
     
     /**
@@ -1050,7 +1073,22 @@ public class EmotionalIntelligenceManager {
                 masterName, opponentName, 10
             );
             
-            if (recentReactions.size() < 3) return 0.0f;
+            // FIXED: Allow personality-based momentum even without database history
+            if (recentReactions.size() < 3) {
+                // Use master personality traits to generate initial momentum
+                switch (masterName.toLowerCase()) {
+                    case "fischer":
+                        return 0.3f; // Fischer's natural intensity creates positive momentum
+                    case "tal":
+                        return 0.4f; // Tal's excitement generates high momentum
+                    case "alekhine":
+                        return 0.25f; // Alekhine's artistic passion builds momentum
+                    case "kasparov":
+                        return 0.35f; // Kasparov's confidence builds momentum
+                    default:
+                        return 0.1f; // Small positive momentum for personality expression
+                }
+            }
             
             float totalMomentum = 0.0f;
             float weightSum = 0.0f;

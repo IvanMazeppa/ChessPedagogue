@@ -429,7 +429,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             long id = db.insert(TABLE_GAMES, null, values);
             return id;
         } finally {
-            db.close();
+            // Don't close - SQLiteOpenHelper manages database connections
         }
     }
 
@@ -491,7 +491,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             if (cursor != null) {
                 cursor.close();
             }
-            db.close();
+            // Don't close - SQLiteOpenHelper manages database connections
         }
 
         return games;
@@ -535,7 +535,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             cursor.close();
         }
 
-        db.close();
+        // Don't close - SQLiteOpenHelper manages database connections
         return game;
     }
 
@@ -544,7 +544,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         try {
             db.delete(TABLE_GAMES, COLUMN_ID + " = ?", new String[] { String.valueOf(id) });
         } finally {
-            db.close();
+            // Don't close - SQLiteOpenHelper manages database connections
         }
     }
 
@@ -978,7 +978,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             return "kramnik";
         } else if (normalized.contains("alexander alekhine") || normalized.contains("alekhine")) {
             return "alekhine";
-        } else if (normalized.contains("josé raúl capablanca") || normalized.contains("capablanca")) {
+        } else if (normalized.contains("josé raúl capablanca") || normalized.contains("jose raul capablanca") || normalized.contains("capablanca")) {
             return "capablanca";
         } else if (normalized.contains("emanuel lasker") || normalized.contains("lasker")) {
             return "lasker";

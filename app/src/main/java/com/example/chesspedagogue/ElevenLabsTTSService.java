@@ -1056,12 +1056,11 @@ public class ElevenLabsTTSService {
                     activePlayers.put(chunk.chunkId, player);
                 }
                 
-                // FIXED: Improved audio attributes for consistent volume and quality
+                // FIXED: Use media stream for proper volume control
                 player.setAudioAttributes(
                         new AudioAttributes.Builder()
-                                .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY) // Better for TTS speech
+                                .setUsage(AudioAttributes.USAGE_MEDIA) // Use media stream for volume control
                                 .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED) // Ensure audible volume
                                 .build()
                 );
                 

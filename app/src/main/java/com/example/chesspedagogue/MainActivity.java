@@ -289,6 +289,9 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             setContentView(R.layout.activity_main);
             Log.d(TAG, "✅ setContentView completed!");
             
+            // FIXED: Bind hardware volume buttons to media stream for TTS control
+            setVolumeControlStream(android.media.AudioManager.STREAM_MUSIC);
+            
             // Initialize log throttling system early
             LogThrottlerConfig.initialize(this);
             

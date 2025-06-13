@@ -325,6 +325,39 @@ public class VoiceControlManager implements AlwaysListeningService.WakeWordCallb
     }
     
     /**
+     * 🚫 Disable always-listening (for debugging/troubleshooting)
+     */
+    public void disableAlwaysListening() {
+        Log.d(TAG, "🚫 Disabling always-listening for troubleshooting");
+        alwaysListeningEnabled = false;
+        preferences.edit().putBoolean("always_listening_enabled", false).apply();
+        stopAlwaysListening();
+        Toast.makeText(context, "🔇 Always-listening disabled for debugging", Toast.LENGTH_LONG).show();
+    }
+    
+    /**
+     * 🔧 Force disable always-listening immediately (for database troubleshooting)
+     */
+    public void forceDisableAlwaysListening() {
+        Log.d(TAG, "🔧 FORCE disabling always-listening for database troubleshooting");
+        alwaysListeningEnabled = false;
+        preferences.edit().putBoolean("always_listening_enabled", false).apply();
+        
+        // Force stop any running service
+        if (serviceBound && alwaysListeningService != null) {
+            alwaysListeningService.stopListening();
+            context.unbindService(serviceConnection);
+            serviceBound = false;
+        }
+        
+        // Kill the service entirely
+        Intent serviceIntent = new Intent(context, AlwaysListeningService.class);
+        context.stopService(serviceIntent);
+        
+        Log.d(TAG, "✅ Always-listening forcibly disabled - service stopped");
+    }
+    
+    /**
      * 📊 Check if service is currently listening
      */
     public boolean isCurrentlyListening() {

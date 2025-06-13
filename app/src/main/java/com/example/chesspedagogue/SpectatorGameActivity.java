@@ -91,6 +91,10 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             prefs.edit().putBoolean("is_spectator_mode", true).apply();
             Log.d(TAG, "✅ Spectator mode flag set - EvaluationTracker auto-commentary disabled");
 
+            // 🔧 CRITICAL FIX: Force database rebuild for troubleshooting - MOVED TO EXECUTE FIRST
+            Log.d(TAG, "🚨 EXECUTING database rebuild BEFORE other initialization to ensure it runs");
+            forceDatabaseRebuildForTroubleshooting();
+
             // Get players from intent with fallbacks
             getPlayersFromIntent();
 
@@ -1570,6 +1574,105 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
         }
     }
 
+    // ==================== Database Troubleshooting ====================
+
+    /**
+     * 🔧 TEMPORARY: Force database rebuild for troubleshooting
+     */
+    private void forceDatabaseRebuildForTroubleshooting() {
+        try {
+            Log.d(TAG, "🔧 STARTING database rebuild for troubleshooting...");
+            
+            // Get database helper
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(this);
+            
+            // Check current database state
+            Log.d(TAG, "🔍 Checking current database state...");
+            boolean hasData = dbHelper.hasMasterData("tal");
+            Log.d(TAG, "🔍 Current database has data: " + hasData);
+            
+            // Get current stats
+            java.util.Map<String, Integer> currentStats = dbHelper.getDatabaseStats();
+            Log.d(TAG, "🔍 Current database stats: " + currentStats);
+            
+            // Force clear and rebuild
+            Log.d(TAG, "🗑️ Clearing all master data...");
+            boolean clearSuccess = dbHelper.clearAndReimportAllData();
+            Log.d(TAG, "🗑️ Clear result: " + clearSuccess);
+            
+            if (clearSuccess) {
+                // Import data for key masters
+                String[] testMasters = {"tal", "fischer", "kasparov", "carlsen", "capablanca"};
+                
+                for (String master : testMasters) {
+                    String filename = master + "_full_positions.json";
+                    Log.d(TAG, "📂 Importing " + filename + "...");
+                    boolean importSuccess = dbHelper.importMasterPositionsFromAssets(filename);
+                    Log.d(TAG, "📂 Import " + filename + " result: " + importSuccess);
+                }
+                
+                // Check final stats
+                java.util.Map<String, Integer> finalStats = dbHelper.getDatabaseStats();
+                Log.d(TAG, "✅ Final database stats: " + finalStats);
+                
+                // Test CORE functionality - chess position lookups (this is what actually matters!)
+                Log.d(TAG, "🎯 Testing CORE chess position database functionality...");
+                
+                try {
+                    // Test if we can find chess positions for the current masters
+                    GameDatabaseHelper testHelper = new GameDatabaseHelper(this);
+                    
+                    // Test position lookup for current masters (carlsen vs kasparov)
+                    String testFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // Starting position
+                    
+                    java.util.List<GameDatabaseHelper.HistoricalPosition> carlsenPositions = 
+                        testHelper.findSimilarPositions(testFEN, "carlsen", 3);
+                    Log.d(TAG, "🔍 Found " + carlsenPositions.size() + " similar positions for Carlsen");
+                    
+                    java.util.List<GameDatabaseHelper.HistoricalPosition> kasparovPositions = 
+                        testHelper.findSimilarPositions(testFEN, "kasparov", 3);
+                    Log.d(TAG, "🔍 Found " + kasparovPositions.size() + " similar positions for Kasparov");
+                    
+                    // Test direct master data check
+                    boolean carlsenHasData = testHelper.hasMasterData("carlsen");
+                    boolean kasparovHasData = testHelper.hasMasterData("kasparov");
+                    
+                    Log.d(TAG, "🔍 Carlsen has data: " + carlsenHasData);
+                    Log.d(TAG, "🔍 Kasparov has data: " + kasparovHasData);
+                    
+                    // Get sample positions to verify content
+                    int carlsenCount = testHelper.getMasterPositionCount("carlsen");
+                    int kasparovCount = testHelper.getMasterPositionCount("kasparov");
+                    
+                    Log.d(TAG, "🔍 Carlsen position count: " + carlsenCount);
+                    Log.d(TAG, "🔍 Kasparov position count: " + kasparovCount);
+                    
+                    if (carlsenCount > 0 && kasparovCount > 0) {
+                        Log.d(TAG, "✅ CORE DATABASE FUNCTIONALITY CONFIRMED - Chess positions are available!");
+                    } else {
+                        Log.e(TAG, "❌ CORE DATABASE ISSUE - No chess positions found for masters!");
+                    }
+                    
+                } catch (Exception e) {
+                    Log.e(TAG, "❌ Error testing core database functionality", e);
+                }
+                
+                // Also test relationship query (this is expected to be empty initially)
+                RelationshipPersistenceManager relManager = RelationshipPersistenceManager.getInstance(this);
+                java.util.List<String> topics = relManager.getFatiguedTopics("tal", "fischer");
+                Log.d(TAG, "🔍 Relationship query result: " + topics.size() + " fatigued topics (expected to be 0 initially)");
+                
+                Log.d(TAG, "✅ Database rebuild and testing completed!");
+                
+            } else {
+                Log.e(TAG, "❌ Database clear failed!");
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error during database rebuild", e);
+        }
+    }
+
     // ==================== Always-Listening Voice Control Manager ====================
 
     /**
@@ -1577,15 +1680,20 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
      */
     private void initializeVoiceControlManager() {
         try {
-            Log.d(TAG, "🎤 Initializing always-listening voice control for spectator mode");
+            Log.d(TAG, "🎤 Initializing voice control for spectator mode");
             
-            // Get VoiceControlManager instance
+            // CRITICAL FIX: Completely disable always listening while fixing database issues
+            Log.d(TAG, "🚫 FORCIBLY DISABLING always listening for database troubleshooting");
+            
+            // Get VoiceControlManager instance and force disable it
             voiceControlManager = VoiceControlManager.getInstance(this);
+            voiceControlManager.forceDisableAlwaysListening();
             
-            // Register this activity as a voice command listener
-            voiceControlManager.registerVoiceCommandListener(this);
+            // Stop any running AlwaysListeningService instances
+            Intent stopServiceIntent = new Intent(this, AlwaysListeningService.class);
+            stopService(stopServiceIntent);
             
-            Log.d(TAG, "✅ Voice control manager initialized for spectator mode");
+            Log.d(TAG, "✅ Always listening service forcibly stopped for troubleshooting");
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error initializing voice control manager", e);
