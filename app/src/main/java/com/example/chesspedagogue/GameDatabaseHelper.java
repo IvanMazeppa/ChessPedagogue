@@ -555,6 +555,8 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
      * This replaces slow API calls with blazing-fast local queries.
      */
     public List<HistoricalPosition> findSimilarPositions(String fen, String masterName, int maxResults) {
+        Log.d(TAG, "🔧 DEBUG ENTRY: findSimilarPositions called with fen=" + fen.substring(0, Math.min(30, fen.length())) + ", masterName='" + masterName + "', maxResults=" + maxResults);
+        
         // First check the cache!
         String cacheKey = masterName + ":" + fen + ":" + maxResults;
         List<HistoricalPosition> cachedResult = positionCache.get(cacheKey);
@@ -567,6 +569,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         // Not in cache, perform database lookup
         List<HistoricalPosition> results = new ArrayList<>();
         SQLiteDatabase db = this.getReadableDatabase();
+        Log.d(TAG, "🔧 DEBUG: Database opened, about to perform lookup queries");
 
         try {
             Log.d(TAG, "⚡ Database FEN lookup for " + masterName + " (will be cached)...");
@@ -575,8 +578,11 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             String exactQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
                     " WHERE " + COLUMN_FEN + " = ? AND " + COLUMN_MASTER_NAME + " = ?" +
                     " LIMIT " + maxResults;
+            Log.d(TAG, "🔧 DEBUG: Executing exact FEN query: " + exactQuery);
+            Log.d(TAG, "🔧 DEBUG: Query parameters: fen='" + fen + "', masterName='" + masterName + "'");
 
             Cursor cursor = db.rawQuery(exactQuery, new String[]{fen, masterName});
+            Log.d(TAG, "🔧 DEBUG: Exact FEN query returned " + cursor.getCount() + " results");
 
             if (cursor.getCount() > 0) {
                 Log.d(TAG, "🎯 EXACT FEN MATCH FOUND for " + masterName + "!");

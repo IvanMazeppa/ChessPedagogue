@@ -56,7 +56,7 @@ public class ElevenLabsTTSService {
     private static final Map<String, String> MASTER_VOICE_IDS = new HashMap<>();
     static {
         // FIXED: Consistent ElevenLabs voice IDs - no more built-in names that cause volume/quality issues
-        MASTER_VOICE_IDS.put("tal", "WczBIOau2qV9z7nLeDqq"); // Tal - passionate and expressive
+        MASTER_VOICE_IDS.put("tal", "1qd9R09Ljlx9V1Ok0t5S"); // Tal - passionate and expressive
         MASTER_VOICE_IDS.put("fischer", "KLjqUZMleyr58nTJqW99"); // Fischer - intense and precise
         MASTER_VOICE_IDS.put("kasparov", "rT6zdbVnOt0GO9v5OiWr"); // Kasparov - dynamic and energetic
         MASTER_VOICE_IDS.put("carlsen", "9pRpxWU0T7UFt2oEMH6n"); // Carlsen - calm and modern
@@ -64,7 +64,7 @@ public class ElevenLabsTTSService {
         // FIXED: Convert built-in names to proper ElevenLabs voice IDs for consistent quality
         MASTER_VOICE_IDS.put("karpov", "pNInz6obpgDQGcFmaJgB"); // Adam - refined, measured (was "Charli")
         MASTER_VOICE_IDS.put("kramnik", "ErXwobaYiN019PkySvjV"); // Antoni - analytical, precise
-        MASTER_VOICE_IDS.put("capablanca", "VR6AewLTigWG4xSOukaG"); // Arnold - elegant, smooth
+        MASTER_VOICE_IDS.put("capablanca", "l1zE9xgNpUTaQCZzpNJa"); // Capablanca - elegant, smooth
         MASTER_VOICE_IDS.put("alekhine", "3EuKHIEZbSzrHGNmdYsx"); // Ivan - Russian, calm
         MASTER_VOICE_IDS.put("morphy", "VR6AewLTigWG4xSOukaG"); // Arnold - gentlemanly American
         MASTER_VOICE_IDS.put("lasker", "pNInz6obpgDQGcFmaJgB"); // Adam - wise, philosophical  

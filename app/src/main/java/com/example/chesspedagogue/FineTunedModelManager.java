@@ -35,6 +35,7 @@ public class FineTunedModelManager {
     private static final String KEY_ANAND_ASSISTANT_ID = "anand_assistant_id";
     private static final String KEY_ALEKHINE_ASSISTANT_ID = "alekhine_assistant_id";
     private static final String KEY_KASPAROV_ASSISTANT_ID = "kasparov_assistant_id";
+    private static final String KEY_CAPABLANCA_ASSISTANT_ID = "capablanca_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -60,12 +61,17 @@ public class FineTunedModelManager {
     private static final String KASPAROV_ASSISTANT_ID = "asst_e6coEccRgsWqzfwsQG1xTwTs"; // Your Kasparov assistant  
     private static final String KASPAROV_VECTOR_STORE_ID = "vs_kasparov_original_id"; // Kasparov vector store
 
-    // Model constants - only the 5 working fine-tuned models
+    // 🇨🇺 CAPABLANCA CONFIGURATION - NEW FINE-TUNED MODEL!
+    private static final String CAPABLANCA_ASSISTANT_ID = "asst_capablanca_placeholder"; // Placeholder for future assistant
+    private static final String CAPABLANCA_VECTOR_STORE_ID = "vs_68411f200f9c81918f4a7d95f81e178f"; // Your Capablanca vector store
+
+    // Model constants - now with 6 working fine-tuned models including Capablanca!
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
     private static final String MODEL_FISCHER = "ft:gpt-4o-2024-08-06:personal:fischer:BbWNySl4";
     private static final String MODEL_CARLSEN = "ft:gpt-4.1-mini-2025-04-14:personal:carlsen:Bbxb6sUe";
     private static final String MODEL_ALEKHINE = "ft:gpt-4.1-mini-2025-04-14:personal:alekhine:BePlLXyD";
     private static final String MODEL_KASPAROV = "ft:gpt-4.1-2025-04-14:personal:alekhine:BfduAenz";
+    private static final String MODEL_CAPABLANCA = "ft:gpt-4.1-mini-2025-04-14:personal:capablanca:Bi8Ts3Zf"; // 🇨🇺 Your new Capablanca model!
     private static final String DEFAULT_MODEL = "gpt-4.1";
 
     // Voice model options2
@@ -448,6 +454,7 @@ public class FineTunedModelManager {
             case "carlsen": return MODEL_CARLSEN;
             case "alekhine": return MODEL_ALEKHINE;
             case "kasparov": return MODEL_KASPAROV;
+            case "capablanca": return MODEL_CAPABLANCA; // 🇨🇺 Your new fine-tuned Capablanca!
             default: return DEFAULT_MODEL;
         }
     }
@@ -1251,6 +1258,8 @@ public class FineTunedModelManager {
                 return getAlekhineAssistantId();
             case "kasparov": // ♔ NEW KASPAROV SUPPORT!
                 return getKasparovAssistantId();
+            case "capablanca": // 🇨🇺 NEW CAPABLANCA SUPPORT!
+                return getCapablancaAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1342,6 +1351,20 @@ public class FineTunedModelManager {
     }
 
     /**
+     * 🇨🇺 NEW: Get Capablanca Assistant ID with vector store support!
+     */
+    public String getCapablancaAssistantId() {
+        // Use your pre-configured Capablanca assistant (currently placeholder)
+        Log.d(TAG, "🇨🇺 Using configured Capablanca assistant: " + CAPABLANCA_ASSISTANT_ID);
+        assistantIds.put("capablanca", CAPABLANCA_ASSISTANT_ID);
+
+        // Store in preferences for future use
+        prefs.edit().putString(KEY_CAPABLANCA_ASSISTANT_ID, CAPABLANCA_ASSISTANT_ID).apply();
+
+        return CAPABLANCA_ASSISTANT_ID;
+    }
+
+    /**
      * ENHANCED: Check if master should use Assistants API (now includes Anand!) - 🆕 UPDATED!
      */
     public boolean shouldUseAssistantsAPI(String master) {
@@ -1351,6 +1374,7 @@ public class FineTunedModelManager {
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
             // case "alekhine": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
             // case "kasparov": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
+            // case "capablanca": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED MODEL!
             // case "anand": // 🚫 DISABLED ASSISTANTS API TO REDUCE VERBOSITY!
             case "botvinnik":
                 return true;

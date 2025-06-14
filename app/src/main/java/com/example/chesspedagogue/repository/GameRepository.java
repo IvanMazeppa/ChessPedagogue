@@ -97,8 +97,11 @@ public class GameRepository {
      * This is Ben's breakthrough innovation - an engine that plays like chess legends! 🚀
      */
     public void calculatePersonalityMove(MoveCallback callback) {
+        Log.d(TAG, "🔧 DEBUG: calculatePersonalityMove called - usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "initialized" : "NULL"));
+        
         if (!usePersonalityEngine || personalityEngine == null) {
             Log.d(TAG, "🎭 Personality engine not available - falling back to regular engine");
+            Log.d(TAG, "🔧 DEBUG: usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "exists" : "NULL"));
             // Fall back to regular engine calculation
             calculateBestMove(callback);
             return;
@@ -247,26 +250,80 @@ public class GameRepository {
      * Configure the personality engine settings
      */
     public void configurePersonalityEngine(String master, float personalityWeight, boolean enabled) {
-        Log.d(TAG, String.format("🎭 CONFIGURING personality engine: master=%s, weight=%.2f, enabled=%s", 
+        Log.d(TAG, String.format("🔧 DEBUG ENTRY: configurePersonalityEngine - master=%s, weight=%.2f, enabled=%s", 
                 master, personalityWeight, enabled));
+        Log.d(TAG, "🔧 DEBUG: Current personalityEngine state = " + (personalityEngine != null ? "initialized" : "NULL"));
+        Log.d(TAG, "🔧 DEBUG: Current usePersonalityEngine = " + usePersonalityEngine);
         
         if (personalityEngine == null) {
             Log.d(TAG, "🎭 Personality engine is null, attempting to initialize...");
             initializePersonalityEngine();
+            Log.d(TAG, "🔧 DEBUG: After initialization attempt, personalityEngine = " + (personalityEngine != null ? "initialized" : "still NULL"));
         }
 
         if (personalityEngine != null) {
+            Log.d(TAG, "🔧 DEBUG: About to call personalityEngine.setCurrentMaster(" + master + ")");
             personalityEngine.setCurrentMaster(master);
+            Log.d(TAG, "🔧 DEBUG: About to call personalityEngine.setPersonalityWeight(" + personalityWeight + ")");
             personalityEngine.setPersonalityWeight(personalityWeight);
+            Log.d(TAG, "🔧 DEBUG: About to call personalityEngine.setPersonalityPlayEnabled(" + enabled + ")");
             personalityEngine.setPersonalityPlayEnabled(enabled);
 
             this.usePersonalityEngine = enabled;
 
             Log.d(TAG, String.format("✅ Personality engine configured successfully: master=%s, weight=%.2f, enabled=%s, usePersonalityEngine=%s",
                     master, personalityWeight, enabled, this.usePersonalityEngine));
+            
+            // 🔧 DEBUG: Test database immediately after configuration
+            Log.d(TAG, "🔧 DEBUG: Testing database access immediately after configuration...");
+            testDatabaseAccess(master);
         } else {
             Log.e(TAG, "❌ Cannot configure personality engine - initialization failed");
             Log.e(TAG, "❌ This will cause personality moves to fall back to regular engine");
+        }
+    }
+    
+    /**
+     * 🔧 DEBUG: Test database access immediately after configuration
+     */
+    private void testDatabaseAccess(String master) {
+        try {
+            if (personalityEngine != null) {
+                // Force a quick database test
+                executorService.execute(() -> {
+                    try {
+                        Log.d(TAG, "🔧 DEBUG TEST: Attempting immediate database test for " + master);
+                        
+                        // Get current FEN to test position lookup
+                        String testFEN = getCurrentFEN();
+                        Log.d(TAG, "🔧 DEBUG TEST: Using FEN: " + testFEN.substring(0, Math.min(50, testFEN.length())));
+                        
+                        // This should trigger the PersonalityEngine's database lookup
+                        personalityEngine.selectPersonalityMove(testFEN, new PersonalityEngine.PersonalityMoveCallback() {
+                            @Override
+                            public void onPersonalityMoveSelected(PersonalityEngine.PersonalityMove selectedMove, List<PersonalityEngine.PersonalityMove> allCandidates) {
+                                Log.d(TAG, "🔧 DEBUG TEST SUCCESS: Database lookup completed, found " + allCandidates.size() + " candidates");
+                                Log.d(TAG, "🔧 DEBUG TEST: Selected move: " + selectedMove.move + " (historical: " + selectedMove.isHistoricalMatch + ")");
+                            }
+
+                            @Override
+                            public void onPersonalityAnalysisComplete(String analysis, String masterQuote) {
+                                Log.d(TAG, "🔧 DEBUG TEST: Analysis complete - " + analysis.substring(0, Math.min(100, analysis.length())));
+                            }
+
+                            @Override
+                            public void onError(String errorMessage) {
+                                Log.e(TAG, "🔧 DEBUG TEST ERROR: " + errorMessage);
+                            }
+                        });
+                        
+                    } catch (Exception e) {
+                        Log.e(TAG, "🔧 DEBUG TEST EXCEPTION: " + e.getMessage(), e);
+                    }
+                });
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "🔧 DEBUG: Error in database test", e);
         }
     }
 

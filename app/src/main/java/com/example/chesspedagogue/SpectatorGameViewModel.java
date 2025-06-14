@@ -410,8 +410,32 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             public void onEvaluationReceived(StockfishManager.EvaluationResult result) {
                 mainHandler.post(() -> {
                     if (!result.isMate) {
+                        float previousEval = (lastEvaluationForEmotions != null) ? lastEvaluationForEmotions : 0.0f;
                         currentEvaluation.setValue(result.evaluation);
                         Log.d(TAG, "📊 Evaluation updated: " + result.evaluation);
+                        
+                        // 🚀 NEW: Update emotional momentum system
+                        try {
+                            Phase2EmotionalIntegrationBridge phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(getApplication());
+                            String currentPlayerName = getCurrentPlayerName();
+                            
+                            if (phase2Bridge != null && currentPlayerName != null) {
+                                // Update game progression momentum
+                                phase2Bridge.processGameProgression(currentPlayerName, moveCount, result.evaluation, previousEval);
+                                
+                                // Update evaluation-based emotions
+                                String gamePhase = determineGamePhase(moveCount);
+                                phase2Bridge.processEvaluationChange(currentPlayerName, result.evaluation, previousEval, gamePhase);
+                                
+                                Log.d(TAG, "🚀 Momentum systems updated for " + currentPlayerName + 
+                                      " (move " + moveCount + ", eval: " + previousEval + " -> " + result.evaluation + ")");
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "❌ Error updating momentum systems", e);
+                        }
+                        
+                        // Update last evaluation for next comparison
+                        lastEvaluationForEmotions = result.evaluation;
                         
                         // CRITICAL FIX: Feed evaluation data to EvaluationTracker for emotional intelligence
                         try {
@@ -488,6 +512,34 @@ public class SpectatorGameViewModel extends AndroidViewModel {
             Log.e(TAG, "❌ Error calling startConversation(): " + e.getMessage(), e);
             // Immediate fallback
             generateSimpleFallbackGreeting();
+        }
+    }
+
+    /**
+     * 🚀 NEW: Get current player name for momentum system
+     */
+    private String getCurrentPlayerName() {
+        String currentPlayerColor = currentPlayer.getValue();
+        if ("white".equals(currentPlayerColor)) {
+            return whitePlayer;
+        } else if ("black".equals(currentPlayerColor)) {
+            return blackPlayer;
+        }
+        return null;
+    }
+    
+    /**
+     * 🚀 NEW: Determine game phase for emotional context
+     */
+    private String determineGamePhase(int moveCount) {
+        if (moveCount <= 12) {
+            return "opening";
+        } else if (moveCount <= 40) {
+            return "middlegame";
+        } else if (moveCount <= 60) {
+            return "endgame";
+        } else {
+            return "endgame_critical";
         }
     }
 
@@ -643,6 +695,19 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         public void onDialogueGenerated(String speaker, String dialogue) {
             Log.d(TAG, "🎭 Enhanced dialogue from " + speaker + ": " + dialogue);
 
+            // 🚀 NEW: Update conversation momentum
+            try {
+                Phase2EmotionalIntegrationBridge phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(getApplication());
+                String opponentName = speaker.equals(whitePlayer) ? blackPlayer : whitePlayer;
+                
+                if (phase2Bridge != null) {
+                    phase2Bridge.processConversationMomentum(speaker, dialogue, opponentName);
+                    Log.d(TAG, "🚀 Conversation momentum updated for " + speaker);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error updating conversation momentum", e);
+            }
+
             // Update the UI with the dialogue
             String speakerName = FineTunedModelManager.getInstance(getApplication())
                     .getMasterDisplayName(speaker);
@@ -661,6 +726,20 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         @Override
         public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
             Log.d(TAG, "😮 EMOTIONAL RESPONSE from " + speaker + " (" + emotion + "): " + dialogue);
+
+            // 🚀 NEW: Update conversation momentum with emotional intensity boost
+            try {
+                Phase2EmotionalIntegrationBridge phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(getApplication());
+                String opponentName = speaker.equals(whitePlayer) ? blackPlayer : whitePlayer;
+                
+                if (phase2Bridge != null) {
+                    // Emotional responses get extra momentum boost
+                    phase2Bridge.processConversationMomentum(speaker, dialogue + " [EMOTIONAL:" + emotion + "]", opponentName);
+                    Log.d(TAG, "🚀 Emotional momentum updated for " + speaker + " (" + emotion + ")");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error updating emotional momentum", e);
+            }
 
             // Handle emotional dialogue specially
             String speakerName = FineTunedModelManager.getInstance(getApplication())
@@ -1086,6 +1165,17 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     public void cleanup() {
         gameInProgress = false;
 
+        // 🚀 NEW: Reset emotional momentum for cleanup
+        try {
+            Phase2EmotionalIntegrationBridge phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(getApplication());
+            if (phase2Bridge != null) {
+                phase2Bridge.clearEmotionalState();
+                Log.d(TAG, "🚀 Emotional momentum reset during cleanup");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error resetting momentum during cleanup", e);
+        }
+
         if (gameManager != null) {
             gameManager.cleanup();
         }
@@ -1095,7 +1185,22 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
         }
-        Log.d(TAG, "🧹 ENHANCED SpectatorGameViewModel cleaned up");
+        Log.d(TAG, "🧹 ENHANCED SpectatorGameViewModel cleaned up with momentum reset");
+    }
+    
+    /**
+     * 🚀 NEW: Get momentum statistics for debugging
+     */
+    public String getMomentumStatistics() {
+        try {
+            Phase2EmotionalIntegrationBridge phase2Bridge = Phase2EmotionalIntegrationBridge.getInstance(getApplication());
+            if (phase2Bridge != null) {
+                return phase2Bridge.getMomentumStatistics();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error getting momentum statistics", e);
+        }
+        return "Momentum statistics unavailable";
     }
 
     @Override

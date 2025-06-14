@@ -146,6 +146,19 @@ public class PersonalityEngine {
         this.commentaryHooks = new FENCommentaryHooks(context);
         Log.d(TAG, "✅ FEN Commentary Hooks initialized");
 
+        // 🚨 CRITICAL FIX: Force database initialization for common masters at startup
+        Log.d(TAG, "🔧 STARTUP: Forcing database initialization for key masters...");
+        String[] keyMasters = {"tal", "fischer", "carlsen", "kasparov", "karpov", "kramnik"};
+        for (String master : keyMasters) {
+            if (!databaseHelper.hasMasterData(master)) {
+                Log.d(TAG, "🔧 STARTUP: No data for " + master + " - forcing initialization");
+                initializeMasterData(master);
+            } else {
+                int count = databaseHelper.getMasterPositionCount(master);
+                Log.d(TAG, "🔧 STARTUP: " + master + " already has " + count + " positions");
+            }
+        }
+
         Log.d(TAG, "🎭 PersonalityEngine initialized with LIGHTNING-FAST local database!");
     }
 
@@ -169,8 +182,25 @@ public class PersonalityEngine {
      */
     public void selectPersonalityMove(String currentFen, PersonalityMoveCallback callback) {
         Log.d(TAG, "⚡ LIGHTNING-FAST personality move selection for " + currentMaster);
+        Log.d(TAG, "🔧 DEBUG: enablePersonalityPlay=" + enablePersonalityPlay + ", currentMaster=" + currentMaster);
+        Log.d(TAG, "🔧 DEBUG: databaseHelper=" + (databaseHelper != null ? "initialized" : "NULL"));
+        Log.d(TAG, "🔧 DEBUG: executorService=" + (executorService != null && !executorService.isShutdown() ? "healthy" : "NOT HEALTHY"));
+
+        // 🚨 CRITICAL DEBUG: Check database status immediately
+        if (databaseHelper != null) {
+            boolean hasData = databaseHelper.hasMasterData(currentMaster);
+            int positionCount = databaseHelper.getMasterPositionCount(currentMaster);
+            Log.d(TAG, "🔍 IMMEDIATE DB CHECK: " + currentMaster + " hasData=" + hasData + ", positions=" + positionCount);
+            
+            if (!hasData) {
+                Log.w(TAG, "⚠️ NO DATABASE DATA for " + currentMaster + " - forcing immediate initialization");
+                initializeMasterData(currentMaster);
+                // Continue anyway - the lookup will use fallback logic
+            }
+        }
 
         if (!enablePersonalityPlay) {
+            Log.d(TAG, "🚫 Personality play DISABLED - falling back to pure engine");
             selectPureEngineMove(currentFen, callback);
             return;
         }
@@ -178,10 +208,12 @@ public class PersonalityEngine {
         executorService.execute(() -> {
             try {
                 // Step 1: Get top move candidates from Stockfish
+                Log.d(TAG, "🤖 Getting engine candidates for FEN: " + currentFen.substring(0, Math.min(50, currentFen.length())));
                 List<PersonalityMove> engineCandidates = getEngineCandidates(currentFen);
                 Log.d(TAG, "🤖 Got " + engineCandidates.size() + " engine candidates");
 
                 // Step 2: INSTANT local database lookup - no network delays!
+                Log.d(TAG, "⚡ Starting database lookup for " + currentMaster);
                 findSimilarPositionsLocally(currentFen, engineCandidates, callback);
 
             } catch (Exception e) {
@@ -282,6 +314,7 @@ public class PersonalityEngine {
                                              PersonalityMoveCallback callback) {
 
         Log.d(TAG, "⚡ OPTIMIZED local database lookup for " + currentMaster + "...");
+        Log.d(TAG, "🔧 DEBUG: About to call databaseHelper.findSimilarPositions() with FEN: " + currentFen.substring(0, Math.min(50, currentFen.length())));
 
         try {
             // Get cached name variations (most likely first)
@@ -292,16 +325,31 @@ public class PersonalityEngine {
 
             // Try most successful name first
             for (String nameVariation : masterVariations) {
+                Log.d(TAG, "🔧 DEBUG: Trying master name variation: '" + nameVariation + "'");
+                
+                // 🚨 CRITICAL DEBUG: Check database state before each call
+                if (databaseHelper == null) {
+                    Log.e(TAG, "❌ CRITICAL: databaseHelper is NULL during lookup!");
+                    break;
+                }
+                
+                Log.d(TAG, "📊 PRE-LOOKUP: Database stats for " + nameVariation);
+                boolean hasDataPreLookup = databaseHelper.hasMasterData(nameVariation);
+                int countPreLookup = databaseHelper.getMasterPositionCount(nameVariation);
+                Log.d(TAG, "📊 PRE-LOOKUP: hasData=" + hasDataPreLookup + ", count=" + countPreLookup);
+                
                 List<GameDatabaseHelper.HistoricalPosition> results =
                         databaseHelper.findSimilarPositions(currentFen, nameVariation, MAX_SIMILAR_POSITIONS);
+                Log.d(TAG, "🔧 DEBUG: Database returned " + results.size() + " results for '" + nameVariation + "'");
 
                 if (!results.isEmpty()) {
                     historicalPositions = results;
                     Log.d(TAG, "✅ OPTIMIZED SUCCESS with: '" + nameVariation + "' (" + results.size() + " positions)");
                     break; // Stop on first success
+                } else {
+                    Log.d(TAG, "🔧 DEBUG: No results for '" + nameVariation + "', trying next variation...");
                 }
             }
-
 
             Log.d(TAG, "✅ FINAL lookup result: Found " + historicalPositions.size() + " similar positions");
 
@@ -326,7 +374,9 @@ public class PersonalityEngine {
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Error in local database lookup", e);
-            // Your existing fallback logic...
+            // Fallback to pure engine move
+            Log.d(TAG, "🔄 Falling back to pure engine move due to database error");
+            selectPureEngineMove(currentFen, callback);
         }
     }
 

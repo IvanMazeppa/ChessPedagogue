@@ -139,9 +139,11 @@ public class AIvsAIGameManager {
 
                 Log.d(TAG, "✅ Synchronization complete, configuring engine...");
                 // Configure personality engine with historical rating
+                Log.d(TAG, "🔧 DEBUG: About to configure engine for activePlayer: " + activePlayer);
                 configureEngineForPlayer(activePlayer);
 
                 Log.d(TAG, "✅ Engine configured, calculating move...");
+                Log.d(TAG, "🔧 DEBUG: About to calculate validated move for activePlayer: " + activePlayer);
                 // ENHANCED: Calculate the move with proper validation
                 calculateValidatedMove(activePlayer);
 
@@ -530,7 +532,16 @@ public class AIvsAIGameManager {
 
             // Configure personality with enhanced weight for historical accuracy
             float personalityWeight = calculatePersonalityWeight(activePlayer, peakRating);
+            Log.d(TAG, "🔧 DEBUG: About to call gameRepository.configurePersonalityEngine with: master=" + activePlayer + ", weight=" + personalityWeight + ", enabled=true");
+            
+            // 🚨 CRITICAL DEBUG: Force database verification before configuration
+            Log.d(TAG, "🔍 PRE-CONFIG DEBUG: Forcing database verification for " + activePlayer);
             gameRepository.configurePersonalityEngine(activePlayer, personalityWeight, true);
+
+            // 🚨 NEW: Additional verification after configuration
+            Log.d(TAG, "🔍 POST-CONFIG DEBUG: Verifying personality engine availability...");
+            boolean isAvailable = gameRepository.isPersonalityEngineAvailable();
+            Log.d(TAG, "🎯 Personality engine available: " + isAvailable);
 
             Log.d(TAG, "✅ Engine configured for " + activePlayer + " (rating: " + peakRating + ", personality: " + personalityWeight + ")");
 
