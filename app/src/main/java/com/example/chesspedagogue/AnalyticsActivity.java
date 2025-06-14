@@ -46,6 +46,11 @@ public class AnalyticsActivity extends AppCompatActivity {
         persistenceManager = RelationshipPersistenceManager.getInstance(this);
         emotionalManager = EmotionalIntelligenceManager.getInstance(this);
         
+        // 🔧 CRITICAL FIX: Initialize EQ system with historical data
+        Log.d(TAG, "🧠 Initializing EQ system with historical emotional data for analytics...");
+        emotionalManager.initializeWithHistory("tal", "fischer");
+        Log.d(TAG, "✅ EQ system initialized for analytics - data should now be available!");
+        
         // Load analytics data
         loadAnalyticsData();
     }

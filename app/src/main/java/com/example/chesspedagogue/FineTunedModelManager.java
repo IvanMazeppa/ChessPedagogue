@@ -62,7 +62,7 @@ public class FineTunedModelManager {
     private static final String KASPAROV_VECTOR_STORE_ID = "vs_kasparov_original_id"; // Kasparov vector store
 
     // 🇨🇺 CAPABLANCA CONFIGURATION - NEW FINE-TUNED MODEL!
-    private static final String CAPABLANCA_ASSISTANT_ID = "asst_capablanca_placeholder"; // Placeholder for future assistant
+    private static final String CAPABLANCA_ASSISTANT_ID = "asst_6KvEPyGI4YnB4HdEXZEfxI0C"; // FIXED: Real Capablanca assistant ID
     private static final String CAPABLANCA_VECTOR_STORE_ID = "vs_68411f200f9c81918f4a7d95f81e178f"; // Your Capablanca vector store
 
     // Model constants - now with 6 working fine-tuned models including Capablanca!

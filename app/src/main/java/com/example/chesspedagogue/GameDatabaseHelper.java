@@ -888,6 +888,31 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     }
     
     /**
+     * Get total position count across all masters (for debugging only)
+     */
+    public int getTotalPositionCount() {
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        try {
+            String query = "SELECT COUNT(*) FROM " + TABLE_MASTER_POSITIONS;
+            Cursor cursor = db.rawQuery(query, null);
+
+            if (cursor.moveToFirst()) {
+                int count = cursor.getInt(0);
+                cursor.close();
+                return count;
+            }
+
+            cursor.close();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting total position count", e);
+        }
+
+        return 0;
+    }
+    
+    /**
      * 🔄 Force clear and reimport all master data - use when database structure changes
      */
     public boolean clearAndReimportAllData() {

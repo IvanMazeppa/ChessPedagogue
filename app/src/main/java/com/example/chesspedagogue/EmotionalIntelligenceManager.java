@@ -426,8 +426,12 @@ public class EmotionalIntelligenceManager {
         this.masterProfiles = new HashMap<>();
         this.sessionHistory = new HashMap<>();
         
+        // 🔧 CRITICAL FIX: Initialize the persistence manager for EQ database operations
+        this.persistenceManager = RelationshipPersistenceManager.getInstance(context);
+        Log.d(TAG, "✅ Persistence manager initialized for EQ database operations");
+        
         initializeMasterProfiles();
-        Log.d(TAG, "🎭 Enhanced Emotional Intelligence Manager initialized");
+        Log.d(TAG, "🎭 Enhanced Emotional Intelligence Manager initialized with database persistence");
     }
     
     public static synchronized EmotionalIntelligenceManager getInstance(Context context) {

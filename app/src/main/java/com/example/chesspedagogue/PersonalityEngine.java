@@ -181,6 +181,7 @@ public class PersonalityEngine {
      * No more network delays - everything happens locally at lightning speed!
      */
     public void selectPersonalityMove(String currentFen, PersonalityMoveCallback callback) {
+        Log.d(TAG, "🚨 ==> ENTRY: selectPersonalityMove() called for " + currentMaster + " <=== 🚨");
         Log.d(TAG, "⚡ LIGHTNING-FAST personality move selection for " + currentMaster);
         Log.d(TAG, "🔧 DEBUG: enablePersonalityPlay=" + enablePersonalityPlay + ", currentMaster=" + currentMaster);
         Log.d(TAG, "🔧 DEBUG: databaseHelper=" + (databaseHelper != null ? "initialized" : "NULL"));
@@ -525,6 +526,68 @@ public class PersonalityEngine {
                     styleBonus += personalityWeight * 0.4f;
                 }
                 break;
+
+            case "alekhine":
+                if (tagCounts.getOrDefault("attack", 0) > 0 ||
+                        tagCounts.getOrDefault("positional", 0) > 0) {
+                    styleBonus += personalityWeight * 0.45f; // Balanced combinational style
+                }
+                break;
+
+            case "kramnik":
+                if (tagCounts.getOrDefault("positional", 0) > 0 ||
+                        tagCounts.getOrDefault("endgame", 0) > 0) {
+                    styleBonus += personalityWeight * 0.4f; // Solid positional play
+                }
+                break;
+
+            case "karpov":
+                if (tagCounts.getOrDefault("positional", 0) > 0 ||
+                        tagCounts.getOrDefault("endgame", 0) > 0) {
+                    styleBonus += personalityWeight * 0.4f; // Positional squeeze
+                }
+                break;
+
+            case "capablanca":
+                if (tagCounts.getOrDefault("endgame", 0) > 0 ||
+                        tagCounts.getOrDefault("positional", 0) > 0) {
+                    styleBonus += personalityWeight * 0.4f; // Natural positional play
+                }
+                break;
+
+            case "carlsen":
+                // Magnus adapts to any style - bonus for any recognizable pattern
+                if (tagCounts.size() > 0) {
+                    styleBonus += personalityWeight * 0.3f; // Universal adaptability
+                }
+                break;
+
+            case "anand":
+                if (tagCounts.getOrDefault("attack", 0) > 0 ||
+                        tagCounts.getOrDefault("positional", 0) > 0) {
+                    styleBonus += personalityWeight * 0.35f; // Versatile style
+                }
+                break;
+
+            case "morphy":
+                if (tagCounts.getOrDefault("attack", 0) > 0 ||
+                        tagCounts.getOrDefault("sacrifice", 0) > 0) {
+                    styleBonus += personalityWeight * 0.5f; // Classical attacking play
+                }
+                break;
+
+            case "lasker":
+                if (tagCounts.getOrDefault("endgame", 0) > 0 ||
+                        tagCounts.getOrDefault("defense", 0) > 0) {
+                    styleBonus += personalityWeight * 0.4f; // Practical fighting
+                }
+                break;
+
+            case "botvinnik":
+                if (tagCounts.getOrDefault("positional", 0) > 0) {
+                    styleBonus += personalityWeight * 0.4f; // Scientific approach
+                }
+                break;
         }
 
         return styleBonus;
@@ -626,6 +689,51 @@ public class PersonalityEngine {
                 return selectedMove.isHistoricalMatch ?
                         "I played this move to seize the initiative - it's pure Kasparov!" :
                         "This move maximizes our chances and keeps the tension high.";
+
+            case "alekhine":
+                return selectedMove.isHistoricalMatch ?
+                        "This exact combination appeared in my games! The position unfolds beautifully." :
+                        "A sophisticated move - let me show you the hidden tactical motifs.";
+
+            case "kramnik":
+                return selectedMove.isHistoricalMatch ?
+                        "I played this precise move in my preparation. Modern chess demands such accuracy." :
+                        "Solid and principled - this move improves our position systematically.";
+
+            case "karpov":
+                return selectedMove.isHistoricalMatch ?
+                        "Patience pays off - I've played this slow squeeze before." :
+                        "Small improvements accumulate. This move enhances our long-term prospects.";
+
+            case "capablanca":
+                return selectedMove.isHistoricalMatch ?
+                        "Naturally! This simple, strong move is exactly my style." :
+                        "The most natural continuation - elegant and effective.";
+
+            case "carlsen":
+                return selectedMove.isHistoricalMatch ?
+                        "I remember this position - there's always a way to squeeze for more." :
+                        "Practical chess. This gives our opponent the most problems to solve.";
+
+            case "anand":
+                return selectedMove.isHistoricalMatch ?
+                        "Quick recognition - I've analyzed this pattern thoroughly." :
+                        "Fast and accurate calculation shows this is the right path.";
+
+            case "morphy":
+                return selectedMove.isHistoricalMatch ?
+                        "A principled move from the good old days of chess!" :
+                        "Rapid development and sound principles guide this choice.";
+
+            case "lasker":
+                return selectedMove.isHistoricalMatch ?
+                        "Psychology and technique combined - I've used this approach before." :
+                        "Practical wisdom suggests this creates the most difficulties.";
+
+            case "botvinnik":
+                return selectedMove.isHistoricalMatch ?
+                        "Scientific analysis confirms this is the correct continuation." :
+                        "Methodical preparation leads to systematic improvement.";
 
             default:
                 return "This move aligns with my chess philosophy and style.";
@@ -742,13 +850,20 @@ public class PersonalityEngine {
     }
 
     private String getCurrentMasterDisplayName() {
-        // Simple display name mapping
+        // Complete display name mapping for all masters
         switch (currentMaster.toLowerCase()) {
             case "tal": return "Mikhail Tal";
             case "fischer": return "Bobby Fischer";
             case "kasparov": return "Garry Kasparov";
             case "kramnik": return "Vladimir Kramnik";
             case "karpov": return "Anatoly Karpov";
+            case "alekhine": return "Alexander Alekhine";
+            case "capablanca": return "José Raúl Capablanca";
+            case "carlsen": return "Magnus Carlsen";
+            case "anand": return "Viswanathan Anand";
+            case "morphy": return "Paul Morphy";
+            case "lasker": return "Emanuel Lasker";
+            case "botvinnik": return "Mikhail Botvinnik";
             default: return currentMaster;
         }
     }
