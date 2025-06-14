@@ -430,6 +430,12 @@ public class EmotionalIntelligenceManager {
         this.persistenceManager = RelationshipPersistenceManager.getInstance(context);
         Log.d(TAG, "✅ Persistence manager initialized for EQ database operations");
         
+        // 🔧 Verify database integrity on initialization
+        persistenceManager.verifyDatabaseIntegrity();
+        
+        // 🧪 Test database writes to identify issues
+        persistenceManager.testDatabaseWrites();
+        
         initializeMasterProfiles();
         Log.d(TAG, "🎭 Enhanced Emotional Intelligence Manager initialized with database persistence");
     }

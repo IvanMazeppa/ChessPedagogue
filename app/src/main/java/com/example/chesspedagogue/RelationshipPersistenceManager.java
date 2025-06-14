@@ -105,6 +105,16 @@ public class RelationshipPersistenceManager {
      * 💾 Save relationship updates to database
      */
     public void updateRelationship(MasterRelationship relationship) {
+        // 🔧 Parameter validation
+        if (relationship == null || relationship.master1 == null || relationship.master2 == null) {
+            Log.e(TAG, String.format("❌ Invalid relationship object: %s", relationship));
+            return;
+        }
+        
+        Log.d(TAG, String.format("🔧 Updating relationship - %s <-> %s (respect: %.2f, rivalry: %.2f, friendship: %.2f)", 
+               relationship.master1, relationship.master2, relationship.respectLevel, 
+               relationship.rivalryIntensity, relationship.friendshipBond));
+        
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         
         try {
@@ -127,9 +137,14 @@ public class RelationshipPersistenceManager {
                        relationship.master1, relationship.master2, relationship.respectLevel, 
                        relationship.rivalryIntensity, relationship.friendshipBond));
             } else {
-                Log.w(TAG, String.format("⚠️ Failed to update relationship: %s <-> %s", 
+                Log.e(TAG, String.format("❌ FAILED to update relationship: %s <-> %s", 
                        relationship.master1, relationship.master2));
+                Log.e(TAG, String.format("❌ Relationship update failed - ContentValues: %s", values.toString()));
+                Log.e(TAG, String.format("❌ Query conditions: master1=%s, master2=%s", relationship.master1, relationship.master2));
             }
+        } catch (Exception e) {
+            Log.e(TAG, String.format("❌ Exception while updating relationship: %s", e.getMessage()), e);
+            Log.e(TAG, String.format("❌ Relationship: %s <-> %s", relationship.master1, relationship.master2));
         } finally {
             // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
@@ -310,6 +325,17 @@ public class RelationshipPersistenceManager {
                                        float positionEval, String conversationSnippet) {
         SQLiteDatabase db = dbHelper.getWritableDatabase();
         
+        // 🔧 Debug logging for parameter validation
+        Log.d(TAG, String.format("🔧 Recording emotional reaction - Parameters: master=%s, opponent=%s, topic=%s, emotion=%s, intensity=%.2f", 
+               master, opponent, topic, emotion, intensity));
+        
+        // Check for null parameters that are required by database
+        if (master == null || opponent == null || topic == null || emotion == null) {
+            Log.e(TAG, String.format("❌ NULL parameter detected - master=%s, opponent=%s, topic=%s, emotion=%s", 
+                   master, opponent, topic, emotion));
+            return;
+        }
+        
         try {
             // Calculate relationship impact
             float relationshipImpact = calculateRelationshipImpact(emotion, intensity, momentum);
@@ -337,7 +363,15 @@ public class RelationshipPersistenceManager {
                 if (Math.abs(relationshipImpact) > 0.1f) {
                     updateRelationshipFromEmotionalReaction(master, opponent, relationshipImpact, emotion, intensity);
                 }
+            } else {
+                Log.e(TAG, String.format("❌ FAILED to record emotional reaction: %s felt %s (%.2f) about %s with %s", 
+                       master, emotion, intensity, topic, opponent));
+                Log.e(TAG, String.format("❌ Database insert failed - ContentValues: %s", values.toString()));
             }
+        } catch (Exception e) {
+            Log.e(TAG, String.format("❌ Exception while recording emotional reaction: %s", e.getMessage()), e);
+            Log.e(TAG, String.format("❌ Parameters: master=%s, opponent=%s, topic=%s, emotion=%s", 
+                   master, opponent, topic, emotion));
         } finally {
             // 🔧 FIX: Don't close database - let SQLiteOpenHelper manage connections
         }
@@ -490,6 +524,105 @@ public class RelationshipPersistenceManager {
         }
         
         return events;
+    }
+    
+    // =========================== DATABASE INTEGRITY CHECK ===========================
+    
+    /**
+     * 🔧 Verify database tables exist and have correct schema
+     */
+    public void verifyDatabaseIntegrity() {
+        SQLiteDatabase db = dbHelper.getReadableDatabase();
+        
+        try {
+            // Check if emotional_reactions table exists
+            Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='emotional_reactions'", null);
+            boolean emotionalTableExists = cursor.moveToFirst();
+            cursor.close();
+            
+            Log.d(TAG, String.format("🔧 Database integrity check - emotional_reactions table exists: %s", emotionalTableExists));
+            
+            if (emotionalTableExists) {
+                // Check table schema
+                cursor = db.rawQuery("PRAGMA table_info(emotional_reactions)", null);
+                Log.d(TAG, "🔧 Emotional reactions table schema:");
+                while (cursor.moveToNext()) {
+                    String columnName = cursor.getString(1); // column name
+                    String columnType = cursor.getString(2); // column type
+                    int notNull = cursor.getInt(3); // not null flag
+                    Log.d(TAG, String.format("  - Column: %s (%s) NOT NULL: %s", columnName, columnType, notNull == 1));
+                }
+                cursor.close();
+            }
+            
+            // Check if master_relationships table exists
+            cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name='master_relationships'", null);
+            boolean relationshipTableExists = cursor.moveToFirst();
+            cursor.close();
+            
+            Log.d(TAG, String.format("🔧 Database integrity check - master_relationships table exists: %s", relationshipTableExists));
+            
+            if (relationshipTableExists) {
+                // Check table schema
+                cursor = db.rawQuery("PRAGMA table_info(master_relationships)", null);
+                Log.d(TAG, "🔧 Master relationships table schema:");
+                while (cursor.moveToNext()) {
+                    String columnName = cursor.getString(1); // column name
+                    String columnType = cursor.getString(2); // column type
+                    int notNull = cursor.getInt(3); // not null flag
+                    Log.d(TAG, String.format("  - Column: %s (%s) NOT NULL: %s", columnName, columnType, notNull == 1));
+                }
+                cursor.close();
+            }
+            
+            // Test a simple insert to see if it works
+            if (emotionalTableExists && relationshipTableExists) {
+                Log.d(TAG, "🔧 Database tables exist - testing simple operations...");
+                
+                // Try to count records
+                cursor = db.rawQuery("SELECT COUNT(*) FROM emotional_reactions", null);
+                if (cursor.moveToFirst()) {
+                    int emotionalCount = cursor.getInt(0);
+                    Log.d(TAG, String.format("🔧 Current emotional_reactions records: %d", emotionalCount));
+                }
+                cursor.close();
+                
+                cursor = db.rawQuery("SELECT COUNT(*) FROM master_relationships", null);
+                if (cursor.moveToFirst()) {
+                    int relationshipCount = cursor.getInt(0);
+                    Log.d(TAG, String.format("🔧 Current master_relationships records: %d", relationshipCount));
+                }
+                cursor.close();
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Database integrity check failed: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 🧪 Test method to manually trigger database writes for debugging
+     */
+    public void testDatabaseWrites() {
+        Log.d(TAG, "🧪 Testing database writes...");
+        
+        try {
+            // Test emotional reaction write
+            recordEmotionalReaction(
+                "alekhine", "carlsen", "chess_aesthetics", "impressed", 
+                0.8f, 0.5f, "test_context", 0.0f, "Test conversation snippet"
+            );
+            
+            // Test relationship update
+            MasterRelationship testRelation = getRelationship("alekhine", "carlsen");
+            testRelation.respectLevel += 0.1f;
+            updateRelationship(testRelation);
+            
+            Log.d(TAG, "🧪 Database write test completed");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "🧪 Database write test failed: " + e.getMessage(), e);
+        }
     }
     
     // =========================== UTILITY METHODS ===========================
