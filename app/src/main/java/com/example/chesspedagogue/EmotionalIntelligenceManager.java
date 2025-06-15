@@ -421,6 +421,8 @@ public class EmotionalIntelligenceManager {
     }
     
     private EmotionalIntelligenceManager(Context context) {
+        Log.d(TAG, "🚀 CONSTRUCTOR CALLED: EmotionalIntelligenceManager initialization starting...");
+        
         this.context = context.getApplicationContext();
         this.evaluationTracker = EvaluationTracker.getInstance(context);
         this.masterProfiles = new HashMap<>();
@@ -431,10 +433,14 @@ public class EmotionalIntelligenceManager {
         Log.d(TAG, "✅ Persistence manager initialized for EQ database operations");
         
         // 🔧 Verify database integrity on initialization
+        Log.d(TAG, "🔧 About to call verifyDatabaseIntegrity()...");
         persistenceManager.verifyDatabaseIntegrity();
+        Log.d(TAG, "🔧 verifyDatabaseIntegrity() completed");
         
         // 🧪 Test database writes to identify issues
+        Log.d(TAG, "🧪 About to call testDatabaseWrites()...");
         persistenceManager.testDatabaseWrites();
+        Log.d(TAG, "🧪 testDatabaseWrites() completed");
         
         initializeMasterProfiles();
         Log.d(TAG, "🎭 Enhanced Emotional Intelligence Manager initialized with database persistence");

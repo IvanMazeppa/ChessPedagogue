@@ -63,6 +63,13 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     
+    // Tournament mode integration
+    private boolean isTournamentMode = false;
+    private String gameType = "";
+    private int gameRound = 0;
+    private String gameResult = "";
+    private float gameQuality = 0.0f;
+    
     // 🎤 Always-listening voice control
     private VoiceControlManager voiceControlManager;
     
@@ -90,6 +97,9 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             android.content.SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
             prefs.edit().putBoolean("is_spectator_mode", true).apply();
             Log.d(TAG, "✅ Spectator mode flag set - EvaluationTracker auto-commentary disabled");
+
+            // Check if launched from tournament mode
+            checkTournamentModeExtras();
 
             // 🔧 CRITICAL FIX: Force database rebuild for troubleshooting - MOVED TO EXECUTE FIRST
             Log.d(TAG, "🚨 EXECUTING database rebuild BEFORE other initialization to ensure it runs");
@@ -129,6 +139,39 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
 
     private void getPlayersFromIntent() {
         Intent intent = getIntent();
+        
+        // Check if launched from tournament mode first
+        isTournamentMode = intent.getBooleanExtra("TOURNAMENT_MODE", false);
+        
+        if (isTournamentMode) {
+            // Extract tournament game details
+            gameType = intent.getStringExtra("GAME_TYPE");
+            gameRound = intent.getIntExtra("GAME_ROUND", 0);
+            gameResult = intent.getStringExtra("GAME_RESULT");
+            gameQuality = intent.getFloatExtra("GAME_QUALITY", 0.0f);
+            
+            Log.d(TAG, String.format("🏆 Tournament mode detected: %s Round %d (Quality: %.2f)", 
+                   gameType, gameRound, gameQuality));
+            Log.d(TAG, "📊 Game result: " + gameResult);
+            
+            // Get players from tournament extras
+            String master1 = intent.getStringExtra("MASTER_1");
+            String master2 = intent.getStringExtra("MASTER_2");
+            
+            if (master1 != null && master2 != null) {
+                // Convert full display names to internal master names
+                whitePlayer = convertDisplayNameToInternalName(master1);
+                blackPlayer = convertDisplayNameToInternalName(master2);
+                Log.d(TAG, "🔄 Players from tournament: " + master1 + " -> " + whitePlayer + ", " + master2 + " -> " + blackPlayer);
+                return; // Skip regular player lookup and fallbacks
+            } else {
+                Log.w(TAG, "⚠️ Tournament mode but missing MASTER_1/MASTER_2, falling back to regular players");
+            }
+        } else {
+            Log.d(TAG, "🎭 Regular spectator mode (not tournament)");
+        }
+        
+        // Regular player lookup (for non-tournament or tournament fallback)
         whitePlayer = intent.getStringExtra("WHITE_PLAYER");
         blackPlayer = intent.getStringExtra("BLACK_PLAYER");
 
@@ -145,14 +188,80 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
         Log.d(TAG, "🎭 Players: " + whitePlayer + " vs " + blackPlayer);
     }
 
+    /**
+     * Convert display names (like "Bobby Fischer") to internal names (like "fischer")
+     */
+    private String convertDisplayNameToInternalName(String displayName) {
+        if (displayName == null) return null;
+        
+        // Map of display names to internal names
+        switch (displayName.trim()) {
+            case "Bobby Fischer": return "fischer";
+            case "Mikhail Tal": return "tal";
+            case "Magnus Carlsen": return "carlsen";
+            case "Garry Kasparov": return "kasparov";
+            case "José Raúl Capablanca": return "capablanca";
+            case "Alexander Alekhine": return "alekhine";
+            case "Vladimir Kramnik": return "kramnik";
+            case "Anatoly Karpov": return "karpov";
+            case "Viswanathan Anand": return "anand";
+            case "Gukesh Dommaraju": return "gukesh";
+            case "Hikaru Nakamura": return "hikaru";
+            case "Tigran Petrosian": return "petrosian";
+            case "Aron Nimzowitsch": return "nimzowitsch";
+            case "Paul Morphy": return "morphy";
+            case "Emanuel Lasker": return "lasker";
+            case "Mikhail Botvinnik": return "botvinnik";
+            
+            // If already internal name, return as-is
+            default:
+                String lowerName = displayName.toLowerCase();
+                if (lowerName.equals("fischer") || lowerName.equals("tal") || lowerName.equals("carlsen") ||
+                    lowerName.equals("kasparov") || lowerName.equals("capablanca") || lowerName.equals("alekhine") ||
+                    lowerName.equals("kramnik") || lowerName.equals("karpov") || lowerName.equals("anand") ||
+                    lowerName.equals("gukesh") || lowerName.equals("hikaru") || lowerName.equals("petrosian") ||
+                    lowerName.equals("nimzowitsch") || lowerName.equals("morphy") || lowerName.equals("lasker") ||
+                    lowerName.equals("botvinnik")) {
+                    return lowerName;
+                }
+                
+                // Unknown name, return as lowercase
+                Log.w(TAG, "⚠️ Unknown master name: " + displayName + ", using as lowercase");
+                return displayName.toLowerCase().replaceAll("\\s+", "");
+        }
+    }
+
+    /**
+     * Check for tournament mode extras passed from TournamentGameViewer
+     * NOTE: This is now handled in getPlayersFromIntent() to ensure proper order
+     */
+    private void checkTournamentModeExtras() {
+        // Tournament mode check is now handled in getPlayersFromIntent()
+        // This method kept for compatibility but logic moved
+        if (isTournamentMode) {
+            Log.d(TAG, "🎯 Tournament mode already processed in getPlayersFromIntent()");
+        }
+    }
+
     private boolean setupActionBar() {
         try {
             if (getSupportActionBar() != null) {
                 getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-                getSupportActionBar().setTitle("🎭 AI Masters: " +
-                        FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer) +
-                        " vs " +
-                        FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer));
+                
+                String title;
+                if (isTournamentMode) {
+                    title = String.format("🏆 %s R%d: %s vs %s", 
+                            gameType, gameRound,
+                            FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer),
+                            FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer));
+                } else {
+                    title = "🎭 AI Masters: " +
+                            FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer) +
+                            " vs " +
+                            FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer);
+                }
+                
+                getSupportActionBar().setTitle(title);
 
                 Log.d(TAG, "✅ Action bar set up successfully");
                 return true;
@@ -404,8 +513,14 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             String whiteName = FineTunedModelManager.getInstance(this).getMasterDisplayName(whitePlayer);
             String blackName = FineTunedModelManager.getInstance(this).getMasterDisplayName(blackPlayer);
 
-            whitePlayerNameTextView.setText("⚪ " + whiteName);
-            blackPlayerNameTextView.setText("⚫ " + blackName);
+            // Show tournament context if applicable
+            if (isTournamentMode) {
+                whitePlayerNameTextView.setText(String.format("⚪ %s (Q: %.2f)", whiteName, gameQuality));
+                blackPlayerNameTextView.setText(String.format("⚫ %s", blackName));
+            } else {
+                whitePlayerNameTextView.setText("⚪ " + whiteName);
+                blackPlayerNameTextView.setText("⚫ " + blackName);
+            }
 
             // Set evaluation bar player color
             if (evaluationBarView != null) {
@@ -413,6 +528,16 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             }
 
             Log.d(TAG, "✅ Player info set: " + whiteName + " vs " + blackName);
+            if (isTournamentMode) {
+                Log.d(TAG, "🏆 Tournament context: " + gameType + " Round " + gameRound + " (Quality: " + gameQuality + ")");
+                
+                // Add tournament result info to dialogue if available
+                if (gameResult != null && !gameResult.isEmpty() && dialogueTextView != null) {
+                    String tournamentInfo = String.format("🏆 %s Tournament - Round %d\n📊 Game Quality: %.2f\n🎯 Result: %s", 
+                                                         gameType, gameRound, gameQuality, gameResult);
+                    dialogueTextView.setText(tournamentInfo);
+                }
+            }
         }
     }
 

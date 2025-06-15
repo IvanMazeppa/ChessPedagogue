@@ -29,6 +29,13 @@
         android:icon="@android:drawable/ic_menu_search"
         app:showAsAction="never" />
 
+    <!-- NEW: Tournament Simulation -->
+    <item
+        android:id="@+id/action_tournament_simulation"
+        android:title="🏆 Tournament Simulation"
+        android:icon="@android:drawable/ic_menu_compass"
+        app:showAsAction="never" />
+
     <!-- Coach and Learning -->
     <item
         android:id="@+id/action_coach_conversation"

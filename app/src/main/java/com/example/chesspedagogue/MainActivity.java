@@ -1482,6 +1482,11 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
             openAnalysisScreen();
             return true;
 
+        } else if (itemId == R.id.action_tournament_simulation) {
+            Log.d(TAG, "🏆 Opening tournament simulation");
+            WorkingMastersTournamentDemo.showTournamentSelectionDialog(this);
+            return true;
+
         } else if (itemId == R.id.action_coach_conversation) {
             // Launch coach conversation
             Intent intent = new Intent(this, ChessConversationActivity.class);

@@ -62,7 +62,7 @@ public class FineTunedModelManager {
     private static final String KASPAROV_VECTOR_STORE_ID = "vs_kasparov_original_id"; // Kasparov vector store
 
     // 🇨🇺 CAPABLANCA CONFIGURATION - NEW FINE-TUNED MODEL!
-    private static final String CAPABLANCA_ASSISTANT_ID = "asst_6KvEPyGI4YnB4HdEXZEfxI0C"; // FIXED: Real Capablanca assistant ID
+    private static final String CAPABLANCA_ASSISTANT_ID = "asst_UwDbySvoF9s7ZVDF8RRQ7ivD"; // FIXED: Correct Capablanca assistant ID
     private static final String CAPABLANCA_VECTOR_STORE_ID = "vs_68411f200f9c81918f4a7d95f81e178f"; // Your Capablanca vector store
 
     // Model constants - now with 6 working fine-tuned models including Capablanca!
@@ -1374,7 +1374,7 @@ public class FineTunedModelManager {
             case "carlsen": // 🏆 CARLSEN NOW USES ASSISTANTS API!
             // case "alekhine": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
             // case "kasparov": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED WITH INSTRUCTIONS!
-            // case "capablanca": // 🚫 DISABLED ASSISTANTS API - NOW USES FINE-TUNED MODEL!
+            case "capablanca": // ✅ ENABLED ASSISTANTS API - Using correct assistant!
             // case "anand": // 🚫 DISABLED ASSISTANTS API TO REDUCE VERBOSITY!
             case "botvinnik":
                 return true;
