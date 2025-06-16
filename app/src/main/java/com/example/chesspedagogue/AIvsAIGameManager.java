@@ -32,7 +32,7 @@ public class AIvsAIGameManager {
     private int moveDelay = 3000;
     private String lastValidFEN;
     private int consecutiveFailures = 0; // Track failures to prevent infinite loops
-    private static final int MAX_CONSECUTIVE_FAILURES = 3;
+    private static final int MAX_CONSECUTIVE_FAILURES = 8; // Increased tolerance for spectator mode
     private volatile boolean isValidatingMove = false; // Prevent concurrent move validations
 
     // Callbacks
@@ -737,7 +737,19 @@ public class AIvsAIGameManager {
         consecutiveFailures++;
 
         if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            Log.e(TAG, "❌ Too many consecutive failures (" + consecutiveFailures + "), ending game");
+            Log.e(TAG, "❌ Too many consecutive failures (" + consecutiveFailures + "), attempting engine recovery");
+            
+            // Try engine recovery before giving up
+            if (attemptEngineRecovery()) {
+                consecutiveFailures = 0; // Reset counter after successful recovery
+                Log.d(TAG, "✅ Engine recovery successful, retrying move calculation");
+                // Retry the move with current game state
+                String currentActivePlayer = (gameHistory.size() % 2 == 0) ? whitePlayer : blackPlayer;
+                requestMove(gameRepository.getCurrentFEN(), gameHistory, currentActivePlayer);
+                return;
+            }
+            
+            Log.e(TAG, "❌ Engine recovery failed, ending game");
             handleMoveError("Too many consecutive move failures - game cannot continue");
             return;
         }
@@ -990,5 +1002,64 @@ public class AIvsAIGameManager {
             gameRepository.cleanup();
         }
         Log.d(TAG, "🧹 FIXED AIvsAIGameManager cleaned up");
+    }
+
+    /**
+     * Attempt to recover the chess engine when it fails
+     */
+    private boolean attemptEngineRecovery() {
+        Log.d(TAG, "🔧 Attempting engine recovery...");
+        
+        try {
+            // Step 1: Re-synchronize game state
+            if (synchronizeGameState()) {
+                Log.d(TAG, "✅ Game state synchronized successfully");
+                
+                // Step 2: Test engine responsiveness
+                if (gameRepository.stockfishManager.waitForReady(3000)) {
+                    Log.d(TAG, "✅ Engine is responsive after recovery");
+                    return true;
+                } else {
+                    Log.w(TAG, "⚠️ Engine not responsive after state sync");
+                }
+            }
+            
+            // Step 3: Try engine restart if sync failed
+            Log.d(TAG, "🔄 Attempting engine restart...");
+            
+            // Check if engine is alive first
+            if (!gameRepository.stockfishManager.isEngineAlive()) {
+                Log.w(TAG, "🔄 Engine not alive, attempting restart...");
+                
+                // Get engine path from context
+                java.io.File engineFile = new java.io.File(context.getApplicationInfo().nativeLibraryDir, "libstockfish.so");
+                gameRepository.stockfishManager.stopEngine();
+                
+                if (gameRepository.stockfishManager.startEngine(engineFile.getAbsolutePath())) {
+                    Log.d(TAG, "✅ Engine restarted successfully");
+                    
+                    // Re-synchronize after restart
+                    if (synchronizeGameState()) {
+                        Log.d(TAG, "✅ Game state re-synchronized after restart");
+                        return true;
+                    }
+                } else {
+                    Log.e(TAG, "❌ Engine restart failed");
+                }
+            } else {
+                Log.d(TAG, "Engine is alive, trying force recovery...");
+                if (synchronizeGameState()) {
+                    Log.d(TAG, "✅ Force recovery successful");
+                    return true;
+                }
+            }
+            
+            Log.e(TAG, "❌ Engine recovery failed");
+            return false;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Exception during engine recovery", e);
+            return false;
+        }
     }
 }
