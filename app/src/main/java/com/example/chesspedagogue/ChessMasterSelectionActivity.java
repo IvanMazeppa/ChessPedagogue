@@ -61,7 +61,10 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
                 findViewById(R.id.morphyCard),
                 findViewById(R.id.anandCard),
                 findViewById(R.id.botvinnikCard),
-                findViewById(R.id.alekhineCard)
+                findViewById(R.id.alekhineCard),
+                findViewById(R.id.shortCard),
+                findViewById(R.id.gukeshCard),
+                findViewById(R.id.nakamuraCard)
         };
 
         // Add beautiful touch animations to each card
@@ -108,7 +111,10 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         RadioButton radioMorphy = findViewById(R.id.radioMorphy);
         RadioButton radioAnand = findViewById(R.id.radioAnand);
         RadioButton radioBotvinnik = findViewById(R.id.radioBotvinnik);
-        RadioButton radioAlekhine = findViewById(R.id.radioAlekhine); // NEW: Add Alekhine radio button
+        RadioButton radioAlekhine = findViewById(R.id.radioAlekhine);
+        RadioButton radioShort = findViewById(R.id.radioShort);
+        RadioButton radioGukesh = findViewById(R.id.radioGukesh);
+        RadioButton radioNakamura = findViewById(R.id.radioNakamura);
 
         // Check the appropriate radio button based on current selection
         switch(selectedMaster.toLowerCase()) {
@@ -145,8 +151,25 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             case "botvinnik":
                 radioBotvinnik.setChecked(true);
                 break;
-            case "alekhine": // NEW: Add Alekhine case
+            case "alekhine":
                 radioAlekhine.setChecked(true);
+                break;
+            case "nigel_short":
+            case "short":
+                radioShort.setChecked(true);
+                break;
+            case "gukesh":
+            case "dommaraju":
+                radioGukesh.setChecked(true);
+                break;
+            case "hikaru":
+            case "nakamura":
+                radioNakamura.setChecked(true);
+                break;
+            case "petrosian":
+            case "nimzowitsch":
+                // These masters don't have UI components yet, default to Tal for now
+                radioTal.setChecked(true);
                 break;
         }
 
@@ -162,7 +185,10 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         radioMorphy.setOnClickListener(v -> selectedMaster = "morphy");
         radioAnand.setOnClickListener(v -> selectedMaster = "anand");
         radioBotvinnik.setOnClickListener(v -> selectedMaster = "botvinnik");
-        radioAlekhine.setOnClickListener(v -> selectedMaster = "alekhine"); // NEW: Add Alekhine listener
+        radioAlekhine.setOnClickListener(v -> selectedMaster = "alekhine");
+        radioShort.setOnClickListener(v -> selectedMaster = "short");
+        radioGukesh.setOnClickListener(v -> selectedMaster = "gukesh");
+        radioNakamura.setOnClickListener(v -> selectedMaster = "nakamura");
     }
 
     private void setupCardClickListeners() {
@@ -178,7 +204,10 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
         CardView morphyCard = findViewById(R.id.morphyCard);
         CardView anandCard = findViewById(R.id.anandCard);
         CardView botvinnikCard = findViewById(R.id.botvinnikCard);
-        CardView alekhineCard = findViewById(R.id.alekhineCard); // NEW: Add Alekhine card
+        CardView alekhineCard = findViewById(R.id.alekhineCard);
+        CardView shortCard = findViewById(R.id.shortCard);
+        CardView gukeshCard = findViewById(R.id.gukeshCard);
+        CardView nakamuraCard = findViewById(R.id.nakamuraCard);
 
         // Set click listeners for each card
         talCard.setOnClickListener(v -> {
@@ -247,10 +276,27 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             radio.setChecked(true);
         });
 
-        // NEW: Add Alekhine card click listener
         alekhineCard.setOnClickListener(v -> {
             selectedMaster = "alekhine";
             RadioButton radio = findViewById(R.id.radioAlekhine);
+            radio.setChecked(true);
+        });
+
+        shortCard.setOnClickListener(v -> {
+            selectedMaster = "short";
+            RadioButton radio = findViewById(R.id.radioShort);
+            radio.setChecked(true);
+        });
+
+        gukeshCard.setOnClickListener(v -> {
+            selectedMaster = "gukesh";
+            RadioButton radio = findViewById(R.id.radioGukesh);
+            radio.setChecked(true);
+        });
+
+        nakamuraCard.setOnClickListener(v -> {
+            selectedMaster = "nakamura";
+            RadioButton radio = findViewById(R.id.radioNakamura);
             radio.setChecked(true);
         });
     }
@@ -294,7 +340,16 @@ public class ChessMasterSelectionActivity extends AppCompatActivity {
             case "carlsen": return "Magnus Carlsen";
             case "morphy": return "Paul Morphy";
             case "anand": return "Viswanathan Anand";
-            case "alekhine": return "Alexander Alekhine"; // NEW: Add Alekhine display name
+            case "botvinnik": return "Mikhail Botvinnik";
+            case "alekhine": return "Alexander Alekhine";
+            case "nigel_short":
+            case "short": return "Nigel Short";
+            case "gukesh":
+            case "dommaraju": return "Gukesh Dommaraju";
+            case "hikaru":
+            case "nakamura": return "Hikaru Nakamura";
+            case "petrosian": return "Tigran Petrosian";
+            case "nimzowitsch": return "Aron Nimzowitsch";
             default: return master;
         }
     }

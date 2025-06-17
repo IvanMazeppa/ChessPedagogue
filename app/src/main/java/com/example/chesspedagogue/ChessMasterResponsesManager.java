@@ -827,6 +827,28 @@ public class ChessMasterResponsesManager {
         prompt.append(detailedInstructions);
         prompt.append("\n\n");
         
+        // 🏁 ENDGAME CONTEXT: Add specific instructions for post-game reactions
+        if (conversationContext != null && (conversationContext.contains("YOU WON") || conversationContext.contains("You lost") || conversationContext.contains("GAME RESULT:"))) {
+            prompt.append("🏁 ENDGAME REACTION GUIDANCE:\n");
+            if (conversationContext.contains("YOU WON")) {
+                prompt.append("• You just WON this game! React with appropriate satisfaction, pride, or gracious victory\n");
+                prompt.append("• Acknowledge your opponent's effort but celebrate your achievement in character\n");
+                prompt.append("• Comment on key moments that led to your victory\n");
+                prompt.append("• Be confident but respectful in your post-game analysis\n");
+            } else if (conversationContext.contains("You lost")) {
+                prompt.append("• You just LOST this game! React with disappointment, frustration, or analytical reflection\n");
+                prompt.append("• Acknowledge your opponent's superior play graciously (but true to your character)\n");
+                prompt.append("• Analyze what went wrong or where you could have played better\n");
+                prompt.append("• Show the appropriate emotional response for your personality\n");
+            } else if (conversationContext.contains("You drew")) {
+                prompt.append("• The game ended in a DRAW! React with mixed feelings or satisfaction as appropriate\n");
+                prompt.append("• Comment on the balance of the game and key moments\n");
+                prompt.append("• Evaluate whether the draw was a fair result\n");
+            }
+            prompt.append("• CRITICAL: Pay attention to the PLAYER ROLES section to understand exactly who won/lost\n");
+            prompt.append("• Respond authentically based on whether YOU specifically won or lost, not just the general result\n\n");
+        }
+        
         // 🎭 EXPRESSION PATTERNS: Get anti-repetition guidance for this master
         EmotionalIntelligenceManager emotionalManager = EmotionalIntelligenceManager.getInstance(context);
         if (emotionalManager != null) {

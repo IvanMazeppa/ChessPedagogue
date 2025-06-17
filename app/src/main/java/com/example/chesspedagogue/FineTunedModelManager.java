@@ -36,6 +36,14 @@ public class FineTunedModelManager {
     private static final String KEY_ALEKHINE_ASSISTANT_ID = "alekhine_assistant_id";
     private static final String KEY_KASPAROV_ASSISTANT_ID = "kasparov_assistant_id";
     private static final String KEY_CAPABLANCA_ASSISTANT_ID = "capablanca_assistant_id";
+    private static final String KEY_NIGEL_SHORT_ASSISTANT_ID = "nigel_short_assistant_id";
+    private static final String KEY_LASKER_ASSISTANT_ID = "lasker_assistant_id";
+    private static final String KEY_MORPHY_ASSISTANT_ID = "morphy_assistant_id";
+    private static final String KEY_GUKESH_ASSISTANT_ID = "gukesh_assistant_id";
+    private static final String KEY_HIKARU_ASSISTANT_ID = "hikaru_assistant_id";
+    private static final String KEY_PETROSIAN_ASSISTANT_ID = "petrosian_assistant_id";
+    private static final String KEY_NIMZOWITSCH_ASSISTANT_ID = "nimzowitsch_assistant_id";
+    private static final String KEY_BOTVINNIK_ASSISTANT_ID = "botvinnik_assistant_id";
 
     // 🎭 TAL CONFIGURATION
     private static final String TAL_ASSISTANT_ID = "asst_LSdhMRFJcSCUJjR4o2B9tWmg"; // Your Tal assistant
@@ -64,6 +72,38 @@ public class FineTunedModelManager {
     // 🇨🇺 CAPABLANCA CONFIGURATION - NEW FINE-TUNED MODEL!
     private static final String CAPABLANCA_ASSISTANT_ID = "asst_UwDbySvoF9s7ZVDF8RRQ7ivD"; // FIXED: Correct Capablanca assistant ID
     private static final String CAPABLANCA_VECTOR_STORE_ID = "vs_68411f200f9c81918f4a7d95f81e178f"; // Your Capablanca vector store
+
+    // 🇬🇧 NIGEL SHORT CONFIGURATION
+    private static final String NIGEL_SHORT_ASSISTANT_ID = "asst_tgBfRjsfbXviWQrqkvLmpylK";
+    private static final String NIGEL_SHORT_VECTOR_STORE_ID = "vs_nigel_short_id";
+
+    // 🎭 EMANUEL LASKER CONFIGURATION
+    private static final String LASKER_ASSISTANT_ID = "asst_rDnU3zyZH46BIMpqi6FJz98g";
+    private static final String LASKER_VECTOR_STORE_ID = "vs_lasker_id";
+
+    // 🇺🇸 PAUL MORPHY CONFIGURATION
+    private static final String MORPHY_ASSISTANT_ID = "asst_CkMCk5XjxjG7pjn4ZwoOAPjl";
+    private static final String MORPHY_VECTOR_STORE_ID = "vs_morphy_id";
+
+    // 🇮🇳 GUKESH DOMMARAJU CONFIGURATION
+    private static final String GUKESH_ASSISTANT_ID = "asst_HKGsJCDvGyr9sM55znO6Dgg7";
+    private static final String GUKESH_VECTOR_STORE_ID = "vs_gukesh_id";
+
+    // 🎮 HIKARU NAKAMURA CONFIGURATION
+    private static final String HIKARU_ASSISTANT_ID = "asst_4AOP4T4Ze3sPM1cj5YDwSkkl";
+    private static final String HIKARU_VECTOR_STORE_ID = "vs_hikaru_id";
+
+    // 🏰 TIGRAN PETROSIAN CONFIGURATION
+    private static final String PETROSIAN_ASSISTANT_ID = "asst_vuYkgPLgRxZ7LgSBNGlWpSVj";
+    private static final String PETROSIAN_VECTOR_STORE_ID = "vs_petrosian_id";
+
+    // 📚 ARON NIMZOWITSCH CONFIGURATION
+    private static final String NIMZOWITSCH_ASSISTANT_ID = "asst_dPw62MTYVADxZQfrcf4sJzyE";
+    private static final String NIMZOWITSCH_VECTOR_STORE_ID = "vs_nimzowitsch_id";
+
+    // 🔬 MIKHAIL BOTVINNIK CONFIGURATION (Updated)
+    private static final String BOTVINNIK_ASSISTANT_ID = "asst_3U26vBsDkzVx6dxyxNGqZgdY";
+    private static final String BOTVINNIK_VECTOR_STORE_ID = "vs_botvinnik_id";
 
     // Model constants - now with 6 working fine-tuned models including Capablanca!
     private static final String MODEL_TAL = "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
@@ -1260,6 +1300,25 @@ public class FineTunedModelManager {
                 return getKasparovAssistantId();
             case "capablanca": // 🇨🇺 NEW CAPABLANCA SUPPORT!
                 return getCapablancaAssistantId();
+            case "nigel_short": // 🇬🇧 NEW NIGEL SHORT SUPPORT!
+            case "short":
+                return getNigelShortAssistantId();
+            case "lasker": // 🎭 NEW LASKER SUPPORT!
+                return getLaskerAssistantId();
+            case "morphy": // 🇺🇸 NEW MORPHY SUPPORT!
+                return getMorphyAssistantId();
+            case "gukesh": // 🇮🇳 NEW GUKESH SUPPORT!
+            case "dommaraju":
+                return getGukeshAssistantId();
+            case "hikaru": // 🎮 NEW HIKARU SUPPORT!
+            case "nakamura":
+                return getHikaruAssistantId();
+            case "petrosian": // 🏰 NEW PETROSIAN SUPPORT!
+                return getPetrosianAssistantId();
+            case "nimzowitsch": // 📚 NEW NIMZOWITSCH SUPPORT!
+                return getNimzowitschAssistantId();
+            case "botvinnik": // 🔬 UPDATED BOTVINNIK SUPPORT!
+                return getBotvinnikAssistantId();
             default:
                 // Default to Tal for other masters
                 return getTalAssistantId();
@@ -1362,6 +1421,86 @@ public class FineTunedModelManager {
         prefs.edit().putString(KEY_CAPABLANCA_ASSISTANT_ID, CAPABLANCA_ASSISTANT_ID).apply();
 
         return CAPABLANCA_ASSISTANT_ID;
+    }
+
+    /**
+     * 🇬🇧 NEW: Get Nigel Short Assistant ID
+     */
+    public String getNigelShortAssistantId() {
+        Log.d(TAG, "🇬🇧 Using configured Nigel Short assistant: " + NIGEL_SHORT_ASSISTANT_ID);
+        assistantIds.put("nigel_short", NIGEL_SHORT_ASSISTANT_ID);
+        prefs.edit().putString(KEY_NIGEL_SHORT_ASSISTANT_ID, NIGEL_SHORT_ASSISTANT_ID).apply();
+        return NIGEL_SHORT_ASSISTANT_ID;
+    }
+
+    /**
+     * 🎭 NEW: Get Emanuel Lasker Assistant ID
+     */
+    public String getLaskerAssistantId() {
+        Log.d(TAG, "🎭 Using configured Lasker assistant: " + LASKER_ASSISTANT_ID);
+        assistantIds.put("lasker", LASKER_ASSISTANT_ID);
+        prefs.edit().putString(KEY_LASKER_ASSISTANT_ID, LASKER_ASSISTANT_ID).apply();
+        return LASKER_ASSISTANT_ID;
+    }
+
+    /**
+     * 🇺🇸 NEW: Get Paul Morphy Assistant ID
+     */
+    public String getMorphyAssistantId() {
+        Log.d(TAG, "🇺🇸 Using configured Morphy assistant: " + MORPHY_ASSISTANT_ID);
+        assistantIds.put("morphy", MORPHY_ASSISTANT_ID);
+        prefs.edit().putString(KEY_MORPHY_ASSISTANT_ID, MORPHY_ASSISTANT_ID).apply();
+        return MORPHY_ASSISTANT_ID;
+    }
+
+    /**
+     * 🇮🇳 NEW: Get Gukesh Dommaraju Assistant ID
+     */
+    public String getGukeshAssistantId() {
+        Log.d(TAG, "🇮🇳 Using configured Gukesh assistant: " + GUKESH_ASSISTANT_ID);
+        assistantIds.put("gukesh", GUKESH_ASSISTANT_ID);
+        prefs.edit().putString(KEY_GUKESH_ASSISTANT_ID, GUKESH_ASSISTANT_ID).apply();
+        return GUKESH_ASSISTANT_ID;
+    }
+
+    /**
+     * 🎮 NEW: Get Hikaru Nakamura Assistant ID
+     */
+    public String getHikaruAssistantId() {
+        Log.d(TAG, "🎮 Using configured Hikaru assistant: " + HIKARU_ASSISTANT_ID);
+        assistantIds.put("hikaru", HIKARU_ASSISTANT_ID);
+        prefs.edit().putString(KEY_HIKARU_ASSISTANT_ID, HIKARU_ASSISTANT_ID).apply();
+        return HIKARU_ASSISTANT_ID;
+    }
+
+    /**
+     * 🏰 NEW: Get Tigran Petrosian Assistant ID
+     */
+    public String getPetrosianAssistantId() {
+        Log.d(TAG, "🏰 Using configured Petrosian assistant: " + PETROSIAN_ASSISTANT_ID);
+        assistantIds.put("petrosian", PETROSIAN_ASSISTANT_ID);
+        prefs.edit().putString(KEY_PETROSIAN_ASSISTANT_ID, PETROSIAN_ASSISTANT_ID).apply();
+        return PETROSIAN_ASSISTANT_ID;
+    }
+
+    /**
+     * 📚 NEW: Get Aron Nimzowitsch Assistant ID
+     */
+    public String getNimzowitschAssistantId() {
+        Log.d(TAG, "📚 Using configured Nimzowitsch assistant: " + NIMZOWITSCH_ASSISTANT_ID);
+        assistantIds.put("nimzowitsch", NIMZOWITSCH_ASSISTANT_ID);
+        prefs.edit().putString(KEY_NIMZOWITSCH_ASSISTANT_ID, NIMZOWITSCH_ASSISTANT_ID).apply();
+        return NIMZOWITSCH_ASSISTANT_ID;
+    }
+
+    /**
+     * 🔬 UPDATED: Get Mikhail Botvinnik Assistant ID
+     */
+    public String getBotvinnikAssistantId() {
+        Log.d(TAG, "🔬 Using configured Botvinnik assistant: " + BOTVINNIK_ASSISTANT_ID);
+        assistantIds.put("botvinnik", BOTVINNIK_ASSISTANT_ID);
+        prefs.edit().putString(KEY_BOTVINNIK_ASSISTANT_ID, BOTVINNIK_ASSISTANT_ID).apply();
+        return BOTVINNIK_ASSISTANT_ID;
     }
 
     /**
