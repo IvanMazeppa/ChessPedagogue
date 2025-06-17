@@ -571,19 +571,92 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     private void generateEnhancedEndGameDialogue(String result) {
         Log.d(TAG, "🏁 Generating enhanced end game dialogue for: " + result);
 
-        // FIXED: Include final position context for endgame dialogue
+        // ENHANCED: Create detailed context that explicitly identifies winner and loser roles
         String currentFen = currentFEN.getValue();
         List<String> history = moveHistory.getValue();
-        String gameContext = String.format("Game ended: %s (between %s and %s)\nFINAL_POSITION: %s\nTotal moves: %d", 
-            result, whitePlayer, blackPlayer, 
+        
+        // Parse the game result to determine winner and specific player roles
+        String winnerContext = parseGameResultForContext(result, whitePlayer, blackPlayer);
+        
+        String gameContext = String.format("GAME RESULT: %s\n\nPLAYER ROLES:\n%s\n\nFINAL_POSITION: %s\nTotal moves: %d\n\nThis is your post-game conversation. React according to whether you won or lost.", 
+            result, 
+            winnerContext,
             currentFen != null ? currentFen : "unknown", 
             history != null ? history.size() : 0);
+        
+        Log.d(TAG, "🏁 Enhanced endgame context: " + gameContext);
+        
         conversationOrchestrator.startConversation(
                 "endgame",
                 whitePlayer,
                 blackPlayer,
                 gameContext,
                 new EnhancedConversationCallback("endgame"));
+    }
+    
+    /**
+     * 🏁 Parse game result to create explicit winner/loser context for each player
+     */
+    private String parseGameResultForContext(String result, String whitePlayer, String blackPlayer) {
+        StringBuilder context = new StringBuilder();
+        
+        // Determine winner from result string
+        String winner = null;
+        String loser = null;
+        String endType = "unknown";
+        
+        if (result.toLowerCase().contains("checkmate")) {
+            endType = "checkmate";
+            // Parse winner from result like "Checkmate! Alekhine wins!"
+            if (result.contains(FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(whitePlayer))) {
+                winner = whitePlayer;
+                loser = blackPlayer;
+            } else if (result.contains(FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(blackPlayer))) {
+                winner = blackPlayer;
+                loser = whitePlayer;
+            }
+        } else if (result.toLowerCase().contains("resigns") || result.toLowerCase().contains("resignation")) {
+            endType = "resignation";
+            // Parse from resignation messages like "Carlsen resigns. Alekhine wins by resignation!"
+            String whiteDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(whitePlayer);
+            String blackDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(blackPlayer);
+            
+            if (result.contains(whiteDisplayName + " resigns") || 
+                (result.contains("resigns") && result.contains(blackDisplayName + " wins"))) {
+                winner = blackPlayer;
+                loser = whitePlayer;
+            } else if (result.contains(blackDisplayName + " resigns") || 
+                      (result.contains("resigns") && result.contains(whiteDisplayName + " wins"))) {
+                winner = whitePlayer;
+                loser = blackPlayer;
+            }
+        } else if (result.toLowerCase().contains("stalemate") || result.toLowerCase().contains("draw")) {
+            endType = "draw";
+        }
+        
+        // Build explicit context for each player
+        String whiteDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(whitePlayer);
+        String blackDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(blackPlayer);
+        
+        if (endType.equals("draw")) {
+            context.append(String.format("- %s (White): You drew this game\n", whiteDisplayName));
+            context.append(String.format("- %s (Black): You drew this game\n", blackDisplayName));
+        } else if (winner != null && loser != null) {
+            String winnerDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(winner);
+            String loserDisplayName = FineTunedModelManager.getInstance(getApplication()).getMasterDisplayName(loser);
+            String winnerColor = winner.equals(whitePlayer) ? "White" : "Black";
+            String loserColor = loser.equals(whitePlayer) ? "White" : "Black";
+            
+            context.append(String.format("- %s (%s): YOU WON by %s\n", winnerDisplayName, winnerColor, endType));
+            context.append(String.format("- %s (%s): You lost by %s\n", loserDisplayName, loserColor, endType));
+        } else {
+            // Fallback - couldn't parse winner clearly
+            context.append(String.format("- %s (White): Game ended - %s\n", whiteDisplayName, result));
+            context.append(String.format("- %s (Black): Game ended - %s\n", blackDisplayName, result));
+        }
+        
+        Log.d(TAG, "🏁 Parsed game result context: " + context.toString());
+        return context.toString();
     }
 
     /**

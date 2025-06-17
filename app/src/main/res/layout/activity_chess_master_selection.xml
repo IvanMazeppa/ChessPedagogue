@@ -884,8 +884,212 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- Add the remaining coaches following the same pattern... -->
-            <!-- I'll add the rest if you'd like me to continue -->
+            <!-- Nigel Short Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/shortCard"
+                style="@style/WoodCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/imgShort"
+                        style="@style/CoachPortrait"
+                        android:src="@drawable/portrait_speaking_short"
+                        android:contentDescription="Nigel Short portrait"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nigel Short"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_on_light"
+                            android:fontFamily="serif" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="The English Fighter"
+                            android:textStyle="italic"
+                            android:textColor="@color/bronze"
+                            android:textSize="16sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Master of sharp tactical play and fighting spirit"
+                            android:textColor="@color/text_on_light"
+                            android:textSize="14sp"
+                            android:layout_marginTop="8dp"
+                            android:lineSpacingExtra="2sp" />
+                    </LinearLayout>
+
+                    <RadioButton
+                        android:id="@+id/radioShort"
+                        style="@style/WoodRadio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="@color/gold"
+                        android:contentDescription="Select Short as coach" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Gukesh Dommaraju Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/gukeshCard"
+                style="@style/WoodCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/imgGukesh"
+                        style="@style/CoachPortrait"
+                        android:src="@drawable/portrait_speaking_gukesh"
+                        android:contentDescription="Gukesh Dommaraju portrait"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gukesh Dommaraju"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_on_light"
+                            android:fontFamily="serif" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="The Rising Indian Star"
+                            android:textStyle="italic"
+                            android:textColor="#FF9800"
+                            android:textSize="16sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Master of modern preparation and youthful brilliance"
+                            android:textColor="@color/text_on_light"
+                            android:textSize="14sp"
+                            android:layout_marginTop="8dp"
+                            android:lineSpacingExtra="2sp" />
+                    </LinearLayout>
+
+                    <RadioButton
+                        android:id="@+id/radioGukesh"
+                        style="@style/WoodRadio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="@color/gold"
+                        android:contentDescription="Select Gukesh as coach" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Hikaru Nakamura Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/nakamuraCard"
+                style="@style/WoodCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:foreground="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:id="@+id/imgNakamura"
+                        style="@style/CoachPortrait"
+                        android:src="@drawable/portrait_speaking_nakamura"
+                        android:contentDescription="Hikaru Nakamura portrait"
+                        android:layout_marginEnd="16dp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hikaru Nakamura"
+                            android:textSize="20sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_on_light"
+                            android:fontFamily="serif" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="The Speed Demon"
+                            android:textStyle="italic"
+                            android:textColor="#9C27B0"
+                            android:textSize="16sp"
+                            android:layout_marginTop="4dp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Master of blitz and bullet chess, streaming phenomenon"
+                            android:textColor="@color/text_on_light"
+                            android:textSize="14sp"
+                            android:layout_marginTop="8dp"
+                            android:lineSpacingExtra="2sp" />
+                    </LinearLayout>
+
+                    <RadioButton
+                        android:id="@+id/radioNakamura"
+                        style="@style/WoodRadio"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:buttonTint="@color/gold"
+                        android:contentDescription="Select Nakamura as coach" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
         </LinearLayout>
     </ScrollView>
