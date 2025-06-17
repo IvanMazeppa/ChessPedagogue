@@ -805,7 +805,14 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             
             Log.d(TAG, "📖 Read " + lineCount + " lines from " + filename + " (total " + jsonBuilder.length() + " characters)");
 
-            boolean result = importMasterPositions(jsonBuilder.toString());
+            // 🎯 CRITICAL FIX: Handle different JSON structures (array vs object with positions)
+            String jsonDataForImport = extractPositionsFromJson(jsonBuilder.toString(), filename);
+            if (jsonDataForImport == null) {
+                Log.e(TAG, "❌ Failed to extract valid positions data from " + filename);
+                return false;
+            }
+
+            boolean result = importMasterPositions(jsonDataForImport);
             Log.d(TAG, "📥 Import result for " + filename + ": " + (result ? "SUCCESS" : "FAILED"));
             
             return result;
@@ -1093,6 +1100,60 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         }
 
         return null;
+    }
+
+    /**
+     * 🎯 CRITICAL FIX: Extract positions array from different JSON structures
+     * Handles both direct array format and object with "positions" property
+     */
+    private String extractPositionsFromJson(String jsonData, String filename) {
+        try {
+            Log.d(TAG, "🔍 Analyzing JSON structure for " + filename);
+            
+            // First, try to parse as JSON to determine structure
+            String trimmedData = jsonData.trim();
+            
+            if (trimmedData.startsWith("[")) {
+                // Direct array format (tal, fischer, etc.)
+                Log.d(TAG, "✅ Detected direct array format for " + filename);
+                JSONArray testArray = new JSONArray(jsonData); // Validate it's proper JSON
+                Log.d(TAG, "📊 Array contains " + testArray.length() + " positions");
+                return jsonData;
+                
+            } else if (trimmedData.startsWith("{")) {
+                // Object format (carlsen with metadata)
+                Log.d(TAG, "🔍 Detected object format for " + filename + " - looking for 'positions' array");
+                JSONObject rootObject = new JSONObject(jsonData);
+                
+                if (rootObject.has("positions")) {
+                    JSONArray positionsArray = rootObject.getJSONArray("positions");
+                    Log.d(TAG, "✅ Found 'positions' array with " + positionsArray.length() + " entries");
+                    
+                    // Log metadata if present for debugging
+                    if (rootObject.has("metadata")) {
+                        JSONObject metadata = rootObject.getJSONObject("metadata");
+                        String playerName = metadata.optString("player_name", "Unknown");
+                        int totalPositions = metadata.optInt("total_positions", 0);
+                        Log.d(TAG, "📊 Metadata: player=" + playerName + ", total_positions=" + totalPositions);
+                    }
+                    
+                    return positionsArray.toString();
+                    
+                } else {
+                    Log.e(TAG, "❌ Object format detected but no 'positions' array found in " + filename);
+                    Log.e(TAG, "📋 Available keys: " + rootObject.keys().toString());
+                    return null;
+                }
+                
+            } else {
+                Log.e(TAG, "❌ Unrecognized JSON format for " + filename + " - must start with '[' or '{'");
+                return null;
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error analyzing JSON structure for " + filename, e);
+            return null;
+        }
     }
 
     // ========== EXISTING SAVED GAME CLASS ==========
