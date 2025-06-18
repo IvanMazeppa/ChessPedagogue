@@ -25,9 +25,9 @@ public class PersonalityEngine {
     private static final String TAG = "PersonalityEngine";
 
     // Personality tuning parameters
-    private static final float DEFAULT_PERSONALITY_WEIGHT = 0.3f;
-    private static final float MIN_ENGINE_THRESHOLD = -1.0f;
-    private static final int MAX_SIMILAR_POSITIONS = 5;
+    private static final float DEFAULT_PERSONALITY_WEIGHT = 0.15f; // Reduced from 0.3 to let engine strength dominate more
+    private static final float MIN_ENGINE_THRESHOLD = -0.5f; // Tighter threshold for personality influence
+    private static final int MAX_SIMILAR_POSITIONS = 50;
     private static final int STOCKFISH_CANDIDATES = 8;
 
     private static PersonalityEngine instance;
@@ -186,6 +186,9 @@ public class PersonalityEngine {
         Log.d(TAG, "🔧 DEBUG: enablePersonalityPlay=" + enablePersonalityPlay + ", currentMaster=" + currentMaster);
         Log.d(TAG, "🔧 DEBUG: databaseHelper=" + (databaseHelper != null ? "initialized" : "NULL"));
         Log.d(TAG, "🔧 DEBUG: executorService=" + (executorService != null && !executorService.isShutdown() ? "healthy" : "NOT HEALTHY"));
+        
+        // 🚨 FORCE VISIBLE LOG through LogThrottler for immediate debugging
+        LogThrottler.force("PersonalityEngine", "🎯 PERSONALITY ENGINE ENTRY: " + currentMaster + " analyzing FEN: " + currentFen.substring(0, Math.min(50, currentFen.length())));
 
         // 🚨 CRITICAL DEBUG: Check database status immediately
         if (databaseHelper != null) {
@@ -339,9 +342,16 @@ public class PersonalityEngine {
                 int countPreLookup = databaseHelper.getMasterPositionCount(nameVariation);
                 Log.d(TAG, "📊 PRE-LOOKUP: hasData=" + hasDataPreLookup + ", count=" + countPreLookup);
                 
+                // Dynamic limit based on game phase and position complexity
+                int dynamicLimit = calculateOptimalPositionLimit(currentFen);
+                Log.d(TAG, "🎯 Dynamic limit calculated: " + dynamicLimit + " positions for current game phase");
                 List<GameDatabaseHelper.HistoricalPosition> results =
-                        databaseHelper.findSimilarPositions(currentFen, nameVariation, MAX_SIMILAR_POSITIONS);
+                        databaseHelper.findSimilarPositions(currentFen, nameVariation, dynamicLimit);
                 Log.d(TAG, "🔧 DEBUG: Database returned " + results.size() + " results for '" + nameVariation + "'");
+                
+                // 🚨 FORCE VISIBLE LOG for database results
+                System.out.println("📊 DATABASE QUERY RESULT: " + nameVariation + " returned " + results.size() + " historical positions");
+                LogThrottler.force("PersonalityEngine", "📊 DATABASE QUERY RESULT: " + nameVariation + " returned " + results.size() + " historical positions");
 
                 if (!results.isEmpty()) {
                     historicalPositions = results;
@@ -378,6 +388,44 @@ public class PersonalityEngine {
             // Fallback to pure engine move
             Log.d(TAG, "🔄 Falling back to pure engine move due to database error");
             selectPureEngineMove(currentFen, callback);
+        }
+    }
+
+    /**
+     * Calculate optimal number of positions to fetch based on game phase and complexity
+     */
+    private int calculateOptimalPositionLimit(String fen) {
+        try {
+            String[] fenParts = fen.split(" ");
+            String position = fenParts[0];
+            int moveNumber = Integer.parseInt(fenParts[5]);
+            
+            // Count pieces to determine game phase
+            int pieceCount = 0;
+            for (char c : position.toCharArray()) {
+                if (Character.isLetter(c)) {
+                    pieceCount++;
+                }
+            }
+            
+            // Dynamic limits based on game phase
+            if (moveNumber <= 10) {
+                // Opening: Fewer positions (many games follow same patterns)
+                return 15;
+            } else if (moveNumber <= 25 && pieceCount >= 20) {
+                // Early middlegame: Moderate positions
+                return 25;
+            } else if (pieceCount >= 12) {
+                // Complex middlegame: More positions for variety
+                return 35;
+            } else {
+                // Endgame: Fewer positions (more precise)
+                return 10;
+            }
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error calculating dynamic limit, using default", e);
+            return 20; // Safe default
         }
     }
 

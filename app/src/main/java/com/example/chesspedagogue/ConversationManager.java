@@ -68,8 +68,9 @@ public class ConversationManager {
 
     /**
      * FIXED: Constructor for VoiceService compatibility - now requires context
+     * NOTE: Service parameters preserved for compatibility but not used in current implementation
      */
-    public ConversationManager(Context context, SpeechToTextService sttService, ChatService chatService, OpenAITTSService ttsService) {
+    public ConversationManager(Context context, Object sttService, Object chatService, Object ttsService) {
         this(context);
     }
 

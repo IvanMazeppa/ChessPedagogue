@@ -620,10 +620,34 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             }
             cursor.close();
 
+            // Try opening-pattern matching for common openings
+            String openingPattern = getOpeningPattern(fen);
+            if (openingPattern != null) {
+                String openingQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
+                        " WHERE " + COLUMN_OPENING + " LIKE ? AND " + COLUMN_MASTER_NAME + " = ?" +
+                        " LIMIT " + maxResults;
+                
+                cursor = db.rawQuery(openingQuery, new String[]{"%" + openingPattern + "%", masterName});
+                
+                if (cursor.getCount() > 0) {
+                    Log.d(TAG, "🎯 Opening pattern match found for " + masterName + " (" + openingPattern + ")");
+                    results.addAll(cursorToHistoricalPositions(cursor));
+                    cursor.close();
+                    
+                    // Cache the results before returning
+                    if (!results.isEmpty()) {
+                        positionCache.put(cacheKey, new ArrayList<>(results));
+                        Log.d(TAG, "💾 Cached opening pattern results for future lookups");
+                    }
+                    return results;
+                }
+                cursor.close();
+            }
+
             // Fallback: get any positions from this master with similar tactical themes
             String fallbackQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
                     " WHERE " + COLUMN_MASTER_NAME + " = ?" +
-                    " ORDER BY RANDOM() LIMIT " + Math.min(maxResults, 3);
+                    " ORDER BY RANDOM() LIMIT " + maxResults;
 
             cursor = db.rawQuery(fallbackQuery, new String[]{masterName});
             results.addAll(cursorToHistoricalPositions(cursor));
@@ -671,6 +695,55 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         }
 
         return move;
+    }
+
+    /**
+     * Detect opening patterns from FEN positions for better matching
+     */
+    private String getOpeningPattern(String fen) {
+        try {
+            String boardPart = fen.split(" ")[0];
+            
+            // King's Pawn openings (1.e4)
+            if (boardPart.contains("3P4/8/8/PPPPPPPP") || 
+                boardPart.contains("4p3/8/8/pppppppp")) {
+                return "King";
+            }
+            
+            // Queen's Pawn openings (1.d4)  
+            if (boardPart.contains("8/3P4/8/PPP1PPPP") ||
+                boardPart.contains("8/3p4/8/ppp1pppp")) {
+                return "Queen";
+            }
+            
+            // English Opening (1.c4)
+            if (boardPart.contains("8/2P5/8/PP1PPPPP") ||
+                boardPart.contains("8/2p5/8/pp1ppppp")) {
+                return "English";
+            }
+            
+            // Sicilian Defense (1.e4 c5)
+            if (boardPart.contains("2p5/pp1ppppp/8/3P4") ||
+                boardPart.contains("2P5/PP1PPPPP/8/3p4")) {
+                return "Sicilian";
+            }
+            
+            // French Defense (1.e4 e6)  
+            if (boardPart.contains("4p3/pppp1ppp/8/3P4") ||
+                boardPart.contains("4P3/PPPP1PPP/8/3p4")) {
+                return "French";
+            }
+            
+            // Indian Defenses (includes King's Indian, Nimzo-Indian, etc.)
+            if (boardPart.contains("5n2") || boardPart.contains("5N2")) {
+                return "Indian";
+            }
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error parsing opening pattern from FEN: " + fen, e);
+        }
+        
+        return null;
     }
 
     /**

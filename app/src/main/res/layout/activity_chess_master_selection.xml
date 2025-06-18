@@ -905,7 +905,7 @@
                     <ImageView
                         android:id="@+id/imgShort"
                         style="@style/CoachPortrait"
-                        android:src="@drawable/portrait_speaking_short"
+                        android:src="@drawable/portrait_speaking_lasker"
                         android:contentDescription="Nigel Short portrait"
                         android:layout_marginEnd="16dp" />
 
@@ -974,7 +974,7 @@
                     <ImageView
                         android:id="@+id/imgGukesh"
                         style="@style/CoachPortrait"
-                        android:src="@drawable/portrait_speaking_gukesh"
+                        android:src="@drawable/portrait_speaking_anand"
                         android:contentDescription="Gukesh Dommaraju portrait"
                         android:layout_marginEnd="16dp" />
 
@@ -1043,7 +1043,7 @@
                     <ImageView
                         android:id="@+id/imgNakamura"
                         style="@style/CoachPortrait"
-                        android:src="@drawable/portrait_speaking_nakamura"
+                        android:src="@drawable/portrait_speaking_tal"
                         android:contentDescription="Hikaru Nakamura portrait"
                         android:layout_marginEnd="16dp" />
 

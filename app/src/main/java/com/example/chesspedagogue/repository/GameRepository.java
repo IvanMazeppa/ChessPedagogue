@@ -8,6 +8,7 @@ import android.content.Context;
 
 import com.example.chesspedagogue.ChessMasterRatings;
 import com.example.chesspedagogue.GameHistoryManager;
+import com.example.chesspedagogue.LogThrottler;
 import com.example.chesspedagogue.PersonalityEngine;
 import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.StockfishManager;
@@ -97,11 +98,25 @@ public class GameRepository {
      * This is Ben's breakthrough innovation - an engine that plays like chess legends! 🚀
      */
     public void calculatePersonalityMove(MoveCallback callback) {
+        // 🚨 MULTIPLE LOG METHODS to ensure visibility
+        android.util.Log.e("GameRepository", "🚨🚨🚨 METHOD ENTRY: calculatePersonalityMove() CALLED! 🚨🚨🚨");
+        System.out.println("🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨");
+        LogThrottler.force("GameRepository", "🚨🚨🚨 METHOD ENTRY: calculatePersonalityMove() CALLED! 🚨🚨🚨");
         Log.d(TAG, "🔧 DEBUG: calculatePersonalityMove called - usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "initialized" : "NULL"));
+        LogThrottler.force("GameRepository", "🚨 CALCULATE PERSONALITY MOVE ENTRY: usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "initialized" : "NULL"));
+        
+        // ADDITIONAL DEBUG: Log thread info and stack trace
+        LogThrottler.force("GameRepository", "🧵 THREAD INFO: " + Thread.currentThread().getName() + " (ID: " + Thread.currentThread().getId() + ")");
+        LogThrottler.force("GameRepository", "📊 CALLBACK INFO: " + (callback != null ? "NOT NULL" : "NULL"));
+        
+        // Log the first few lines of stack trace for debugging
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        LogThrottler.force("GameRepository", "📍 CALLED FROM: " + (stack.length > 3 ? stack[3].toString() : "unknown"));
         
         if (!usePersonalityEngine || personalityEngine == null) {
             Log.d(TAG, "🎭 Personality engine not available - falling back to regular engine");
             Log.d(TAG, "🔧 DEBUG: usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "exists" : "NULL"));
+            LogThrottler.force("GameRepository", "⚠️ FALLBACK TO REGULAR ENGINE: usePersonalityEngine=" + usePersonalityEngine + ", personalityEngine=" + (personalityEngine != null ? "exists" : "NULL"));
             // Fall back to regular engine calculation
             calculateBestMove(callback);
             return;
@@ -129,6 +144,9 @@ public class GameRepository {
                     }
                 }, 10000);
 
+                // 🚨 CRITICAL DEBUG: About to call PersonalityEngine.selectPersonalityMove()
+                LogThrottler.force("GameRepository", "🎯 CALLING PersonalityEngine.selectPersonalityMove() with FEN: " + currentFen.substring(0, Math.min(50, currentFen.length())));
+                
                 personalityEngine.selectPersonalityMove(currentFen, new PersonalityEngine.PersonalityMoveCallback() {
                     @Override
                     public void onPersonalityMoveSelected(PersonalityEngine.PersonalityMove selectedMove,
@@ -144,6 +162,7 @@ public class GameRepository {
                         }
 
                         Log.d(TAG, "🎭 PERSONALITY MOVE SELECTED: " + selectedMove);
+                        LogThrottler.force("GameRepository", "✅ PERSONALITY ENGINE RESPONDED: " + (selectedMove != null ? selectedMove.toString() : "NULL"));
 
                         // Log all candidates for debugging
                         Log.d(TAG, "🎯 Move candidates considered:");

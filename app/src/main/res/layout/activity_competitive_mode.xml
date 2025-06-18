@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/enhanced_wood_background"
+    android:fitsSystemWindows="true"
+    android:orientation="vertical"
+    tools:context=".CompetitiveModeActivity">
+
+    <!-- Competitive Mode Header with Player vs Master -->
+    <LinearLayout
+        android:id="@+id/competitiveHeaderContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@color/card_elevated"
+        android:elevation="4dp">
+
+        <!-- Player Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="@color/chess_light_square"
+            android:layout_marginEnd="4dp">
+
+            <TextView
+                android:id="@+id/playerNameTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="You (WHITE)"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏆 Competitive Mode"
+                android:textSize="12sp"
+                android:textColor="@color/text_accent"
+                android:fontFamily="serif" />
+        </LinearLayout>
+
+        <!-- VS Indicator -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⚔️\nVS"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/brown_dark"
+            android:gravity="center"
+            android:layout_gravity="center_vertical"
+            android:padding="8dp" />
+
+        <!-- Master Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="@color/bronze"
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:id="@+id/masterNameTextView"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Mikhail Tal"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="serif"
+                android:gravity="end"
+                android:layout_gravity="end" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎭 Full AI Complexity"
+                android:textSize="12sp"
+                android:textColor="@color/text_accent"
+                android:fontFamily="serif"
+                android:gravity="end"
+                android:layout_gravity="end" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- REDESIGNED: Chess Board Area - EDGE TO EDGE -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Evaluation Bar - NO MARGINS, EDGE TO EDGE -->
+            <com.example.chesspedagogue.EvaluationBarView
+                android:id="@+id/competitiveEvaluationBarView"
+                android:layout_width="16dp"
+                android:layout_height="0dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView"
+                app:layout_constraintBottom_toBottomOf="@+id/competitiveChessBoardView"
+                android:background="@android:color/transparent" />
+
+            <!-- Chess Board - EDGE TO EDGE, NO MARGINS -->
+            <com.example.chesspedagogue.ChessBoardView
+                android:id="@+id/competitiveChessBoardView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/competitiveEvaluationBarView"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.5" />
+
+            <!-- Master Thinking Indicator -->
+            <ProgressBar
+                android:id="@+id/masterThinkingProgressBar"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView"
+                app:layout_constraintEnd_toEndOf="@+id/competitiveChessBoardView"
+                android:layout_margin="16dp"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyleSmall" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
+
+    <!-- REDESIGNED: Compact Button Grid - 7 buttons in 2 rows -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="4dp"
+        android:background="@color/card_elevated">
+
+        <!-- Top Row: 4 buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="2dp">
+
+            <Button
+                android:id="@+id/pauseButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="⏸️"
+                android:layout_marginEnd="1dp"
+                android:backgroundTint="@color/warning_amber"
+                android:textColor="@color/brown_dark"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/voiceCommentButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🎤"
+                android:layout_marginStart="1dp"
+                android:layout_marginEnd="1dp"
+                android:backgroundTint="@color/bronze"
+                android:textColor="@color/brown_dark"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/difficultyToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="⚙️"
+                android:layout_marginStart="1dp"
+                android:layout_marginEnd="1dp"
+                android:backgroundTint="@color/chess_light_square"
+                android:textColor="@color/brown_dark"
+                android:textSize="16sp" />
+
+            <Button
+                android:id="@+id/surrenderButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🏳️"
+                android:layout_marginStart="1dp"
+                android:backgroundTint="@android:color/holo_red_light"
+                android:textColor="@android:color/white"
+                android:textSize="16sp" />
+        </LinearLayout>
+
+        <!-- Bottom Row: 3 buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/ttsToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🔊 TTS"
+                android:layout_marginEnd="2dp"
+                android:backgroundTint="@color/bronze"
+                android:textColor="@color/brown_dark"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/personalityToggleButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🎭 AI"
+                android:layout_marginStart="1dp"
+                android:layout_marginEnd="1dp"
+                android:backgroundTint="@color/warning_amber"
+                android:textColor="@color/brown_dark"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/voiceSettingsButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🎙️ Voice"
+                android:layout_marginStart="2dp"
+                android:backgroundTint="@color/chess_light_square"
+                android:textColor="@color/brown_dark"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- REDESIGNED: Move History Area with Overlay Dialogue -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="3"
+        android:layout_margin="4dp">
+
+        <!-- Move History Panel -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:cardBackgroundColor="@color/card_elevated"
+            app:cardElevation="4dp"
+            app:cardCornerRadius="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <!-- Game Status Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⚔️ Battle Progress"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="serif" />
+
+                    <TextView
+                        android:id="@+id/gameResultTextView"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="In Progress"
+                        android:textSize="12sp"
+                        android:textStyle="italic"
+                        android:textColor="@color/text_accent"
+                        android:fontFamily="serif" />
+                </LinearLayout>
+
+                <!-- Scrollable Move History -->
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:scrollbars="vertical">
+
+                    <TextView
+                        android:id="@+id/competitiveMoveHistoryTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="monospace"
+                        android:lineSpacingExtra="2sp"
+                        android:padding="4dp"
+                        android:text="Game begins..." />
+                </ScrollView>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- OVERLAY: Master Dialogue Panel -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/masterDialogueCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="8dp"
+            app:cardBackgroundColor="@color/coach_dialogue_bg"
+            app:cardElevation="8dp"
+            app:cardCornerRadius="12dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <!-- Master Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <!-- Master Portrait -->
+                    <ImageView
+                        android:id="@+id/masterPortraitImageView"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:src="@drawable/portrait_speaking_tal"
+                        android:background="@drawable/enhanced_portrait_frame"
+                        android:padding="2dp"
+                        android:layout_marginEnd="8dp"
+                        android:contentDescription="Master portrait" />
+
+                    <TextView
+                        android:id="@+id/masterDialogueHeaderTextView"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Master speaks:"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:fontFamily="serif" />
+
+                    <!-- Emotion Indicator -->
+                    <TextView
+                        android:id="@+id/masterEmotionIndicator"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="😤"
+                        android:textSize="18sp"
+                        android:padding="4dp" />
+
+                    <!-- Close Button -->
+                    <Button
+                        android:id="@+id/dismissDialogueButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="×"
+                        android:textSize="16sp"
+                        android:backgroundTint="@color/brown_light"
+                        android:layout_marginStart="8dp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp" />
+                </LinearLayout>
+
+                <!-- Master Dialogue Text -->
+                <TextView
+                    android:id="@+id/masterDialogueTextView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="14sp"
+                    android:lineSpacingExtra="3sp"
+                    android:padding="4dp"
+                    android:textColor="@color/text_primary"
+                    android:fontFamily="serif"
+                    android:text="Ready to face you in this competitive match!" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </FrameLayout>
+</LinearLayout>

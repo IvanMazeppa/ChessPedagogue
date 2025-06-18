@@ -1233,6 +1233,15 @@ public class MainActivity extends AppCompatActivity implements VoiceControlManag
 
         // Update TTS settings to auto (which will use master-appropriate voice)
         ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
+        
+        // 🚨 CRITICAL FIX: Update PersonalityEngine with the current master selection
+        LogThrottler.force("MainActivity", "🎯 UPDATING PERSONALITY ENGINE: Switching to master: " + currentMaster);
+        if (gameViewModel != null) {
+            gameViewModel.configurePersonalityEngine(currentMaster, 1.0f, true);
+            LogThrottler.force("MainActivity", "✅ PERSONALITY ENGINE UPDATED: Now using " + currentMaster);
+        } else {
+            LogThrottler.force("MainActivity", "⚠️ WARNING: gameViewModel is null, couldn't update PersonalityEngine");
+        }
     }
 
     /**

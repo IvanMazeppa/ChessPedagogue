@@ -146,6 +146,14 @@ public class OpenAIService {
     }
     
     /**
+     * Callback interface for async chat completions
+     */
+    public interface ChatCompletionCallback {
+        void onComplete(String response);
+        void onError(Exception e);
+    }
+
+    /**
      * Get API key for external use (e.g., Responses API)
      */
     public String getApiKey() {
@@ -441,6 +449,35 @@ public class OpenAIService {
             Log.w(TAG, "🔄 Falling back to base model due to error");
             return getChatCompletion(systemPrompt, userMessage);
         }
+    }
+
+    /**
+     * 🔧 ASYNC VERSION: getChatCompletionWithModelAndVariety for thread-safe execution
+     * Executes on background thread and returns result via callback
+     */
+    public void getChatCompletionWithModelAndVarietyAsync(String modelId, String systemPrompt, String userMessage,
+                                                         String masterName, String conversationContext, 
+                                                         ChatCompletionCallback callback) {
+        executorService.execute(() -> {
+            try {
+                String result = getChatCompletionWithModelAndVariety(modelId, systemPrompt, userMessage, masterName, conversationContext);
+                
+                // Return result on main thread
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (result != null && !result.trim().isEmpty() && 
+                        !result.equals("No response from API") && 
+                        !result.equals("API key not configured")) {
+                        callback.onComplete(result);
+                    } else {
+                        callback.onError(new Exception("Invalid API response: " + result));
+                    }
+                });
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Async chat completion failed", e);
+                // Return error on main thread
+                new Handler(Looper.getMainLooper()).post(() -> callback.onError(e));
+            }
+        });
     }
 
     /**
@@ -1037,6 +1074,7 @@ public class OpenAIService {
         void onComplete(String fullResponse);
         void onError(Exception e);
     }
+
 
     /**
      * 🚨 GUARDRAIL DIAGNOSTIC: Verify all guardrails are working correctly

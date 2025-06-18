@@ -14,6 +14,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.chesspedagogue.EvaluationTracker;
 import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.GameStateRepository;
+import com.example.chesspedagogue.LogThrottler;
 import com.example.chesspedagogue.GameHistoryManager;
 import com.example.chesspedagogue.MoveHistoryObserver;
 import com.example.chesspedagogue.StockfishManager;
@@ -785,6 +786,7 @@ public class GameViewModel extends AndroidViewModel {
      * FIXED: Better error handling and proper fallback to prevent engine stopping
      */
     private void requestPersonalityEngineMove() {
+        LogThrottler.force("GameViewModel", "🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=" + personalityEngineEnabled.getValue());
         if (!Boolean.TRUE.equals(personalityEngineEnabled.getValue())) {
             // Fall back to regular engine
             Log.d(TAG, "🔄 Personality disabled, falling back to standard engine");
@@ -808,7 +810,15 @@ public class GameViewModel extends AndroidViewModel {
         };
         timeoutHandler.postDelayed(timeoutRunnable, 10000); // 30 second timeout for database search
 
-        gameRepository.calculatePersonalityMove(new GameRepository.MoveCallback() {
+        LogThrottler.force("GameViewModel", "🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()");
+        LogThrottler.force("GameViewModel", "🔧 DEBUG: gameRepository instance = " + (gameRepository != null ? "NOT NULL" : "NULL"));
+        
+        try {
+            LogThrottler.force("GameViewModel", "🎯 CALLING gameRepository.calculatePersonalityMove() NOW...");
+            LogThrottler.force("GameViewModel", "🔧 gameRepository class: " + gameRepository.getClass().getSimpleName());
+            LogThrottler.force("GameViewModel", "🔧 Current thread: " + Thread.currentThread().getName());
+            
+            gameRepository.calculatePersonalityMove(new GameRepository.MoveCallback() {
             @Override
             public void onMoveCalculated(String engineMove) {
                 // Cancel timeout since we got a result
@@ -896,6 +906,16 @@ public class GameViewModel extends AndroidViewModel {
                 requestStandardEngineMove();
             }
         });
+        
+        } catch (Exception e) {
+            LogThrottler.force("GameViewModel", "🚨 EXCEPTION calling gameRepository.calculatePersonalityMove(): " + e.getMessage());
+            LogThrottler.force("GameViewModel", "🚨 Exception Class: " + e.getClass().getSimpleName());
+            LogThrottler.force("GameViewModel", "🚨 Exception Cause: " + (e.getCause() != null ? e.getCause().getMessage() : "none"));
+            LogThrottler.force("GameViewModel", "🚨 Thread: " + Thread.currentThread().getName());
+            Log.e(TAG, "❌ Exception calling calculatePersonalityMove", e);
+            // Fall back to standard engine
+            requestStandardEngineMove();
+        }
     }
 
     /**

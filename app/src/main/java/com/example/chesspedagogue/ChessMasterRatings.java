@@ -65,17 +65,17 @@ public class ChessMasterRatings {
         } else if (targetElo <= 1600) {
             return new StockfishConfig(5, 1600, 200);  // Skill 5  
         } else if (targetElo <= 1800) {
-            return new StockfishConfig(8, 1800, 300);  // Skill 8
+            return new StockfishConfig(12, 1800, 500);  // Skill 12 - Much stronger for 1750+ ELO
         } else if (targetElo <= 2000) {
-            return new StockfishConfig(11, 2000, 500); // Skill 11
+            return new StockfishConfig(14, 2000, 750); // Skill 14
         } else if (targetElo <= 2200) {
-            return new StockfishConfig(14, 2200, 750); // Skill 14
+            return new StockfishConfig(16, 2200, 1000); // Skill 16
         } else if (targetElo <= 2400) {
-            return new StockfishConfig(16, 2400, 1000); // Skill 16
+            return new StockfishConfig(18, 2400, 1200); // Skill 18
         } else if (targetElo <= 2600) {
-            return new StockfishConfig(18, 2600, 1500); // Skill 18
+            return new StockfishConfig(19, 2600, 1500); // Skill 19
         } else if (targetElo <= 2800) {
-            return new StockfishConfig(19, 2800, 2000); // Skill 19, longer think time
+            return new StockfishConfig(20, 2800, 2000); // Skill 20, longer think time
         } else {
             return new StockfishConfig(20, targetElo, 3000); // Maximum strength for 2800+
         }
