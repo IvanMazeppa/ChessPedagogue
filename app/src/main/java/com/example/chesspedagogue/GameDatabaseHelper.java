@@ -644,16 +644,17 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 cursor.close();
             }
 
-            // Fallback: get any positions from this master with similar tactical themes
-            String fallbackQuery = "SELECT * FROM " + TABLE_MASTER_POSITIONS +
-                    " WHERE " + COLUMN_MASTER_NAME + " = ?" +
-                    " ORDER BY RANDOM() LIMIT " + maxResults;
-
-            cursor = db.rawQuery(fallbackQuery, new String[]{masterName});
-            results.addAll(cursorToHistoricalPositions(cursor));
-            cursor.close();
-
-            Log.d(TAG, "📚 Found " + results.size() + " reference positions for " + masterName);
+            // INTELLIGENT POSITIONAL MATCHING: Analyze position characteristics
+            Log.d(TAG, "🧠 No exact matches - trying intelligent positional analysis...");
+            List<GameDatabaseHelper.HistoricalPosition> intelligentMatches = 
+                findPositionallyRelatedPositions(fen, masterName, maxResults);
+            
+            if (!intelligentMatches.isEmpty()) {
+                Log.d(TAG, "✅ Found " + intelligentMatches.size() + " positionally related positions");
+                results.addAll(intelligentMatches);
+            } else {
+                Log.d(TAG, "🚫 No meaningful positional matches found - using pure engine for this position");
+            }
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Error in lightning-fast FEN lookup for " + masterName + " with FEN: " + fen, e);
@@ -744,6 +745,242 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         }
         
         return null;
+    }
+
+    /**
+     * REVOLUTIONARY: Intelligent positional matching based on chess understanding
+     * Analyzes material balance, pawn structure, piece activity, and game phase
+     */
+    private List<HistoricalPosition> findPositionallyRelatedPositions(String targetFen, String masterName, int maxResults) {
+        List<HistoricalPosition> results = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            // Analyze the target position
+            PositionAnalysis targetAnalysis = analyzePosition(targetFen);
+            Log.d(TAG, "🔍 Target position analysis: " + targetAnalysis.toString());
+            
+            // Query database for positions with similar characteristics
+            String query = buildIntelligentQuery(targetAnalysis, masterName, maxResults);
+            Log.d(TAG, "🧠 Intelligent query: " + query);
+            
+            Cursor cursor = db.rawQuery(query, buildQueryParameters(targetAnalysis, masterName));
+            
+            // Score and filter results based on positional similarity
+            List<HistoricalPosition> candidates = cursorToHistoricalPositions(cursor);
+            cursor.close();
+            
+            // Rank by positional similarity
+            for (HistoricalPosition candidate : candidates) {
+                PositionAnalysis candidateAnalysis = analyzePosition(candidate.fen);
+                double similarity = calculatePositionalSimilarity(targetAnalysis, candidateAnalysis);
+                
+                // Only include positions with meaningful similarity (>0.3)
+                if (similarity > 0.3) {
+                    candidate.similarity = similarity;
+                    results.add(candidate);
+                }
+            }
+            
+            // Sort by similarity score (best matches first)
+            results.sort((a, b) -> Double.compare(b.similarity, a.similarity));
+            
+            // Limit to best matches
+            if (results.size() > maxResults) {
+                results = results.subList(0, maxResults);
+            }
+            
+            Log.d(TAG, "🎯 Intelligent matching found " + results.size() + " similar positions (min similarity: " + 
+                (results.isEmpty() ? "N/A" : String.format("%.2f", results.get(results.size()-1).similarity)) + ")");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in intelligent positional matching", e);
+        }
+        
+        return results;
+    }
+
+    /**
+     * Analyze a chess position to extract key characteristics
+     */
+    private PositionAnalysis analyzePosition(String fen) {
+        PositionAnalysis analysis = new PositionAnalysis();
+        
+        try {
+            String[] fenParts = fen.split(" ");
+            String position = fenParts[0];
+            String toMove = fenParts[1];
+            String castling = fenParts[2];
+            String enPassant = fenParts[3];
+            int halfMove = Integer.parseInt(fenParts[4]);
+            int fullMove = Integer.parseInt(fenParts[5]);
+            
+            // Material analysis
+            analysis.whiteMaterial = 0;
+            analysis.blackMaterial = 0;
+            analysis.whitePawns = 0;
+            analysis.blackPawns = 0;
+            analysis.whitePieces = 0;
+            analysis.blackPieces = 0;
+            
+            // Piece values: Queen=9, Rook=5, Bishop=3, Knight=3, Pawn=1
+            for (char c : position.toCharArray()) {
+                switch (c) {
+                    case 'Q': analysis.whiteMaterial += 9; analysis.whitePieces++; break;
+                    case 'q': analysis.blackMaterial += 9; analysis.blackPieces++; break;
+                    case 'R': analysis.whiteMaterial += 5; analysis.whitePieces++; break;
+                    case 'r': analysis.blackMaterial += 5; analysis.blackPieces++; break;
+                    case 'B': case 'N': analysis.whiteMaterial += 3; analysis.whitePieces++; break;
+                    case 'b': case 'n': analysis.blackMaterial += 3; analysis.blackPieces++; break;
+                    case 'P': analysis.whiteMaterial += 1; analysis.whitePawns++; break;
+                    case 'p': analysis.blackMaterial += 1; analysis.blackPawns++; break;
+                }
+            }
+            
+            analysis.materialBalance = analysis.whiteMaterial - analysis.blackMaterial;
+            analysis.totalPieces = analysis.whitePieces + analysis.blackPieces + analysis.whitePawns + analysis.blackPawns;
+            analysis.gamePhase = determineGamePhase(analysis.totalPieces, fullMove);
+            analysis.toMove = toMove.equals("w") ? "white" : "black";
+            analysis.canCastle = !castling.equals("-");
+            analysis.hasEnPassant = !enPassant.equals("-");
+            analysis.moveNumber = fullMove;
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error analyzing position: " + fen, e);
+        }
+        
+        return analysis;
+    }
+
+    /**
+     * Calculate similarity between two positions (0.0 = no similarity, 1.0 = identical)
+     */
+    private double calculatePositionalSimilarity(PositionAnalysis target, PositionAnalysis candidate) {
+        double score = 0.0;
+        double maxScore = 0.0;
+        
+        // Material balance similarity (25% weight)
+        double materialWeight = 0.25;
+        if (Math.abs(target.materialBalance - candidate.materialBalance) <= 1) {
+            score += materialWeight * (1.0 - Math.abs(target.materialBalance - candidate.materialBalance) / 10.0);
+        }
+        maxScore += materialWeight;
+        
+        // Game phase similarity (20% weight)
+        double phaseWeight = 0.20;
+        if (target.gamePhase.equals(candidate.gamePhase)) {
+            score += phaseWeight;
+        } else if (isAdjacentPhase(target.gamePhase, candidate.gamePhase)) {
+            score += phaseWeight * 0.5;
+        }
+        maxScore += phaseWeight;
+        
+        // Piece count similarity (20% weight)
+        double pieceWeight = 0.20;
+        int pieceDiff = Math.abs(target.totalPieces - candidate.totalPieces);
+        if (pieceDiff <= 4) {
+            score += pieceWeight * (1.0 - pieceDiff / 10.0);
+        }
+        maxScore += pieceWeight;
+        
+        // Pawn structure similarity (15% weight)
+        double pawnWeight = 0.15;
+        int pawnDiff = Math.abs((target.whitePawns - target.blackPawns) - (candidate.whitePawns - candidate.blackPawns));
+        if (pawnDiff <= 2) {
+            score += pawnWeight * (1.0 - pawnDiff / 4.0);
+        }
+        maxScore += pawnWeight;
+        
+        // Move number proximity (10% weight)
+        double moveWeight = 0.10;
+        int moveDiff = Math.abs(target.moveNumber - candidate.moveNumber);
+        if (moveDiff <= 10) {
+            score += moveWeight * (1.0 - moveDiff / 20.0);
+        }
+        maxScore += moveWeight;
+        
+        // Special position features (10% weight)
+        double featureWeight = 0.10;
+        if (target.canCastle == candidate.canCastle) score += featureWeight * 0.5;
+        if (target.hasEnPassant == candidate.hasEnPassant) score += featureWeight * 0.3;
+        if (target.toMove.equals(candidate.toMove)) score += featureWeight * 0.2;
+        maxScore += featureWeight;
+        
+        return score / maxScore;
+    }
+
+    private String determineGamePhase(int totalPieces, int moveNumber) {
+        if (moveNumber <= 12 && totalPieces >= 28) {
+            return "opening";
+        } else if (totalPieces >= 20) {
+            return "middlegame";
+        } else if (totalPieces >= 10) {
+            return "late_middlegame";
+        } else {
+            return "endgame";
+        }
+    }
+
+    private boolean isAdjacentPhase(String phase1, String phase2) {
+        String[] phases = {"opening", "middlegame", "late_middlegame", "endgame"};
+        int idx1 = -1, idx2 = -1;
+        
+        for (int i = 0; i < phases.length; i++) {
+            if (phases[i].equals(phase1)) idx1 = i;
+            if (phases[i].equals(phase2)) idx2 = i;
+        }
+        
+        return Math.abs(idx1 - idx2) == 1;
+    }
+
+    private String buildIntelligentQuery(PositionAnalysis analysis, String masterName, int maxResults) {
+        // Query for positions in similar game phase with reasonable material balance
+        return "SELECT * FROM " + TABLE_MASTER_POSITIONS + 
+               " WHERE " + COLUMN_MASTER_NAME + " = ?" +
+               " AND (" + COLUMN_TAGS + " LIKE ? OR " + COLUMN_TAGS + " LIKE ?)" +
+               " ORDER BY RANDOM() LIMIT " + (maxResults * 3); // Get more candidates to filter
+    }
+
+    private String[] buildQueryParameters(PositionAnalysis analysis, String masterName) {
+        String phaseTag = "%" + analysis.gamePhase + "%";
+        String adjacentPhase = getAdjacentPhaseTag(analysis.gamePhase);
+        
+        return new String[]{masterName, phaseTag, adjacentPhase};
+    }
+
+    private String getAdjacentPhaseTag(String phase) {
+        switch (phase) {
+            case "opening": return "%middlegame%";
+            case "middlegame": return "%opening%";
+            case "late_middlegame": return "%middlegame%";
+            case "endgame": return "%late_middlegame%";
+            default: return "%complex_position%";
+        }
+    }
+
+    /**
+     * Position analysis data structure
+     */
+    private static class PositionAnalysis {
+        int whiteMaterial = 0;
+        int blackMaterial = 0;
+        int materialBalance = 0;
+        int whitePawns = 0;
+        int blackPawns = 0;
+        int whitePieces = 0;
+        int blackPieces = 0;
+        int totalPieces = 0;
+        String gamePhase = "unknown";
+        String toMove = "white";
+        boolean canCastle = false;
+        boolean hasEnPassant = false;
+        int moveNumber = 1;
+        
+        @Override
+        public String toString() {
+            return String.format("Material: %+d, Pieces: %d, Phase: %s, Move: %d", 
+                materialBalance, totalPieces, gamePhase, moveNumber);
+        }
     }
 
     /**
@@ -1277,6 +1514,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         public String annotation;
         public int moveNumber;
         public List<String> tags;
+        public double similarity = 0.0; // NEW: Positional similarity score
 
         public HistoricalPosition() {
             this.tags = new ArrayList<>();
