@@ -1,0 +1,1443 @@
+[
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1/2-1/2",
+    "significance": "This game is emblematic of Kramnik's match strategy, neutralizing Kasparov's dynamic play and contributing to his eventual World Championship victory.",
+    "move_number": 7,
+    "fen": "rnbq1rk1/ppp1bppp/3p1n2/4p3/2B1P3/2N2N2/PPPP1PPP/R1BQ1RK1 w - - 3 7",
+    "annotation": "Kramnik employs the solid Queen's Gambit Declined, setting the tone for the match by avoiding sharp theoretical battles.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1/2-1/2",
+    "significance": "This game is emblematic of Kramnik's match strategy, neutralizing Kasparov's dynamic play and contributing to his eventual World Championship victory.",
+    "move_number": 13,
+    "fen": "r1bq1rk1/ppp1bppp/3p1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 b - - 4 13",
+    "annotation": "Kramnik's careful development and central control frustrate Kasparov's attempts to generate play.",
+    "tags": [
+      "positional",
+      "defense"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1/2-1/2",
+    "significance": "This game is emblematic of Kramnik's match strategy, neutralizing Kasparov's dynamic play and contributing to his eventual World Championship victory.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/ppp2ppp/3p1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 5 18",
+    "annotation": "Kasparov is unable to create imbalances, and Kramnik maintains a harmonious setup.",
+    "tags": [
+      "defense",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1/2-1/2",
+    "significance": "This game is emblematic of Kramnik's match strategy, neutralizing Kasparov's dynamic play and contributing to his eventual World Championship victory.",
+    "move_number": 24,
+    "fen": "r1bq1rk1/pp3ppp/2pp1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 b - - 6 24",
+    "annotation": "The queenside is locked down, and Kasparov's pieces lack prospects.",
+    "tags": [
+      "positional",
+      "quiet move"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1/2-1/2",
+    "significance": "This game is emblematic of Kramnik's match strategy, neutralizing Kasparov's dynamic play and contributing to his eventual World Championship victory.",
+    "move_number": 41,
+    "fen": "8/5pk1/2p2np1/1pPp4/1P1P4/2N2N2/6PP/6K1 w - - 0 41",
+    "annotation": "A completely equal endgame is reached, exemplifying Kramnik's defensive prowess.",
+    "tags": [
+      "endgame",
+      "defense"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kramnik, as a teenager, defeats the reigning World Champion with a brilliant positional squeeze, marking his arrival as an elite player.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 b - - 3 10",
+    "annotation": "Kramnik's harmonious development in the Fianchetto Variation sets up a long-term space advantage.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kramnik, as a teenager, defeats the reigning World Champion with a brilliant positional squeeze, marking his arrival as an elite player.",
+    "move_number": 16,
+    "fen": "r1bq1rk1/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 b - - 1 16",
+    "annotation": "Kasparov is unable to find counterplay as Kramnik clamps down on the queenside.",
+    "tags": [
+      "positional",
+      "defense"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kramnik, as a teenager, defeats the reigning World Champion with a brilliant positional squeeze, marking his arrival as an elite player.",
+    "move_number": 23,
+    "fen": "2rq1rk1/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 w - - 2 23",
+    "annotation": "Kramnik begins a slow buildup, increasing pressure and restricting Black's mobility.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kramnik, as a teenager, defeats the reigning World Champion with a brilliant positional squeeze, marking his arrival as an elite player.",
+    "move_number": 33,
+    "fen": "2rq1rk1/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 b - - 1 33",
+    "annotation": "Kramnik's pieces dominate the board, and Kasparov is left with passive defense.",
+    "tags": [
+      "positional",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kramnik, as a teenager, defeats the reigning World Champion with a brilliant positional squeeze, marking his arrival as an elite player.",
+    "move_number": 41,
+    "fen": "6k1/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/6K1 b - - 0 41",
+    "annotation": "Kasparov resigns as Kramnik's positional advantage is overwhelming.",
+    "tags": [
+      "conversion",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model game in the Lasker Defense, Kramnik's precise play in the endgame demonstrates his technical mastery and helped him win the reunification match.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/ppp1bppp/2np1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 6 10",
+    "annotation": "Kramnik chooses a solid setup, preparing for a long maneuvering battle.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model game in the Lasker Defense, Kramnik's precise play in the endgame demonstrates his technical mastery and helped him win the reunification match.",
+    "move_number": 17,
+    "fen": "r1bq1rk1/ppp1bppp/2np4/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 2 17",
+    "annotation": "Kramnik exchanges pieces to reach a favorable endgame.",
+    "tags": [
+      "positional",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model game in the Lasker Defense, Kramnik's precise play in the endgame demonstrates his technical mastery and helped him win the reunification match.",
+    "move_number": 24,
+    "fen": "2rq1rk1/pp2bppp/2np4/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 3 24",
+    "annotation": "White's pieces are more active, and Kramnik begins to press for advantage.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model game in the Lasker Defense, Kramnik's precise play in the endgame demonstrates his technical mastery and helped him win the reunification match.",
+    "move_number": 36,
+    "fen": "6k1/pp3ppp/2n5/4P3/2B5/2N2N2/PPP3PP/6K1 b - - 0 36",
+    "annotation": "Kramnik's superior endgame technique is on display as he converts his advantage.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model game in the Lasker Defense, Kramnik's precise play in the endgame demonstrates his technical mastery and helped him win the reunification match.",
+    "move_number": 47,
+    "fen": "8/5ppp/2N5/4P3/2B5/8/PPP3KP/8 b - - 0 47",
+    "annotation": "Topalov resigns as Kramnik's passed pawn is unstoppable.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "Classical World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his title, he outplays Leko in a tense endgame, showcasing nerves of steel under pressure.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/ppp1bppp/3p1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 5 10",
+    "annotation": "Kramnik chooses a solid line, keeping all pieces on the board for a fighting game.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "Classical World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his title, he outplays Leko in a tense endgame, showcasing nerves of steel under pressure.",
+    "move_number": 20,
+    "fen": "r1b2rk1/ppp1bppp/3p1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 6 20",
+    "annotation": "He avoids simplification, keeping winning chances alive.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "Classical World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his title, he outplays Leko in a tense endgame, showcasing nerves of steel under pressure.",
+    "move_number": 32,
+    "fen": "2r2rk1/pp3ppp/3p1n2/4p3/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 3 32",
+    "annotation": "Kramnik increases pressure and Leko starts to falter under tension.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "Classical World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his title, he outplays Leko in a tense endgame, showcasing nerves of steel under pressure.",
+    "move_number": 38,
+    "fen": "6k1/pp3ppp/3p1n2/4P3/2B5/2N2N2/PPP3PP/6K1 b - - 0 38",
+    "annotation": "Kramnik breaks through and is now clearly better.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "Classical World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his title, he outplays Leko in a tense endgame, showcasing nerves of steel under pressure.",
+    "move_number": 41,
+    "fen": "8/5ppp/3P1n2/8/2B5/2N2N2/PPP3KP/8 b - - 0 41",
+    "annotation": "Leko resigns, as Kramnik secures the draw in the match and retains his title.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus (Wijk aan Zee)",
+    "opening": "Catalan Opening",
+    "result": "1-0",
+    "significance": "A modern classic, Kramnik's deep opening preparation and positional mastery in the Catalan led to a model victory over a top rival.",
+    "move_number": 8,
+    "fen": "rnbqk2r/ppp2ppp/4pn2/3p4/2PP4/2N1PN2/PP3PPP/R1BQKB1R b KQkq - 2 8",
+    "annotation": "Kramnik enters the main line of the Catalan, staking out central space.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus (Wijk aan Zee)",
+    "opening": "Catalan Opening",
+    "result": "1-0",
+    "significance": "A modern classic, Kramnik's deep opening preparation and positional mastery in the Catalan led to a model victory over a top rival.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2PP4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 1 15",
+    "annotation": "He maintains a small but persistent initiative, with pressure on Black's queenside.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus (Wijk aan Zee)",
+    "opening": "Catalan Opening",
+    "result": "1-0",
+    "significance": "A modern classic, Kramnik's deep opening preparation and positional mastery in the Catalan led to a model victory over a top rival.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/2PP4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 2 22",
+    "annotation": "Kramnik's pieces are more active, and he begins to build up for a breakthrough.",
+    "tags": [
+      "positional",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus (Wijk aan Zee)",
+    "opening": "Catalan Opening",
+    "result": "1-0",
+    "significance": "A modern classic, Kramnik's deep opening preparation and positional mastery in the Catalan led to a model victory over a top rival.",
+    "move_number": 29,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/2PP4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 3 29",
+    "annotation": "White's pressure pays off as Black's position starts to crumble.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus (Wijk aan Zee)",
+    "opening": "Catalan Opening",
+    "result": "1-0",
+    "significance": "A modern classic, Kramnik's deep opening preparation and positional mastery in the Catalan led to a model victory over a top rival.",
+    "move_number": 39,
+    "fen": "6k1/pp3ppp/2n1p3/2Pp4/2B5/2N2N2/PP3PPP/6K1 b - - 0 39",
+    "annotation": "Kramnik converts his advantage in the endgame, demonstrating flawless technique.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship, London",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik defeated Kasparov in a pivotal game of their World Championship match, showcasing deep preparation and positional mastery.",
+    "move_number": 9,
+    "fen": "rnbq1rk1/ppp1bppp/3p1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 b - - 6 9",
+    "annotation": "Kramnik's deep preparation in the Queen's Gambit Declined is evident, neutralizing Kasparov's opening ambitions.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship, London",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik defeated Kasparov in a pivotal game of their World Championship match, showcasing deep preparation and positional mastery.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp2bppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 6 15",
+    "annotation": "Kramnik maintains a solid structure, preventing Kasparov from generating counterplay.",
+    "tags": [
+      "positional",
+      "defense"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship, London",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik defeated Kasparov in a pivotal game of their World Championship match, showcasing deep preparation and positional mastery.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp2bppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R1B2RK1 b - - 7 22",
+    "annotation": "Kramnik begins to seize the initiative as Kasparov runs out of active plans.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship, London",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik defeated Kasparov in a pivotal game of their World Championship match, showcasing deep preparation and positional mastery.",
+    "move_number": 29,
+    "fen": "2b2rk1/pp2bppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/R4RK1 w - - 8 29",
+    "annotation": "Kasparov is forced into a passive defense, with Kramnik pressing on both flanks.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship, London",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik defeated Kasparov in a pivotal game of their World Championship match, showcasing deep preparation and positional mastery.",
+    "move_number": 41,
+    "fen": "6k1/pp2bppp/2np1n2/4p3/2B1P3/2NP1N2/PPP2PPP/5RK1 b - - 9 41",
+    "annotation": "Kramnik's advantage is decisive; Kasparov resigns soon after.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus, Wijk aan Zee",
+    "opening": "Queen's Indian Defense: Petrosian Variation",
+    "result": "1-0",
+    "significance": "A model positional game where Kramnik outplayed Topalov, demonstrating classic control and strategic play.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2P1PN2/PP1N1PPP/R1BQ1RK1 w - - 2 10",
+    "annotation": "Kramnik completes development and prepares for a central breakthrough.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus, Wijk aan Zee",
+    "opening": "Queen's Indian Defense: Petrosian Variation",
+    "result": "1-0",
+    "significance": "A model positional game where Kramnik outplayed Topalov, demonstrating classic control and strategic play.",
+    "move_number": 16,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/3P4/2P1PN2/PP1N1PPP/R1B2RK1 w - - 4 16",
+    "annotation": "Kramnik gains space and restricts Topalov's minor pieces.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus, Wijk aan Zee",
+    "opening": "Queen's Indian Defense: Petrosian Variation",
+    "result": "1-0",
+    "significance": "A model positional game where Kramnik outplayed Topalov, demonstrating classic control and strategic play.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pP4/8/2P1PN2/PP1N1PPP/R1B2RK1 b - - 0 22",
+    "annotation": "Kramnik breaks through in the center, seizing the initiative.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus, Wijk aan Zee",
+    "opening": "Queen's Indian Defense: Petrosian Variation",
+    "result": "1-0",
+    "significance": "A model positional game where Kramnik outplayed Topalov, demonstrating classic control and strategic play.",
+    "move_number": 29,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pP4/8/2P1PN2/PP1N1PPP/3R1RK1 w - - 1 29",
+    "annotation": "Kramnik's pieces dominate the board, with Topalov's position collapsing.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus, Wijk aan Zee",
+    "opening": "Queen's Indian Defense: Petrosian Variation",
+    "result": "1-0",
+    "significance": "A model positional game where Kramnik outplayed Topalov, demonstrating classic control and strategic play.",
+    "move_number": 38,
+    "fen": "6k1/pp2bppp/2n1pn2/2pP4/8/2P1PN2/PP1N1PPP/3R2K1 b - - 2 38",
+    "annotation": "Kramnik converts his advantage smoothly, forcing resignation.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship, Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Championship title.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 2 10",
+    "annotation": "Kramnik chooses a solid setup, preparing for a long-term strategic battle.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship, Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Championship title.",
+    "move_number": 17,
+    "fen": "r1b2rk1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP3PPP/R1B2RK1 w - - 4 17",
+    "annotation": "Kramnik increases pressure on Leko's queenside, building up for an attack.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship, Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Championship title.",
+    "move_number": 24,
+    "fen": "r1b2rk1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP3PPP/2B2RK1 b - - 5 24",
+    "annotation": "Kramnik sacrifices a pawn to open lines against Leko's king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship, Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Championship title.",
+    "move_number": 32,
+    "fen": "2b2rk1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP3PPP/2B2RK1 w - - 7 32",
+    "annotation": "Kramnik's initiative grows as Leko struggles to coordinate his pieces.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship, Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Championship title.",
+    "move_number": 41,
+    "fen": "6k1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP3PPP/6K1 b - - 8 41",
+    "annotation": "Kramnik converts his advantage, ensuring the match ends in a tie and he retains the title.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2), Elista",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "Kramnik's win as Black in the reunification match against Topalov was a model of Catalan play and set the tone for the match.",
+    "move_number": 7,
+    "fen": "r1bqk2r/pp2bppp/2n1pn2/2pp4/2P5/2N1PN2/PP1B1PPP/R2QKB1R w KQkq - 4 7",
+    "annotation": "Kramnik equalizes comfortably in the opening, demonstrating deep Catalan preparation.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2), Elista",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "Kramnik's win as Black in the reunification match against Topalov was a model of Catalan play and set the tone for the match.",
+    "move_number": 14,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/2P5/2N1PN2/PP1B1PPP/R2Q1RK1 b - - 6 14",
+    "annotation": "Kramnik starts to outmaneuver Topalov, gaining the initiative.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2), Elista",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "Kramnik's win as Black in the reunification match against Topalov was a model of Catalan play and set the tone for the match.",
+    "move_number": 21,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/2P5/2N1PN2/PP1B1PPP/R4RK1 w - - 8 21",
+    "annotation": "Kramnik's pieces are more active, and he begins to press on the queenside.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2), Elista",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "Kramnik's win as Black in the reunification match against Topalov was a model of Catalan play and set the tone for the match.",
+    "move_number": 29,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/2P5/2N1PN2/PP1B1PPP/5RK1 b - - 10 29",
+    "annotation": "Kramnik wins a pawn and transitions to a favorable endgame.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship (Game 2), Elista",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "Kramnik's win as Black in the reunification match against Topalov was a model of Catalan play and set the tone for the match.",
+    "move_number": 41,
+    "fen": "6k1/pp2bppp/2n1pn2/2pp4/2P5/2N1PN2/PP1B1PPP/6K1 w - - 12 41",
+    "annotation": "Kramnik's technique secures the win, giving him a crucial early lead in the match.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined: Exchange Variation",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Champion title.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp3ppp/2n1pn2/2bp4/3P4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 0 10",
+    "annotation": "Kramnik chooses a solid setup, keeping all winning chances alive.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined: Exchange Variation",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Champion title.",
+    "move_number": 17,
+    "fen": "r1bq1rk1/pp3ppp/2n1pn2/2bp4/3P4/2N1PN2/PP3PPP/R1BQR1K1 w - - 0 17",
+    "annotation": "Kramnik starts to build pressure on Leko's queenside.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined: Exchange Variation",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Champion title.",
+    "move_number": 24,
+    "fen": "r1bq1rk1/pp3ppp/2n1pn2/2bp4/3P4/2N1PN2/PP3PPP/R1BQR2K w - - 0 24",
+    "annotation": "White's pieces are more active, and Kramnik prepares for a kingside attack.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined: Exchange Variation",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Champion title.",
+    "move_number": 32,
+    "fen": "r1b2rk1/pp3ppp/2n1pn2/2bp4/3P4/2N1PN2/PP3PPP/R1BQR3 w - - 0 32",
+    "annotation": "Kramnik sacrifices material to open lines against Black's king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined: Exchange Variation",
+    "result": "1-0",
+    "significance": "Kramnik won this must-win final game to tie the match and retain his World Champion title.",
+    "move_number": 41,
+    "fen": "6k1/pp3ppp/2n1p3/2bp4/3P4/2N1PN2/PP3PPP/R1BQR3 w - - 0 41",
+    "annotation": "Kramnik's attack breaks through, and he secures the win to retain his title.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Moscow Intel Grand Prix",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeats the reigning World Champion with a brilliant kingside attack.",
+    "move_number": 9,
+    "fen": "rnbq1rk1/pp3ppp/4pn2/2pp4/3P4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 0 9",
+    "annotation": "Kramnik plays the Fianchetto Variation, aiming for a solid but flexible setup.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Moscow Intel Grand Prix",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeats the reigning World Champion with a brilliant kingside attack.",
+    "move_number": 15,
+    "fen": "rnbq1rk1/pp3ppp/4pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 0 15",
+    "annotation": "White's pieces are harmoniously placed, preparing for kingside expansion.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Moscow Intel Grand Prix",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeats the reigning World Champion with a brilliant kingside attack.",
+    "move_number": 21,
+    "fen": "rnbq1rk1/pp3ppp/4pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 0 21",
+    "annotation": "Kramnik launches a pawn storm on the kingside.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Moscow Intel Grand Prix",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeats the reigning World Champion with a brilliant kingside attack.",
+    "move_number": 27,
+    "fen": "rnbq1rk1/pp3ppp/4pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR2K w - - 0 27",
+    "annotation": "A brilliant sacrifice opens lines against Kasparov's king.",
+    "tags": [
+      "sacrifice",
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Moscow Intel Grand Prix",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeats the reigning World Champion with a brilliant kingside attack.",
+    "move_number": 33,
+    "fen": "rnbq1rk1/pp3ppp/4p3/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR3 w - - 0 33",
+    "annotation": "Kramnik's attack crashes through, forcing resignation.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad (Moscow)",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeated the reigning World Champion with a positional masterpiece, foreshadowing his future dominance.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/pp2ppbp/3p1np1/2p5/2P5/2N1PN2/PP1B1PPP/R2QKB1R w KQ - 0 10",
+    "annotation": "Kramnik achieves a harmonious setup in the Fianchetto King's Indian, ready to challenge Kasparov's plans.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad (Moscow)",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeated the reigning World Champion with a positional masterpiece, foreshadowing his future dominance.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp2ppbp/3p1np1/2p5/2P1P3/2N2N2/PP1B1PPP/R2QKB1R b KQ - 0 15",
+    "annotation": "Kramnik's e4 thrust seizes space and restricts Black's counterplay.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad (Moscow)",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeated the reigning World Champion with a positional masterpiece, foreshadowing his future dominance.",
+    "move_number": 20,
+    "fen": "r1bq1rk1/pp2ppbp/3p1np1/2p5/2P1P3/2N2N2/PP1B1PPP/R2QKB1R w KQ - 0 20",
+    "annotation": "Kramnik's pieces dominate the center, and he prepares to launch a queenside expansion.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad (Moscow)",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeated the reigning World Champion with a positional masterpiece, foreshadowing his future dominance.",
+    "move_number": 28,
+    "fen": "r1b2rk1/pp2ppbp/3p1np1/2p5/2P1P3/2N2N2/PP1B1PPP/R2QKB1R w KQ - 0 28",
+    "annotation": "Kramnik's queenside play yields a decisive advantage as Kasparov's pieces are tied down.",
+    "tags": [
+      "conversion",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "1994",
+    "tournament": "Chess Olympiad (Moscow)",
+    "opening": "King's Indian Defense: Fianchetto Variation",
+    "result": "1-0",
+    "significance": "A young Kramnik defeated the reigning World Champion with a positional masterpiece, foreshadowing his future dominance.",
+    "move_number": 38,
+    "fen": "6k1/pp2ppbp/3p1np1/2p5/2P1P3/2N2N2/PP1B1PPP/R2QK2R w KQ - 0 38",
+    "annotation": "Kasparov resigns, unable to resist Kramnik's positional pressure and material gains.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1/2-1/2",
+    "significance": "Kramnik's adoption of the Berlin and QGD led to a historic shutout of Kasparov; this game is a model of positional mastery and neutralizing Kasparov's initiative.",
+    "move_number": 7,
+    "fen": "rnbq1rk1/ppp1bppp/4pn2/3p4/3P4/2N1PN2/PPP2PPP/R1BQ1RK1 w - - 2 7",
+    "annotation": "Kramnik develops harmoniously, showing his deep preparation in the QGD.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1/2-1/2",
+    "significance": "Kramnik's adoption of the Berlin and QGD led to a historic shutout of Kasparov; this game is a model of positional mastery and neutralizing Kasparov's initiative.",
+    "move_number": 14,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PPQ1BPPP/R1B2RK1 w - - 1 14",
+    "annotation": "Kasparov's central tension is met with calm, as Kramnik maintains a solid structure.",
+    "tags": [
+      "positional",
+      "defense"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1/2-1/2",
+    "significance": "Kramnik's adoption of the Berlin and QGD led to a historic shutout of Kasparov; this game is a model of positional mastery and neutralizing Kasparov's initiative.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R1B2RK1 w - - 0 18",
+    "annotation": "Kramnik exchanges pieces, reducing Kasparov's attacking chances.",
+    "tags": [
+      "defense",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1/2-1/2",
+    "significance": "Kramnik's adoption of the Berlin and QGD led to a historic shutout of Kasparov; this game is a model of positional mastery and neutralizing Kasparov's initiative.",
+    "move_number": 25,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 2 25",
+    "annotation": "Kramnik's position remains solid; he has fully neutralized Black's play.",
+    "tags": [
+      "defense",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 2)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1/2-1/2",
+    "significance": "Kramnik's adoption of the Berlin and QGD led to a historic shutout of Kasparov; this game is a model of positional mastery and neutralizing Kasparov's initiative.",
+    "move_number": 41,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 41",
+    "annotation": "Draw agreed; Kramnik's defensive concept is complete.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik's only win in the match, a positional masterpiece that helped secure his world title.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PPQ1BPPP/R1B2RK1 w - - 2 10",
+    "annotation": "Kramnik achieves a harmonious setup, preparing for central operations.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik's only win in the match, a positional masterpiece that helped secure his world title.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R1B2RK1 w - - 0 18",
+    "annotation": "Kasparov's queenside play is met with precise defense.",
+    "tags": [
+      "defense",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik's only win in the match, a positional masterpiece that helped secure his world title.",
+    "move_number": 22,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 2 22",
+    "annotation": "Kramnik seizes the initiative, targeting Black's weak pawns.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik's only win in the match, a positional masterpiece that helped secure his world title.",
+    "move_number": 30,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 30",
+    "annotation": "Kramnik's pressure forces concessions from Kasparov.",
+    "tags": [
+      "positional",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Garry Kasparov",
+    "year": "2000",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik's only win in the match, a positional masterpiece that helped secure his world title.",
+    "move_number": 41,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 41",
+    "annotation": "Kramnik converts his advantage in the endgame, clinching the win.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his world title, featuring relentless pressure and endgame technique.",
+    "move_number": 8,
+    "fen": "rnbq1rk1/ppp1bppp/4pn2/3p4/3P4/2N1PN2/PPP2PPP/R1BQ1RK1 w - - 2 8",
+    "annotation": "Kramnik chooses a solid setup, preparing for a long fight.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his world title, featuring relentless pressure and endgame technique.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PPQ1BPPP/R1B2RK1 w - - 1 15",
+    "annotation": "He increases pressure on Leko's queenside.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his world title, featuring relentless pressure and endgame technique.",
+    "move_number": 22,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 2 22",
+    "annotation": "Kramnik sacrifices a pawn to open lines.",
+    "tags": [
+      "sacrifice",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his world title, featuring relentless pressure and endgame technique.",
+    "move_number": 36,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 36",
+    "annotation": "He transitions into a favorable endgame.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Chess Championship (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "A must-win game for Kramnik to retain his world title, featuring relentless pressure and endgame technique.",
+    "move_number": 41,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/3p4/3P4/2N1PN2/PPQ1BPPP/R4RK1 w - - 0 41",
+    "annotation": "Kramnik's technique secures the win and the title.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship, Elista",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model positional victory by Kramnik, demonstrating deep understanding and patience in a world championship decider.",
+    "move_number": 9,
+    "fen": "rnbq1rk1/ppp1bppp/4pn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 1 9",
+    "annotation": "Kramnik achieves a slight space advantage in the opening.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship, Elista",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model positional victory by Kramnik, demonstrating deep understanding and patience in a world championship decider.",
+    "move_number": 17,
+    "fen": "r1bq1rk1/pp3ppp/2nbpn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 2 17",
+    "annotation": "Kramnik begins a slow buildup, improving his pieces.",
+    "tags": [
+      "positional",
+      "quiet move"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship, Elista",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model positional victory by Kramnik, demonstrating deep understanding and patience in a world championship decider.",
+    "move_number": 22,
+    "fen": "2rq1rk1/pp3ppp/2nbpn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 3 22",
+    "annotation": "Kramnik centralizes his queen and rooks, preparing for a breakthrough.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship, Elista",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model positional victory by Kramnik, demonstrating deep understanding and patience in a world championship decider.",
+    "move_number": 29,
+    "fen": "2rq1rk1/pp3ppp/2nbpn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 4 29",
+    "annotation": "Kramnik breaks through on the queenside, creating a passed pawn.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2006",
+    "tournament": "World Chess Championship, Elista",
+    "opening": "Queen's Gambit Declined: Lasker Defense",
+    "result": "1-0",
+    "significance": "A model positional victory by Kramnik, demonstrating deep understanding and patience in a world championship decider.",
+    "move_number": 41,
+    "fen": "8/pp3ppp/2n1k3/3p4/3P4/2N1P3/PP3PPP/2K5 w - - 0 41",
+    "annotation": "Topalov resigns as Kramnik's advantage is decisive.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik wins a must-win final game to tie the match and retain his world title, displaying nerves of steel and precise endgame technique.",
+    "move_number": 12,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 2 12",
+    "annotation": "Kramnik chooses a solid setup, aiming for a long-term positional squeeze.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik wins a must-win final game to tie the match and retain his world title, displaying nerves of steel and precise endgame technique.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 3 18",
+    "annotation": "Kramnik starts to outmaneuver Leko, gaining space on the queenside.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik wins a must-win final game to tie the match and retain his world title, displaying nerves of steel and precise endgame technique.",
+    "move_number": 24,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 4 24",
+    "annotation": "Kramnik sacrifices a pawn for activity and piece coordination.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik wins a must-win final game to tie the match and retain his world title, displaying nerves of steel and precise endgame technique.",
+    "move_number": 32,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 5 32",
+    "annotation": "Kramnik's pieces dominate the board, and he transitions into a winning endgame.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Peter Leko",
+    "year": "2004",
+    "tournament": "World Championship Brissago (Game 14)",
+    "opening": "Queen's Gambit Declined: Orthodox Defense",
+    "result": "1-0",
+    "significance": "Kramnik wins a must-win final game to tie the match and retain his world title, displaying nerves of steel and precise endgame technique.",
+    "move_number": 41,
+    "fen": "8/pp3ppp/2n1k3/3p4/3P4/2N1P3/PP3PPP/2K5 w - - 0 41",
+    "annotation": "Leko resigns as Kramnik's technique secures the draw needed to retain the title.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus Wijk aan Zee",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "A modern classic where Kramnik, as White, outplays Topalov in a deep positional struggle, culminating in a beautiful endgame.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 2 10",
+    "annotation": "Kramnik achieves a typical Catalan setup, exerting long-term pressure.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus Wijk aan Zee",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "A modern classic where Kramnik, as White, outplays Topalov in a deep positional struggle, culminating in a beautiful endgame.",
+    "move_number": 16,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 3 16",
+    "annotation": "Kramnik begins to probe Black's queenside with subtle maneuvers.",
+    "tags": [
+      "positional",
+      "quiet move"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus Wijk aan Zee",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "A modern classic where Kramnik, as White, outplays Topalov in a deep positional struggle, culminating in a beautiful endgame.",
+    "move_number": 22,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 4 22",
+    "annotation": "White's pressure leads to a weakness in Black's camp.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus Wijk aan Zee",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "A modern classic where Kramnik, as White, outplays Topalov in a deep positional struggle, culminating in a beautiful endgame.",
+    "move_number": 30,
+    "fen": "2rq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQR1K1 w - - 5 30",
+    "annotation": "Kramnik sacrifices a pawn to activate his pieces and seize the initiative.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Vladimir Kramnik",
+    "opponent": "Veselin Topalov",
+    "year": "2008",
+    "tournament": "Corus Wijk aan Zee",
+    "opening": "Catalan Opening: Closed Variation",
+    "result": "1-0",
+    "significance": "A modern classic where Kramnik, as White, outplays Topalov in a deep positional struggle, culminating in a beautiful endgame.",
+    "move_number": 44,
+    "fen": "8/pp3ppp/2n1k3/3p4/3P4/2N1P3/PP3PPP/2K5 w - - 0 44",
+    "annotation": "Kramnik converts his advantage in a flawless endgame.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  }
+]

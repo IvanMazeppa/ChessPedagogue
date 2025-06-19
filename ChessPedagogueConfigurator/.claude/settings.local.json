@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(java:*)",
+      "Bash(mvn:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "Bash(export:*)",
+      "Bash(rg:*)",
+      "Bash(chmod:*)",
+      "Bash(grep:*)",
+      "Bash(./apache-maven-3.9.5/bin/mvn clean compile)",
+      "Bash(./apache-maven-3.9.5/bin/mvn exec:java -Dexec.mainClass=\"com.chesspedagogue.configurator.ChessPedagogueConfiguratorSimple\")",
+      "Bash(./run_gui_high_dpi.sh:*)"
+    ],
+    "deny": []
+  }
+}

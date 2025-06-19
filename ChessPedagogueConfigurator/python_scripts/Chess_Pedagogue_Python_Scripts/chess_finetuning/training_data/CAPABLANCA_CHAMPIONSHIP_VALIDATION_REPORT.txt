@@ -1,0 +1,52 @@
+
+🏆 CAPABLANCA CHAMPIONSHIP TRAINING DATA QUALITY REPORT
+======================================================
+
+📊 DATASET OVERVIEW
+Total Entries: 308
+Valid Entries: 308 (100.0%)
+Enhanced Entries: 136 (44.2%)
+Error Entries: 0 (0.0%)
+
+📈 QUALITY METRICS
+Average Word Count: 23.5 words
+Word Count Range: 12 - 50 words
+Chess Content Density: 0.050
+Human-like Density: 0.101
+Average Emotional Quotient: 0.4
+
+📚 TOPIC DISTRIBUTION
+  unknown: 56 entries (18.2%)
+  tactics: 51 entries (16.6%)
+  biography: 47 entries (15.3%)
+  middlegame: 46 entries (14.9%)
+  openings: 43 entries (14.0%)
+  endgame: 20 entries (6.5%)
+  game-analysis: 20 entries (6.5%)
+  strategy: 12 entries (3.9%)
+  psychology: 9 entries (2.9%)
+  modern: 3 entries (1.0%)
+  teamplay: 1 entries (0.3%)
+
+🎯 DIFFICULTY DISTRIBUTION
+  advanced: 124 entries (40.3%)
+  basic: 71 entries (23.1%)
+  intermediate: 57 entries (18.5%)
+  unknown: 56 entries (18.2%)
+
+🔧 SOURCE DISTRIBUTION
+  enhanced: 93 entries (30.2%)
+  synthetic: 82 entries (26.6%)
+  original: 72 entries (23.4%)
+  unknown: 43 entries (14.0%)
+  converted: 15 entries (4.9%)
+  anecdote: 2 entries (0.6%)
+  game-annotated: 1 entries (0.3%)
+
+🏅 CHAMPIONSHIP READINESS ASSESSMENT
+Enhancement Coverage: 44.2% (✅ Excellent)
+Content Quality: 0.151 (✅ High Quality)
+Emotional Intelligence: 0.008 (⚠️ Too Robotic)
+
+🎖️ OVERALL CHAMPIONSHIP SCORE: 23.9/100
+🥉 Needs significant enhancement to compete with top-tier AIs.

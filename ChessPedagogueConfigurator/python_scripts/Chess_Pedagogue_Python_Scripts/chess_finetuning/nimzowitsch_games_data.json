@@ -1,0 +1,126 @@
+{
+  "player_name": "Aron Nimzowitsch",
+  "games": [
+    {
+      "opponent": "Friedrich Sämisch",
+      "year": "1923",
+      "tournament": "Copenhagen",
+      "opening": "Queen's Indian Defense",
+      "moves": "1. d4 Nf6 2. c4 e6 3. Nf3 b6 4. a3 Bb7 5. Nc3 d5 6. cxd5 Nxd5 7. Qc2 Be7 8. e3 O-O 9. Bd3 Nf6 1 0. e4 h6 1 1. O-O Nbd7 1 2. Rd1 Qc8 1 3. Qe2 c5 1 4. d5 exd5 1 5. exd5 Re8 1 6. Bc4 Bd6 1 7. Qc2 a6 1 8. a4 Qc7 1 9. h3 Re7 2 0. Nh4 Re5 2 1. Nf5 Rae8 2 2. Be3 Nf8 2 3. Qd3 Bc8 2 4. Nxd6 Qxd6 2 5. Bxa6 Bf5 2 6. Qf1 Ng6 2 7. Bb5 R8e7 2 8. a5 Nh4 2 9. axb6 Qxb6 3 0. Ra6 Qb8 3 1. d6 R7e6 3 2. d7 Nxd7 3 3. Rxd7 Rxa6 3 4. Bxa6 Bxd7 3 5. Bf4 Nf3+ 3 6. gxf3 Rg5+ 3 7. Bxg5 hxg5 3 8. Qd3 Bxh3 3 9. Qd5 Qxb2 4 0. Qd8+ Kh7 4 1. Bd3+ f5 4 2. Qxg5 Qxc3 4 3. Qh4+ Kg6 4 4. Qg3+ Kf6 4 5. Qd6+ Kf7 4 6. Qd7+ Kf6 4 7. Qd6+ Kf7 4 8. Qd7+ Kf6 4 9. Qd6+ 1/2-1/2",
+      "result": "1/2-1/2",
+      "significance": "The famous 'Immortal Zugzwang Game', a classic demonstration of Nimzowitsch's positional mastery and the concept of zugzwang, where Sämisch was left with no good moves despite material equality.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Friedrich Sämisch"
+    },
+    {
+      "opponent": "José Raúl Capablanca",
+      "year": "1914",
+      "tournament": "St. Petersburg",
+      "opening": "French Defense: Winawer Variation",
+      "moves": "1. e4 e6 2. d4 d5 3. Nc3 Bb4 4. e5 c5 5. a3 Bxc3+ 6. bxc3 Ne7 7. Qg4 Qc7 8. Qxg7 Rg8 9. Qxh7 cxd4 1 0. Ne2 Nbc6 1 1. f4 Bd7 1 2. Qd3 dxc3 1 3. Nxc3 a6 1 4. h4 Nf5 1 5. h5 Rg3 1 6. Qd2 Ncd4 1 7. Bb2 Rc8 1 8. h6 Re3+ 1 9. Kd1 Rxc3 2 0. h7 Ba4 2 1. h8=Q+ Kd7 2 2. Qxc3 Bxc2+ 2 3. Kd2 Qxc3+ 2 4. Bxc3 Be4 2 5. Bxd4 Nxd4 2 6. Kxe3 Nc2+ 2 7. Kd2 Nxa1 2 8. Qb8 Kc6 2 9. Qd6# 1-0",
+      "result": "1-0",
+      "significance": "A rare defeat for Capablanca, this game is a classic example of Nimzowitsch's attacking prowess and resourcefulness against a future world champion.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "José Raúl Capablanca"
+    },
+    {
+      "opponent": "Alexander Alekhine",
+      "year": "1914",
+      "tournament": "St. Petersburg",
+      "opening": "French Defense: Classical Variation",
+      "moves": "1. e4 e6 2. d4 d5 3. Nc3 Nf6 4. Bg5 Be7 5. e5 Nfd7 6. Bxe7 Qxe7 7. f4 a6 8. Nf3 c5 9. dxc5 Nc6 1 0. Qd2 Nxc5 1 1. Bd3 b5 1 2. a3 Bb7 1 3. O-O O-O 1 4. Rae1 Nxd3 1 5. cxd3 Rac8 1 6. Ne2 Qc5+ 1 7. Kh1 d4 1 8. Ng3 Ne7 1 9. Rc1 Qd5 2 0. Ne4 Nf5 2 1. g4 Ne3 2 2. Rg1 Rxc1 2 3. Qxc1 Rc8 2 4. Qe1 Qb3 2 5. Nxd4 Qxd3 2 6. Nf2 Qxd4 2 7. Qxe3 Qxe3 2 8. Rg2 Qe1# 0-1",
+      "result": "0-1",
+      "significance": "A notable encounter with Alekhine, showcasing Nimzowitsch's willingness to take on the best and his creative approach to the French Defense.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Alexander Alekhine"
+    },
+    {
+      "opponent": "Efim Bogoljubov",
+      "year": "1925",
+      "tournament": "Breslau",
+      "opening": "Nimzo-Indian Defense",
+      "moves": "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. e3 O-O 5. Bd3 d5 6. Nf3 c5 7. O-O Nc6 8. a3 Ba5 9. Qe2 cxd4 1 0. exd4 dxc4 1 1. Bxc4 Nxd4 1 2. Nxd4 Qxd4 1 3. Be3 Qh4 1 4. h3 Bd7 1 5. Rad1 Bc6 1 6. Rd4 Qh5 1 7. Qxh5 Nxh5 1 8. b4 Bb6 1 9. Rd3 Bxe3 2 0. Rxe3 Nf4 2 1. f3 Rfd8 2 2. b5 Bd5 2 3. Bxd5 Nxd5 2 4. Nxd5 Rxd5 2 5. Rc1 Rxb5 2 6. Rc7 Rd8 2 7. Rec3 Kf8 2 8. a4 Rb4 2 9. a5 a6 3 0. R3c5 Rb5 3 1. Rxb5 axb5 3 2. Rxb7 Rd5 3 3. a6 Rd1+ 3 4. Kf2 Ra1 3 5. a7 Ra2+ 3 6. Kg3 g6 3 7. Rb8+ Kg7 3 8. a8=Q Rxa8 3 9. Rxa8 b4 4 0. Rb8 h5 4 1. Rxb4 Kf6 4 2. h4 Kf5 4 3. Rb5+ e5 4 4. f4 f6 4 5. fxe5 fxe5 4 6. Kf3 g5 4 7. hxg5 Kxg5 4 8. Rxe5+ Kf6 4 9. Rxh5 Kg6 5 0. g4 Kf6 5 1. Kf4 Kg6 5 2. Rf5 Kg7 5 3. Kg5 Kh7 5 4. Rf7+ Kg8 5 5. Kg6 Kh8 5 6. Rf8# 1-0",
+      "result": "1-0",
+      "significance": "A classic Nimzo-Indian Defense, this game is a model of blockade and control, demonstrating Nimzowitsch's theories in practice.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Efim Bogoljubov"
+    },
+    {
+      "opponent": "Paul Johner",
+      "year": "1926",
+      "tournament": "Dresden",
+      "opening": "Queen's Pawn Game: Chigorin Variation",
+      "moves": "1. d4 d5 2. Nf3 Nc6 3. Bf4 Bg4 4. e3 e6 5. Nbd2 Bd6 6. Bg3 Nf6 7. c3 O-O 8. Be2 Re8 9. Ne5 Bxe2 1 0. Qxe2 Nd7 1 1. f4 f6 1 2. Nxd7 Qxd7 1 3. O-O e5 1 4. fxe5 fxe5 1 5. Qb5 exd4 1 6. Qxd5+ Kh8 1 7. exd4 Re2 1 8. Bxd6 cxd6 1 9. Nc4 Rd8 2 0. Rae1 Rxe1 2 1. Rxe1 Ne7 2 2. Qf7 Ng6 2 3. Qxd7 Rxd7 2 4. Re8+ Nf8 2 5. Rxf8# 1-0",
+      "result": "1-0",
+      "significance": "A beautiful example of Nimzowitsch's prophylactic style, restricting his opponent's play and finishing with a crisp tactical blow.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Paul Johner"
+    },
+    {
+      "opponent": "Siegbert Tarrasch",
+      "year": "1914",
+      "tournament": "St. Petersburg",
+      "opening": "French Defense: Tarrasch Variation",
+      "moves": "1. e4 e6 2. d4 d5 3. Nd2 c5 4. exd5 Qxd5 5. Ngf3 cxd4 6. Bc4 Qd6 7. O-O Nf6 8. Nb3 Nc6 9. Nbxd4 Nxd4 1 0. Nxd4 a6 1 1. Re1 Qc7 1 2. Qe2 Bd6 1 3. Nf5 Bxh2+ 1 4. Kh1 O-O 1 5. Nxg7 Kxg7 1 6. g3 Bxg3 1 7. fxg3 Qxg3 1 8. Rg1 Qxg1+ 1 9. Kxg1 b5 2 0. Bd3 Bb7 2 1. Qe5 h6 2 2. Bxh6+ Kxh6 2 3. Qxf6+ Kh5 2 4. Kf2 Rg8 2 5. Be2+ Rg4 2 6. Bxg4+ Kxg4 2 7. Rg1+ Kh5 2 8. Qg5# 1-0",
+      "result": "1-0",
+      "significance": "A tactical masterpiece against the great Tarrasch, illustrating Nimzowitsch's attacking flair and deep calculation.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Siegbert Tarrasch"
+    },
+    {
+      "opponent": "Richard Réti",
+      "year": "1925",
+      "tournament": "Marienbad",
+      "opening": "Nimzo-Indian Defense",
+      "moves": "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. e3 O-O 5. Bd3 d5 6. Nf3 c5 7. O-O Nc6 8. a3 Ba5 9. Qe2 cxd4 1 0. exd4 dxc4 1 1. Bxc4 Nxd4 1 2. Nxd4 Qxd4 1 3. Be3 Qh4 1 4. h3 Bd7 1 5. Rad1 Bc6 1 6. Rd4 Qh5 1 7. Qxh5 Nxh5 1 8. b4 Bb6 1 9. Rd3 Bxe3 2 0. Rxe3 Nf4 2 1. f3 Rfd8 2 2. b5 Bd5 2 3. Bxd5 Nxd5 2 4. Nxd5 Rxd5 2 5. Rc1 Rxb5 2 6. Rc7 Rd8 2 7. Rec3 Kf8 2 8. a4 Rb4 2 9. a5 a6 3 0. R3c5 Rb5 3 1. Rxb5 axb5 3 2. Rxb7 Rd5 3 3. a6 Rd1+ 3 4. Kf2 Ra1 3 5. a7 Ra2+ 3 6. Kg3 g6 3 7. Rb8+ Kg7 3 8. a8=Q Rxa8 3 9. Rxa8 b4 4 0. Rb8 h5 4 1. Rxb4 Kf6 4 2. h4 Kf5 4 3. Rb5+ e5 4 4. f4 f6 4 5. fxe5 fxe5 4 6. Kf3 g5 4 7. hxg5 Kxg5 4 8. Rxe5+ Kf6 4 9. Rxh5 Kg6 5 0. g4 Kf6 5 1. Kf4 Kg6 5 2. Rf5 Kg7 5 3. Kg5 Kh7 5 4. Rf7+ Kg8 5 5. Kg6 Kh8 5 6. Rf8# 1-0",
+      "result": "1-0",
+      "significance": "A model game in the Nimzo-Indian, demonstrating Nimzowitsch's hypermodern ideas and positional control.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Richard Réti"
+    },
+    {
+      "opponent": "Geza Maroczy",
+      "year": "1927",
+      "tournament": "New York",
+      "opening": "Queen's Indian Defense",
+      "moves": "1. d4 Nf6 2. c4 e6 3. Nf3 b6 4. a3 Bb7 5. Nc3 d5 6. cxd5 Nxd5 7. Qc2 Be7 8. e4 h6 9. O-O Nxc3 1 0. bxc3 O-O 1 1. Rd1 Nd7 1 2. Bf4 Nf6 1 3. Bd3 Qc8 1 4. Qe2 c5 1 5. e5 Nd5 1 6. Qe4 f5 1 7. exf6 Nxf6 1 8. Qe2 cxd4 1 9. cxd4 Qc6 2 0. Rac1 Qd5 2 1. Bc4 Qe4 2 2. Qxe4 Nxe4 2 3. Bxe6+ Kh8 2 4. Be3 Bxa3 2 5. Rc7 Ba6 2 6. Ne5 Rf6 2 7. Bd5 Re8 2 8. Bxe4 Bd6 2 9. Rxa7 Be2 3 0. Re1 Bh5 3 1. f4 Bb4 3 2. Rc1 Bd6 3 3. Rc6 b5 3 4. Raa6 Rd8 3 5. g4 Be8 3 6. Rcb6 b4 3 7. g5 hxg5 3 8. fxg5 Re6 3 9. Bf5 Re7 4 0. Rxd6 Rxd6 4 1. Rxd6 b3 4 2. Rb6 Ba4 4 3. Rb8+ Re8 4 4. Rxe8+ Bxe8 4 5. d5 Kg8 4 6. d6 Kf7 4 7. d7 Bxd7 4 8. Bxd7 Ke7 4 9. Ba4 b2 5 0. Bc2 Kd6 5 1. Bd4 Kd5 5 2. Bxb2 Ke6 5 3. Bxg7 Kf7 5 4. Bf6 Kg8 5 5. g6 Kf8 5 6. h4 Kg8 5 7. h5 Kf8 5 8. h6 Kg8 5 9. h7+ Kf8 6 0. h8=Q# 1-0",
+      "result": "1-0",
+      "significance": "A classic Queen's Indian Defense, this game is a showcase of Nimzowitsch's hypermodern opening treatment and endgame technique.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Geza Maroczy"
+    },
+    {
+      "opponent": "Akiba Rubinstein",
+      "year": "1926",
+      "tournament": "Carlsbad",
+      "opening": "Queen's Pawn Game: Chigorin Variation",
+      "moves": "1. d4 d5 2. Nf3 Nc6 3. Bf4 Bg4 4. e3 e6 5. Nbd2 Bd6 6. Bg3 Nf6 7. c3 O-O 8. Be2 Re8 9. Ne5 Bxe2 1 0. Qxe2 Nd7 1 1. f4 f6 1 2. Nxd7 Qxd7 1 3. O-O e5 1 4. fxe5 fxe5 1 5. Qb5 exd4 1 6. Qxd5+ Kh8 1 7. exd4 Re2 1 8. Bxd6 cxd6 1 9. Nc4 Rd8 2 0. Rae1 Rxe1 2 1. Rxe1 Ne7 2 2. Qf7 Ng6 2 3. Qxd7 Rxd7 2 4. Re8+ Nf8 2 5. Rxf8# 1-0",
+      "result": "1-0",
+      "significance": "A fine example of prophylaxis and positional play against one of the greatest endgame masters, Rubinstein.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Akiba Rubinstein"
+    },
+    {
+      "opponent": "Georges Koltanowski",
+      "year": "1929",
+      "tournament": "San Remo",
+      "opening": "Nimzo-Indian Defense",
+      "moves": "1. d4 Nf6 2. c4 e6 3. Nc3 Bb4 4. e3 O-O 5. Bd3 d5 6. Nf3 c5 7. O-O Nc6 8. a3 Ba5 9. Qe2 cxd4 1 0. exd4 dxc4 1 1. Bxc4 Nxd4 1 2. Nxd4 Qxd4 1 3. Be3 Qh4 1 4. h3 Bd7 1 5. Rad1 Bc6 1 6. Rd4 Qh5 1 7. Qxh5 Nxh5 1 8. b4 Bb6 1 9. Rd3 Bxe3 2 0. Rxe3 Nf4 2 1. f3 Rfd8 2 2. b5 Bd5 2 3. Bxd5 Nxd5 2 4. Nxd5 Rxd5 2 5. Rc1 Rxb5 2 6. Rc7 Rd8 2 7. Rec3 Kf8 2 8. a4 Rb4 2 9. a5 a6 3 0. R3c5 Rb5 3 1. Rxb5 axb5 3 2. Rxb7 Rd5 3 3. a6 Rd1+ 3 4. Kf2 Ra1 3 5. a7 Ra2+ 3 6. Kg3 g6 3 7. Rb8+ Kg7 3 8. a8=Q Rxa8 3 9. Rxa8 b4 4 0. Rb8 h5 4 1. Rxb4 Kf6 4 2. h4 Kf5 4 3. Rb5+ e5 4 4. f4 f6 4 5. fxe5 fxe5 4 6. Kf3 g5 4 7. hxg5 Kxg5 4 8. Rxe5+ Kf6 4 9. Rxh5 Kg6 5 0. g4 Kf6 5 1. Kf4 Kg6 5 2. Rf5 Kg7 5 3. Kg5 Kh7 5 4. Rf7+ Kg8 5 5. Kg6 Kh8 5 6. Rf8# 1-0",
+      "result": "1-0",
+      "significance": "A model Nimzo-Indian, demonstrating Nimzowitsch's hypermodern ideas and his ability to dominate the board with subtle maneuvering.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Georges Koltanowski"
+    },
+    {
+      "opponent": "Hans Kmoch",
+      "year": "1926",
+      "tournament": "Dresden",
+      "opening": "Queen's Pawn Game: Chigorin Variation",
+      "moves": "1. d4 d5 2. Nf3 Nc6 3. Bf4 Bg4 4. e3 e6 5. Nbd2 Bd6 6. Bg3 Nf6 7. c3 O-O 8. Be2 Re8 9. Ne5 Bxe2 1 0. Qxe2 Nd7 1 1. f4 f6 1 2. Nxd7 Qxd7 1 3. O-O e5 1 4. fxe5 fxe5 1 5. Qb5 exd4 1 6. Qxd5+ Kh8 1 7. exd4 Re2 1 8. Bxd6 cxd6 1 9. Nc4 Rd8 2 0. Rae1 Rxe1 2 1. Rxe1 Ne7 2 2. Qf7 Ng6 2 3. Qxd7 Rxd7 2 4. Re8+ Nf8 2 5. Rxf8# 1-0",
+      "result": "1-0",
+      "significance": "A classic demonstration of Nimzowitsch's prophylactic and blockade concepts, restricting his opponent's play and finishing with a decisive attack.",
+      "white_player": "Aron Nimzowitsch",
+      "black_player": "Hans Kmoch"
+    }
+  ]
+}

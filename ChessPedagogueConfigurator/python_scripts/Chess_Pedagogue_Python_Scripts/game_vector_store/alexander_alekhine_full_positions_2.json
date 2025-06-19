@@ -1,0 +1,967 @@
+[
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubov",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "French Defense: Classical, Steinitz Variation",
+    "result": "1-0",
+    "significance": "Famous for Alekhine's stunning kingside attack and combination.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/ppp2ppp/2n2n2/3p4/2PP4/2N1PN2/PP3PPP/R1BQ1RK1 w - - 0 10",
+    "annotation": "Opening phase is over; Alekhine develops pressure in the center.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubov",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "French Defense: Classical, Steinitz Variation",
+    "result": "1-0",
+    "significance": "Famous for Alekhine's stunning kingside attack and combination.",
+    "move_number": 16,
+    "fen": "r1b2rk1/ppp2ppp/2n2n2/3P4/2P1N3/2N2P2/PP4PP/R1BQ1RK1 b - - 0 16",
+    "annotation": "Alekhine advances d5, cramping Black and seizing space.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubov",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "French Defense: Classical, Steinitz Variation",
+    "result": "1-0",
+    "significance": "Famous for Alekhine's stunning kingside attack and combination.",
+    "move_number": 19,
+    "fen": "r1b2rk1/ppp2ppp/2n5/3PN3/2P1N3/5P2/PP4PP/R1BQ1RK1 b - - 0 19",
+    "annotation": "White's pieces dominate, ready for a kingside offensive.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubov",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "French Defense: Classical, Steinitz Variation",
+    "result": "1-0",
+    "significance": "Famous for Alekhine's stunning kingside attack and combination.",
+    "move_number": 22,
+    "fen": "r1b2rk1/ppp2ppp/2n5/3PN3/2P1N3/5P2/PP4PP/R1BQ1R2 b - - 1 22",
+    "annotation": "Alekhine sacrifices a piece to open lines against the king.",
+    "tags": [
+      "sacrifice",
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubov",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "French Defense: Classical, Steinitz Variation",
+    "result": "1-0",
+    "significance": "Famous for Alekhine's stunning kingside attack and combination.",
+    "move_number": 25,
+    "fen": "2b2rk1/ppp2ppp/2n5/3PN3/2P1N3/5P2/PP4PP/R1BQ3R b - - 0 25",
+    "annotation": "Alekhine's attack is decisive; Black resigns soon after.",
+    "tags": [
+      "attack",
+      "brilliancy",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Richard Réti",
+    "year": "1925",
+    "tournament": "Baden-Baden",
+    "opening": "Slav Defense: Exchange Variation",
+    "result": "1-0",
+    "significance": "A model game in positional play and endgame technique.",
+    "move_number": 8,
+    "fen": "rnbqk2r/pp2bppp/4pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQK2R w KQkq - 0 8",
+    "annotation": "The opening concludes with symmetrical pawn structure.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Richard Réti",
+    "year": "1925",
+    "tournament": "Baden-Baden",
+    "opening": "Slav Defense: Exchange Variation",
+    "result": "1-0",
+    "significance": "A model game in positional play and endgame technique.",
+    "move_number": 15,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/3P4/2NBPN2/PP2BPPP/R2Q1RK1 w - - 2 15",
+    "annotation": "Alekhine centralizes his pieces, preparing for dxc5.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Richard Réti",
+    "year": "1925",
+    "tournament": "Baden-Baden",
+    "opening": "Slav Defense: Exchange Variation",
+    "result": "1-0",
+    "significance": "A model game in positional play and endgame technique.",
+    "move_number": 21,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2Pp4/8/2NBPN2/PP2BPPP/R2Q1RK1 b - - 0 21",
+    "annotation": "White gains a queenside space advantage and targets Black's weaknesses.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Richard Réti",
+    "year": "1925",
+    "tournament": "Baden-Baden",
+    "opening": "Slav Defense: Exchange Variation",
+    "result": "1-0",
+    "significance": "A model game in positional play and endgame technique.",
+    "move_number": 31,
+    "fen": "2b2rk1/pp2bppp/2n1pn2/2P5/8/2NBPN2/PP3PPP/R3B1K1 b - - 0 31",
+    "annotation": "Alekhine's pieces dominate the board, transitioning to a winning endgame.",
+    "tags": [
+      "endgame",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Richard Réti",
+    "year": "1925",
+    "tournament": "Baden-Baden",
+    "opening": "Slav Defense: Exchange Variation",
+    "result": "1-0",
+    "significance": "A model game in positional play and endgame technique.",
+    "move_number": 44,
+    "fen": "8/5pk1/1P3np1/8/3B4/6KP/8/8 b - - 0 44",
+    "annotation": "Alekhine converts his positional advantage into a won king-and-pawn ending.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Chess Championship (Game 17)",
+    "opening": "French Defense: Winawer Variation",
+    "result": "1-0",
+    "significance": "A critical win in Alekhine's title regaining match, showcasing deep calculation.",
+    "move_number": 7,
+    "fen": "rnbqk2r/pp1b1ppp/4pn2/3pP3/3P4/2N2N2/PPP2PPP/R1BQKB1R w KQkq - 2 7",
+    "annotation": "Alekhine chooses a sharp Winawer line, setting the stage for complications.",
+    "tags": [
+      "opening",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Chess Championship (Game 17)",
+    "opening": "French Defense: Winawer Variation",
+    "result": "1-0",
+    "significance": "A critical win in Alekhine's title regaining match, showcasing deep calculation.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp1b1ppp/2n1pn2/3pP3/3P4/2N1BN2/PPP2PPP/R2QKB1R w KQ - 2 15",
+    "annotation": "White's center is solid and Alekhine prepares for kingside action.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Chess Championship (Game 17)",
+    "opening": "French Defense: Winawer Variation",
+    "result": "1-0",
+    "significance": "A critical win in Alekhine's title regaining match, showcasing deep calculation.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp1b1ppp/2n1pn2/3pP3/3P4/2N1BN2/PPP2PPP/R2QK2R w KQ - 2 22",
+    "annotation": "Alekhine sacrifices a pawn to open lines against Euwe's king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Chess Championship (Game 17)",
+    "opening": "French Defense: Winawer Variation",
+    "result": "1-0",
+    "significance": "A critical win in Alekhine's title regaining match, showcasing deep calculation.",
+    "move_number": 28,
+    "fen": "r1b2rk1/pp1b1ppp/2n1p3/3pP3/3P4/2N1BN2/PPP2PPP/R2Q1RK1 b - - 0 28",
+    "annotation": "White's initiative grows as Black's king comes under fire.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Chess Championship (Game 17)",
+    "opening": "French Defense: Winawer Variation",
+    "result": "1-0",
+    "significance": "A critical win in Alekhine's title regaining match, showcasing deep calculation.",
+    "move_number": 40,
+    "fen": "5rk1/pp1b1ppp/2n1p3/3pP3/3P4/2N2N2/PPP2PPP/R3R1K1 w - - 0 40",
+    "annotation": "Alekhine's attack concludes with a technical win.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Mannheim",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A classic example of Alekhine's attacking prowess against a legendary defender.",
+    "move_number": 9,
+    "fen": "r1bq1rk1/ppp1bppp/2n1pn2/3p4/2PP4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 0 9",
+    "annotation": "Alekhine establishes a solid center and develops harmoniously.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Mannheim",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A classic example of Alekhine's attacking prowess against a legendary defender.",
+    "move_number": 14,
+    "fen": "r1bq1rk1/ppp1bppp/2n1pn2/3P4/2P5/2N1PN2/PP2BPPP/R1BQ1RK1 b - - 0 14",
+    "annotation": "With d5, Alekhine gains space and restricts Black's pieces.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Mannheim",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A classic example of Alekhine's attacking prowess against a legendary defender.",
+    "move_number": 19,
+    "fen": "r1b2rk1/ppp1bppp/2n1pn2/3P4/2P5/2N1PN2/PP2BPPP/R1BQ1R2 b - - 1 19",
+    "annotation": "Alekhine prepares for a kingside attack, centralizing his pieces.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Mannheim",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A classic example of Alekhine's attacking prowess against a legendary defender.",
+    "move_number": 22,
+    "fen": "r1b2rk1/ppp1bppp/2n1pn2/3P4/2P5/2N1P1N1/PP2BPPP/R1BQ1R2 w - - 0 22",
+    "annotation": "A tactical sequence opens lines towards Black's king.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Mannheim",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A classic example of Alekhine's attacking prowess against a legendary defender.",
+    "move_number": 28,
+    "fen": "r1b2rk1/ppp1bppp/2n1p3/3P4/2P5/2N1PN2/PP2BPPP/R1BQ1R2 w - - 0 28",
+    "annotation": "Alekhine's attack succeeds, forcing resignation.",
+    "tags": [
+      "attack",
+      "brilliancy",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Aron Nimzowitsch",
+    "year": "1914",
+    "tournament": "St. Petersburg",
+    "opening": "Queen's Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's creative play against a hypermodern master; features a famous queen sacrifice.",
+    "move_number": 8,
+    "fen": "rnbqk2r/pp2ppbp/3p1np1/8/2PNP3/2N1B3/PP2BPPP/R2QK2R b KQkq - 1 8",
+    "annotation": "Alekhine achieves a harmonious development and space.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Aron Nimzowitsch",
+    "year": "1914",
+    "tournament": "St. Petersburg",
+    "opening": "Queen's Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's creative play against a hypermodern master; features a famous queen sacrifice.",
+    "move_number": 12,
+    "fen": "rnbq1rk1/pp2ppbp/3p2p1/8/2PNP3/2N1B3/PP2BPPP/R2Q1RK1 w - - 2 12",
+    "annotation": "White completes development and readies for a central advance.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Aron Nimzowitsch",
+    "year": "1914",
+    "tournament": "St. Petersburg",
+    "opening": "Queen's Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's creative play against a hypermodern master; features a famous queen sacrifice.",
+    "move_number": 17,
+    "fen": "rnbq1rk1/pp2ppbp/3p2p1/4P3/2P5/2N1B3/PP2BPPP/R2Q1RK1 b - - 0 17",
+    "annotation": "Alekhine pushes e5, opening lines and increasing tension.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Aron Nimzowitsch",
+    "year": "1914",
+    "tournament": "St. Petersburg",
+    "opening": "Queen's Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's creative play against a hypermodern master; features a famous queen sacrifice.",
+    "move_number": 21,
+    "fen": "rnb2rk1/pp2ppbp/3p2p1/q3P3/2P5/2N1B3/PP2BPPP/R2Q1RK1 w - - 1 21",
+    "annotation": "Alekhine sacrifices his queen, launching a decisive combination.",
+    "tags": [
+      "sacrifice",
+      "brilliancy",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Aron Nimzowitsch",
+    "year": "1914",
+    "tournament": "St. Petersburg",
+    "opening": "Queen's Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's creative play against a hypermodern master; features a famous queen sacrifice.",
+    "move_number": 27,
+    "fen": "rnb2rk1/pp2ppbp/3p2p1/4P3/2P5/2N1B3/PP2BPPP/4R1K1 b - - 0 27",
+    "annotation": "The queen sacrifice pays off; White's pieces overwhelm Black.",
+    "tags": [
+      "attack",
+      "conversion",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Akiba Rubinstein",
+    "year": "1923",
+    "tournament": "Carlsbad",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A strategic masterpiece by Alekhine, outplaying Rubinstein in a classic positional battle.",
+    "move_number": 9,
+    "fen": "rnbq1rk1/pp2bppp/3ppn2/2p5/2P5/2N1PN2/PP1BBPPP/R2QK2R w KQ - 1 9",
+    "annotation": "Alekhine simplifies to a favorable structure.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Akiba Rubinstein",
+    "year": "1923",
+    "tournament": "Carlsbad",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A strategic masterpiece by Alekhine, outplaying Rubinstein in a classic positional battle.",
+    "move_number": 15,
+    "fen": "r2q1rk1/pp1nbppp/3ppn2/2p5/2P5/2N1PN2/PP1BBPPP/R2Q1RK1 w - - 2 15",
+    "annotation": "White begins maneuvering for central control.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Akiba Rubinstein",
+    "year": "1923",
+    "tournament": "Carlsbad",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A strategic masterpiece by Alekhine, outplaying Rubinstein in a classic positional battle.",
+    "move_number": 21,
+    "fen": "3q1rk1/pp1nbppp/3ppn2/2p5/2P2B2/2N1PN2/PP2BPPP/R2Q1RK1 b - - 1 21",
+    "annotation": "Alekhine's pieces dominate the board.",
+    "tags": [
+      "positional",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Akiba Rubinstein",
+    "year": "1923",
+    "tournament": "Carlsbad",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A strategic masterpiece by Alekhine, outplaying Rubinstein in a classic positional battle.",
+    "move_number": 29,
+    "fen": "3q1rk1/pp1nbppp/3ppn2/2p5/2P2B2/2N1PN2/PP2BPPP/R5K1 w - - 3 29",
+    "annotation": "A subtle quiet move increases pressure on Black's position.",
+    "tags": [
+      "quiet move",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Akiba Rubinstein",
+    "year": "1923",
+    "tournament": "Carlsbad",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A strategic masterpiece by Alekhine, outplaying Rubinstein in a classic positional battle.",
+    "move_number": 40,
+    "fen": "6k1/pp2b1pp/3ppn2/2p5/2P2B2/2N1PN2/PP2BPPP/6K1 b - - 2 40",
+    "annotation": "Alekhine secures a decisive endgame advantage.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship, Game 7",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Alekhine regains the World Championship title with this instructive positional squeeze.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/ppp2ppp/4pn2/3p4/3P4/2N1PN2/PP3PPP/R1BQKB1R w KQ - 2 10",
+    "annotation": "Alekhine develops harmoniously, preparing long-term pressure.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship, Game 7",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Alekhine regains the World Championship title with this instructive positional squeeze.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/ppp2ppp/2n1pn2/3p4/3P4/2P1PN2/PP3PPP/R1BQ1RK1 b - - 1 18",
+    "annotation": "White's pieces dominate the center.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship, Game 7",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Alekhine regains the World Championship title with this instructive positional squeeze.",
+    "move_number": 25,
+    "fen": "r1bq1rk1/ppp2ppp/2n1pn2/3p4/3P1B2/2P1PN2/PP3PPP/R2Q1RK1 w - - 2 25",
+    "annotation": "Alekhine builds up pressure, forcing weaknesses.",
+    "tags": [
+      "positional",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship, Game 7",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Alekhine regains the World Championship title with this instructive positional squeeze.",
+    "move_number": 34,
+    "fen": "2rq1rk1/pp3ppp/2n1pn2/3p4/3P1B2/2P1PN2/PP3PPP/R2Q1RK1 w - - 5 34",
+    "annotation": "A quiet but powerful move increases Alekhine's grip.",
+    "tags": [
+      "quiet move",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship, Game 7",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Alekhine regains the World Championship title with this instructive positional squeeze.",
+    "move_number": 42,
+    "fen": "6k1/pp3ppp/2n1pn2/3p4/3P1B2/2P1PN2/PP3PPP/6K1 b - - 1 42",
+    "annotation": "Alekhine converts his advantage into a winning endgame.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubow",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "Nimzo-Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's famous kingside attack, culminating in a celebrated double bishop sacrifice.",
+    "move_number": 9,
+    "fen": "rnbqk2r/ppp1ppbp/6p1/3P4/2B1P3/2N5/PPP2PPP/R1BQK1NR b KQkq - 0 9",
+    "annotation": "Alekhine seizes space and prepares for a kingside initiative.",
+    "tags": [
+      "initiative",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubow",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "Nimzo-Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's famous kingside attack, culminating in a celebrated double bishop sacrifice.",
+    "move_number": 15,
+    "fen": "rnbq1rk1/ppp1ppbp/6p1/3P4/2B1P1N1/2N5/PPP2PPP/R1BQ1RK1 b - - 2 15",
+    "annotation": "White's pieces are harmoniously placed, ready to launch a kingside assault.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubow",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "Nimzo-Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's famous kingside attack, culminating in a celebrated double bishop sacrifice.",
+    "move_number": 19,
+    "fen": "rnbq1rk1/ppp1ppbp/6p1/3P4/2B1P1N1/2N5/PPP2PPP/R1BQ2KR b - - 3 19",
+    "annotation": "Alekhine sacrifices a bishop on h6 to open lines to the black king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubow",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "Nimzo-Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's famous kingside attack, culminating in a celebrated double bishop sacrifice.",
+    "move_number": 21,
+    "fen": "rnbq1rk1/ppp1ppb1/6Bp/3P4/2B1P1N1/2N5/PPP2PPP/R2Q2KR b - - 0 21",
+    "annotation": "The second bishop sacrifice follows, further exposing Black’s king.",
+    "tags": [
+      "sacrifice",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Efim Bogoljubow",
+    "year": "1922",
+    "tournament": "Hastings",
+    "opening": "Nimzo-Indian Defense",
+    "result": "1-0",
+    "significance": "Alekhine's famous kingside attack, culminating in a celebrated double bishop sacrifice.",
+    "move_number": 25,
+    "fen": "rnbq1rk1/ppp1pp2/6Bp/3P2Q1/2B1P3/2N5/PPP2PPP/R6R b - - 2 25",
+    "annotation": "Alekhine’s attack is decisive; Black resigns facing mate.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 25)",
+    "opening": "French Defense",
+    "result": "1-0",
+    "significance": "A critical victory in the world championship, showcasing Alekhine’s endgame mastery.",
+    "move_number": 7,
+    "fen": "r1bqkbnr/ppp2ppp/2n1p3/3p4/3P4/2N1PN2/PPP2PPP/R1BQKB1R w KQkq - 2 7",
+    "annotation": "Alekhine gains a space advantage and prepares for piece activity.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 25)",
+    "opening": "French Defense",
+    "result": "1-0",
+    "significance": "A critical victory in the world championship, showcasing Alekhine’s endgame mastery.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp3ppp/2n1pn2/2bp4/3P4/2N1PN2/PPPB1PPP/R2Q1RK1 w - - 5 15",
+    "annotation": "White's pieces are well-placed, ready to target Black's queenside weaknesses.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 25)",
+    "opening": "French Defense",
+    "result": "1-0",
+    "significance": "A critical victory in the world championship, showcasing Alekhine’s endgame mastery.",
+    "move_number": 21,
+    "fen": "r1b2rk1/pp3ppp/2n1pn2/2bp4/3P1B2/2N1PN2/PPPB1PPP/R2Q1RK1 w - - 6 21",
+    "annotation": "Alekhine exchanges dark-squared bishops, simplifying towards a favorable endgame.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 25)",
+    "opening": "French Defense",
+    "result": "1-0",
+    "significance": "A critical victory in the world championship, showcasing Alekhine’s endgame mastery.",
+    "move_number": 34,
+    "fen": "2r2rk1/pp3ppp/4pn2/2bp4/3P1B2/2N1PN2/PPPB1PPP/3R2K1 w - - 3 34",
+    "annotation": "Alekhine wins a pawn, transitioning to a winning rook endgame.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 25)",
+    "opening": "French Defense",
+    "result": "1-0",
+    "significance": "A critical victory in the world championship, showcasing Alekhine’s endgame mastery.",
+    "move_number": 46,
+    "fen": "6k1/1p3pp1/4p3/2P1P3/3R4/2K5/8/8 b - - 2 46",
+    "annotation": "Alekhine converts his advantage with precise technique to secure the win.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Moscow",
+    "opening": "French Defense, Classical",
+    "result": "1-0",
+    "significance": "Features Alekhine's famous double-bishop sacrifice.",
+    "move_number": 10,
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/3pp3/3PP3/2P2N2/PP3PPP/RNBQKB1R w KQkq - 0 10",
+    "annotation": "Alekhine builds up pressure in the center and kingside.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Moscow",
+    "opening": "French Defense, Classical",
+    "result": "1-0",
+    "significance": "Features Alekhine's famous double-bishop sacrifice.",
+    "move_number": 18,
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/3pp3/3PPB2/2P2N2/PP3PPP/RN1QKB1R b KQkq - 2 18",
+    "annotation": "White positions his bishops for a sacrificial attack.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Moscow",
+    "opening": "French Defense, Classical",
+    "result": "1-0",
+    "significance": "Features Alekhine's famous double-bishop sacrifice.",
+    "move_number": 23,
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/3pp3/3PPB2/2P2N2/PP3PPP/RN1QK2R b KQkq - 3 23",
+    "annotation": "First bishop sacrifice cracks open Black's king position.",
+    "tags": [
+      "sacrifice",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Moscow",
+    "opening": "French Defense, Classical",
+    "result": "1-0",
+    "significance": "Features Alekhine's famous double-bishop sacrifice.",
+    "move_number": 24,
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/3pp3/3PP3/2P2N2/PP3PPP/RN1QKR2 b Qkq - 4 24",
+    "annotation": "A second bishop sacrifice leaves Black defenseless.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1918",
+    "tournament": "Moscow",
+    "opening": "French Defense, Classical",
+    "result": "1-0",
+    "significance": "Features Alekhine's famous double-bishop sacrifice.",
+    "move_number": 28,
+    "fen": "r1bqkb1r/ppp2ppp/2n2n2/3pp3/3PP3/2P2N2/PP3PPP/RN1QKR2 b Qkq - 6 28",
+    "annotation": "Marshall resigns, as mate is forced.",
+    "tags": [
+      "conversion",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1927",
+    "tournament": "World Championship (Game 7)",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A model positional game from Alekhine, demonstrating his endgame prowess.",
+    "move_number": 12,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 1 12",
+    "annotation": "Alekhine achieves a harmonious setup, ready for queenside play.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1927",
+    "tournament": "World Championship (Game 7)",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A model positional game from Alekhine, demonstrating his endgame prowess.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2p5/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 18",
+    "annotation": "Central tension gives Alekhine the initiative.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1927",
+    "tournament": "World Championship (Game 7)",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A model positional game from Alekhine, demonstrating his endgame prowess.",
+    "move_number": 23,
+    "fen": "r1bq2k1/pp2bppp/2n1pn2/2p5/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 2 23",
+    "annotation": "Queens come off, leading to a favorable endgame.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1927",
+    "tournament": "World Championship (Game 7)",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A model positional game from Alekhine, demonstrating his endgame prowess.",
+    "move_number": 30,
+    "fen": "2b3k1/pp3ppp/2n1pn2/2P5/3P4/2NB1N2/PP3PPP/R4RK1 w - - 0 30",
+    "annotation": "Alekhine exploits his better structure and piece activity.",
+    "tags": [
+      "endgame",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Frank Marshall",
+    "year": "1927",
+    "tournament": "World Championship (Game 7)",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "A model positional game from Alekhine, demonstrating his endgame prowess.",
+    "move_number": 40,
+    "fen": "2b3k1/pp3ppp/2n1p3/2P5/3P4/2NB1N2/PP3PPP/5RK1 w - - 0 40",
+    "annotation": "Alekhine's precise technique secures the win.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 21)",
+    "opening": "Dutch Defense",
+    "result": "1-0",
+    "significance": "A critical win in the world championship match, featuring deep positional play and a smooth conversion.",
+    "move_number": 9,
+    "fen": "rnbqkb1r/pp2pppp/5n2/2p5/3P4/2N1PN2/PPP2PPP/R1BQKB1R w KQkq - 2 9",
+    "annotation": "Alekhine gains space and prepares for a kingside plan.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 21)",
+    "opening": "Dutch Defense",
+    "result": "1-0",
+    "significance": "A critical win in the world championship match, featuring deep positional play and a smooth conversion.",
+    "move_number": 15,
+    "fen": "r1bqkb1r/pp2pppp/2n2n2/2p5/3P4/2N1PN2/PPP2PPP/R1BQKB1R w KQkq - 5 15",
+    "annotation": "Central tension favors Alekhine, who has more active pieces.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 21)",
+    "opening": "Dutch Defense",
+    "result": "1-0",
+    "significance": "A critical win in the world championship match, featuring deep positional play and a smooth conversion.",
+    "move_number": 22,
+    "fen": "r1bq1b1r/pp2pppp/2n2n2/2p5/3P4/2N1PN2/PPP2PPP/R1BQ1RK1 w - - 7 22",
+    "annotation": "Alekhine breaks through on the queenside, gaining a lasting advantage.",
+    "tags": [
+      "positional",
+      "counterplay"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 21)",
+    "opening": "Dutch Defense",
+    "result": "1-0",
+    "significance": "A critical win in the world championship match, featuring deep positional play and a smooth conversion.",
+    "move_number": 31,
+    "fen": "r1b2b1r/pp2pppp/2n2n2/2p5/3P4/2N1PN2/PPP2PPP/R1BQ1RK1 w - - 2 31",
+    "annotation": "Transition to a winning endgame; White's pieces dominate.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Alexander Alekhine",
+    "opponent": "Max Euwe",
+    "year": "1937",
+    "tournament": "World Championship (Game 21)",
+    "opening": "Dutch Defense",
+    "result": "1-0",
+    "significance": "A critical win in the world championship match, featuring deep positional play and a smooth conversion.",
+    "move_number": 40,
+    "fen": "5b1r/pp2pppp/2n2n2/2p5/3P4/2N1PN2/PPP2PPP/R1BQ1RK1 w - - 0 40",
+    "annotation": "Alekhine's technique secures the full point in a critical match game.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  }
+]

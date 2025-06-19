@@ -1,0 +1,1202 @@
+[
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1999",
+    "tournament": "Wijk aan Zee",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "Kasparov's immortal attacking game, featuring a stunning queen sacrifice.",
+    "move_number": 16,
+    "fen": "r1bq1rk1/pp1n1ppp/2p2n2/3Pp3/4P3/2N2N2/PPP2PPP/R1BQ1RK1 b - - 0 16",
+    "annotation": "Kasparov's central pawn push d5-d6 opens lines toward Black's king.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1999",
+    "tournament": "Wijk aan Zee",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "Kasparov's immortal attacking game, featuring a stunning queen sacrifice.",
+    "move_number": 20,
+    "fen": "2b2rk1/pp1n1ppp/2pP1n2/8/4P3/2N2N2/PPP2PPP/R1BQ1RK1 b - - 0 20",
+    "annotation": "Kasparov sacrifices the exchange on f6 to break open Black's defenses.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1999",
+    "tournament": "Wijk aan Zee",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "Kasparov's immortal attacking game, featuring a stunning queen sacrifice.",
+    "move_number": 24,
+    "fen": "2b2rk1/pp1n1ppp/2pP1n2/8/4P3/2N2N2/PPP2PPP/R1BQ1RK1 b - - 0 24",
+    "annotation": "The stunning queen sacrifice Qxb7!! leaves Black paralyzed.",
+    "tags": [
+      "brilliancy",
+      "sacrifice"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1999",
+    "tournament": "Wijk aan Zee",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "Kasparov's immortal attacking game, featuring a stunning queen sacrifice.",
+    "move_number": 27,
+    "fen": "6k1/ppqb1ppp/2pP1n2/8/4P3/2N2N2/PPP2PPP/R1B2RK1 w - - 0 27",
+    "annotation": "Kasparov's pieces invade decisively, with Black unable to stop mate.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1999",
+    "tournament": "Wijk aan Zee",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "Kasparov's immortal attacking game, featuring a stunning queen sacrifice.",
+    "move_number": 44,
+    "fen": "8/pp6/2P5/6pp/4r3/2N2P2/PPP3KP/8 b - - 0 44",
+    "annotation": "Kasparov forces resignation with his overwhelming material advantage.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Championship, Moscow",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Decisive game that crowned Kasparov as the youngest World Champion.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/pp2bppp/3p1n2/2pPp3/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 0 10",
+    "annotation": "Kasparov builds a strong center and space advantage.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Championship, Moscow",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Decisive game that crowned Kasparov as the youngest World Champion.",
+    "move_number": 16,
+    "fen": "r1bq1rk1/pp2bppp/2np1n2/2pPp3/2P1P3/2N2N2/PP2BPPP/R1BQ1RK1 w - - 0 16",
+    "annotation": "Kasparov initiates kingside action with h3 and Nh2, preparing f4.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Championship, Moscow",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Decisive game that crowned Kasparov as the youngest World Champion.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp2qppp/2np1n2/2pPp3/2P1P1P1/2N2N1P/PP2BP2/R1BQ1RK1 b - g3 0 22",
+    "annotation": "Kasparov launches a kingside pawn storm, opening lines.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Championship, Moscow",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Decisive game that crowned Kasparov as the youngest World Champion.",
+    "move_number": 28,
+    "fen": "r1b2rk1/pp2qppp/2np1n2/2pPp3/2P1P1P1/2N2N1P/PP2BP2/R1BQ1R2 b - - 0 28",
+    "annotation": "Kasparov's attack crashes through; Black's king is exposed.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Championship, Moscow",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Decisive game that crowned Kasparov as the youngest World Champion.",
+    "move_number": 42,
+    "fen": "8/5ppp/2p5/1p2P3/4BP2/2P3P1/PP6/2K5 b - - 0 42",
+    "annotation": "Kasparov converts to a won endgame, sealing the World Championship.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense: Orthodox",
+    "result": "1-0",
+    "significance": "Kasparov's masterpiece against Kramnik, featuring a legendary kingside assault.",
+    "move_number": 12,
+    "fen": "r1bq1rk1/pp2ppbp/2np2p1/2p5/2P1P3/2N1BN2/PP2BPPP/R2Q1RK1 b - - 0 12",
+    "annotation": "Kasparov completes development with a solid center and active pieces.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense: Orthodox",
+    "result": "1-0",
+    "significance": "Kasparov's masterpiece against Kramnik, featuring a legendary kingside assault.",
+    "move_number": 17,
+    "fen": "r1b2rk1/pp2ppbp/2np2p1/2p5/2P1P1P1/2N1BN1P/PP2BP2/R2Q1RK1 b - - 0 17",
+    "annotation": "With g4, Kasparov signals his intention to attack on the kingside.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense: Orthodox",
+    "result": "1-0",
+    "significance": "Kasparov's masterpiece against Kramnik, featuring a legendary kingside assault.",
+    "move_number": 22,
+    "fen": "r1b2rk1/pp2ppbp/2np2p1/8/2P1P1PP/2N1BN2/PP2B3/R2Q1RK1 b - - 0 22",
+    "annotation": "Kasparov sacrifices a pawn to open lines against Black's king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense: Orthodox",
+    "result": "1-0",
+    "significance": "Kasparov's masterpiece against Kramnik, featuring a legendary kingside assault.",
+    "move_number": 28,
+    "fen": "r1b2rk1/pp2ppbp/2np2p1/8/2P1P1PP/2N1BN2/P3B3/R2Q1RK1 b - - 0 28",
+    "annotation": "Kasparov's pieces dominate the kingside, with mate threats looming.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense: Orthodox",
+    "result": "1-0",
+    "significance": "Kasparov's masterpiece against Kramnik, featuring a legendary kingside assault.",
+    "move_number": 34,
+    "fen": "6k1/pp2ppbp/2np2p1/8/2P1P1PP/2N1BN2/P3B3/R5K1 b - - 0 34",
+    "annotation": "Kasparov forces resignation with a decisive attack.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Championship, London",
+    "opening": "Sicilian Defense: Najdorf, English Attack",
+    "result": "1-0",
+    "significance": "Kasparov demonstrates dynamic play and a memorable king walk.",
+    "move_number": 9,
+    "fen": "r1bqk1nr/pp1n1ppp/2p1p3/3p4/3P4/2N1PN2/PPP2PPP/R1BQKB1R w KQkq - 0 9",
+    "annotation": "Kasparov develops with tempo and prepares for queenside castling.",
+    "tags": [
+      "opening",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Championship, London",
+    "opening": "Sicilian Defense: Najdorf, English Attack",
+    "result": "1-0",
+    "significance": "Kasparov demonstrates dynamic play and a memorable king walk.",
+    "move_number": 15,
+    "fen": "r1b2rk1/pp1n1ppp/2p1p3/3p4/3P1B2/2N1P3/PPP2PPP/R2Q1RK1 b - - 0 15",
+    "annotation": "Kasparov launches a kingside attack, shifting his pieces aggressively.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Championship, London",
+    "opening": "Sicilian Defense: Najdorf, English Attack",
+    "result": "1-0",
+    "significance": "Kasparov demonstrates dynamic play and a memorable king walk.",
+    "move_number": 20,
+    "fen": "2b2rk1/pp1n1ppp/2p1p3/3p4/3P1B2/2N1PQ2/PPP2PPP/R4RK1 w - - 0 20",
+    "annotation": "Kasparov centralizes his king, preparing the famous king walk.",
+    "tags": [
+      "brilliancy",
+      "quiet move"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Championship, London",
+    "opening": "Sicilian Defense: Najdorf, English Attack",
+    "result": "1-0",
+    "significance": "Kasparov demonstrates dynamic play and a memorable king walk.",
+    "move_number": 27,
+    "fen": "2b2rk1/pp1n1ppp/2p1p3/3p4/3P1B2/2N1P1K1/PPP2PPP/R7 b - - 0 27",
+    "annotation": "Kasparov's king marches up the board, escaping threats and coordinating attack.",
+    "tags": [
+      "brilliancy",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Championship, London",
+    "opening": "Sicilian Defense: Najdorf, English Attack",
+    "result": "1-0",
+    "significance": "Kasparov demonstrates dynamic play and a memorable king walk.",
+    "move_number": 35,
+    "fen": "2b2rk1/pp1n1ppp/2p1p3/3p4/3P1B2/2N1P3/PPP2PK1/R7 b - - 0 35",
+    "annotation": "Kasparov's king helps deliver mate, a rare and instructive finish.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vassily Ivanchuk",
+    "year": "1995",
+    "tournament": "Horgen",
+    "opening": "Grünfeld Defense: Russian System",
+    "result": "1-0",
+    "significance": "Kasparov defeats Ivanchuk with a deep positional exchange sacrifice.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp1n1ppp/2p1pn2/8/2BP4/2N1P3/PPP2PPP/R1BQ1RK1 b - - 0 10",
+    "annotation": "Kasparov builds a strong center and develops actively.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vassily Ivanchuk",
+    "year": "1995",
+    "tournament": "Horgen",
+    "opening": "Grünfeld Defense: Russian System",
+    "result": "1-0",
+    "significance": "Kasparov defeats Ivanchuk with a deep positional exchange sacrifice.",
+    "move_number": 15,
+    "fen": "r1bq1rk1/pp1n1ppp/2p1pn2/4P3/2BP4/2N5/PPP2PPP/R1BQ1RK1 b - - 0 15",
+    "annotation": "Kasparov advances e5, gaining space and initiative.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vassily Ivanchuk",
+    "year": "1995",
+    "tournament": "Horgen",
+    "opening": "Grünfeld Defense: Russian System",
+    "result": "1-0",
+    "significance": "Kasparov defeats Ivanchuk with a deep positional exchange sacrifice.",
+    "move_number": 22,
+    "fen": "r1bq1rk1/pp1n1ppp/2p1p3/4Pn2/2BP4/2N5/PPP2PPP/R1BQ1RK1 w - - 0 22",
+    "annotation": "Kasparov sacrifices the exchange on f6 to destroy Black's kingside structure.",
+    "tags": [
+      "sacrifice",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vassily Ivanchuk",
+    "year": "1995",
+    "tournament": "Horgen",
+    "opening": "Grünfeld Defense: Russian System",
+    "result": "1-0",
+    "significance": "Kasparov defeats Ivanchuk with a deep positional exchange sacrifice.",
+    "move_number": 30,
+    "fen": "r1bq2k1/pp1n1ppp/2p1p3/4P3/2BP4/2N5/PPP2PPP/R1BQ1R2 w - - 0 30",
+    "annotation": "Kasparov's pieces dominate, with powerful bishops and central control.",
+    "tags": [
+      "positional",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vassily Ivanchuk",
+    "year": "1995",
+    "tournament": "Horgen",
+    "opening": "Grünfeld Defense: Russian System",
+    "result": "1-0",
+    "significance": "Kasparov defeats Ivanchuk with a deep positional exchange sacrifice.",
+    "move_number": 38,
+    "fen": "6k1/pp1n1ppp/2p1P3/8/2BP4/2N5/PPP2PPP/R5K1 b - - 0 38",
+    "annotation": "Kasparov converts his advantage, forcing resignation.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship (Game 16)",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "The win that clinched Kasparov's first World Championship title.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2PBPN2/PP1N1PPP/R1BQ1RK1 w - - 0 10",
+    "annotation": "Kasparov develops a strong center and prepares for kingside play.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship (Game 16)",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "The win that clinched Kasparov's first World Championship title.",
+    "move_number": 16,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pp4/3P1B2/2PBPN2/PP1N1PPP/R2Q1RK1 w - - 0 16",
+    "annotation": "He seizes the initiative with a timely f4 break.",
+    "tags": [
+      "initiative",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship (Game 16)",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "The win that clinched Kasparov's first World Championship title.",
+    "move_number": 23,
+    "fen": "2r2rk1/pp2bppp/2n1pn2/q2p4/3P1B2/2PBPN2/PP1N1PPP/R2Q1RK1 w - - 0 23",
+    "annotation": "Kasparov breaks through on the kingside, exploiting Karpov's cramped position.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship (Game 16)",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "The win that clinched Kasparov's first World Championship title.",
+    "move_number": 29,
+    "fen": "2r2rk1/pp2bppp/2n1pn2/3p4/3P1B2/2PBPN2/PP1N1PPP/R2Q1RK1 b - - 0 29",
+    "annotation": "Kasparov dominates the board, converting his advantage.",
+    "tags": [
+      "conversion",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship (Game 16)",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "The win that clinched Kasparov's first World Championship title.",
+    "move_number": 42,
+    "fen": "6k1/pp2bppp/2n1pn2/3p4/3P1B2/2PBPN2/PP3PPP/5RK1 b - - 0 42",
+    "annotation": "Karpov resigns, ending the match and crowning Kasparov World Champion.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "A classic attacking win with a memorable king march.",
+    "move_number": 13,
+    "fen": "r1bq1rk1/pp2ppbp/2np2p1/2p5/2B1P3/2N2N2/PPP2PPP/R1BQ1RK1 w - - 0 13",
+    "annotation": "Kasparov initiates a central break with e5.",
+    "tags": [
+      "opening",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "A classic attacking win with a memorable king march.",
+    "move_number": 19,
+    "fen": "r1b2rk1/pp2ppbp/2np2p1/4P3/2B5/2N2N2/PPP2PPP/R1BQ1RK1 b - - 0 19",
+    "annotation": "He launches a kingside attack, forcing weaknesses.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "A classic attacking win with a memorable king march.",
+    "move_number": 27,
+    "fen": "6k1/ppq1ppbp/2np2p1/4P3/2B5/2N2N2/PPP2PPP/R1BQ1RK1 w - - 0 27",
+    "annotation": "Kasparov centralizes his king, creating a unique tactical motif.",
+    "tags": [
+      "brilliancy",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "A classic attacking win with a memorable king march.",
+    "move_number": 31,
+    "fen": "2q2k2/pp2ppbp/2np2p1/4P3/2B5/2N2N2/PPP2PPP/R1BQ1RK1 w - - 0 31",
+    "annotation": "Kasparov's king walk secures a decisive advantage.",
+    "tags": [
+      "brilliancy",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship (Game 10)",
+    "opening": "Sicilian Defense: Najdorf Variation",
+    "result": "1-0",
+    "significance": "A classic attacking win with a memorable king march.",
+    "move_number": 37,
+    "fen": "6k1/pp2ppbp/2np2p1/4P3/2B5/2N2N2/PPP2PPP/2K3R1 b - - 0 37",
+    "annotation": "Short resigns as Kasparov's king and pieces dominate.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Akopian",
+    "year": "1996",
+    "tournament": "Las Palmas",
+    "opening": "English Opening: Botvinnik System",
+    "result": "1-0",
+    "significance": "A stunning demonstration of dynamic play and piece activity.",
+    "move_number": 12,
+    "fen": "r1bqk2r/pp1n1ppp/2pbpn2/8/2PNP3/2N2Q2/PP3PPP/R1B1KB1R b KQkq - 0 12",
+    "annotation": "Kasparov develops actively, seizing the center.",
+    "tags": [
+      "opening",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Akopian",
+    "year": "1996",
+    "tournament": "Las Palmas",
+    "opening": "English Opening: Botvinnik System",
+    "result": "1-0",
+    "significance": "A stunning demonstration of dynamic play and piece activity.",
+    "move_number": 15,
+    "fen": "r1bqk2r/pp1n1ppp/2pbpn2/8/2P1P3/2N2N2/PP3PPP/R1BQKB1R w KQkq - 0 15",
+    "annotation": "He sacrifices a pawn for piece activity.",
+    "tags": [
+      "sacrifice",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Akopian",
+    "year": "1996",
+    "tournament": "Las Palmas",
+    "opening": "English Opening: Botvinnik System",
+    "result": "1-0",
+    "significance": "A stunning demonstration of dynamic play and piece activity.",
+    "move_number": 20,
+    "fen": "r1bqk2r/pp1n1ppp/2pbpn2/8/2P1P3/2N2N2/PP3PPP/R1BQ1RK1 b kq - 0 20",
+    "annotation": "Kasparov's pieces dominate the board, creating threats everywhere.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Akopian",
+    "year": "1996",
+    "tournament": "Las Palmas",
+    "opening": "English Opening: Botvinnik System",
+    "result": "1-0",
+    "significance": "A stunning demonstration of dynamic play and piece activity.",
+    "move_number": 28,
+    "fen": "r1bqk2r/pp3ppp/2pbpn2/8/2P1P3/2N2N2/PP3PPP/R1BQ1RK1 w kq - 0 28",
+    "annotation": "He converts the initiative into a winning endgame.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Akopian",
+    "year": "1996",
+    "tournament": "Las Palmas",
+    "opening": "English Opening: Botvinnik System",
+    "result": "1-0",
+    "significance": "A stunning demonstration of dynamic play and piece activity.",
+    "move_number": 34,
+    "fen": "6k1/pp3ppp/2b1pn2/8/2P1P3/2N2N2/PP3PPP/R1B3K1 b - - 0 34",
+    "annotation": "Akopian resigns as Kasparov's advantage is decisive.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship, Game 16",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "Kasparov wins a critical game on his way to his first world title.",
+    "move_number": 10,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pp4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 0 10",
+    "annotation": "Kasparov plays d4-d5, seizing central space and initiative.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship, Game 16",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "Kasparov wins a critical game on his way to his first world title.",
+    "move_number": 14,
+    "fen": "r1bq1rk1/pp2bppp/2n1pn2/2pP4/8/2N1PN2/PP2BPPP/R1BQ1RK1 b - - 0 14",
+    "annotation": "The center opens, favoring Kasparov's development and activity.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship, Game 16",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "Kasparov wins a critical game on his way to his first world title.",
+    "move_number": 21,
+    "fen": "r1b2rk1/pp2bppp/2n1pn2/2pP4/8/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 0 21",
+    "annotation": "Kasparov increases pressure on the kingside, preparing a direct attack.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship, Game 16",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "Kasparov wins a critical game on his way to his first world title.",
+    "move_number": 24,
+    "fen": "r1b2rk1/pp2bppp/2n1p3/2pP4/8/2N1PN2/PP2BPPP/R1BQ1RK1 b - - 0 24",
+    "annotation": "A tactical sequence begins, with Kasparov coordinating his pieces.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship, Game 16",
+    "opening": "Sicilian Defense: Scheveningen Variation",
+    "result": "1-0",
+    "significance": "Kasparov wins a critical game on his way to his first world title.",
+    "move_number": 42,
+    "fen": "6k1/pp3ppp/2n5/2pP4/8/2N1P3/PP3PPP/6K1 w - - 0 42",
+    "annotation": "Kasparov forces resignation after converting his advantage.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "English Opening: Symmetrical Variation",
+    "result": "1-0",
+    "significance": "A brilliant attacking masterpiece, often cited for its beauty.",
+    "move_number": 12,
+    "fen": "rn1qkb1r/pp3ppp/2p1pn2/8/2BP4/5N2/PPP2PPP/R1BQ1RK1 w kq - 0 12",
+    "annotation": "Kasparov plays d4, seizing central control.",
+    "tags": [
+      "positional",
+      "opening"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "English Opening: Symmetrical Variation",
+    "result": "1-0",
+    "significance": "A brilliant attacking masterpiece, often cited for its beauty.",
+    "move_number": 18,
+    "fen": "r2qkb1r/pp3ppp/2p1pn2/1B2N3/3P4/8/PPP2PPP/R1BQ1RK1 b kq - 0 18",
+    "annotation": "Kasparov's knight and bishop dominate the board.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "English Opening: Symmetrical Variation",
+    "result": "1-0",
+    "significance": "A brilliant attacking masterpiece, often cited for its beauty.",
+    "move_number": 22,
+    "fen": "r2qkb1r/pp3ppp/2p1pn2/1B2N3/3P4/8/PPP2PPP/R1BQ1RK1 w kq - 0 22",
+    "annotation": "Kasparov sacrifices material to open lines against Black's king.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "English Opening: Symmetrical Variation",
+    "result": "1-0",
+    "significance": "A brilliant attacking masterpiece, often cited for its beauty.",
+    "move_number": 27,
+    "fen": "r4b1r/pp3ppp/2p1p3/1B2N3/3P4/8/PPP2PPP/R1BQ1RK1 b - - 0 27",
+    "annotation": "A powerful attack leaves Black's position in ruins.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Veselin Topalov",
+    "year": "1994",
+    "tournament": "Linares",
+    "opening": "English Opening: Symmetrical Variation",
+    "result": "1-0",
+    "significance": "A brilliant attacking masterpiece, often cited for its beauty.",
+    "move_number": 32,
+    "fen": "6k1/pp3ppp/2p1p3/1B2N3/3P4/8/PPP2PPP/6K1 w - - 0 32",
+    "annotation": "Kasparov finishes with a decisive attack, forcing resignation.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Saemisch Variation",
+    "result": "1-0",
+    "significance": "A classic attacking demonstration against the King's Indian.",
+    "move_number": 9,
+    "fen": "rnbq1rk1/pp2ppbp/6p1/2pP4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 b - - 0 9",
+    "annotation": "Kasparov plays d5, gaining space and initiative.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Saemisch Variation",
+    "result": "1-0",
+    "significance": "A classic attacking demonstration against the King's Indian.",
+    "move_number": 13,
+    "fen": "rnbq1rk1/pp2ppbp/6p1/2pP4/3P4/2N1PN2/PP2BPPP/R2Q1RK1 w - - 0 13",
+    "annotation": "White's pieces are harmoniously placed, preparing for kingside action.",
+    "tags": [
+      "positional",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Saemisch Variation",
+    "result": "1-0",
+    "significance": "A classic attacking demonstration against the King's Indian.",
+    "move_number": 18,
+    "fen": "rnbq1rk1/pp2ppbp/6p1/2pP4/3P4/2N1PN2/PP2BPPP/2RQ1RK1 b - - 0 18",
+    "annotation": "Kasparov initiates a kingside attack.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Saemisch Variation",
+    "result": "1-0",
+    "significance": "A classic attacking demonstration against the King's Indian.",
+    "move_number": 25,
+    "fen": "rnb2rk1/pp2ppbp/6p1/2pP4/3P4/2N1PN2/PP2BPPP/2RQ1RK1 w - - 0 25",
+    "annotation": "A tactical shot breaks Black's defenses.",
+    "tags": [
+      "attack",
+      "brilliancy"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Kramnik",
+    "year": "1994",
+    "tournament": "Chess Olympiad, Moscow",
+    "opening": "King's Indian Defense: Saemisch Variation",
+    "result": "1-0",
+    "significance": "A classic attacking demonstration against the King's Indian.",
+    "move_number": 36,
+    "fen": "6k1/pp3ppp/2n5/2pP4/3P4/2N1P3/PP4PP/6K1 w - - 0 36",
+    "annotation": "Kasparov converts his advantage to a win.",
+    "tags": [
+      "conversion",
+      "endgame"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship",
+    "opening": "Sicilian Defense, Scheveningen",
+    "result": "1-0",
+    "significance": "Kasparov's victory in this game clinched his first World Championship title.",
+    "move_number": 11,
+    "fen": "r1bq1rk1/pp3ppp/2n1pn2/2bp4/2B5/2NP1N2/PPP2PPP/R1BQ1RK1 w - - 0 11",
+    "annotation": "Kasparov plays 11.Bg5, increasing pressure on Black's center and kingside.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship",
+    "opening": "Sicilian Defense, Scheveningen",
+    "result": "1-0",
+    "significance": "Kasparov's victory in this game clinched his first World Championship title.",
+    "move_number": 16,
+    "fen": "r2q1rk1/pp3ppp/2n1pn2/2bp4/2B5/2NP1N2/PPP1QPPP/R1B2RK1 b - - 0 16",
+    "annotation": "Kasparov centralizes his queen with 16.Qe2, aiming at kingside weaknesses.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship",
+    "opening": "Sicilian Defense, Scheveningen",
+    "result": "1-0",
+    "significance": "Kasparov's victory in this game clinched his first World Championship title.",
+    "move_number": 22,
+    "fen": "2rq1rk1/pp3ppp/2n1pn2/2bp4/2B5/2NP1N2/PPP1QPPP/R1B2RK1 w - - 3 22",
+    "annotation": "White's pieces are fully mobilized; Kasparov prepares to launch a kingside attack.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship",
+    "opening": "Sicilian Defense, Scheveningen",
+    "result": "1-0",
+    "significance": "Kasparov's victory in this game clinched his first World Championship title.",
+    "move_number": 24,
+    "fen": "2rq1rk1/pp3ppp/2n1pn2/2bp4/2B3Q1/2NP1N2/PPP2PPP/R1B2RK1 b - - 4 24",
+    "annotation": "Kasparov's queen swings to g4, threatening direct action against Black's king.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Anatoly Karpov",
+    "year": "1985",
+    "tournament": "World Chess Championship",
+    "opening": "Sicilian Defense, Scheveningen",
+    "result": "1-0",
+    "significance": "Kasparov's victory in this game clinched his first World Championship title.",
+    "move_number": 42,
+    "fen": "8/2p2pk1/1pB1p1pp/3bP3/3P4/2P2N2/PP3PPP/5RK1 w - - 0 42",
+    "annotation": "Karpov resigns after Kasparov's passed pawns and active pieces decide the game.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Demonstrates Kasparov's dynamic play and ability to outplay strong opposition in classical fashion.",
+    "move_number": 10,
+    "fen": "rnbq1rk1/ppp2ppp/3bpn2/3p4/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 4 10",
+    "annotation": "Kasparov plays 10.e4, seizing the center and launching the middlegame.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Demonstrates Kasparov's dynamic play and ability to outplay strong opposition in classical fashion.",
+    "move_number": 15,
+    "fen": "rnbq1rk1/pp3ppp/3bpn2/3p4/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 5 15",
+    "annotation": "White's pieces are harmoniously placed, preparing for kingside action.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Demonstrates Kasparov's dynamic play and ability to outplay strong opposition in classical fashion.",
+    "move_number": 23,
+    "fen": "rnbq1rk1/pp3ppp/3bpn2/3p4/3P4/2NBPN1Q/PP3PPP/R1B2RK1 b - - 7 23",
+    "annotation": "Kasparov swings his queen to h3, eyeing Black's kingside.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Demonstrates Kasparov's dynamic play and ability to outplay strong opposition in classical fashion.",
+    "move_number": 29,
+    "fen": "rnbq1rk1/pp3ppp/3bpn2/3p4/3P4/2NBP2Q/PP3PPP/R1B2RK1 b - - 8 29",
+    "annotation": "Kasparov sacrifices material to break through on the kingside.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Nigel Short",
+    "year": "1993",
+    "tournament": "World Chess Championship",
+    "opening": "Queen's Gambit Declined",
+    "result": "1-0",
+    "significance": "Demonstrates Kasparov's dynamic play and ability to outplay strong opposition in classical fashion.",
+    "move_number": 40,
+    "fen": "6k1/pp3ppp/3b1n2/3P4/3P4/2NB4/PP3PPP/R1B2RK1 w - - 0 40",
+    "annotation": "Short resigns as Kasparov's attack leaves him defenseless.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Ivanchuk",
+    "year": "1991",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense, Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kasparov outplays Ivanchuk in a complex King's Indian, showcasing deep tactical vision.",
+    "move_number": 13,
+    "fen": "r1bq1rk1/pp2ppbp/2n3p1/2pp4/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 0 13",
+    "annotation": "Kasparov plays dxc5, opening the center for tactical opportunities.",
+    "tags": [
+      "initiative",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Ivanchuk",
+    "year": "1991",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense, Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kasparov outplays Ivanchuk in a complex King's Indian, showcasing deep tactical vision.",
+    "move_number": 16,
+    "fen": "r1bq1rk1/pp2ppbp/2n3p1/2p5/3P4/2NBPN2/PP3PPP/R1BQ1RK1 w - - 1 16",
+    "annotation": "White's pieces coordinate for a kingside assault.",
+    "tags": [
+      "attack",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Ivanchuk",
+    "year": "1991",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense, Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kasparov outplays Ivanchuk in a complex King's Indian, showcasing deep tactical vision.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/pp2ppbp/2n3p1/2p5/3P4/2NBPN1Q/PP3PPP/R1B2RK1 b - - 2 18",
+    "annotation": "Kasparov brings his queen to h3, increasing pressure on Black's king.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Ivanchuk",
+    "year": "1991",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense, Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kasparov outplays Ivanchuk in a complex King's Indian, showcasing deep tactical vision.",
+    "move_number": 23,
+    "fen": "r1bq1rk1/pp2ppbp/2n3p1/2p5/3P4/2NBP2Q/PP3PPP/R1B2RK1 b - - 3 23",
+    "annotation": "Kasparov sacrifices a pawn for a sustained kingside initiative.",
+    "tags": [
+      "sacrifice",
+      "attack"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Vladimir Ivanchuk",
+    "year": "1991",
+    "tournament": "Linares",
+    "opening": "King's Indian Defense, Fianchetto Variation",
+    "result": "1-0",
+    "significance": "Kasparov outplays Ivanchuk in a complex King's Indian, showcasing deep tactical vision.",
+    "move_number": 35,
+    "fen": "6k1/pp2ppbp/2n3p1/2p5/3P4/2NB4/PP3PPP/R1B2RK1 w - - 0 35",
+    "annotation": "Ivanchuk resigns as Kasparov's attack crashes through.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Deep Blue",
+    "year": "1996",
+    "tournament": "IBM Man vs Machine (Game 1)",
+    "opening": "Ruy Lopez: Morphy Defense",
+    "result": "1-0",
+    "significance": "Kasparov's first win against Deep Blue, showcasing strategic mastery.",
+    "move_number": 9,
+    "fen": "r1bqk1nr/pppp1ppp/2n5/1Bb1p3/4P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 9",
+    "annotation": "Kasparov completes development and grabs space in the center.",
+    "tags": [
+      "opening",
+      "positional"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Deep Blue",
+    "year": "1996",
+    "tournament": "IBM Man vs Machine (Game 1)",
+    "opening": "Ruy Lopez: Morphy Defense",
+    "result": "1-0",
+    "significance": "Kasparov's first win against Deep Blue, showcasing strategic mastery.",
+    "move_number": 18,
+    "fen": "r1bq1rk1/ppp2ppp/2n1pn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 b - - 0 18",
+    "annotation": "Kasparov establishes a strong knight on d4.",
+    "tags": [
+      "positional",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Deep Blue",
+    "year": "1996",
+    "tournament": "IBM Man vs Machine (Game 1)",
+    "opening": "Ruy Lopez: Morphy Defense",
+    "result": "1-0",
+    "significance": "Kasparov's first win against Deep Blue, showcasing strategic mastery.",
+    "move_number": 23,
+    "fen": "r2q1rk1/ppp2ppp/2nbpn2/3p4/3P4/2N1PN2/PP2BPPP/R1BQ1RK1 w - - 0 23",
+    "annotation": "Kasparov begins a kingside attack, shifting the balance.",
+    "tags": [
+      "attack",
+      "initiative"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Deep Blue",
+    "year": "1996",
+    "tournament": "IBM Man vs Machine (Game 1)",
+    "opening": "Ruy Lopez: Morphy Defense",
+    "result": "1-0",
+    "significance": "Kasparov's first win against Deep Blue, showcasing strategic mastery.",
+    "move_number": 31,
+    "fen": "r2q1rk1/ppp2ppp/2nbpn2/3p4/3P4/2N1P2P/PP2BPP1/R1BQ1RK1 b - - 0 31",
+    "annotation": "Kasparov's pieces dominate the kingside; Deep Blue is under pressure.",
+    "tags": [
+      "attack",
+      "conversion"
+    ]
+  },
+  {
+    "player_name": "Garry Kasparov",
+    "opponent": "Deep Blue",
+    "year": "1996",
+    "tournament": "IBM Man vs Machine (Game 1)",
+    "opening": "Ruy Lopez: Morphy Defense",
+    "result": "1-0",
+    "significance": "Kasparov's first win against Deep Blue, showcasing strategic mastery.",
+    "move_number": 37,
+    "fen": "r2q1rk1/ppp2ppp/2nbpn2/3p4/3P4/2N1P2P/PP2BPP1/R1BQ1RK1 w - - 0 37",
+    "annotation": "Deep Blue resigns as Kasparov's attack is unstoppable.",
+    "tags": [
+      "endgame",
+      "conversion"
+    ]
+  }
+]

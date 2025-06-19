@@ -47,7 +47,7 @@ captures/
 .cxx/
 
 # API Keys - NEVER commit these!
-app/src/main/java/com/example/chesspedagogue/ApiKeys.java!
+app/src/main/java/com/example/chesspedagogue/ApiKeys.java
 app/src/main/java/com/example/chesspedagogue/ApiKeyConfig.java
  /test_conversation_memory_system.py
 /test_null_pointer_fix.py

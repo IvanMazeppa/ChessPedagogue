@@ -1,0 +1,10 @@
+{
+  "player_name": "Mikhail Tal",
+  "total_positions": 30,
+  "total_batches": 1,
+  "batch_files": [
+    "mikhail_tal_batch_001_20250617_190638.json"
+  ],
+  "created_at": "20250617_190638",
+  "vector_store_id": "vs_cqJaJ2ylgzjFCqz8VmGBHIgz"
+}
