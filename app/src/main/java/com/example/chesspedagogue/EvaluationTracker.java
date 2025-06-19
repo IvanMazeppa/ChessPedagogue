@@ -245,19 +245,23 @@ public class EvaluationTracker {
         float prevEval = previous.getEffectiveEvaluation();
         float currEval = current.getEffectiveEvaluation();
 
-        // Calculate swing (from previous player's perspective)
-        // If it's move 2, 4, 6... (even), we're looking at White's move, so positive swing is good for White
-        // If it's move 1, 3, 5... (odd), we're looking at Black's move, so negative swing is good for Black
-        boolean isWhiteMove = (moveCount % 2 == 0);
+        // 🔧 FIX: Use FEN to determine perspective authoritatively
+        // Stockfish always returns evaluations from White's perspective (UCI standard)
+        // Positive = White advantage, Negative = Black advantage
+        String[] fenParts = current.position.split(" ");
+        String sideToMove = fenParts.length > 1 ? fenParts[1] : "w";
+        
+        // Calculate raw swing (always in White's perspective from Stockfish)
         float swingAmount = currEval - prevEval;
+        
+        // The side that just moved is the OPPOSITE of who's to move now
+        boolean lastMoveWasWhite = sideToMove.equals("b"); // If Black to move, White just moved
+        
+        // 🚨 CRITICAL FIX: Keep evaluations in consistent White perspective
+        // Do NOT flip based on who moved - Stockfish UCI evaluations are always White-relative
 
-        // Adjust swing perspective for the player who just moved
-        if (!isWhiteMove) {
-            swingAmount = -swingAmount; // Flip for Black's perspective
-        }
-
-        Log.d(TAG, String.format("📈 Swing analysis: %.2f → %.2f = %+.2f (%s move)",
-                prevEval, currEval, swingAmount, isWhiteMove ? "White" : "Black"));
+        Log.d(TAG, String.format("📈 Swing analysis: %.2f → %.2f = %+.2f (%s move, White perspective)",
+                prevEval, currEval, swingAmount, lastMoveWasWhite ? "White" : "Black"));
 
         // Classify the move
         MoveQuality quality = classifyMove(swingAmount, previous.isMate, current.isMate);

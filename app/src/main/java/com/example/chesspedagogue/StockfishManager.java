@@ -642,8 +642,8 @@ public class StockfishManager {
                     if (endIndex > scoreIndex) {
                         try {
                             score = Float.parseFloat(line.substring(scoreIndex, endIndex)) / 100.0f;
-                            // Negate score because we're looking from the opponent's perspective
-                            score = -score;
+                            // 🔧 FIX: Keep Stockfish's standard White perspective (positive = White advantage)
+                            // DO NOT negate - Stockfish UCI evaluations are always from White's perspective
                             break;
                         } catch (NumberFormatException e) {
                             // Skip this line

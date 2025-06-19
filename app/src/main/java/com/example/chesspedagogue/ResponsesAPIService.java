@@ -361,6 +361,20 @@ public class ResponsesAPIService {
     private String extractMasterName(String input) {
         if (input == null) return "unknown";
         
+        // 🔧 FIX: Map specific assistant IDs to master names
+        switch (input) {
+            case "asst_wnshRkbnaca2vkRxYqYZDcLu":
+                return "alekhine";
+            case "asst_LSdhMRFJcSCUJjR4o2B9tWmg":
+                return "tal";
+            case "asst_2j5uMiqmEKRUNqHCtXdsaoY3":
+                return "fischer";
+            case "asst_TTzxbfvJQz3e80FetQblJ0Gl":
+                return "carlsen";
+            // Add other assistant IDs as needed
+        }
+        
+        // Fallback to name-based matching
         String lower = input.toLowerCase();
         if (lower.contains("alekhine")) return "alekhine";
         if (lower.contains("kasparov")) return "kasparov";

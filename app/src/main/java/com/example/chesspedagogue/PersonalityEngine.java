@@ -41,11 +41,15 @@ public class PersonalityEngine {
     private final StockfishManager stockfishManager;
     private final GameDatabaseHelper databaseHelper; // 🚀 Now using your enhanced database!
     private final FENCommentaryHooks commentaryHooks; // NEW: FEN-driven commentary system
+    private final AIStyleAdvisor aiStyleAdvisor; // 🧠 NEW: AI-enhanced personality system
 
     // Personality settings
     private float personalityWeight = DEFAULT_PERSONALITY_WEIGHT;
     private String currentMaster = "tal";
     private boolean enablePersonalityPlay = true;
+    
+    // Current game state for AI analysis
+    private String currentFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
     static {
         MASTER_NAME_CACHE.put("tal", new String[]{"tal", "Mikhail Tal", "Tal"});
@@ -145,10 +149,15 @@ public class PersonalityEngine {
         Log.d(TAG, "🎯 Initializing FEN Commentary Hooks...");
         this.commentaryHooks = new FENCommentaryHooks(context);
         Log.d(TAG, "✅ FEN Commentary Hooks initialized");
+        
+        // Initialize AI Style Advisor
+        Log.d(TAG, "🧠 Initializing AI Style Advisor...");
+        this.aiStyleAdvisor = AIStyleAdvisor.getInstance(context);
+        Log.d(TAG, "✅ AI Style Advisor initialized");
 
         // 🚨 CRITICAL FIX: Force database initialization for common masters at startup
         Log.d(TAG, "🔧 STARTUP: Forcing database initialization for key masters...");
-        String[] keyMasters = {"tal", "fischer", "carlsen", "kasparov", "karpov", "kramnik"};
+        String[] keyMasters = {"tal", "fischer", "carlsen", "kasparov", "karpov", "kramnik", "alekhine"};
         for (String master : keyMasters) {
             if (!databaseHelper.hasMasterData(master)) {
                 Log.d(TAG, "🔧 STARTUP: No data for " + master + " - forcing initialization");
@@ -181,6 +190,9 @@ public class PersonalityEngine {
      * No more network delays - everything happens locally at lightning speed!
      */
     public void selectPersonalityMove(String currentFen, PersonalityMoveCallback callback) {
+        // Store current FEN for AI analysis
+        this.currentFEN = currentFen;
+        
         Log.d(TAG, "🚨 ==> ENTRY: selectPersonalityMove() called for " + currentMaster + " <=== 🚨");
         Log.d(TAG, "⚡ LIGHTNING-FAST personality move selection for " + currentMaster);
         Log.d(TAG, "🔧 DEBUG: enablePersonalityPlay=" + enablePersonalityPlay + ", currentMaster=" + currentMaster);
@@ -529,11 +541,15 @@ public class PersonalityEngine {
 
     /**
      * Apply personality scoring to engine candidates based on local historical data
+     * 🧠 NOW ENHANCED WITH AI STYLE ADVICE!
      */
     private List<PersonalityMove> applyPersonalityScoring(List<PersonalityMove> engineCandidates,
                                                           List<VectorSearchResult> historicalPositions) {
 
         List<PersonalityMove> scoredMoves = new ArrayList<>();
+        
+        // 🧠 AI ENHANCEMENT: Get AI style advice for this position
+        AIStyleAdvisor.AIStyleAdvice aiAdvice = getAIStyleAdviceSync(engineCandidates);
 
         for (PersonalityMove candidate : engineCandidates) {
             float personalityBonus = 0.0f;
@@ -562,6 +578,17 @@ public class PersonalityEngine {
             if (!isHistoricalMatch) {
                 personalityBonus = calculateStyleBonus(candidate, historicalPositions);
                 historicalContext = "Matches " + getCurrentMasterDisplayName() + "'s playing style";
+            }
+            
+            // 🧠 AI ENHANCEMENT: Apply AI style advice bonus
+            float aiBonus = applyAIStyleBonus(candidate, aiAdvice);
+            if (aiBonus > 0) {
+                personalityBonus += aiBonus;
+                if (!historicalContext.isEmpty()) {
+                    historicalContext += " + ";
+                }
+                historicalContext += "AI-recommended style preference";
+                Log.d(TAG, "🧠 AI STYLE BONUS: " + candidate.move + " -> +" + aiBonus + " AI bonus");
             }
 
             PersonalityMove scoredMove = new PersonalityMove(
@@ -1212,6 +1239,148 @@ public class PersonalityEngine {
     public void setCommentaryCallback(FENCommentaryHooks.CommentaryCallback callback) {
         if (commentaryHooks != null) {
             commentaryHooks.setCommentaryCallback(callback);
+        }
+    }
+    
+    // ======================== AI STYLE ADVICE METHODS ========================
+    
+    /**
+     * 🧠 Get AI style advice synchronously for current position
+     * This method provides AI-enhanced personality insights for move selection
+     */
+    private AIStyleAdvisor.AIStyleAdvice getAIStyleAdviceSync(List<PersonalityMove> engineCandidates) {
+        if (aiStyleAdvisor == null) {
+            Log.w(TAG, "⚠️ AI Style Advisor not available - using fallback");
+            return createFallbackAIAdvice();
+        }
+        
+        // Only use AI for masters with OpenAI assistants
+        if (!hasAIAssistant(currentMaster)) {
+            Log.d(TAG, "🤖 No AI assistant for " + currentMaster + " - using fallback");
+            return createFallbackAIAdvice();
+        }
+        
+        try {
+            // Extract move names for AI consultation
+            List<String> candidateMoves = new ArrayList<>();
+            for (PersonalityMove move : engineCandidates) {
+                candidateMoves.add(move.move);
+            }
+            
+            Log.d(TAG, "🧠 Requesting AI style advice for " + currentMaster + " with " + candidateMoves.size() + " candidates");
+            
+            // Use blocking wait for AI advice (we're already in background thread)
+            final AIStyleAdvisor.AIStyleAdvice[] result = {null};
+            final boolean[] completed = {false};
+            
+            // Get current FEN from context (this is simplified - you may need to pass it differently)
+            String currentFEN = getCurrentFEN();
+            
+            aiStyleAdvisor.getStyleAdvice(currentFEN, currentMaster, candidateMoves, 
+                new AIStyleAdvisor.AIStyleCallback() {
+                    @Override
+                    public void onAdviceReceived(AIStyleAdvisor.AIStyleAdvice advice) {
+                        result[0] = advice;
+                        synchronized (completed) {
+                            completed[0] = true;
+                            completed.notify();
+                        }
+                    }
+                    
+                    @Override
+                    public void onError(String error) {
+                        Log.w(TAG, "🧠 AI advice error: " + error);
+                        result[0] = createFallbackAIAdvice();
+                        synchronized (completed) {
+                            completed[0] = true;
+                            completed.notify();
+                        }
+                    }
+                    
+                    @Override
+                    public void onCacheHit(AIStyleAdvisor.AIStyleAdvice cachedAdvice) {
+                        Log.d(TAG, "⚡ AI advice from cache");
+                        result[0] = cachedAdvice;
+                        synchronized (completed) {
+                            completed[0] = true;
+                            completed.notify();
+                        }
+                    }
+                });
+            
+            // Wait for AI response with timeout
+            synchronized (completed) {
+                if (!completed[0]) {
+                    completed.wait(5000); // 5 second timeout for AI
+                }
+            }
+            
+            return result[0] != null ? result[0] : createFallbackAIAdvice();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "💥 Error getting AI style advice", e);
+            return createFallbackAIAdvice();
+        }
+    }
+    
+    /**
+     * 🎯 Apply AI style bonus to a candidate move
+     */
+    private float applyAIStyleBonus(PersonalityMove candidate, AIStyleAdvisor.AIStyleAdvice aiAdvice) {
+        if (aiAdvice == null || aiAdvice.preferredMoves.isEmpty()) {
+            return 0.0f;
+        }
+        
+        // Check if this move is AI-preferred
+        if (aiAdvice.preferredMoves.contains(candidate.move)) {
+            float aiWeight = Math.min(aiAdvice.styleWeight, 0.8f); // Cap AI influence
+            float bonus = personalityWeight * aiWeight * 0.5f; // Scale AI bonus
+            
+            Log.d(TAG, "🧠 AI prefers " + candidate.move + " (weight=" + aiWeight + ", bonus=" + bonus + ")");
+            return bonus;
+        }
+        
+        return 0.0f;
+    }
+    
+    /**
+     * 🛡️ Create fallback AI advice when real AI is unavailable
+     */
+    private AIStyleAdvisor.AIStyleAdvice createFallbackAIAdvice() {
+        List<String> emptyMoves = new ArrayList<>();
+        return new AIStyleAdvisor.AIStyleAdvice(emptyMoves, 0.0f, 
+                "Fallback advice", "", false, false);
+    }
+    
+    /**
+     * 🤖 Check if master has an OpenAI assistant
+     */
+    private boolean hasAIAssistant(String master) {
+        switch (master.toLowerCase()) {
+            case "alekhine":
+            case "tal":
+            case "fischer":
+            case "carlsen":
+                return true;
+            default:
+                return false;
+        }
+    }
+    
+    /**
+     * 📋 Get current FEN for AI analysis
+     */
+    private String getCurrentFEN() {
+        return this.currentFEN;
+    }
+    
+    /**
+     * 🧹 Clear AI cache between games
+     */
+    public void clearAICache() {
+        if (aiStyleAdvisor != null) {
+            aiStyleAdvisor.clearCache();
+            Log.d(TAG, "🧹 AI Style Advisor cache cleared");
         }
     }
 }
