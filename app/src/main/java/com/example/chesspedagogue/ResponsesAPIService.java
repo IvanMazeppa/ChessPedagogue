@@ -303,7 +303,7 @@ public class ResponsesAPIService {
     }
     
     /**
-     * 🎯 Get model ID for chess master - FIXED: Honor base model settings from ChessMasterResponsesManager
+     * 🎯 Get model ID for chess master - ATTEMPT: Try fine-tuned models with evaluation perspective fix
      */
     private String getFineTunedModelForMaster(String masterNameOrAssistantId) {
         if (masterNameOrAssistantId == null) return "gpt-4o"; // Fallback
@@ -311,13 +311,10 @@ public class ResponsesAPIService {
         // Extract master name if it's an assistant ID
         String masterName = extractMasterName(masterNameOrAssistantId);
         
-        // TEMPORARY: Use base models for Responses API compatibility testing
-        // Fine-tuned models are causing HTTP 400 errors with Responses API
-        Log.w(TAG, "🧪 TESTING: Using base model instead of fine-tuned for " + masterName);
-        return "gpt-4o"; // Use base model for all masters temporarily
+        // 🔧 EVALUATION PERSPECTIVE FIX: Try fine-tuned models again 
+        // The perspective issue might be resolved with better prompting
+        Log.d(TAG, "🔧 PERSPECTIVE FIX: Attempting fine-tuned model for " + masterName);
         
-        // DISABLED: Fine-tuned model mapping (causing HTTP 400 errors)
-        /*
         switch (masterName.toLowerCase()) {
             case "tal":
                 return "ft:gpt-4o-2024-08-06:personal:tal-20250525:BbDcbXJT";
@@ -333,7 +330,10 @@ public class ResponsesAPIService {
                 Log.w(TAG, "⚠️ Unknown master: " + masterName + ", using base model");
                 return "gpt-4o";
         }
-        */
+        
+        // FALLBACK: If fine-tuned models still cause issues, uncomment below:
+        // Log.w(TAG, "🧪 FALLBACK: Using base model due to API compatibility");
+        // return "gpt-4o";
     }
     
     /**
