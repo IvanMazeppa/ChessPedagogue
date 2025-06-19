@@ -531,22 +531,71 @@ Position → Historical DB + AI Assistant → Enhanced Style Scoring → Move Se
 4. **Cross-Master Testing**: Compare Tal vs Alekhine AI reasoning
 5. **Production Optimization**: Fine-tune rate limits and caching strategy
 
-## 🔧 **EVALUATION PERSPECTIVE BUG - INVESTIGATION & FIX**
-*June 19, 2025 - Critical Bug Resolution*
+## 🔧 **EVALUATION PERSPECTIVE BUG - COMPREHENSIVE INVESTIGATION & FIXES**
+*June 19, 2025 - Critical Bug Resolution - Updated with Latest Status*
 
 ### **🚨 Problem Identification**
-**User Report**: "AI comments quite often make it sound like they think their up in material when they're not and vice versa. could this be from the engine evaluation being upside down sometimes? could this affect their play?"
+**User Report (Original)**: "AI comments quite often make it sound like they think their up in material when they're not and vice versa. could this be from the engine evaluation being upside down sometimes? could this affect their play?"
 
-### **🔍 Root Cause Analysis**
-After investigating the AI integration pipeline:
+**Updated Problem**: Massive impossible evaluation swings (+6.22 to -5.72 to -10.37) affecting both AI decision-making and emotional responses.
 
-1. **Missing Color Context**: AI didn't know if it was playing White or Black
-2. **FEN Misinterpretation**: AI analyzed positions without perspective context
-3. **Base Model Confusion**: Using `gpt-4o` instead of trained fine-tuned models
-4. **Prompt Ambiguity**: No explicit instruction about whose perspective to evaluate from
+### **🔍 Comprehensive Root Cause Analysis**
 
-### **🛠️ Technical Solution Implemented**
+#### **Primary Issues Identified:**
+1. **Evaluation Perspective Inconsistency**: Multiple evaluation methods with conflicting perspective logic
+2. **Assistant ID Recognition Failure**: System showing "Unknown master: asst_wnshRkbnaca2vkRxYqYZDcLu, using base model"
+3. **AI Commentary Confusion**: Missing color context in AI personality responses
+4. **Multiple Evaluation Paths**: Different parts of codebase applying different negation logic
 
+#### **Testing Results from User Games:**
+- **Game 1 (190625_GAME_LOGS_5.md)**: Massive swings after queen sacrifice (+6.22 → -5.72 → -10.37)
+- **Game 2 (Latest log)**: Persistent flip-flopping behavior (+5.8 → -5.5 → +7.47 → -5.81)
+
+### **🛠️ Technical Solutions Implemented**
+
+#### **✅ FIX 1: Assistant ID Recognition (COMPLETED - SUCCESSFUL)**
+**File**: `/app/src/main/java/com/example/chesspedagogue/ResponsesAPIService.java:365-374`
+```java
+// 🔧 FIX: Map specific assistant IDs to master names
+switch (input) {
+    case "asst_wnshRkbnaca2vkRxYqYZDcLu":
+        return "alekhine";
+    case "asst_LSdhMRFJcSCUJjR4o2B9tWmg":
+        return "tal";
+    case "asst_2j5uMiqmEKRUNqHCtXdsaoY3":
+        return "fischer";
+    case "asst_TTzxbfvJQz3e80FetQblJ0Gl":
+        return "carlsen";
+    // Add other assistant IDs as needed
+}
+```
+**Status**: ✅ **RESOLVED** - User confirmed "assistant issue is fixed"
+
+#### **✅ FIX 2: EvaluationTracker Perspective Logic (PARTIALLY SUCCESSFUL)**
+**File**: `/app/src/main/java/com/example/chesspedagogue/EvaluationTracker.java:248-262`
+```java
+// 🔧 FIX: Use FEN to determine perspective authoritatively
+String[] fenParts = current.position.split(" ");
+String sideToMove = fenParts.length > 1 ? fenParts[1] : "w";
+
+// Calculate raw swing (always in White's perspective from Stockfish)
+float swingAmount = currEval - prevEval;
+
+// 🚨 CRITICAL FIX: Keep evaluations in consistent White perspective
+// Do NOT flip based on who moved - Stockfish UCI evaluations are always White-relative
+```
+**Status**: ⚠️ **PARTIAL** - Removed incorrect perspective flipping but core issue persists
+
+#### **✅ FIX 3: StockfishManager Score Negation (PARTIALLY SUCCESSFUL)**
+**File**: `/app/src/main/java/com/example/chesspedagogue/StockfishManager.java:645-647`
+```java
+score = Float.parseFloat(line.substring(scoreIndex, endIndex)) / 100.0f;
+// 🔧 FIX: Keep Stockfish's standard White perspective (positive = White advantage)
+// DO NOT negate - Stockfish UCI evaluations are always from White's perspective
+```
+**Status**: ⚠️ **PARTIAL** - Removed incorrect negation but evaluation bug persists
+
+#### **✅ FIX 4: AI Color Context (COMPLETED)**
 **Enhanced AIStyleAdvisor.buildChessStylePrompt():**
 ```java
 // 🚨 FIX: Determine which color is to move from FEN
@@ -558,26 +607,51 @@ prompt.append("🔧 IMPORTANT: YOU ARE PLAYING AS ").append(colorName).append(" 
 prompt.append("🚨 CRITICAL: Evaluate everything from ").append(colorName).append("'s perspective.\n");
 prompt.append("Material advantage means YOU (").append(colorName).append(") have more pieces.\n\n");
 ```
+**Status**: ✅ **IMPLEMENTED** - Ready for testing
 
-**Key Improvements:**
-1. **Explicit Color Assignment**: AI now knows exactly which side it's playing
-2. **Perspective Instructions**: Clear guidance on evaluation perspective  
-3. **Material Clarification**: Explicit definition of material advantage
-4. **Fine-Tuned Model Re-enabled**: Attempting to use trained models again
+### **📊 Current Investigation Status**
 
-### **📊 Expected Results**
-- ✅ **Correct Material Assessment**: AI should no longer claim advantage when disadvantaged
-- ✅ **Consistent Perspective**: All evaluations from correct color viewpoint
-- ✅ **Better Move Quality**: Reduced confusion should improve move selection
-- ✅ **Authentic Commentary**: More accurate master-style analysis
+#### **✅ SUCCESSFUL FIXES:**
+1. **Assistant ID Recognition**: No more "Unknown master" errors, proper fine-tuned model usage
+2. **AI Commentary Context**: Enhanced prompts with explicit color assignments
 
-### **🧪 Testing Protocol**
-1. **Quick Test**: Play a few moves and check AI material comments
-2. **Deliberate Material Loss**: Sacrifice piece and verify AI recognizes disadvantage  
-3. **Cross-Position Validation**: Test both White and Black perspectives
-4. **Master Comparison**: Ensure fix works across different chess masters
+#### **⚠️ PERSISTENT ISSUES:**
+1. **Evaluation Perspective Bug**: Massive swings still occurring despite multiple fixes
+2. **Multiple Evaluation Sources**: May need to investigate additional evaluation paths in codebase
 
-This fix addresses the **HIGH priority** evaluation bug that could explain questionable moves like the Bd3 blunder in previous testing.
+#### **🔍 REMAINING INVESTIGATION NEEDED:**
+The evaluation bug persists after fixing both EvaluationTracker and StockfishManager perspective logic, suggesting:
+- **Additional evaluation sources** in the codebase applying inconsistent logic
+- **Race conditions** between different evaluation methods
+- **PersonalityEngine interference** with evaluation processing
+- **UCI communication issues** with Stockfish engine configuration
+
+### **📈 User Testing Results**
+
+**✅ CONFIRMED WORKING:**
+- Assistant recognition: "it looks like the assistant issue is fixed"
+- Fine-tuned model usage: Better AI personality and decision-making
+- ELO scaling system: Appropriate 1750-level difficulty maintained
+
+**⚠️ STILL PROBLEMATIC:**
+- Evaluation swings: "i'm still seeing the flip flopping behaviour" 
+- Latest example: +5.8 → -5.5 → +7.47 → -5.81 (impossible in normal chess)
+
+### **🎯 Next Investigation Steps**
+
+1. **Search for Additional Evaluation Sources**: Use comprehensive codebase search for all evaluation processing
+2. **UCI Communication Analysis**: Verify Stockfish engine configuration and command consistency  
+3. **PersonalityEngine Evaluation Pipeline**: Check if personality system is interfering with evaluations
+4. **Race Condition Detection**: Investigate timing issues between multiple evaluation requests
+5. **Evaluation Bar Display Logic**: Verify EvaluationBarView.java perspective handling
+
+### **🧪 Enhanced Testing Protocol**
+1. **Isolated Engine Testing**: Test Stockfish evaluations without PersonalityEngine
+2. **UCI Command Logging**: Monitor all engine communication for consistency
+3. **Multi-Source Evaluation Tracking**: Log evaluations from all sources simultaneously
+4. **Timing Analysis**: Check for race conditions in evaluation processing
+
+This comprehensive investigation reveals that while AI integration issues are resolved, the core evaluation perspective bug requires deeper analysis of the evaluation processing pipeline.
 
 ---
 *Documentation created during system rebuild - June 19, 2025*

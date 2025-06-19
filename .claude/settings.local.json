@@ -65,7 +65,8 @@
       "Bash(sed:*)",
       "Bash(timeout:*)",
       "Bash(xmllint:*)",
-      "Bash(sudo rm:*)"
+      "Bash(sudo rm:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

@@ -109,6 +109,10 @@ class FixedResponsesAPIChessCreator:
             "Nigel Short": {
                 "vector_store_id": "vs_auto_detect",
                 "style_keywords": "fighting chess, tactical sharpness, English pragmatism, counterattacking"
+            },
+            "Alexander Alekhine": {
+                "vector_store_id": "vs_auto_detect",
+                "style_keywords": "combinatations, tactical brilliance, calculation depth"
             }
         }
         
