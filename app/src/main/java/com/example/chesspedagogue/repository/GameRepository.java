@@ -12,6 +12,8 @@ import com.example.chesspedagogue.LogThrottler;
 import com.example.chesspedagogue.PersonalityEngine;
 import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.StockfishManager;
+import com.example.chesspedagogue.UnifiedEvaluationSystem;
+import com.example.chesspedagogue.EvaluationSystemMigration;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,15 +45,35 @@ public class GameRepository {
     private boolean usePersonalityEngine = false;
     private int lastMoveCount = 0;
 
+    // 🎯 UNIFIED EVALUATION SYSTEM - Single source of truth
+    private UnifiedEvaluationSystem unifiedEvaluationSystem;
+    private EvaluationSystemMigration evaluationMigration;
+
     public GameRepository(Context context) {
         this.context = context;
         stockfishManager = new StockfishManager();
         executorService = Executors.newSingleThreadExecutor();
         mainHandler = new Handler(Looper.getMainLooper());
 
+        // 🎯 Initialize unified evaluation system
+        initializeUnifiedEvaluationSystem();
+
         // FIXED: Initialize engine first, then personality engine
         initializeEngine();
         initializePersonalityEngine();
+    }
+
+    /**
+     * 🎯 Initialize the UnifiedEvaluationSystem
+     */
+    private void initializeUnifiedEvaluationSystem() {
+        try {
+            unifiedEvaluationSystem = UnifiedEvaluationSystem.getInstance(context);
+            evaluationMigration = new EvaluationSystemMigration(context);
+            Log.d(TAG, "🎯 UnifiedEvaluationSystem initialized successfully!");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize UnifiedEvaluationSystem", e);
+        }
     }
 
     /**
@@ -85,6 +107,27 @@ public class GameRepository {
                 stockfishManager.setSkillLevel(10); // Default skill level
                 stockfishManager.newGame();
                 Log.d(TAG, "Engine initialized successfully! 🎉");
+
+                // 🎯 Initialize unified evaluation system with engine path
+                if (unifiedEvaluationSystem != null) {
+                    boolean unifiedSuccess = unifiedEvaluationSystem.initializeEngine(engineFile.getAbsolutePath());
+                    if (unifiedSuccess) {
+                        Log.d(TAG, "🎯 UnifiedEvaluationSystem engine initialized successfully!");
+                    } else {
+                        Log.e(TAG, "❌ Failed to initialize UnifiedEvaluationSystem engine");
+                    }
+                }
+
+                // Initialize migration helper engine
+                if (evaluationMigration != null) {
+                    boolean migrationSuccess = evaluationMigration.initializeEngine(engineFile.getAbsolutePath());
+                    if (migrationSuccess) {
+                        Log.d(TAG, "🔄 Migration helper engine initialized successfully!");
+                    } else {
+                        Log.e(TAG, "❌ Failed to initialize migration helper engine");
+                    }
+                }
+
             } else {
                 Log.e(TAG, "Failed to initialize Stockfish engine");
             }
@@ -619,32 +662,75 @@ public class GameRepository {
     }
 
     /**
-     * ENHANCED: Thread-safe evaluation with proper sequencing
+     * 🎯 UNIFIED SYSTEM: Thread-safe evaluation using UnifiedEvaluationSystem
+     * This replaces the old fragmented evaluation approach
      */
     public void getCurrentEvaluation(EvaluationCallback callback) {
+        Log.d(TAG, "🎯 UNIFIED: Starting position evaluation...");
+
+        // Use unified evaluation system instead of direct Stockfish access
+        if (unifiedEvaluationSystem != null) {
+            unifiedEvaluationSystem.evaluateCurrentPosition(500, new UnifiedEvaluationSystem.EvaluationCallback() {
+                @Override
+                public void onSuccess(UnifiedEvaluationSystem.EvaluationResult result) {
+                    Log.d(TAG, "✅ UNIFIED: Evaluation completed: " + result.toString());
+                    // Convert to legacy format for compatibility
+                    callback.onEvaluationReceived(result.toStockfishResult());
+                }
+
+                @Override
+                public void onError(String error) {
+                    Log.e(TAG, "❌ UNIFIED: Evaluation failed: " + error);
+                    callback.onEvaluationError(error);
+                }
+            });
+        } else {
+            // Fallback to migration helper if unified system not available
+            Log.w(TAG, "⚠️ FALLBACK: Using migration helper for evaluation");
+            
+            if (evaluationMigration != null) {
+                evaluationMigration.getCurrentEvaluationAsync(cachedFEN, 500, result -> {
+                    if (result != null) {
+                        callback.onEvaluationReceived(result);
+                    } else {
+                        callback.onEvaluationError("Migration evaluation failed");
+                    }
+                });
+            } else {
+                // Final fallback to old system (should rarely happen)
+                Log.e(TAG, "❌ No evaluation system available - using legacy fallback");
+                legacyGetCurrentEvaluation(callback);
+            }
+        }
+    }
+
+    /**
+     * 🔄 LEGACY FALLBACK: Keep old evaluation method as emergency fallback
+     */
+    private void legacyGetCurrentEvaluation(EvaluationCallback callback) {
         // Prevent multiple evaluations from running simultaneously
         if (isEngineProcessing.compareAndSet(false, true)) {
             executorService.execute(() -> {
                 engineLock.lock();
                 try {
-                    Log.d(TAG, "🔍 Starting position evaluation...");
+                    Log.d(TAG, "🔄 LEGACY: Starting fallback evaluation...");
 
                     // Get evaluation from Stockfish (500ms should be enough for quick eval)
                     StockfishManager.EvaluationResult result = stockfishManager.getCurrentEvaluation(500);
 
                     // Return result on main thread
                     mainHandler.post(() -> {
-                        Log.d(TAG, "✅ Evaluation completed: " + result.toString());
+                        Log.d(TAG, "✅ LEGACY: Evaluation completed: " + result.toString());
                         callback.onEvaluationReceived(result);
                     });
 
                 } catch (Exception e) {
-                    Log.e(TAG, "❌ Error getting evaluation", e);
+                    Log.e(TAG, "❌ LEGACY: Error getting evaluation", e);
                     mainHandler.post(() -> callback.onEvaluationError("Failed to get evaluation: " + e.getMessage()));
                 } finally {
                     engineLock.unlock();
                     isEngineProcessing.set(false);
-                    Log.d(TAG, "🔓 Evaluation lock released");
+                    Log.d(TAG, "🔓 LEGACY: Evaluation lock released");
                 }
             });
         } else {

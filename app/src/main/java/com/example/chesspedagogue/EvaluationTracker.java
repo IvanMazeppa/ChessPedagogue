@@ -166,9 +166,10 @@ public class EvaluationTracker {
      * OPTIMIZED: Track evaluation with reduced UI thread impact
      */
     /**
-     * OPTIMIZED: Track evaluation with reduced UI thread impact - LAMBDA FIXED!
+     * 🎯 UNIFIED SYSTEM: Track evaluation using new UnifiedEvaluationSystem
+     * This replaces the fragmented evaluation tracking with single source of truth
      */
-    public EvaluationSwing trackEvaluation(StockfishManager.EvaluationResult evaluation,
+    public EvaluationSwing trackEvaluation(UnifiedEvaluationSystem.EvaluationResult evaluation,
                                            String currentFen, String lastMove) {
 
         if (!isTrackingEnabled) {
@@ -179,16 +180,17 @@ public class EvaluationTracker {
         executorService.execute(() -> {
             moveCount++;
 
-            // Create current snapshot
+            // Create current snapshot from unified system result
             EvaluationSnapshot currentSnapshot = new EvaluationSnapshot(
-                    evaluation.evaluation,
+                    evaluation.evaluation,    // Already in correct UCI perspective
                     evaluation.isMate,
                     evaluation.mateInMoves,
                     moveCount,
                     currentFen
             );
 
-            Log.d(TAG, "📊 Tracking evaluation for move " + moveCount + ": " + currentSnapshot);
+            Log.d(TAG, "📊 UNIFIED: Tracking evaluation for move " + moveCount + ": " + currentSnapshot + 
+                      (evaluation.fromCache ? " [CACHED]" : " [FRESH]"));
 
             EvaluationSwing swing = null;
 
@@ -197,7 +199,7 @@ public class EvaluationTracker {
                 swing = analyzeEvaluationSwing(lastEvaluation, currentSnapshot, lastMove);
 
                 if (swing != null && swing.isSignificant()) {
-                    Log.d(TAG, "🎯 SIGNIFICANT SWING DETECTED: " + swing);
+                    Log.d(TAG, "🎯 UNIFIED: SIGNIFICANT SWING DETECTED: " + swing);
 
                     // LAMBDA FIX: Create final reference for use in inner lambda
                     final EvaluationSwing finalSwing = swing;
@@ -218,7 +220,7 @@ public class EvaluationTracker {
                     // OPTIMIZATION: Notify listener on UI thread but without blocking
                     if (swingListener != null) {
                         Handler mainHandler = new Handler(Looper.getMainLooper());
-                        mainHandler.post(() -> swingListener.onEvaluationSwingDetected(finalSwing)); // FIXED!
+                        mainHandler.post(() -> swingListener.onEvaluationSwingDetected(finalSwing));
                     }
                 }
             }
@@ -234,6 +236,28 @@ public class EvaluationTracker {
         });
 
         return null; // Return immediately to avoid blocking
+    }
+
+    /**
+     * 🔄 COMPATIBILITY: Support legacy StockfishManager.EvaluationResult calls
+     * This allows gradual migration without breaking existing code
+     */
+    public EvaluationSwing trackEvaluation(StockfishManager.EvaluationResult evaluation,
+                                           String currentFen, String lastMove) {
+        Log.d(TAG, "🔄 LEGACY: Converting StockfishManager.EvaluationResult to unified format");
+        
+        // Convert to unified format
+        UnifiedEvaluationSystem.EvaluationResult unifiedResult = 
+            new UnifiedEvaluationSystem.EvaluationResult(
+                evaluation.evaluation,
+                evaluation.isMate,
+                evaluation.mateInMoves,
+                currentFen,
+                false // Assume not from cache for legacy calls
+            );
+        
+        // Use the unified tracking method
+        return trackEvaluation(unifiedResult, currentFen, lastMove);
     }
 
     /**
