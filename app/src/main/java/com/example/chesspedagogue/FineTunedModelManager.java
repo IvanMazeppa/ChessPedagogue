@@ -1524,6 +1524,53 @@ public class FineTunedModelManager {
     }
 
     /**
+     * Check if a specific master has an assistant configured
+     */
+    public boolean hasAssistantForMaster(String master) {
+        if (master == null || master.trim().isEmpty()) {
+            return false;
+        }
+        
+        switch (master.toLowerCase()) {
+            case "tal":
+                return TAL_ASSISTANT_ID != null && !TAL_ASSISTANT_ID.isEmpty();
+            case "fischer":
+                return FISCHER_ASSISTANT_ID != null && !FISCHER_ASSISTANT_ID.isEmpty();
+            case "carlsen":
+                return CARLSEN_ASSISTANT_ID != null && !CARLSEN_ASSISTANT_ID.isEmpty();
+            case "anand":
+                return ANAND_ASSISTANT_ID != null && !ANAND_ASSISTANT_ID.isEmpty();
+            case "alekhine":
+                return ALEKHINE_ASSISTANT_ID != null && !ALEKHINE_ASSISTANT_ID.isEmpty();
+            case "kasparov":
+                return KASPAROV_ASSISTANT_ID != null && !KASPAROV_ASSISTANT_ID.isEmpty();
+            case "capablanca":
+                return CAPABLANCA_ASSISTANT_ID != null && !CAPABLANCA_ASSISTANT_ID.isEmpty();
+            case "nigel_short":
+            case "short":
+                return NIGEL_SHORT_ASSISTANT_ID != null && !NIGEL_SHORT_ASSISTANT_ID.isEmpty();
+            case "lasker":
+                return LASKER_ASSISTANT_ID != null && !LASKER_ASSISTANT_ID.isEmpty();
+            case "morphy":
+                return MORPHY_ASSISTANT_ID != null && !MORPHY_ASSISTANT_ID.isEmpty();
+            case "gukesh":
+            case "dommaraju":
+                return GUKESH_ASSISTANT_ID != null && !GUKESH_ASSISTANT_ID.isEmpty();
+            case "hikaru":
+            case "nakamura":
+                return HIKARU_ASSISTANT_ID != null && !HIKARU_ASSISTANT_ID.isEmpty();
+            case "petrosian":
+                return PETROSIAN_ASSISTANT_ID != null && !PETROSIAN_ASSISTANT_ID.isEmpty();
+            case "nimzowitsch":
+                return NIMZOWITSCH_ASSISTANT_ID != null && !NIMZOWITSCH_ASSISTANT_ID.isEmpty();
+            case "botvinnik":
+                return BOTVINNIK_ASSISTANT_ID != null && !BOTVINNIK_ASSISTANT_ID.isEmpty();
+            default:
+                return false;
+        }
+    }
+
+    /**
      * ENHANCED: Get appropriate assistant ID with fallback - 🆕 UPDATED WITH ANAND!
      */
     public String getAssistantIdForDeepAnalysis(String master) {

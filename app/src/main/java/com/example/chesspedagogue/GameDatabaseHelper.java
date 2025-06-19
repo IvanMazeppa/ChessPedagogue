@@ -1353,6 +1353,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             int yearIndex = cursor.getColumnIndex(COLUMN_YEAR);
             int tournamentIndex = cursor.getColumnIndex(COLUMN_TOURNAMENT);
             int annotationIndex = cursor.getColumnIndex(COLUMN_ANNOTATION);
+            int significanceIndex = cursor.getColumnIndex(COLUMN_SIGNIFICANCE);
             int tagsIndex = cursor.getColumnIndex(COLUMN_TAGS);
             int moveNumberIndex = cursor.getColumnIndex(COLUMN_MOVE_NUMBER);
 
@@ -1364,6 +1365,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 position.year = cursor.getString(yearIndex);
                 position.tournament = cursor.getString(tournamentIndex);
                 position.annotation = cursor.getString(annotationIndex);
+                position.significance = cursor.getString(significanceIndex);
                 position.moveNumber = cursor.getInt(moveNumberIndex);
                 position.tags = parseTagsFromJson(cursor.getString(tagsIndex));
 
@@ -1512,6 +1514,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         public String year;
         public String tournament;
         public String annotation;
+        public String significance;
         public int moveNumber;
         public List<String> tags;
         public double similarity = 0.0; // NEW: Positional similarity score

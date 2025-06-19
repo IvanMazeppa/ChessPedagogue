@@ -48,18 +48,18 @@ public class PersonalityEngine {
     private boolean enablePersonalityPlay = true;
 
     static {
-        MASTER_NAME_CACHE.put("tal", new String[]{"Mikhail Tal", "tal", "Tal"});
-        MASTER_NAME_CACHE.put("fischer", new String[]{"Bobby Fischer", "fischer", "Fischer"});
-        MASTER_NAME_CACHE.put("carlsen", new String[]{"Magnus Carlsen", "carlsen", "Carlsen"});
-        MASTER_NAME_CACHE.put("kasparov", new String[]{"Garry Kasparov", "kasparov", "Kasparov"});
-        MASTER_NAME_CACHE.put("alekhine", new String[]{"Alexander Alekhine", "alekhine", "Alekhine"});
-        MASTER_NAME_CACHE.put("karpov", new String[]{"Anatoly Karpov", "karpov", "Karpov"});
-        MASTER_NAME_CACHE.put("kramnik", new String[]{"Vladimir Kramnik", "kramnik", "Kramnik"});
-        MASTER_NAME_CACHE.put("capablanca", new String[]{"José Raúl Capablanca", "capablanca", "Capablanca"});
-        MASTER_NAME_CACHE.put("lasker", new String[]{"Emanuel Lasker", "lasker", "Lasker"});
-        MASTER_NAME_CACHE.put("morphy", new String[]{"Paul Morphy", "morphy", "Morphy"});
-        MASTER_NAME_CACHE.put("anand", new String[]{"Viswanathan Anand", "anand", "Anand"});
-        MASTER_NAME_CACHE.put("botvinnik", new String[]{"Mikhail Botvinnik", "botvinnik", "Botvinnik"});
+        MASTER_NAME_CACHE.put("tal", new String[]{"tal", "Mikhail Tal", "Tal"});
+        MASTER_NAME_CACHE.put("fischer", new String[]{"fischer", "Bobby Fischer", "Fischer"});
+        MASTER_NAME_CACHE.put("carlsen", new String[]{"carlsen", "Magnus Carlsen", "Carlsen"});
+        MASTER_NAME_CACHE.put("kasparov", new String[]{"kasparov", "Garry Kasparov", "Kasparov"});
+        MASTER_NAME_CACHE.put("alekhine", new String[]{"alekhine", "Alexander Alekhine", "Alekhine"});
+        MASTER_NAME_CACHE.put("karpov", new String[]{"karpov", "Anatoly Karpov", "Karpov"});
+        MASTER_NAME_CACHE.put("kramnik", new String[]{"kramnik", "Vladimir Kramnik", "Kramnik"});
+        MASTER_NAME_CACHE.put("capablanca", new String[]{"capablanca", "José Raúl Capablanca", "Capablanca"});
+        MASTER_NAME_CACHE.put("lasker", new String[]{"lasker", "Emanuel Lasker", "Lasker"});
+        MASTER_NAME_CACHE.put("morphy", new String[]{"morphy", "Paul Morphy", "Morphy"});
+        MASTER_NAME_CACHE.put("anand", new String[]{"anand", "Viswanathan Anand", "Anand"});
+        MASTER_NAME_CACHE.put("botvinnik", new String[]{"botvinnik", "Mikhail Botvinnik", "Botvinnik"});
     }
 
     /**
@@ -211,10 +211,23 @@ public class PersonalityEngine {
 
         executorService.execute(() -> {
             try {
+                // DIAGNOSTIC: Log complete pipeline entry
+                Log.d(TAG, "🔬 === PERSONALITY ENGINE PIPELINE START ===");
+                Log.d(TAG, "🎯 Position: " + currentFen);
+                Log.d(TAG, "🎭 Master: " + currentMaster);
+                Log.d(TAG, "⚖️ Personality Weight: " + personalityWeight);
+                Log.d(TAG, "🎮 Enable Personality Play: " + enablePersonalityPlay);
+                
                 // Step 1: Get top move candidates from Stockfish
                 Log.d(TAG, "🤖 Getting engine candidates for FEN: " + currentFen.substring(0, Math.min(50, currentFen.length())));
                 List<PersonalityMove> engineCandidates = getEngineCandidates(currentFen);
                 Log.d(TAG, "🤖 Got " + engineCandidates.size() + " engine candidates");
+                
+                // DIAGNOSTIC: Log engine candidates
+                for (int i = 0; i < Math.min(3, engineCandidates.size()); i++) {
+                    PersonalityMove candidate = engineCandidates.get(i);
+                    Log.d(TAG, "   🤖 Candidate " + (i+1) + ": " + candidate.move + " (score: " + candidate.engineScore + ")");
+                }
 
                 // Step 2: INSTANT local database lookup - no network delays!
                 Log.d(TAG, "⚡ Starting database lookup for " + currentMaster);
@@ -363,6 +376,25 @@ public class PersonalityEngine {
             }
 
             Log.d(TAG, "✅ FINAL lookup result: Found " + historicalPositions.size() + " similar positions");
+            
+            // DIAGNOSTIC: Analyze what was actually matched
+            if (!historicalPositions.isEmpty()) {
+                Log.d(TAG, "🔍 === DATABASE MATCH ANALYSIS ===");
+                for (int i = 0; i < Math.min(3, historicalPositions.size()); i++) {
+                    GameDatabaseHelper.HistoricalPosition pos = historicalPositions.get(i);
+                    Log.d(TAG, String.format("   📋 Match %d: %s vs %s (%s)", 
+                        i+1, pos.masterName, pos.opponent, pos.year));
+                    Log.d(TAG, String.format("      🏆 Tournament: %s", pos.tournament));
+                    Log.d(TAG, String.format("      ♟️ Move #%d: %s", pos.moveNumber, pos.annotation));
+                    if (pos.similarity > 0) {
+                        Log.d(TAG, String.format("      📊 Similarity: %.3f", pos.similarity));
+                    }
+                }
+                
+                // CRITICAL: Check if these matches make logical sense
+                boolean logicallySound = validateMatchQuality(historicalPositions, currentFen);
+                Log.d(TAG, "🧠 Matches logically sound: " + logicallySound);
+            }
 
             // Rest of your existing logic...
             List<VectorSearchResult> compatibleResults = new ArrayList<>();
@@ -373,6 +405,15 @@ public class PersonalityEngine {
             // Continue with existing logic...
             List<PersonalityMove> scoredMoves = applyPersonalityScoring(engineCandidates, compatibleResults);
             PersonalityMove selectedMove = selectBestPersonalityMove(scoredMoves);
+            
+            // DIAGNOSTIC: Log final move selection reasoning
+            Log.d(TAG, "🎯 === FINAL MOVE SELECTION ===");
+            Log.d(TAG, "🎭 Selected move: " + selectedMove.move);
+            Log.d(TAG, "🤖 Engine score: " + selectedMove.engineScore);
+            Log.d(TAG, "🎨 Personality bonus: " + selectedMove.personalityBonus);
+            Log.d(TAG, "📊 Final score: " + selectedMove.finalScore);
+            Log.d(TAG, "🏆 Historical context: " + selectedMove.historicalContext);
+            
             generateMoveExplanation(selectedMove, compatibleResults, callback);
             
             // NEW: Trigger FEN-driven commentary hooks
@@ -1055,6 +1096,99 @@ public class PersonalityEngine {
         }
     }
     
+    /**
+     * Validate whether database matches make logical sense for the position
+     */
+    private boolean validateMatchQuality(List<GameDatabaseHelper.HistoricalPosition> matches, String currentFen) {
+        if (matches.isEmpty()) {
+            Log.d(TAG, "🔍 No matches to validate");
+            return true;
+        }
+        
+        try {
+            // Extract game context from FEN
+            String[] fenParts = currentFen.split(" ");
+            int moveNumber = Integer.parseInt(fenParts[5]);
+            
+            // Count total pieces for strength estimation
+            String position = fenParts[0];
+            int pieceCount = 0;
+            for (char c : position.toCharArray()) {
+                if (Character.isLetter(c)) {
+                    pieceCount++;
+                }
+            }
+            
+            // Estimate playing strength based on position complexity
+            int estimatedElo = estimatePositionStrength(pieceCount, moveNumber);
+            
+            // Check if matches are from appropriate strength games
+            boolean hasHighQualityMatches = false;
+            int masterLevelMatches = 0;
+            
+            for (GameDatabaseHelper.HistoricalPosition match : matches) {
+                // Check tournament quality indicators
+                String tournament = match.tournament != null ? match.tournament.toLowerCase() : "";
+                String significance = match.significance != null ? match.significance.toLowerCase() : "";
+                
+                boolean isHighQuality = tournament.contains("world") || 
+                                      tournament.contains("championship") ||
+                                      tournament.contains("olympiad") ||
+                                      significance.contains("brilliant") ||
+                                      significance.contains("masterpiece");
+                
+                if (isHighQuality) {
+                    hasHighQualityMatches = true;
+                    masterLevelMatches++;
+                }
+            }
+            
+            // Log analysis results
+            Log.d(TAG, String.format("🧠 Match Quality Analysis:"));
+            Log.d(TAG, String.format("   📊 Position estimated ELO: %d", estimatedElo));
+            Log.d(TAG, String.format("   🏆 High-quality matches: %d/%d", masterLevelMatches, matches.size()));
+            Log.d(TAG, String.format("   ✨ Has master-level games: %s", hasHighQualityMatches));
+            
+            // Warn if too many matches for low-strength positions
+            if (estimatedElo < 2200 && matches.size() > 10) {
+                Log.w(TAG, String.format("⚠️ QUALITY WARNING: %d ELO position has %d super-GM matches (suspicious)", 
+                      estimatedElo, matches.size()));
+                return false;
+            }
+            
+            // Validate we have at least some quality matches for complex positions
+            if (estimatedElo > 2500 && !hasHighQualityMatches) {
+                Log.w(TAG, "⚠️ QUALITY WARNING: High-level position has no master-level game matches");
+                return false;
+            }
+            
+            Log.d(TAG, "✅ Match quality validation passed");
+            return true;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error validating match quality", e);
+            return false;
+        }
+    }
+    
+    /**
+     * Estimate the playing strength of a position based on complexity
+     */
+    private int estimatePositionStrength(int pieceCount, int moveNumber) {
+        // Base estimation algorithm
+        int baseElo = 1500;
+        
+        // More pieces = more complex tactical possibilities
+        if (pieceCount > 28) baseElo += 300; // Opening complexity
+        else if (pieceCount < 15) baseElo += 200; // Endgame precision required
+        
+        // Later moves in game suggest deeper preparation
+        if (moveNumber > 30) baseElo += 400; // Deep middlegame/endgame
+        else if (moveNumber > 15) baseElo += 200; // Developed middlegame
+        
+        return Math.min(baseElo, 2800); // Cap at super-GM level
+    }
+
     /**
      * NEW: Trigger FEN-driven commentary hooks
      */

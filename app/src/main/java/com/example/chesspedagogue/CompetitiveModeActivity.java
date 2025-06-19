@@ -281,6 +281,16 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             Log.d(TAG, "🔍 Running personality engine database diagnostic...");
             PersonalityEngineDiagnostic.diagnoseMasterDatabase(this, selectedMaster);
             
+            // NEW: Run comprehensive system diagnostic
+            Log.d(TAG, "🔬 Running comprehensive PersonalityEngine system diagnostic...");
+            String startingFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+            PersonalityEngineSystemDiagnostic.DiagnosticResult systemDiag = 
+                PersonalityEngineSystemDiagnostic.runFullSystemDiagnostic(this, startingFen, selectedMaster, engineElo);
+            Log.d(TAG, "📊 System diagnostic result: " + systemDiag.toString());
+            
+            // Quick name diagnostic
+            PersonalityEngineSystemDiagnostic.runQuickNameDiagnostic(this);
+            
             return true;
             
         } catch (Exception e) {
@@ -1259,8 +1269,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         Log.d(TAG, "🏁 Starting competitive game vs " + selectedMaster);
         
         try {
-            // Start the game
-            gameViewModel.newGame();
+            // Start the game with proper ELO configuration
+            gameViewModel.newGameWithConfiguration(playerColor, skillLevel, engineElo);
             
             // 🧠 PHASE 3: Start adaptive conversation monitoring
             if (adaptiveManager != null) {
