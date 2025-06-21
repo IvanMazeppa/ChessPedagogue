@@ -116,6 +116,9 @@ public class SpectatorGameViewModel extends AndroidViewModel {
     public void startSpectatorGame(String whitePlayer, String blackPlayer) {
         Log.d(TAG, "🎭 Starting emotional spectator game: " + whitePlayer + " vs " + blackPlayer);
 
+        // 🔄 CRITICAL FIX: Reset sign fix counter for new spectator game
+        SignAgnosticEvaluationFix.resetForNewGame();
+
         // Reset emotional state for new game
         lastEvaluationForEmotions = null;
 
@@ -411,8 +414,21 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                 mainHandler.post(() -> {
                     if (!result.isMate) {
                         float previousEval = (lastEvaluationForEmotions != null) ? lastEvaluationForEmotions : 0.0f;
-                        currentEvaluation.setValue(result.evaluation);
-                        Log.d(TAG, "📊 Evaluation updated: " + result.evaluation);
+                        
+                        // 🎯 CRITICAL FIX: Apply alternating sign fix for spectator mode
+                        String currentFen = currentFEN.getValue();
+                        List<String> history = moveHistory.getValue();
+                        String lastMove = (history != null && !history.isEmpty()) ? 
+                            history.get(history.size() - 1) : null;
+                            
+                        float correctedEvaluation = SignAgnosticEvaluationFix.correctEvaluationSign(
+                            result.evaluation, currentFen, lastMove);
+                        
+                        Log.d(TAG, String.format("🎯 SPECTATOR SIGN FIX: %.2f → %.2f", 
+                              result.evaluation, correctedEvaluation));
+                        
+                        currentEvaluation.setValue(correctedEvaluation);
+                        Log.d(TAG, "📊 Evaluation updated: " + correctedEvaluation);
                         
                         // 🚀 NEW: Update emotional momentum system
                         try {
@@ -435,18 +451,19 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                         }
                         
                         // Update last evaluation for next comparison
-                        lastEvaluationForEmotions = result.evaluation;
+                        lastEvaluationForEmotions = correctedEvaluation;
                         
                         // CRITICAL FIX: Feed evaluation data to EvaluationTracker for emotional intelligence
                         try {
                             EvaluationTracker evaluationTracker = EvaluationTracker.getInstance(getApplication());
-                            String currentFen = currentFEN.getValue();
-                            List<String> history = moveHistory.getValue();
-                            String lastMove = (history != null && !history.isEmpty()) ? 
-                                history.get(history.size() - 1) : null;
                             
-                            Log.d(TAG, "🎭 FEEDING EVALUATION TO TRACKER: eval=" + result.evaluation + ", move=" + lastMove);
-                            evaluationTracker.trackEvaluation(result, currentFen, lastMove);
+                            // 🎯 CRITICAL: Create corrected result to pass to tracker
+                            StockfishManager.EvaluationResult correctedResult = 
+                                new StockfishManager.EvaluationResult(
+                                    correctedEvaluation, result.isMate, result.mateInMoves);
+                            
+                            Log.d(TAG, "🎭 FEEDING CORRECTED EVALUATION TO TRACKER: eval=" + correctedEvaluation + ", move=" + lastMove);
+                            evaluationTracker.trackEvaluation(correctedResult, currentFen, lastMove);
                             Log.d(TAG, "✅ EvaluationTracker.trackEvaluation() called successfully");
                         } catch (Exception e) {
                             Log.e(TAG, "❌ Error feeding evaluation to tracker", e);

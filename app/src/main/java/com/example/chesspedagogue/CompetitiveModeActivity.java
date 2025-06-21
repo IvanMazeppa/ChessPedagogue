@@ -1054,6 +1054,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                                 Log.d(TAG, "📋 New FEN after AI move: " + newFEN);
                             }
                             
+                            // 🔄 CRITICAL FIX: Request evaluation after AI move
+                            // This was missing and causing competitive mode evaluation issues
+                            gameViewModel.requestPositionEvaluation();
+                            Log.d(TAG, "🎯 Evaluation requested after AI move: " + aiMove);
+                            
                             // Hide thinking indicator
                             if (thinkingProgressBar != null) {
                                 thinkingProgressBar.setVisibility(View.GONE);

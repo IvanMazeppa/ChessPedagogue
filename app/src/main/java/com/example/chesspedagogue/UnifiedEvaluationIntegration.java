@@ -80,7 +80,7 @@ public class UnifiedEvaluationIntegration {
      * Quick evaluation for UI responsiveness
      */
     public void quickEvaluation(String fen) {
-        evaluateWithUIUpdates(fen, null, 500);
+        evaluateWithUIUpdates(fen, null, 2000);
     }
     
     /**

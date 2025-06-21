@@ -105,16 +105,21 @@ public class EvaluationBarView extends View {
             float ratio = (clampedEval + 5f) / 10f; // Maps -5..+5 to 0..1
             ratio = Math.max(0.02f, Math.min(0.98f, ratio)); // Ensure visibility
 
-            // FIXED: Remove incorrect player perspective inversion
-            // The evaluation should always show the same thing regardless of player color:
-            // - White advantage = white section larger (top)
-            // - Black advantage = black section larger (bottom)
-            // The previous logic was causing the evaluation to appear inverted
-
-            // Calculate split point (ratio determines white section size)
-            // Higher ratio = more white at top, lower ratio = more black at bottom
+            // 🔄 PERSPECTIVE FIX: Adjust display based on player orientation for better UX
+            // When playing as Black, evaluation bar should match board perspective:
+            // - Player's advantage should appear near their pieces
+            // - Black player expects to see their advantage at bottom (where their pieces are)
+            
             float whiteSectionHeight = ratio * barRect.height();
-            float splitPoint = barRect.top + whiteSectionHeight;
+            float splitPoint;
+            
+            if (isPlayerWhite) {
+                // White player: Normal display (white advantage at top)
+                splitPoint = barRect.top + whiteSectionHeight;
+            } else {
+                // Black player: Flip display so player's advantage appears near their pieces
+                splitPoint = barRect.top + (barRect.height() - whiteSectionHeight);
+            }
 
             // Draw white section (top) - size determined by ratio
             if (whiteSectionHeight > 1) {
@@ -211,14 +216,16 @@ public class EvaluationBarView extends View {
     }
 
     /**
-     * Set player color (kept for API compatibility)
-     * NOTE: Player color no longer affects display - evaluation bar always shows
-     * white advantage at top, black advantage at bottom for consistency
+     * 🔄 PERSPECTIVE FIX: Set player color to adjust evaluation bar orientation
+     * This ensures the evaluation bar matches the board perspective for better UX
      */
     public void setPlayerColor(boolean isWhite) {
-        Log.d(TAG, "🎨 Player color set: " + (isWhite ? "White" : "Black") + " (display not affected)");
-        this.isPlayerWhite = isWhite;
-        // No need to invalidate since display logic no longer uses player color
+        Log.d(TAG, "🎨 Player color set: " + (isWhite ? "White" : "Black") + " - adjusting perspective");
+        
+        if (this.isPlayerWhite != isWhite) {
+            this.isPlayerWhite = isWhite;
+            invalidate(); // Redraw with new perspective
+        }
     }
 
     /**

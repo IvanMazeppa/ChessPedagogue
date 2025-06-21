@@ -245,13 +245,31 @@ public class StockfishManager {
      */
     public EvaluationResult getCurrentEvaluation(int thinkTimeMs) {
         try {
-            Log.d(TAG, "Getting evaluation for current position...");
+            Log.d(TAG, "🔧 FIXED: Getting evaluation for current position with proper synchronization...");
 
-            // Clear output buffer
+            // 🚨 CRITICAL FIX 1: Verify engine is ready before starting evaluation
+            if (!waitForReady(500)) {
+                Log.e(TAG, "❌ Engine not ready for evaluation");
+                return new EvaluationResult(0.0f, false, 0);
+            }
+
+            // 🚨 CRITICAL FIX 2: Get and log the current position to verify we're evaluating the right one
+            String currentPosition = getCurrentFEN();
+            Log.d(TAG, "🎯 POSITION VERIFICATION: Evaluating position: " + currentPosition);
+
+            // 🚨 CRITICAL FIX 3: Clear output buffer AFTER position verification
             outputBuffer.clear();
+
+            // 🚨 CRITICAL FIX 4: Add a small delay to ensure position is fully processed
+            try {
+                Thread.sleep(100); // 100ms should be enough for position processing
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
             // Send evaluation command
             sendCommand("go depth 15 movetime " + thinkTimeMs);
+            Log.d(TAG, "📤 Evaluation command sent, waiting for analysis...");
 
             // Wait for analysis to complete
             long endTime = System.currentTimeMillis() + thinkTimeMs + 1000; // Add buffer time
@@ -261,6 +279,7 @@ public class StockfishManager {
                 for (String line : outputBuffer) {
                     if (line.startsWith("bestmove")) {
                         analysisComplete = true;
+                        Log.d(TAG, "✅ Analysis completed: " + line);
                         break;
                     }
                 }
@@ -275,8 +294,20 @@ public class StockfishManager {
                 }
             }
 
+            // 🚨 CRITICAL FIX 5: Verify we got a response
+            if (!analysisComplete) {
+                Log.e(TAG, "❌ Evaluation timeout - analysis did not complete");
+                return new EvaluationResult(0.0f, false, 0);
+            }
+
             // Parse the evaluation from the output
-            return parseEvaluationFromOutput();
+            EvaluationResult result = parseEvaluationFromOutput();
+            
+            // 🚨 CRITICAL FIX 6: Log the final result with position for debugging
+            Log.d(TAG, String.format("✅ EVALUATION RESULT: %.2f pawns for position %s", 
+                result.evaluation, currentPosition.substring(0, Math.min(30, currentPosition.length()))));
+            
+            return result;
 
         } catch (IOException e) {
             Log.e(TAG, "Error getting evaluation", e);
@@ -292,10 +323,16 @@ public class StockfishManager {
         boolean isMate = false;
         int mateInMoves = 0;
         int bestDepth = 0;
+        int evaluationLinesFound = 0;
+
+        Log.d(TAG, "🔍 PARSING: Analyzing " + outputBuffer.size() + " output lines for evaluation...");
 
         // Look through output for the best (deepest) evaluation
         for (String line : outputBuffer) {
             if (line.contains("info depth") && line.contains("score")) {
+                evaluationLinesFound++;
+                Log.d(TAG, "🔍 EVAL LINE: " + line);
+                
                 try {
                     // Parse depth
                     int depth = extractIntValue(line, "depth");
@@ -309,19 +346,33 @@ public class StockfishManager {
                             int centipawns = extractIntValue(line, "score cp");
                             bestScore = centipawns / 100.0f; // Convert to pawns
                             isMate = false;
-                            Log.d(TAG, "Found evaluation at depth " + depth + ": " + bestScore + " pawns");
+                            Log.d(TAG, "✅ PARSED CP: depth=" + depth + ", centipawns=" + centipawns + ", score=" + bestScore);
 
                         } else if (line.contains("score mate")) {
                             // Mate in N moves
                             mateInMoves = extractIntValue(line, "score mate");
                             isMate = true;
                             bestScore = 0.0f;
-                            Log.d(TAG, "Found mate at depth " + depth + ": M" + mateInMoves);
+                            Log.d(TAG, "✅ PARSED MATE: depth=" + depth + ", mate_in=" + mateInMoves);
                         }
+                    } else {
+                        Log.d(TAG, "⏩ Skipping lower depth: " + depth + " < " + bestDepth);
                     }
                 } catch (Exception e) {
-                    Log.w(TAG, "Error parsing evaluation line: " + line, e);
+                    Log.w(TAG, "❌ Error parsing evaluation line: " + line, e);
                 }
+            }
+        }
+
+        Log.d(TAG, String.format("📊 PARSE SUMMARY: Found %d evaluation lines, best depth %d, final score %.2f", 
+            evaluationLinesFound, bestDepth, bestScore));
+
+        // 🚨 CRITICAL: Warn if no evaluation lines were found - this indicates a problem
+        if (evaluationLinesFound == 0) {
+            Log.e(TAG, "❌ CRITICAL: No evaluation lines found in Stockfish output!");
+            Log.e(TAG, "❌ OUTPUT BUFFER CONTENTS:");
+            for (int i = 0; i < Math.min(outputBuffer.size(), 10); i++) {
+                Log.e(TAG, "    [" + i + "] " + outputBuffer.get(i));
             }
         }
 
@@ -386,8 +437,28 @@ public class StockfishManager {
      */
     public boolean setPosition(String fen) {
         try {
+            Log.d(TAG, "🎯 POSITION: Setting position to: " + fen);
             sendCommand("position fen " + fen);
-            return waitForReady(1000);
+            
+            // 🚨 CRITICAL FIX: Wait longer and verify the position was set correctly
+            boolean ready = waitForReady(2000); // Increased timeout
+            
+            if (ready) {
+                // Verify the position was actually set by getting it back
+                String verifyFEN = getCurrentFEN();
+                if (verifyFEN != null && verifyFEN.split(" ")[0].equals(fen.split(" ")[0])) {
+                    Log.d(TAG, "✅ POSITION: Successfully set and verified");
+                    return true;
+                } else {
+                    Log.e(TAG, "❌ POSITION: Set but verification failed");
+                    Log.e(TAG, "    Expected: " + fen);
+                    Log.e(TAG, "    Got:      " + verifyFEN);
+                    return false;
+                }
+            } else {
+                Log.e(TAG, "❌ POSITION: Engine not ready after setting position");
+                return false;
+            }
         } catch (IOException e) {
             Log.e(TAG, "Error setting position", e);
             return false;
@@ -423,28 +494,49 @@ public class StockfishManager {
         }
     }
 
-    // In StockfishManager.java
+    // 🚨 CRITICAL FIX: Enhanced single move application with proper verification
     public boolean makeSingleMove(String move) {
         try {
+            Log.d(TAG, "🎯 MOVE: Applying single move: " + move);
+            
             // First get the current FEN
             String currentPosition = getCurrentFEN();
+            Log.d(TAG, "🎯 MOVE: From position: " + currentPosition);
 
             // Apply just this one move from the current position
             String command = "position fen " + currentPosition + " moves " + move;
             sendCommand(command);
 
-            // Wait for engine to process
-            boolean success = waitForReady(100);
+            // 🚨 CRITICAL FIX: Wait longer for engine to process the move
+            boolean success = waitForReady(1000); // Increased from 100ms to 1000ms
 
-            // If successful, update the cached FEN
             if (success) {
-                currentFEN = getCurrentFEN();
-                Log.d(TAG, "Move applied successfully. New position: " + currentFEN);
+                // 🚨 CRITICAL FIX: Get and verify the new position
+                String newPosition = getCurrentFEN();
+                
+                if (newPosition != null && !newPosition.equals(currentPosition)) {
+                    currentFEN = newPosition;
+                    Log.d(TAG, "✅ MOVE: Successfully applied. New position: " + newPosition);
+                    
+                    // 🚨 ADDITIONAL FIX: Add a small delay to ensure the position is fully processed
+                    try {
+                        Thread.sleep(50); // 50ms buffer
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    
+                    return true;
+                } else {
+                    Log.e(TAG, "❌ MOVE: Position didn't change after move application");
+                    Log.e(TAG, "    Move: " + move);
+                    Log.e(TAG, "    Before: " + currentPosition);
+                    Log.e(TAG, "    After:  " + newPosition);
+                    return false;
+                }
             } else {
-                Log.d(TAG, "Failed to apply move: " + move);
+                Log.e(TAG, "❌ MOVE: Engine not ready after move: " + move);
+                return false;
             }
-
-            return success;
         } catch (IOException e) {
             Log.e(TAG, "Error making move", e);
             return false;
@@ -1056,6 +1148,48 @@ public class StockfishManager {
         } catch (Exception e) {
             Log.e(TAG, "Error getting current FEN", e);
             return currentFEN;
+        }
+    }
+
+    /**
+     * 🚨 DIAGNOSTIC METHOD: Test evaluation bug with specific positions
+     * This method can be called to reproduce and debug the evaluation bug
+     */
+    public void debugEvaluationBug() {
+        try {
+            Log.d(TAG, "🔍 DEBUGGING: Starting evaluation bug reproduction test...");
+            
+            // Test Case 1: Position after d1g4 (queen in danger)
+            String dangerousQueenPosition = "rnbqkb1r/ppp2ppp/3p1n2/4p3/2PPP1Q1/8/PP3PPP/RNB1KBNR b KQkq - 1 4";
+            
+            Log.d(TAG, "🔍 TEST 1: Setting dangerous queen position...");
+            setPosition(dangerousQueenPosition);
+            
+            EvaluationResult result1 = getCurrentEvaluation(1000);
+            Log.d(TAG, String.format("🔍 TEST 1 RESULT: %.2f (should be negative since Black can capture queen)", result1.evaluation));
+            
+            // Test Case 2: Position after c1h6 (bishop in danger)  
+            String dangerousBishopPosition = "rnbqkb1r/ppp2ppp/3p3B/4p3/2PPP1n1/8/PP3PPP/RN2KBNR b KQkq - 1 5";
+            
+            Log.d(TAG, "🔍 TEST 2: Setting dangerous bishop position...");
+            setPosition(dangerousBishopPosition);
+            
+            EvaluationResult result2 = getCurrentEvaluation(1000);
+            Log.d(TAG, String.format("🔍 TEST 2 RESULT: %.2f (should be negative since Black can capture bishop)", result2.evaluation));
+            
+            // Test Case 3: Position after Black captures the queen
+            String afterQueenCapture = "rnbqkb1r/ppp2ppp/3p1n2/4p3/2PPP1q1/8/PP3PPP/RNB1KBNR w KQkq - 0 5";
+            
+            Log.d(TAG, "🔍 TEST 3: Setting position after queen capture...");
+            setPosition(afterQueenCapture);
+            
+            EvaluationResult result3 = getCurrentEvaluation(1000);
+            Log.d(TAG, String.format("🔍 TEST 3 RESULT: %.2f (should be very negative for White)", result3.evaluation));
+            
+            Log.d(TAG, "🔍 DEBUGGING: Bug reproduction test completed!");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "🔍 ERROR in debugging test", e);
         }
     }
 

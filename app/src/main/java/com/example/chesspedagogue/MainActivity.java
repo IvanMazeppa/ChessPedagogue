@@ -47,7 +47,8 @@ import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceCommandListener {
+public class
+MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceCommandListener {
     private static final String TAG = "MainActivity";
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1001;
     private static final int REQUEST_CHESS_SET_SELECTION = 1002;

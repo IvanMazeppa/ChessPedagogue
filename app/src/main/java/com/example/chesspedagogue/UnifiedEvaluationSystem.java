@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -44,6 +45,23 @@ public class UnifiedEvaluationSystem {
     private final AtomicReference<String> currentPosition;
     private final ConcurrentHashMap<String, EvaluationResult> evaluationCache;
     private final AtomicBoolean isEvaluating;
+    
+    // 🚀 OPTIMIZED: Evaluation request queue to prevent dropped requests
+    private final LinkedBlockingQueue<EvaluationRequest> evaluationQueue;
+    
+    private static class EvaluationRequest {
+        final String fen;
+        final int thinkTimeMs;
+        final EvaluationCallback callback;
+        final long timestamp;
+        
+        EvaluationRequest(String fen, int thinkTimeMs, EvaluationCallback callback) {
+            this.fen = fen;
+            this.thinkTimeMs = thinkTimeMs;
+            this.callback = callback;
+            this.timestamp = System.currentTimeMillis();
+        }
+    }
     
     // Evaluation listeners for real-time updates
     public interface EvaluationListener {
@@ -115,8 +133,133 @@ public class UnifiedEvaluationSystem {
         this.currentPosition = new AtomicReference<>("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
         this.evaluationCache = new ConcurrentHashMap<>();
         this.isEvaluating = new AtomicBoolean(false);
+        this.evaluationQueue = new LinkedBlockingQueue<>();
+        
+        // Start queue processor
+        startQueueProcessor();
+        
+        // 🔧 CRITICAL FIX: Apply race condition fix to prevent impossible evaluation swings
+        // DISABLED: Causing infinite loop - will implement simpler fix
+        // try {
+        //     EvaluationRaceConditionFix.applyFix(context);
+        //     Log.d(TAG, "✅ Race condition fix applied - should eliminate +5.46→-5.69→+7.90 swings");
+        // } catch (Exception e) {
+        //     Log.w(TAG, "⚠️ Could not apply race condition fix", e);
+        // }
         
         Log.d(TAG, "🎯 UnifiedEvaluationSystem initialized - single source of truth ready");
+    }
+    
+    /**
+     * 🚀 OPTIMIZED: Queue processor to handle evaluation requests efficiently
+     */
+    private void startQueueProcessor() {
+        evaluationExecutor.execute(() -> {
+            while (!Thread.currentThread().isInterrupted()) {
+                try {
+                    EvaluationRequest request = evaluationQueue.take(); // Blocks until request available
+                    
+                    // Skip stale requests (older than 5 seconds)
+                    if (System.currentTimeMillis() - request.timestamp > 5000) {
+                        Log.d(TAG, "⏭️ Skipping stale evaluation request");
+                        continue;
+                    }
+                    
+                    processEvaluationRequest(request);
+                    
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                } catch (Exception e) {
+                    Log.e(TAG, "❌ Error in queue processor", e);
+                }
+            }
+        });
+    }
+    
+    /**
+     * 🚀 OPTIMIZED: Process individual evaluation request
+     */
+    private void processEvaluationRequest(EvaluationRequest request) {
+        try {
+            String fen = request.fen;
+            int thinkTimeMs = request.thinkTimeMs;
+            EvaluationCallback callback = request.callback;
+            
+            Log.d(TAG, String.format("🧠 PROCESSING EVAL: %s (think: %dms)", 
+                  fen.substring(0, Math.min(50, fen.length())), thinkTimeMs));
+            
+            // 🔍 DETAILED DIAGNOSTIC: Log full position info
+            Log.d(TAG, String.format("🔍 FULL FEN: %s", fen));
+            Log.d(TAG, String.format("🔍 CURRENT CACHED POS: %s", currentPosition.get()));
+            
+            // Set position if it's different from current
+            if (!fen.equals(currentPosition.get())) {
+                Log.d(TAG, "🔄 SETTING NEW POSITION IN STOCKFISH");
+                stockfishManager.setPosition(fen);
+                currentPosition.set(fen);
+                Log.d(TAG, "✅ POSITION SET COMPLETED");
+            } else {
+                Log.d(TAG, "💾 POSITION UNCHANGED - Using cached position");
+            }
+            
+            // 🔧 TEMPORARY: Bypass bugfix to test raw Stockfish evaluation
+            Log.d(TAG, String.format("⏱️ STARTING STOCKFISH EVAL: %d ms requested", thinkTimeMs));
+            long startTime = System.currentTimeMillis();
+            
+            StockfishManager.EvaluationResult stockfishResult = 
+                stockfishManager.getCurrentEvaluation(thinkTimeMs);
+                
+            long actualTime = System.currentTimeMillis() - startTime;
+            Log.d(TAG, String.format("⏱️ STOCKFISH EVAL COMPLETED: %d ms actual (%.2f requested)", 
+                  actualTime, thinkTimeMs / 1000.0f));
+            
+            if (stockfishResult != null) {
+                float rawEvaluation = stockfishResult.evaluation;
+                Log.d(TAG, String.format("🔍 RAW STOCKFISH RESULT: %.2f (mate=%s, moves=%d)", 
+                      rawEvaluation, stockfishResult.isMate, stockfishResult.mateInMoves));
+                
+                String lastMove = extractLastMoveFromContext(fen);
+                
+                // 🚀 OPTIMIZED: Apply sign-agnostic correction
+                float correctedEvaluation = SignAgnosticEvaluationFix.correctEvaluationSign(rawEvaluation, fen, lastMove);
+                
+                EvaluationResult unifiedResult = new EvaluationResult(
+                    correctedEvaluation,
+                    stockfishResult.isMate,
+                    stockfishResult.mateInMoves,
+                    fen,
+                    false
+                );
+                
+                // 🚀 OPTIMIZED CACHE: Store efficiently
+                String primaryCacheKey = fen;
+                String specificCacheKey = fen + "_" + thinkTimeMs;
+                evaluationCache.put(specificCacheKey, unifiedResult);
+                if (thinkTimeMs < 2000) {
+                    evaluationCache.put(primaryCacheKey, unifiedResult);
+                }
+                currentEvaluation.set(unifiedResult);
+                
+                Log.d(TAG, String.format("✅ EVAL COMPLETE: %s", unifiedResult));
+                
+                // Notify callback on main thread
+                mainHandler.post(() -> {
+                    callback.onSuccess(unifiedResult);
+                    if (evaluationListener != null) {
+                        evaluationListener.onEvaluationUpdated(unifiedResult, fen);
+                    }
+                });
+                
+            } else {
+                Log.e(TAG, "❌ Stockfish returned null evaluation");
+                mainHandler.post(() -> callback.onError("Stockfish evaluation failed"));
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error processing evaluation request", e);
+            mainHandler.post(() -> request.callback.onError("Evaluation error: " + e.getMessage()));
+        }
     }
     
     public static UnifiedEvaluationSystem getInstance(Context context) {
@@ -191,76 +334,35 @@ public class UnifiedEvaluationSystem {
             return;
         }
         
-        // Check cache first for performance
-        String cacheKey = fen + "_" + thinkTimeMs;
-        EvaluationResult cachedResult = evaluationCache.get(cacheKey);
-        if (cachedResult != null && (System.currentTimeMillis() - cachedResult.timestamp) < 30000) {
+        // 🚀 OPTIMIZED CACHE: Check position-based cache first, then think-time specific
+        String primaryCacheKey = fen; // Position-only key for fast lookups
+        String specificCacheKey = fen + "_" + thinkTimeMs; // Think-time specific key
+        
+        EvaluationResult cachedResult = evaluationCache.get(specificCacheKey);
+        if (cachedResult == null) {
+            // Try position-only cache if think time is reasonable (< 2000ms)
+            if (thinkTimeMs < 2000) {
+                cachedResult = evaluationCache.get(primaryCacheKey);
+            }
+        }
+        
+        // 🔧 TEMPORARY: Disable cache to force fresh evaluations for testing
+        if (cachedResult != null && false) { // Disabled cache
             Log.d(TAG, "💾 Cache hit for position: " + cachedResult);
             callback.onSuccess(cachedResult);
             return;
+        } else if (cachedResult != null) {
+            Log.d(TAG, "🔍 CACHE DISABLED: Found cached result but forcing fresh evaluation");
         }
         
-        // Prevent concurrent evaluations of same position
-        if (!isEvaluating.compareAndSet(false, true)) {
-            Log.d(TAG, "⏳ Evaluation already in progress, queuing callback");
-            // Could implement a queue here if needed
-            return;
+        // 🚀 OPTIMIZED: Queue evaluation requests instead of blocking
+        EvaluationRequest request = new EvaluationRequest(fen, thinkTimeMs, callback);
+        if (!evaluationQueue.offer(request)) {
+            Log.w(TAG, "⚠️ Evaluation queue full, dropping request");
+            callback.onError("Evaluation queue full");
         }
         
-        evaluationExecutor.execute(() -> {
-            try {
-                Log.d(TAG, "🧠 Evaluating position: " + fen + " (think time: " + thinkTimeMs + "ms)");
-                
-                // Set position if it's different from current
-                if (!fen.equals(currentPosition.get())) {
-                    stockfishManager.setPosition(fen);
-                    currentPosition.set(fen);
-                }
-                
-                // Get evaluation from Stockfish
-                StockfishManager.EvaluationResult stockfishResult = 
-                    stockfishManager.getCurrentEvaluation(thinkTimeMs);
-                
-                if (stockfishResult != null) {
-                    // 🔧 CRITICAL: Maintain UCI standard perspective
-                    // Stockfish returns evaluations from White's perspective
-                    // Positive = White advantage, Negative = Black advantage
-                    // NO PERSPECTIVE FLIPPING - this is the source of truth
-                    
-                    EvaluationResult unifiedResult = new EvaluationResult(
-                        stockfishResult.evaluation,  // Keep raw Stockfish evaluation
-                        stockfishResult.isMate,
-                        stockfishResult.mateInMoves,
-                        fen,
-                        false // Fresh evaluation
-                    );
-                    
-                    // Cache the result
-                    evaluationCache.put(cacheKey, unifiedResult);
-                    currentEvaluation.set(unifiedResult);
-                    
-                    Log.d(TAG, "✅ Evaluation complete: " + unifiedResult);
-                    
-                    // Notify listener on main thread
-                    mainHandler.post(() -> {
-                        callback.onSuccess(unifiedResult);
-                        if (evaluationListener != null) {
-                            evaluationListener.onEvaluationUpdated(unifiedResult, fen);
-                        }
-                    });
-                    
-                } else {
-                    Log.e(TAG, "❌ Stockfish returned null evaluation");
-                    mainHandler.post(() -> callback.onError("Stockfish evaluation failed"));
-                }
-                
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error during evaluation", e);
-                mainHandler.post(() -> callback.onError("Evaluation error: " + e.getMessage()));
-            } finally {
-                isEvaluating.set(false);
-            }
-        });
+        // Queue processor handles the actual evaluation work now
     }
     
     /**
@@ -408,5 +510,30 @@ public class UnifiedEvaluationSystem {
                 evaluationCache.size(),
                 currentEvaluation.get() != null ? "available" : "null",
                 isEvaluating.get() ? "yes" : "no");
+    }
+    
+    // Track last move for sign-agnostic evaluation
+    private String lastMoveForEvaluation = null;
+    
+    /**
+     * 🔍 HELPER: Extract last move context for sign-agnostic evaluation
+     */
+    private String extractLastMoveFromContext(String fen) {
+        try {
+            // For now, return the tracked last move
+            // This could be enhanced to parse from FEN or game history
+            return lastMoveForEvaluation;
+        } catch (Exception e) {
+            Log.e(TAG, "Error extracting move context", e);
+            return null;
+        }
+    }
+    
+    /**
+     * 🎯 UPDATE LAST MOVE: Call this when a move is made to help with sign determination
+     */
+    public void updateLastMove(String move) {
+        this.lastMoveForEvaluation = move;
+        Log.d(TAG, "🔄 Last move updated for evaluation: " + move);
     }
 }

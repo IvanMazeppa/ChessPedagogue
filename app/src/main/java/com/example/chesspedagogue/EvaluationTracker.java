@@ -176,6 +176,15 @@ public class EvaluationTracker {
             return null;
         }
 
+        // 🚀 OPTIMIZATION: Skip processing for cached results that haven't changed significantly
+        if (evaluation.fromCache && lastEvaluation != null) {
+            float evalDiff = Math.abs(evaluation.evaluation - lastEvaluation.evaluation);
+            if (evalDiff < 0.1f) { // Less than 0.1 pawn difference
+                Log.v(TAG, "⏭️ Skipping tracking - cached result with minimal change");
+                return null;
+            }
+        }
+
         // OPTIMIZATION: Do heavy lifting off UI thread
         executorService.execute(() -> {
             moveCount++;
@@ -189,8 +198,11 @@ public class EvaluationTracker {
                     currentFen
             );
 
-            Log.d(TAG, "📊 UNIFIED: Tracking evaluation for move " + moveCount + ": " + currentSnapshot + 
-                      (evaluation.fromCache ? " [CACHED]" : " [FRESH]"));
+            // 🚀 OPTIMIZATION: Reduced logging for normal tracking
+            if (Log.isLoggable(TAG, Log.VERBOSE)) {
+                Log.v(TAG, "📊 UNIFIED: Tracking evaluation for move " + moveCount + ": " + currentSnapshot +
+                        (evaluation.fromCache ? " [CACHED]" : " [FRESH]"));
+            }
 
             EvaluationSwing swing = null;
 
@@ -204,8 +216,10 @@ public class EvaluationTracker {
                     // LAMBDA FIX: Create final reference for use in inner lambda
                     final EvaluationSwing finalSwing = swing;
 
-                    // 🎭 NEW: Trigger emotional analysis for the swing
-                    triggerEmotionalAnalysisForSwing(finalSwing);
+                    // 🚀 OPTIMIZATION: Skip emotional analysis for small swings
+                    if (Math.abs(finalSwing.swingAmount) > 0.8f) {
+                        triggerEmotionalAnalysisForSwing(finalSwing);
+                    }
 
                     // Check if enough time has passed since last commentary
                     long now = System.currentTimeMillis();
@@ -214,11 +228,11 @@ public class EvaluationTracker {
                         triggerAutoCommentary(finalSwing);
                         lastCommentaryTime = now;
                     } else {
-                        Log.d(TAG, "⏳ Skipping commentary - too soon since last comment");
+                        Log.v(TAG, "⏳ Skipping commentary - too soon since last comment");
                     }
 
-                    // OPTIMIZATION: Notify listener on UI thread but without blocking
-                    if (swingListener != null) {
+                    // 🚀 OPTIMIZATION: Only notify listener for significant swings
+                    if (swingListener != null && Math.abs(finalSwing.swingAmount) > 0.5f) {
                         Handler mainHandler = new Handler(Looper.getMainLooper());
                         mainHandler.post(() -> swingListener.onEvaluationSwingDetected(finalSwing));
                     }
@@ -229,8 +243,8 @@ public class EvaluationTracker {
             lastEvaluation = currentSnapshot;
             evaluationHistory.add(currentSnapshot);
 
-            // Keep history manageable
-            if (evaluationHistory.size() > 50) {
+            // 🚀 OPTIMIZATION: Keep history smaller and clean up less frequently
+            if (evaluationHistory.size() > 30) { // Reduced from 50
                 evaluationHistory.remove(0);
             }
         });
@@ -245,17 +259,24 @@ public class EvaluationTracker {
     public EvaluationSwing trackEvaluation(StockfishManager.EvaluationResult evaluation,
                                            String currentFen, String lastMove) {
         Log.d(TAG, "🔄 LEGACY: Converting StockfishManager.EvaluationResult to unified format");
+
+        // 🎯 CRITICAL FIX: Apply alternating sign fix before tracking
+        float correctedEvaluation = SignAgnosticEvaluationFix.correctEvaluationSign(
+            evaluation.evaluation, currentFen, lastMove);
         
-        // Convert to unified format
-        UnifiedEvaluationSystem.EvaluationResult unifiedResult = 
-            new UnifiedEvaluationSystem.EvaluationResult(
-                evaluation.evaluation,
-                evaluation.isMate,
-                evaluation.mateInMoves,
-                currentFen,
-                false // Assume not from cache for legacy calls
-            );
-        
+        Log.d(TAG, String.format("🔄 SIGN FIX APPLIED: %.2f → %.2f", 
+              evaluation.evaluation, correctedEvaluation));
+
+        // Convert to unified format with corrected evaluation
+        UnifiedEvaluationSystem.EvaluationResult unifiedResult =
+                new UnifiedEvaluationSystem.EvaluationResult(
+                        correctedEvaluation,  // Use corrected evaluation
+                        evaluation.isMate,
+                        evaluation.mateInMoves,
+                        currentFen,
+                        false // Assume not from cache for legacy calls
+                );
+
         // Use the unified tracking method
         return trackEvaluation(unifiedResult, currentFen, lastMove);
     }
@@ -274,13 +295,13 @@ public class EvaluationTracker {
         // Positive = White advantage, Negative = Black advantage
         String[] fenParts = current.position.split(" ");
         String sideToMove = fenParts.length > 1 ? fenParts[1] : "w";
-        
+
         // Calculate raw swing (always in White's perspective from Stockfish)
         float swingAmount = currEval - prevEval;
-        
+
         // The side that just moved is the OPPOSITE of who's to move now
         boolean lastMoveWasWhite = sideToMove.equals("b"); // If Black to move, White just moved
-        
+
         // 🚨 CRITICAL FIX: Keep evaluations in consistent White perspective
         // Do NOT flip based on who moved - Stockfish UCI evaluations are always White-relative
 
@@ -345,7 +366,7 @@ public class EvaluationTracker {
             // because SpectatorConversationOrchestrator is already handling all dialogue via Responses API
             android.content.SharedPreferences prefs = context.getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
             boolean isSpectatorMode = prefs.getBoolean("is_spectator_mode", false);
-            
+
             if (isSpectatorMode) {
                 Log.d(TAG, "🎭 SKIPPING EvaluationTracker auto-commentary in spectator mode - Responses API handles all dialogue");
                 // Still notify the listener for UI updates, but don't generate duplicate API calls
@@ -464,7 +485,7 @@ public class EvaluationTracker {
             if (emotionalIntelligence == null) {
                 emotionalIntelligence = EmotionalIntelligenceManager.getInstance(context);
             }
-            
+
             // 🎭 Phase 2: Try to get the integration bridge for advanced emotional processing
             Phase2EmotionalIntegrationBridge phase2Bridge = null;
             try {
@@ -472,56 +493,56 @@ public class EvaluationTracker {
             } catch (Exception e) {
                 Log.d(TAG, "Phase 2 not available, using Phase 1 emotional analysis");
             }
-            
+
             // Get current master from preferences
             String currentMaster = getCurrentSelectedMaster();
-            
+
             // 🎭 Phase 2: Process evaluation change through multi-layered emotional system
             if (phase2Bridge != null && phase2Bridge.isIntegrationActive()) {
                 String gamePhase = determineGamePhase(swing.currentEval.moveNumber);
                 phase2Bridge.processEvaluationChange(
-                    currentMaster, 
-                    swing.currentEval.getEffectiveEvaluation(),
-                    swing.previousEval.getEffectiveEvaluation(),
-                    gamePhase
+                        currentMaster,
+                        swing.currentEval.getEffectiveEvaluation(),
+                        swing.previousEval.getEffectiveEvaluation(),
+                        gamePhase
                 );
-                
-                Log.d(TAG, String.format("🎭 Phase 2: Evaluation change processed for %s - %.1f->%.1f (%s)", 
-                      currentMaster, swing.previousEval.getEffectiveEvaluation(), 
-                      swing.currentEval.getEffectiveEvaluation(), swing.quality.shortDescription));
+
+                Log.d(TAG, String.format("🎭 Phase 2: Evaluation change processed for %s - %.1f->%.1f (%s)",
+                        currentMaster, swing.previousEval.getEffectiveEvaluation(),
+                        swing.currentEval.getEffectiveEvaluation(), swing.quality.shortDescription));
             }
-            
+
             // Phase 1: Continue with original emotional analysis for compatibility
             String gameContext = buildSwingGameContext(swing);
             String conversationContext = buildSwingConversationContext(swing);
-            
+
             // Analyze emotional response using EmotionalIntelligenceManager
-            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult = 
-                emotionalIntelligence.analyzeEmotionalState(
-                    currentMaster,
-                    gameContext,
-                    conversationContext,
-                    swing.currentEval.getEffectiveEvaluation(),
-                    swing.swingAmount,
-                    null
-                );
-            
-            Log.d(TAG, String.format("🎭 Phase 1: Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)", 
-                  currentMaster, swing.quality.shortDescription, emotionalResult.emotion.name, 
-                  emotionalResult.intensity, emotionalResult.momentum));
-            
+            EmotionalIntelligenceManager.EmotionalAnalysisResult emotionalResult =
+                    emotionalIntelligence.analyzeEmotionalState(
+                            currentMaster,
+                            gameContext,
+                            conversationContext,
+                            swing.currentEval.getEffectiveEvaluation(),
+                            swing.swingAmount,
+                            null
+                    );
+
+            Log.d(TAG, String.format("🎭 Phase 1: Emotional analysis for %s %s: %s (intensity: %.2f, momentum: %.2f)",
+                    currentMaster, swing.quality.shortDescription, emotionalResult.emotion.name,
+                    emotionalResult.intensity, emotionalResult.momentum));
+
             // Update emotional state for the master
             // This helps track emotional momentum over the course of the game
             if (emotionalResult.intensity > 0.3f) {
-                Log.d(TAG, String.format("🎭 Significant emotional response: %s is %s about the %s", 
-                      currentMaster, emotionalResult.emotion.name, swing.quality.shortDescription.toLowerCase()));
+                Log.d(TAG, String.format("🎭 Significant emotional response: %s is %s about the %s",
+                        currentMaster, emotionalResult.emotion.name, swing.quality.shortDescription.toLowerCase()));
             }
-            
+
         } catch (Exception e) {
             Log.e(TAG, "Error in emotional analysis for evaluation swing", e);
         }
     }
-    
+
     /**
      * 🎭 Phase 2: Determine game phase for emotional context
      */
@@ -536,13 +557,13 @@ public class EvaluationTracker {
             return "endgame_critical";
         }
     }
-    
+
     /**
      * Build game context for emotional analysis of evaluation swings
      */
     private String buildSwingGameContext(EvaluationSwing swing) {
         StringBuilder context = new StringBuilder();
-        
+
         switch (swing.quality) {
             case BRILLIANT:
                 context.append("brilliant_move_made");
@@ -566,7 +587,7 @@ public class EvaluationTracker {
                 context.append("position_change");
                 break;
         }
-        
+
         // Add magnitude context
         float absSwing = Math.abs(swing.swingAmount);
         if (absSwing > 3.0f) {
@@ -576,16 +597,16 @@ public class EvaluationTracker {
         } else {
             context.append("_minor");
         }
-        
+
         return context.toString();
     }
-    
+
     /**
      * Build conversation context for emotional analysis
      */
     private String buildSwingConversationContext(EvaluationSwing swing) {
         StringBuilder context = new StringBuilder("evaluation_swing");
-        
+
         // Add timing context
         if (swing.currentEval.moveNumber < 10) {
             context.append("_opening");
@@ -594,7 +615,7 @@ public class EvaluationTracker {
         } else {
             context.append("_endgame");
         }
-        
+
         // Add positional context
         float currentEval = swing.currentEval.getEffectiveEvaluation();
         if (Math.abs(currentEval) > 5.0f) {
@@ -604,10 +625,10 @@ public class EvaluationTracker {
         } else {
             context.append("_balanced");
         }
-        
+
         return context.toString();
     }
-    
+
     /**
      * Get the currently selected chess master from preferences
      */
@@ -727,30 +748,30 @@ public class EvaluationTracker {
         if (evaluationHistory.size() < 2) {
             return null;
         }
-        
+
         // Get the last two evaluations
         EvaluationSnapshot prev = evaluationHistory.get(evaluationHistory.size() - 2);
         EvaluationSnapshot curr = evaluationHistory.get(evaluationHistory.size() - 1);
-        
+
         // Calculate the swing
         float prevEval = prev.getEffectiveEvaluation();
         float currEval = curr.getEffectiveEvaluation();
         float swingAmount = currEval - prevEval;
-        
+
         // Adjust for player perspective
         boolean isWhiteMove = (moveCount % 2 == 0);
         if (!isWhiteMove) {
             swingAmount = -swingAmount;
         }
-        
+
         // Only return if significant
         if (Math.abs(swingAmount) >= INACCURACY_THRESHOLD) {
             return swingAmount;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Get the current evaluation (most recent)
      * @return The current evaluation, or null if no evaluations tracked
@@ -759,7 +780,7 @@ public class EvaluationTracker {
         if (evaluationHistory.isEmpty()) {
             return null;
         }
-        
+
         // Get the most recent evaluation
         EvaluationSnapshot current = evaluationHistory.get(evaluationHistory.size() - 1);
         return current.getEffectiveEvaluation();

@@ -14,6 +14,7 @@ import com.example.chesspedagogue.FineTunedModelManager;
 import com.example.chesspedagogue.StockfishManager;
 import com.example.chesspedagogue.UnifiedEvaluationSystem;
 import com.example.chesspedagogue.EvaluationSystemMigration;
+import com.example.chesspedagogue.SignAgnosticEvaluationFix;
 
 import java.io.File;
 import java.io.IOException;
@@ -666,14 +667,24 @@ public class GameRepository {
      * This replaces the old fragmented evaluation approach
      */
     public void getCurrentEvaluation(EvaluationCallback callback) {
-        Log.d(TAG, "🎯 UNIFIED: Starting position evaluation...");
+        Log.d(TAG, "🎯 UNIFIED: Starting position evaluation for: " + cachedFEN);
 
-        // Use unified evaluation system instead of direct Stockfish access
+        // 🔄 CLEAN EVALUATION: Bypass all complex systems, go directly to Stockfish
+        Log.d(TAG, "🚀 CLEAN EVALUATION: Using direct Stockfish (bypassing unified system)");
+        legacyGetCurrentEvaluation(callback);
+        return;
+        
+        // DISABLED: Complex unified system
+        /* COMMENTED OUT FOR CLEAN EVALUATION
         if (unifiedEvaluationSystem != null) {
-            unifiedEvaluationSystem.evaluateCurrentPosition(500, new UnifiedEvaluationSystem.EvaluationCallback() {
+            // 🔧 CRITICAL FIX: Set the current position before evaluating
+            unifiedEvaluationSystem.setPosition(cachedFEN);
+            
+            unifiedEvaluationSystem.evaluateCurrentPosition(2000, new UnifiedEvaluationSystem.EvaluationCallback() {
                 @Override
                 public void onSuccess(UnifiedEvaluationSystem.EvaluationResult result) {
-                    Log.d(TAG, "✅ UNIFIED: Evaluation completed: " + result.toString());
+                    Log.d(TAG, "✅ UNIFIED: Evaluation completed: " + result.toString() + 
+                          " for position: " + cachedFEN.substring(0, Math.min(30, cachedFEN.length())));
                     // Convert to legacy format for compatibility
                     callback.onEvaluationReceived(result.toStockfishResult());
                 }
@@ -689,7 +700,7 @@ public class GameRepository {
             Log.w(TAG, "⚠️ FALLBACK: Using migration helper for evaluation");
             
             if (evaluationMigration != null) {
-                evaluationMigration.getCurrentEvaluationAsync(cachedFEN, 500, result -> {
+                evaluationMigration.getCurrentEvaluationAsync(cachedFEN, 2000, result -> {
                     if (result != null) {
                         callback.onEvaluationReceived(result);
                     } else {
@@ -702,6 +713,7 @@ public class GameRepository {
                 legacyGetCurrentEvaluation(callback);
             }
         }
+        */ // END COMMENTED OUT UNIFIED SYSTEM
     }
 
     /**
@@ -715,14 +727,36 @@ public class GameRepository {
                 try {
                     Log.d(TAG, "🔄 LEGACY: Starting fallback evaluation...");
 
-                    // Get evaluation from Stockfish (500ms should be enough for quick eval)
-                    StockfishManager.EvaluationResult result = stockfishManager.getCurrentEvaluation(500);
+                    // Get evaluation from Stockfish (2000ms for deeper analysis of material changes)
+                    StockfishManager.EvaluationResult rawResult = stockfishManager.getCurrentEvaluation(2000);
+                    
+                    // 🔄 CLEAN EVALUATION: Apply sign fix to raw Stockfish result
+                    if (rawResult != null) {
+                        Log.d(TAG, String.format("🔍 RAW STOCKFISH: %.2f (mate=%s, moves=%d)", 
+                              rawResult.evaluation, rawResult.isMate, rawResult.mateInMoves));
+                        
+                        // 🎯 APPLY ALTERNATING SIGN FIX: Your brilliant solution for perspective bug
+                        float correctedEval = SignAgnosticEvaluationFix.correctEvaluationSign(
+                            rawResult.evaluation, cachedFEN, "move");
+                        
+                        Log.d(TAG, String.format("🔄 SIGN CORRECTION: %.2f → %.2f", 
+                              rawResult.evaluation, correctedEval));
+                        
+                        // Create corrected result
+                        StockfishManager.EvaluationResult result = new StockfishManager.EvaluationResult(
+                            correctedEval, rawResult.isMate, rawResult.mateInMoves);
 
-                    // Return result on main thread
-                    mainHandler.post(() -> {
-                        Log.d(TAG, "✅ LEGACY: Evaluation completed: " + result.toString());
-                        callback.onEvaluationReceived(result);
-                    });
+                        // Return result on main thread
+                        mainHandler.post(() -> {
+                            Log.d(TAG, "✅ CLEAN: Raw Stockfish evaluation completed: " + result.toString());
+                            callback.onEvaluationReceived(result);
+                        });
+                    } else {
+                        mainHandler.post(() -> {
+                            Log.e(TAG, "❌ LEGACY: Null evaluation result");
+                            callback.onEvaluationError("Legacy evaluation returned null");
+                        });
+                    }
 
                 } catch (Exception e) {
                     Log.e(TAG, "❌ LEGACY: Error getting evaluation", e);
@@ -734,8 +768,79 @@ public class GameRepository {
                 }
             });
         } else {
-            Log.d(TAG, "⏳ Evaluation already in progress, skipping request");
+            Log.d(TAG, "⏳ Evaluation already in progress, queuing request for retry");
+            // Don't drop the request - queue it for when engine is free
+            retryEvaluationRequest(callback, 1); // Start with retry attempt 1
         }
+    }
+
+    /**
+     * 🔄 EVALUATION RETRY: Retry evaluation requests with limited attempts
+     */
+    private void retryEvaluationRequest(EvaluationCallback callback, int attempt) {
+        final int MAX_RETRIES = 3;
+        final int RETRY_DELAY_MS = 500;
+        
+        if (attempt > MAX_RETRIES) {
+            Log.w(TAG, String.format("⚠️ Evaluation retry limit reached (%d attempts), giving up", MAX_RETRIES));
+            mainHandler.post(() -> callback.onEvaluationError("Engine too busy - retry limit exceeded"));
+            return;
+        }
+        
+        mainHandler.postDelayed(() -> {
+            Log.d(TAG, String.format("🔄 Retrying evaluation request (attempt %d/%d)", attempt, MAX_RETRIES));
+            
+            // Try again - if still busy, will recursively retry
+            if (isEngineProcessing.compareAndSet(false, true)) {
+                // Engine is now free, execute the evaluation
+                executorService.execute(() -> {
+                    engineLock.lock();
+                    try {
+                        Log.d(TAG, "🔄 RETRY: Starting evaluation after queue...");
+
+                        // Get evaluation from Stockfish
+                        StockfishManager.EvaluationResult rawResult = stockfishManager.getCurrentEvaluation(2000);
+                        
+                        if (rawResult != null) {
+                            Log.d(TAG, String.format("🔍 RETRY: Raw Stockfish: %.2f", rawResult.evaluation));
+                            
+                            // 🎯 APPLY ALTERNATING SIGN FIX: Your brilliant solution for perspective bug
+                            float correctedEval = SignAgnosticEvaluationFix.correctEvaluationSign(
+                                rawResult.evaluation, cachedFEN, "move");
+                            
+                            Log.d(TAG, String.format("🔄 RETRY SIGN CORRECTION: %.2f → %.2f", 
+                                  rawResult.evaluation, correctedEval));
+                            
+                            // Create corrected result
+                            StockfishManager.EvaluationResult result = new StockfishManager.EvaluationResult(
+                                correctedEval, rawResult.isMate, rawResult.mateInMoves);
+
+                            // Return result on main thread
+                            mainHandler.post(() -> {
+                                Log.d(TAG, "✅ RETRY: Evaluation completed: " + result.toString());
+                                callback.onEvaluationReceived(result);
+                            });
+                        } else {
+                            mainHandler.post(() -> {
+                                Log.e(TAG, "❌ RETRY: Null evaluation result");
+                                callback.onEvaluationError("Retry evaluation returned null");
+                            });
+                        }
+
+                    } catch (Exception e) {
+                        Log.e(TAG, "❌ RETRY: Error getting evaluation", e);
+                        mainHandler.post(() -> callback.onEvaluationError("Retry failed: " + e.getMessage()));
+                    } finally {
+                        engineLock.unlock();
+                        isEngineProcessing.set(false);
+                        Log.d(TAG, "🔓 RETRY: Evaluation lock released");
+                    }
+                });
+            } else {
+                // Still busy, try again
+                retryEvaluationRequest(callback, attempt + 1);
+            }
+        }, RETRY_DELAY_MS);
     }
 
     /**
