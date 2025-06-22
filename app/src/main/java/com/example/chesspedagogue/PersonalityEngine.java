@@ -461,24 +461,26 @@ public class PersonalityEngine {
                 }
             }
             
-            // Dynamic limits based on game phase
+            // ✅ OPTIMIZED: Reduced limits to improve match quality
+            // Quality over quantity - fewer but more accurate matches
             if (moveNumber <= 10) {
-                // Opening: Fewer positions (many games follow same patterns)
-                return 15;
+                // Opening: Standard patterns, moderate matches
+                return 12;
             } else if (moveNumber <= 25 && pieceCount >= 20) {
-                // Early middlegame: Moderate positions
-                return 25;
+                // Early middlegame: Reduce to avoid low-quality matches
+                return 15;
             } else if (pieceCount >= 12) {
-                // Complex middlegame: More positions for variety
-                return 35;
+                // Complex middlegame: SIGNIFICANTLY REDUCED from 35→18
+                // This fixes the "35 matches for queen sacrifice" issue
+                return 18;
             } else {
-                // Endgame: Fewer positions (more precise)
-                return 10;
+                // Endgame: Keep precise
+                return 8;
             }
             
         } catch (Exception e) {
             Log.w(TAG, "Error calculating dynamic limit, using default", e);
-            return 20; // Safe default
+            return 12; // Reduced safe default
         }
     }
 

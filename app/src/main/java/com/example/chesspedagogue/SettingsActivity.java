@@ -175,6 +175,13 @@ public class SettingsActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
+        // Evaluation System Test button
+        Button evaluationTestButton = findViewById(R.id.button_evaluation_tests);
+        evaluationTestButton.setOnClickListener(v -> {
+            Intent intent = new Intent(SettingsActivity.this, UnifiedEvaluationTestActivity.class);
+            startActivity(intent);
+        });
+
         // Update the UI to show the current selected master
         updateChessMasterDisplay();
         setupEnhancedVoiceSettings();

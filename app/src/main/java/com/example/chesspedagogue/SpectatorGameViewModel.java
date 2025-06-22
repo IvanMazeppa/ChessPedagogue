@@ -456,7 +456,6 @@ public class SpectatorGameViewModel extends AndroidViewModel {
                         // CRITICAL FIX: Feed evaluation data to EvaluationTracker for emotional intelligence
                         try {
                             EvaluationTracker evaluationTracker = EvaluationTracker.getInstance(getApplication());
-                            
                             // 🎯 CRITICAL: Create corrected result to pass to tracker
                             StockfishManager.EvaluationResult correctedResult = 
                                 new StockfishManager.EvaluationResult(

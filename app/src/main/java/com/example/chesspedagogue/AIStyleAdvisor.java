@@ -271,45 +271,102 @@ public class AIStyleAdvisor {
     }
     
     /**
-     * 🎨 Build chess-specific prompt for style analysis
-     * 🔧 FIXED: Now includes color perspective to prevent evaluation inversion
+     * 🧠 ENHANCED: Build style evaluation prompt for ranking ELO-appropriate moves  
+     * This focuses on STYLE FIT rather than move generation
      */
     private String buildChessStylePrompt(String fen, String master, List<String> candidateMoves) {
         StringBuilder prompt = new StringBuilder();
         
-        // 🚨 FIX: Determine which color is to move from FEN
+        // Determine color to move
         String[] fenParts = fen.split(" ");
         String colorToMove = fenParts.length > 1 ? fenParts[1] : "w";
         String colorName = colorToMove.equals("w") ? "WHITE" : "BLACK";
         
-        prompt.append("CHESS POSITION ANALYSIS REQUEST\n");
+        prompt.append("🎯 STYLE EVALUATION TASK FOR ").append(master.toUpperCase()).append("\n\n");
+        
         prompt.append("Position (FEN): ").append(fen).append("\n");
-        prompt.append("🔧 IMPORTANT: YOU ARE PLAYING AS ").append(colorName).append(" in this position.\n");
-        prompt.append("Available moves: ").append(candidateMoves).append("\n\n");
+        prompt.append("You are playing as ").append(colorName).append(" in this position.\n\n");
         
-        prompt.append("As ").append(master.toUpperCase()).append(" playing ").append(colorName).append(", analyze this position and provide:\n");
-        prompt.append("1. Which moves best reflect your playing style AS ").append(colorName).append("?\n");
-        prompt.append("2. What strategic themes appeal to you here?\n");
-        prompt.append("3. How would you approach this position from ").append(colorName).append("'s perspective?\n\n");
+        prompt.append("CANDIDATE MOVES (all legal and appropriate for this playing strength):\n");
+        for (int i = 0; i < candidateMoves.size(); i++) {
+            prompt.append((i + 1)).append(". ").append(candidateMoves.get(i)).append("\n");
+        }
         
-        prompt.append("🚨 CRITICAL: Evaluate everything from ").append(colorName).append("'s perspective.\n");
-        prompt.append("Material advantage means YOU (").append(colorName).append(") have more pieces.\n\n");
+        prompt.append("\n🎭 YOUR MISSION: Rank these moves by how well they fit ").append(master.toUpperCase()).append("'s playing style.\n\n");
+        
+        // Add master-specific style characteristics
+        prompt.append(getMasterStyleCharacteristics(master));
+        
+        prompt.append("\n📊 For EACH move, provide a style score (0.0-1.0) where:\n");
+        prompt.append("• 1.0 = Perfectly embodies ").append(master).append("'s style\n");
+        prompt.append("• 0.5 = Neutral, could be any master\n");
+        prompt.append("• 0.0 = Completely against ").append(master).append("'s style\n\n");
         
         prompt.append("Respond in JSON format:\n");
         prompt.append("{\n");
-        prompt.append("  \"preferred_moves\": [\"move1\", \"move2\"],\n");
-        prompt.append("  \"style_weight\": 0.7,\n");
-        prompt.append("  \"reasoning\": \"Explanation of style preferences from ").append(colorName).append("'s perspective\",\n");
-        prompt.append("  \"master_insight\": \"Personal insight or quote\",\n");
-        prompt.append("  \"is_attacking\": true/false,\n");
-        prompt.append("  \"is_positional\": true/false\n");
+        prompt.append("  \"move_scores\": {\n");
+        for (int i = 0; i < candidateMoves.size(); i++) {
+            prompt.append("    \"").append(candidateMoves.get(i)).append("\": {\"score\": 0.0, \"reason\": \"why this fits/doesn't fit\"}");
+            if (i < candidateMoves.size() - 1) prompt.append(",");
+            prompt.append("\n");
+        }
+        prompt.append("  },\n");
+        prompt.append("  \"top_choice\": \"").append(candidateMoves.get(0)).append("\",\n");
+        prompt.append("  \"style_reasoning\": \"Overall style assessment\",\n");
+        prompt.append("  \"confidence\": 0.8\n");
         prompt.append("}");
         
         return prompt.toString();
     }
     
     /**
-     * 🔍 Parse AI response into structured advice
+     * 🎭 Get master-specific style characteristics for enhanced prompting
+     */
+    private String getMasterStyleCharacteristics(String master) {
+        switch (master.toLowerCase()) {
+            case "alekhine":
+                return "ALEKHINE'S STYLE:\n" +
+                      "• Aggressive, dynamic play with psychological pressure\n" +
+                      "• Prefers complex, imbalanced positions\n" +
+                      "• Willing to sacrifice material for initiative\n" +
+                      "• Loves tactical complications and attacking play\n" +
+                      "• Avoids simple, quiet, symmetrical positions\n" +
+                      "• Seeks to create maximum difficulty for opponent";
+                      
+            case "tal":
+                return "TAL'S STYLE:\n" +
+                      "• Brilliant tactical sacrifices and combinations\n" +
+                      "• Intuitive, attacking play over pure calculation\n" +
+                      "• Prefers sharp, tactical positions\n" +
+                      "• Will sacrifice material for attack potential\n" +
+                      "• Avoids dry, positional grind-it-out games";
+                      
+            case "carlsen":
+                return "CARLSEN'S STYLE:\n" +
+                      "• Practical, endgame-oriented approach\n" +
+                      "• Creates problems from seemingly equal positions\n" +
+                      "• Prefers keeping pieces on the board\n" +
+                      "• Excellent technique in simplified positions\n" +
+                      "• Will choose the move that gives most practical chances";
+                      
+            case "fischer":
+                return "FISCHER'S STYLE:\n" +
+                      "• Precise, logical play with perfect technique\n" +
+                      "• Seeks clear advantage and methodical improvement\n" +
+                      "• Prefers principled development and central control\n" +
+                      "• Avoids unnecessary complications\n" +
+                      "• Values piece activity and king safety";
+                      
+            default:
+                return "CLASSICAL STYLE:\n" +
+                      "• Balanced approach between tactics and strategy\n" +
+                      "• Sound development and central control\n" +
+                      "• Looks for clear improvements to position";
+        }
+    }
+    
+    /**
+     * 🧠 ENHANCED: Parse new style evaluation response format
      */
     private AIStyleAdvice parseAIResponse(String response, String master, List<String> candidateMoves) {
         try {
@@ -322,30 +379,50 @@ public class AIStyleAdvisor {
             
             JSONObject json = new JSONObject(jsonStr);
             
-            // Extract preferred moves
+            // 🎯 NEW: Parse move scores and rank by style fit
             List<String> preferredMoves = new ArrayList<>();
-            if (json.has("preferred_moves")) {
-                JSONArray movesArray = json.getJSONArray("preferred_moves");
-                for (int i = 0; i < movesArray.length(); i++) {
-                    String move = movesArray.getString(i);
-                    if (candidateMoves.contains(move)) {
-                        preferredMoves.add(move);
+            Map<String, Float> moveScores = new HashMap<>();
+            
+            if (json.has("move_scores")) {
+                JSONObject scoresObj = json.getJSONObject("move_scores");
+                
+                // Extract all move scores
+                for (String move : candidateMoves) {
+                    if (scoresObj.has(move)) {
+                        JSONObject moveData = scoresObj.getJSONObject(move);
+                        float score = (float) moveData.optDouble("score", 0.5);
+                        moveScores.put(move, score);
+                        
+                        // Add to preferred moves if score > 0.6 (strong style fit)
+                        if (score > 0.6) {
+                            preferredMoves.add(move);
+                            Log.d(TAG, "🎭 Style match: " + move + " = " + score);
+                        }
                     }
                 }
+                
+                // Sort preferred moves by score (highest first)
+                preferredMoves.sort((a, b) -> Float.compare(moveScores.get(b), moveScores.get(a)));
+            }
+            
+            // 🎯 NEW: Get top choice directly
+            String topChoice = json.optString("top_choice", "");
+            if (!topChoice.isEmpty() && candidateMoves.contains(topChoice) && !preferredMoves.contains(topChoice)) {
+                preferredMoves.add(0, topChoice); // Add to front
             }
             
             // Extract other fields with defaults
-            float styleWeight = (float) json.optDouble("style_weight", 0.5);
-            String reasoning = json.optString("reasoning", "Style-based preference");
-            String masterInsight = json.optString("master_insight", "");
-            boolean isAttacking = json.optBoolean("is_attacking", false);
-            boolean isPositional = json.optBoolean("is_positional", false);
+            float confidence = (float) json.optDouble("confidence", 0.5);
+            String reasoning = json.optString("style_reasoning", "Style-based preference");
+            String masterInsight = "Style confidence: " + confidence;
+            boolean isAttacking = reasoning.toLowerCase().contains("attack");
+            boolean isPositional = reasoning.toLowerCase().contains("positional");
             
-            Log.d(TAG, "✅ Parsed AI advice: " + preferredMoves.size() + " moves, weight=" + styleWeight);
+            Log.d(TAG, "🎭 Parsed style evaluation: " + preferredMoves.size() + " moves, confidence=" + confidence);
             Log.d(TAG, "🎭 AI preferred moves: " + preferredMoves);
             Log.d(TAG, "💭 AI reasoning: " + reasoning);
             
-            return new AIStyleAdvice(preferredMoves, styleWeight, reasoning, 
+            return new AIStyleAdvice(preferredMoves, confidence, reasoning, 
                                    masterInsight, isAttacking, isPositional);
             
         } catch (JSONException e) {

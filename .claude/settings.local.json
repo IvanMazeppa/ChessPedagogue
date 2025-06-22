@@ -66,7 +66,12 @@
       "Bash(timeout:*)",
       "Bash(xmllint:*)",
       "Bash(sudo rm:*)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(ss:*)",
+      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell screencap -p /sdcard/chess_app_screenshot.png)",
+      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" pull /sdcard/chess_app_screenshot.png ./chess_app_screenshot.png)",
+      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell screencap -p /sdcard/chess_app_screenshot_clean.png)",
+      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" pull /sdcard/chess_app_screenshot_clean.png ./chess_app_screenshot_clean.png)"
     ],
     "deny": []
   }

@@ -505,10 +505,23 @@
             android:layout_marginStart="16dp"
             android:layout_marginEnd="16dp"
             android:layout_marginTop="8dp"
-            android:layout_marginBottom="24dp"
+            android:layout_marginBottom="8dp"
             android:text="📊 View Personality Analytics"
             android:drawableEnd="@android:drawable/ic_menu_info_details"
             android:backgroundTint="#FF9800" />
+
+        <!-- Evaluation System Test Button -->
+        <Button
+            android:id="@+id/button_evaluation_tests"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="24dp"
+            android:text="🧪 Run Evaluation System Tests"
+            android:drawableEnd="@android:drawable/ic_menu_preferences"
+            android:backgroundTint="#4CAF50" />
 
     </LinearLayout>
 </ScrollView>

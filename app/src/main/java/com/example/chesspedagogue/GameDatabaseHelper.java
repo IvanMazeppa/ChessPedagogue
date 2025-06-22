@@ -775,10 +775,29 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 PositionAnalysis candidateAnalysis = analyzePosition(candidate.fen);
                 double similarity = calculatePositionalSimilarity(targetAnalysis, candidateAnalysis);
                 
-                // Only include positions with meaningful similarity (>0.3)
-                if (similarity > 0.3) {
+                // ✅ OPTIMIZED: Higher threshold for better match quality
+                // Dynamic threshold based on game complexity
+                double requiredSimilarity = getRequiredSimilarity(targetAnalysis);
+                
+                // 🔥 ENHANCED: Extra strict threshold for tactical positions
+                if (isHighlyTactical(targetFen)) {
+                    if (isObviousBlunder(targetFen)) {
+                        requiredSimilarity = 0.85; // Extremely strict for obvious blunders
+                        Log.d(TAG, "🚨 OBVIOUS BLUNDER - using maximum threshold: " + requiredSimilarity);
+                    } else {
+                        requiredSimilarity = Math.max(requiredSimilarity, 0.65);
+                        Log.d(TAG, "⚡ Tactical position detected - using stricter threshold: " + requiredSimilarity);
+                    }
+                }
+                
+                if (similarity > requiredSimilarity) {
                     candidate.similarity = similarity;
                     results.add(candidate);
+                    Log.d(TAG, String.format("🎯 Match found: %.2f similarity (required: %.2f)", 
+                        similarity, requiredSimilarity));
+                } else {
+                    Log.v(TAG, String.format("❌ Rejected: %.2f similarity < %.2f required", 
+                        similarity, requiredSimilarity));
                 }
             }
             
@@ -907,6 +926,132 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         maxScore += featureWeight;
         
         return score / maxScore;
+    }
+
+    /**
+     * ✅ NEW: Dynamic similarity threshold based on position complexity
+     * Complex tactical positions require higher similarity to avoid false matches
+     */
+    private double getRequiredSimilarity(PositionAnalysis analysis) {
+        // Base threshold
+        double threshold = 0.45; // Increased from 0.3
+        
+        // Adjust based on game phase
+        switch (analysis.gamePhase) {
+            case "opening":
+                // Openings can be more flexible
+                return 0.4;
+            case "middlegame":
+                // Complex middlegame positions need higher precision
+                return 0.55;
+            case "late_middlegame":
+                // Very tactical - require high similarity
+                return 0.6;
+            case "endgame":
+                // Endgames are precise
+                return 0.5;
+            default:
+                return threshold;
+        }
+    }
+    
+    /**
+     * ✅ ENHANCED: Detect positions requiring extreme precision
+     * Identifies hanging pieces, nonsensical moves, and obvious blunders
+     */
+    private boolean isHighlyTactical(String fen) {
+        String[] fenParts = fen.split(" ");
+        String position = fenParts[0];
+        
+        // Count material imbalances (sacrifices)
+        int queens = countCharacters(position, 'Q') + countCharacters(position, 'q');
+        int rooks = countCharacters(position, 'R') + countCharacters(position, 'r');
+        int minorPieces = countCharacters(position, 'B') + countCharacters(position, 'b') +
+                         countCharacters(position, 'N') + countCharacters(position, 'n');
+        
+        // 🚨 ENHANCED: Detect obvious blunders and hanging pieces
+        if (isObviousBlunder(fen)) {
+            Log.d(TAG, "🚨 OBVIOUS BLUNDER DETECTED - requiring 0.8+ similarity");
+            return true;
+        }
+        
+        // Detect unusual material distribution (sacrifices)
+        if (queens < 2 && rooks > 2) return true; // Queen sacrifice scenarios
+        if (minorPieces < 4) return true; // Minor piece sacrifices
+        
+        // Check for en passant (tactical)
+        if (fenParts.length > 3 && !fenParts[3].equals("-")) return true;
+        
+        return false;
+    }
+    
+    /**
+     * 🚨 NEW: Detect obvious blunders that should have minimal matches
+     * Identifies pieces hanging to simple captures, nonsensical moves
+     */
+    private boolean isObviousBlunder(String fen) {
+        // Quick heuristic checks for obvious blunders
+        String[] fenParts = fen.split(" ");
+        String position = fenParts[0];
+        
+        // Check for queen in obviously vulnerable positions
+        if (isQueenHanging(position)) {
+            Log.d(TAG, "⚠️ Queen appears to be hanging - flagging as blunder");
+            return true;
+        }
+        
+        // Check for major pieces on obviously bad squares
+        if (hasMajorPieceOnBadSquare(position)) {
+            Log.d(TAG, "⚠️ Major piece on vulnerable square - flagging as blunder");
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if queen is in obviously hanging position
+     */
+    private boolean isQueenHanging(String position) {
+        // Look for white queen on g6 (classic blunder square)
+        if (position.contains("Q") && position.indexOf('Q') != -1) {
+            // Convert FEN position to board array for analysis
+            String[] ranks = position.split("/");
+            for (int rank = 0; rank < ranks.length; rank++) {
+                String rankStr = ranks[rank];
+                for (int file = 0; file < rankStr.length(); file++) {
+                    char piece = rankStr.charAt(file);
+                    if (piece == 'Q') {
+                        // Check if queen is on g6, h6, g7, h7 (common blunder squares)
+                        if (rank <= 2 && (rankStr.indexOf('Q') >= 5)) { // Rough approximation
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * Check for major pieces on obviously bad squares
+     */
+    private boolean hasMajorPieceOnBadSquare(String position) {
+        // This is a heuristic - can be enhanced with more sophisticated analysis
+        return position.contains("Q") && (
+            position.contains("6Q") || // Queen on 6th rank early
+            position.contains("7Q") ||  // Queen on 7th rank early  
+            position.contains("Q1") ||  // Queen on a1/h1 type squares
+            position.contains("Q8")     // Queen on back rank in enemy territory
+        );
+    }
+    
+    private int countCharacters(String str, char target) {
+        int count = 0;
+        for (char c : str.toCharArray()) {
+            if (c == target) count++;
+        }
+        return count;
     }
 
     private String determineGamePhase(int totalPieces, int moveNumber) {

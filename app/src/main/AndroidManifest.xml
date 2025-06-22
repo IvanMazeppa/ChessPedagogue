@@ -124,6 +124,18 @@
             android:theme="@style/Theme.ChessPedagogue"
             android:label="Responses API Test" />
 
+        <!-- Unified Evaluation Test Activity -->
+        <activity
+            android:name=".UnifiedEvaluationTestActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ChessPedagogue"
+            android:label="🧪 Evaluation System Tests"
+            android:parentActivityName=".SettingsActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".SettingsActivity" />
+        </activity>
+
         <!-- Analytics Activity -->
         <activity
             android:name=".AnalyticsActivity"
