@@ -49,6 +49,12 @@ captures/
 # API Keys - NEVER commit these!
 app/src/main/java/com/example/chesspedagogue/ApiKeys.java
 app/src/main/java/com/example/chesspedagogue/ApiKeyConfig.java
+
+# Training and Configuration Tools - Local development only
+ChessPedagogueConfigurator/
+**/python_scripts/
+**/training_data/
+**/chess_finetuning/
  /test_conversation_memory_system.py
 /test_null_pointer_fix.py
 /wsl_conversation_memory_test.py

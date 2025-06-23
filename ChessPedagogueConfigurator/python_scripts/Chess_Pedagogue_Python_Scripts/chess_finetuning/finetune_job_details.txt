@@ -1,3 +1,0 @@
-Job ID: ftjob-88EoMmbMlxAOPLQTcxyG05Vd
-Model: gpt-4.1-2025-04-14
-Status: validating_files
