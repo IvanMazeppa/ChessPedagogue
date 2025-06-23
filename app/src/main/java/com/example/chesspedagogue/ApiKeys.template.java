@@ -10,7 +10,7 @@ package com.example.chesspedagogue;
  * 
  * The actual ApiKeys.java file is ignored by .gitignore for security
  */
-public class ApiKeysTemplate {
+class ApiKeysTemplate {
     
     // OpenAI API Key for Responses API and Chat Completions
     public static final String OPENAI_API_KEY = "YOUR_OPENAI_API_KEY_HERE";
