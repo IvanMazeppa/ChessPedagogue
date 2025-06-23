@@ -64,6 +64,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private Button difficultyToggleButton;
     private Button personalityToggleButton;
     private Button voiceSettingsButton;
+    private Button competitiveValidateButton;  // 🧪 TEMPORARY: Style validation testing
 
     // Game state
     private GameViewModel gameViewModel;
@@ -559,6 +560,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             difficultyToggleButton = findViewById(R.id.difficultyToggleButton);
             personalityToggleButton = findViewById(R.id.personalityToggleButton);
             voiceSettingsButton = findViewById(R.id.voiceSettingsButton);
+            competitiveValidateButton = findViewById(R.id.competitiveValidateButton);  // 🧪 Validation testing
 
             // Set master and player names dynamically
             masterNameTextView.setText(formatMasterName(selectedMaster));
@@ -1220,6 +1222,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             
             // Voice settings button - configure voice options
             voiceSettingsButton.setOnClickListener(v -> showVoiceSettings());
+            
+            // 🧪 VALIDATION BUTTON - Style testing controls
+            competitiveValidateButton.setOnClickListener(v -> runCompetitiveValidation());
             
             // Dismiss dialogue button - hide master dialogue overlay
             dismissDialogueButton.setOnClickListener(v -> {
@@ -2827,5 +2832,91 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         } catch (Exception e) {
             Log.e(TAG, "❌ Error making promotion move", e);
         }
+    }
+
+    /**
+     * 🧪 COMPETITIVE VALIDATION - Run style validation in competitive mode
+     */
+    private void runCompetitiveValidation() {
+        Log.d(TAG, "🧪 Starting Competitive Mode Style Validation...");
+        
+        // Show progress to user
+        Toast.makeText(this, String.format("🧪 Testing %s style in competitive mode...", selectedMaster), Toast.LENGTH_SHORT).show();
+        
+        // Run test in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get required com*ponents (using GameRepository's systems)
+                PersonalityEngine personalityEngine = PersonalityEngine.getInstance(this, gameViewModel.getGameRepository().stockfishManager);
+                AIStyleAdvisor aiStyleAdvisor = AIStyleAdvisor.getInstance(this);
+
+                // Configure for current competitive master
+                personalityEngine.setCurrentMaster(selectedMaster);
+                
+                // Create validator and run test
+                AlekhineStyleValidator validator = new AlekhineStyleValidator(this, personalityEngine, aiStyleAdvisor);
+                AlekhineStyleValidator.StyleAccuracyReport report = validator.runQuickValidationTest();
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    String results = String.format(
+                        "🎯 %s COMPETITIVE MODE VALIDATION\n\n%s\n\n🎮 Competitive Settings:\n" +
+                        "Master: %s\nPlayer: %s\nSkill Level: %d", 
+                        selectedMaster.toUpperCase(), report.toString(), selectedMaster, playerColor, skillLevel);
+                    
+                    Log.d(TAG, "🧪 COMPETITIVE VALIDATION RESULTS:\n" + results);
+                    
+                    // Show results dialog
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle(String.format("🏆 %s vs You - Style Test", formatMasterName(selectedMaster)))
+                           .setMessage(results)
+                           .setPositiveButton("🎯 Great!", null)
+                           .setNeutralButton("📊 Analyze", (dialog, which) -> {
+                               // Show analysis tips
+                               String analysis = String.format(
+                                   "🔍 COMPETITIVE ANALYSIS:\n\n" +
+                                   "• Historical Match: %.1f%% (Target: 35-50%%)\n" +
+                                   "• Style Consistency: %.1f/100\n" +
+                                   "• Overall Accuracy: %.1f/100\n\n" +
+                                   "💡 This tests how well %s plays like the real master in competitive games!",
+                                   report.historicalMatchRate * 100, report.styleConsistencyScore, 
+                                   report.overallAccuracy, selectedMaster);
+                               
+                               AlertDialog.Builder analysisBuilder = new AlertDialog.Builder(this);
+                               analysisBuilder.setTitle("📊 Detailed Analysis")
+                                             .setMessage(analysis)
+                                             .setPositiveButton("Got it!", null)
+                                             .show();
+                           })
+                           .show();
+                           
+                    // Show competitive-specific summary toast
+                    String competitiveGrade = "";
+                    if (report.overallAccuracy >= 90) competitiveGrade = "Perfect master emulation! 🏆";
+                    else if (report.overallAccuracy >= 80) competitiveGrade = "Championship-level authenticity! ⭐";
+                    else if (report.overallAccuracy >= 70) competitiveGrade = "Strong master resemblance! 👍";
+                    else if (report.overallAccuracy >= 60) competitiveGrade = "Good competitive play 📚";
+                    else competitiveGrade = "Room for improvement ⚠️";
+                    
+                    Toast.makeText(this, String.format("🏆 %s: %.1f/100 - %s", 
+                            selectedMaster, report.overallAccuracy, competitiveGrade), Toast.LENGTH_LONG).show();
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running competitive validation test", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Competitive test failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    // Show error dialog with competitive contexit
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Competitive Validation Error")
+                           .setMessage("Competitive mode test failed: " + e.getMessage() + 
+                                     "\n\n🎮 Make sure you're in an active competitive game with " + selectedMaster + "!")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
     }
 }

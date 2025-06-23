@@ -345,6 +345,28 @@
 
         </LinearLayout>
 
+        <!-- 🧪 VALIDATION ROW - Temporary for style testing -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="4dp">
+
+            <Button
+                android:id="@+id/spectatorValidateButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🧪 Validate Master Styles"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#FF9800"
+                android:textColor="#FFFFFF"
+                style="@style/Widget.MaterialComponents.Button" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>

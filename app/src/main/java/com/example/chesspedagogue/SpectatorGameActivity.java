@@ -52,6 +52,7 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
     private TextView currentSpeakerTextView;
     private Button userCommentButton;
     private Button startGameButton;
+    private Button spectatorValidateButton;  // 🧪 TEMPORARY: Style validation testing
 
     // Game state
     private SpectatorGameViewModel viewModel;
@@ -492,6 +493,15 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 Log.d(TAG, "✅ Quick type button initialized");
             } else {
                 Log.w(TAG, "⚠️ Quick type button not found in layout");
+            }
+
+            // 🧪 VALIDATION BUTTON - Style testing controls
+            spectatorValidateButton = findViewById(R.id.spectatorValidateButton);
+            if (spectatorValidateButton != null) {
+                spectatorValidateButton.setOnClickListener(v -> runSpectatorValidation());
+                Log.d(TAG, "✅ Spectator validation button initialized");
+            } else {
+                Log.w(TAG, "⚠️ Spectator validation button not found in layout");
             }
 
             // Start game button setup - CRITICAL FIX
@@ -1934,5 +1944,121 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             voiceControlManager.registerVoiceCommandListener(this);
             Log.d(TAG, "🎤 Re-registered with voice control manager for spectator mode");
         }
+    }
+
+    /**
+     * 🧪 SPECTATOR VALIDATION - Test both masters in spectator mode
+     */
+    private void runSpectatorValidation() {
+        Log.d(TAG, "🧪 Starting Spectator Mode Dual Master Validation...");
+        
+        // Show progress to user
+        Toast.makeText(this, String.format("🧪 Testing %s vs %s master styles...", whitePlayer, blackPlayer), Toast.LENGTH_SHORT).show();
+        
+        // Run test in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get required components
+                PersonalityEngine personalityEngine = PersonalityEngine.getInstance(this, null); // Spectator uses different engine setup
+                AIStyleAdvisor aiStyleAdvisor = AIStyleAdvisor.getInstance(this);
+                
+                // Create validator
+                AlekhineStyleValidator validator = new AlekhineStyleValidator(this, personalityEngine, aiStyleAdvisor);
+                
+                // Test both masters
+                AlekhineStyleValidator.StyleAccuracyReport whiteReport = null;
+                AlekhineStyleValidator.StyleAccuracyReport blackReport = null;
+                
+                // Test white player
+                personalityEngine.setCurrentMaster(whitePlayer);
+                whiteReport = validator.runQuickValidationTest();
+                
+                // Test black player
+                personalityEngine.setCurrentMaster(blackPlayer);
+                blackReport = validator.runQuickValidationTest();
+                
+                // Final results
+                final AlekhineStyleValidator.StyleAccuracyReport finalWhiteReport = whiteReport;
+                final AlekhineStyleValidator.StyleAccuracyReport finalBlackReport = blackReport;
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    String results = String.format(
+                        "🎯 SPECTATOR MODE DUAL VALIDATION\n\n" +
+                        "⚪ %s Results:\n" +
+                        "• Overall: %.1f/100\n" +
+                        "• Historical Match: %.1f%%\n" +
+                        "• Style Consistency: %.1f/100\n\n" +
+                        "⚫ %s Results:\n" +
+                        "• Overall: %.1f/100\n" +
+                        "• Historical Match: %.1f%%\n" +
+                        "• Style Consistency: %.1f/100\n\n" +
+                        "🏆 Head-to-Head Comparison:\n" +
+                        "Better Overall: %s\n" +
+                        "Better Historical: %s", 
+                        whitePlayer.toUpperCase(), finalWhiteReport.overallAccuracy, 
+                        finalWhiteReport.historicalMatchRate * 100, finalWhiteReport.styleConsistencyScore,
+                        blackPlayer.toUpperCase(), finalBlackReport.overallAccuracy,
+                        finalBlackReport.historicalMatchRate * 100, finalBlackReport.styleConsistencyScore,
+                        finalWhiteReport.overallAccuracy > finalBlackReport.overallAccuracy ? whitePlayer : blackPlayer,
+                        finalWhiteReport.historicalMatchRate > finalBlackReport.historicalMatchRate ? whitePlayer : blackPlayer);
+                    
+                    Log.d(TAG, "🧪 SPECTATOR VALIDATION RESULTS:\n" + results);
+                    
+                    // Show results dialog
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle(String.format("🏆 %s vs %s - Style Showdown", whitePlayer, blackPlayer))
+                           .setMessage(results)
+                           .setPositiveButton("🎯 Fascinating!", null)
+                           .setNeutralButton("📊 Analysis", (dialog, which) -> {
+                               // Show analysis tips
+                               String analysis = String.format(
+                                   "🔍 SPECTATOR ANALYSIS:\n\n" +
+                                   "This validates how authentically each master plays their historical style!\n\n" +
+                                   "💡 Key Insights:\n" +
+                                   "• Both masters are tested against their own historical games\n" +
+                                   "• 35-50%% historical match rate is excellent\n" +
+                                   "• Style consistency measures authentic character\n" +
+                                   "• Watch how their different styles create unique gameplay!");
+                               
+                               AlertDialog.Builder analysisBuilder = new AlertDialog.Builder(this);
+                               analysisBuilder.setTitle("📊 Spectator Mode Analysis")
+                                             .setMessage(analysis)
+                                             .setPositiveButton("Amazing!", null)
+                                             .show();
+                           })
+                           .show();
+                           
+                    // Show spectator-specific summary toast
+                    String winner = finalWhiteReport.overallAccuracy > finalBlackReport.overallAccuracy ? whitePlayer : blackPlayer;
+                    float winnerScore = Math.max(finalWhiteReport.overallAccuracy, finalBlackReport.overallAccuracy);
+                    
+                    String spectatorGrade = "";
+                    if (winnerScore >= 90) spectatorGrade = "Legendary authenticity! 🏆";
+                    else if (winnerScore >= 80) spectatorGrade = "Master-class accuracy! ⭐";
+                    else if (winnerScore >= 70) spectatorGrade = "Strong style fidelity! 👍";
+                    else if (winnerScore >= 60) spectatorGrade = "Good character play 📚";
+                    else spectatorGrade = "Room for growth ⚠️";
+                    
+                    Toast.makeText(this, String.format("🏆 Winner: %s (%.1f/100) - %s", 
+                            winner, winnerScore, spectatorGrade), Toast.LENGTH_LONG).show();
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running spectator validation test", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Spectator test failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    // Show error dialog with spectator context
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Spectator Validation Error")
+                           .setMessage("Spectator mode test failed: " + e.getMessage() + 
+                                     "\n\n🎭 This tests both masters in the current spectator game!")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
     }
 }

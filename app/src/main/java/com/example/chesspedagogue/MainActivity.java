@@ -85,6 +85,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
     private FloatingActionButton gameAnalysisButton;  // FIXED: Changed from Button to FloatingActionButton
     private FloatingActionButton coachButton;         // FIXED: Changed from Button to FloatingActionButton
     private FloatingActionButton competitiveModeButton;  // NEW: Competitive mode vs chess masters
+    private FloatingActionButton validateStyleButton;  // 🧪 TEMPORARY: Style validation testing
     private ChessBoardView chessBoardView;
 
     // NEW: Evaluation Bar UI Elements! 🎯
@@ -506,6 +507,17 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             Log.d(TAG, "✅ Competitive Mode button listener set");
         } else {
             Log.w(TAG, "⚠️ competitiveModeButton is null!");
+        }
+
+        // 🧪 VALIDATION BUTTON - Style testing controls
+        if (validateStyleButton != null) {
+            validateStyleButton.setOnClickListener(v -> {
+                Log.d(TAG, "🧪 Style Validation button clicked");
+                runAlekhineStyleValidation();
+            });
+            Log.d(TAG, "✅ Style Validation button listener set");
+        } else {
+            Log.w(TAG, "⚠️ validateStyleButton is null!");
         }
 
         // Additional buttons in the coach panel
@@ -2450,6 +2462,10 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             competitiveModeButton = findViewById(R.id.competitiveModeButton);
             Log.d(TAG, "competitiveModeButton: " + (competitiveModeButton != null ? "✅ Found" : "❌ NULL"));
 
+            // 🧪 VALIDATION BUTTON - Temporary for style testing
+            validateStyleButton = findViewById(R.id.validateStyleButton);
+            Log.d(TAG, "validateStyleButton: " + (validateStyleButton != null ? "✅ Found" : "❌ NULL"));
+
             // The critical one - let's see what happens here
             Log.d(TAG, "🎯 Looking for chessBoardView...");
             chessBoardView = findViewById(R.id.chessBoardView);
@@ -3340,5 +3356,71 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         } catch (Exception e) {
             Log.e(TAG, "❌ Error making promotion move", e);
         }
+    }
+
+    /**
+     * 🧪 VALIDATION METHOD - Run Alekhine Style Validation Test
+     */
+    private void runAlekhineStyleValidation() {
+        Log.d(TAG, "🧪 Starting Alekhine Style Validation Test...");
+        
+        // Show progress to user
+        Toast.makeText(this, "🧪 Running Alekhine Style Validation Test...", Toast.LENGTH_SHORT).show();
+        
+        // Run test in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get required components
+                PersonalityEngine personalityEngine = PersonalityEngine.getInstance(this, gameViewModel.getGameRepository().stockfishManager);
+                AIStyleAdvisor aiStyleAdvisor = AIStyleAdvisor.getInstance(this);
+                
+                // Create validator and run test
+                AlekhineStyleValidator validator = new AlekhineStyleValidator(this, personalityEngine, aiStyleAdvisor);
+                AlekhineStyleValidator.StyleAccuracyReport report = validator.runQuickValidationTest();
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    String results = report.toString();
+                    Log.d(TAG, "🧪 VALIDATION RESULTS:\n" + results);
+                    
+                    // Show results dialog
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("🎯 Alekhine Style Test Results")
+                           .setMessage(results)
+                           .setPositiveButton("🏆 Excellent!", null)
+                           .setNeutralButton("📊 Details", (dialog, which) -> {
+                               // Show detailed metrics in logs for now
+                               Toast.makeText(this, "📊 Check LogCat for detailed metrics", Toast.LENGTH_LONG).show();
+                           })
+                           .show();
+                           
+                    // Show summary toast
+                    String grade = "";
+                    if (report.overallAccuracy >= 90) grade = "GRANDMASTER AUTHENTICITY! 🏆";
+                    else if (report.overallAccuracy >= 80) grade = "Master-level similarity! ⭐";
+                    else if (report.overallAccuracy >= 70) grade = "Strong style recognition! 👍";
+                    else if (report.overallAccuracy >= 60) grade = "Basic pattern matching 📚";
+                    else grade = "Needs improvement ⚠️";
+                    
+                    Toast.makeText(this, String.format("🎯 Score: %.1f/100 - %s", 
+                            report.overallAccuracy, grade), Toast.LENGTH_LONG).show();
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running validation test", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Test failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    // Show error dialog with helpful info
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Validation Test Error")
+                           .setMessage("Test failed: " + e.getMessage() + 
+                                     "\n\nTip: Make sure you've played at least one move so the AI systems are initialized.")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
     }
 }

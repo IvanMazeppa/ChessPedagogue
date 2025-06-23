@@ -237,8 +237,21 @@
                 android:layout_height="36dp"
                 android:layout_weight="1"
                 android:text="🎙️ Voice"
-                android:layout_marginStart="2dp"
+                android:layout_marginStart="1dp"
+                android:layout_marginEnd="1dp"
                 android:backgroundTint="@color/chess_light_square"
+                android:textColor="@color/brown_dark"
+                android:textSize="12sp" />
+
+            <!-- 🧪 VALIDATION BUTTON - Temporary for style testing -->
+            <Button
+                android:id="@+id/competitiveValidateButton"
+                android:layout_width="0dp"
+                android:layout_height="36dp"
+                android:layout_weight="1"
+                android:text="🧪 Test"
+                android:layout_marginStart="1dp"
+                android:backgroundTint="@color/warning_amber"
                 android:textColor="@color/brown_dark"
                 android:textSize="12sp" />
         </LinearLayout>
