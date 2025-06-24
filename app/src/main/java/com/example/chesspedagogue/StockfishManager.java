@@ -589,9 +589,9 @@ public class StockfishManager {
             // Clear output buffer
             outputBuffer.clear();
 
-            // Tell engine to analyze
+            // Tell engine to analyze (use configured MultiPV value, not hardcoded)
             Log.d(TAG, "Starting analysis with time: " + thinkTimeMs + "ms");
-            sendCommand("go depth 15 multipv 3 movetime " + thinkTimeMs);
+            sendCommand("go depth 15 movetime " + thinkTimeMs);
 
             // Wait for analysis to complete
             long endTime = System.currentTimeMillis() + thinkTimeMs + 1000;  // Add buffer

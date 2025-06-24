@@ -2854,9 +2854,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 // Configure for current competitive master
                 personalityEngine.setCurrentMaster(selectedMaster);
                 
-                // Create validator and run test
-                AlekhineStyleValidator validator = new AlekhineStyleValidator(this, personalityEngine, aiStyleAdvisor);
-                AlekhineStyleValidator.StyleAccuracyReport report = validator.runQuickValidationTest();
+                // Create new reliable validator and test actual game moves
+                GameHistoryManager gameHistoryManager = GameHistoryManager.getInstance();
+                ReliableAlekhineValidator validator = new ReliableAlekhineValidator(this, gameHistoryManager, personalityEngine);
+                
+                // Determine if AI was white or black (AI plays opposite of player)
+                boolean aiWasWhite = !playerColor.equals("white");
+                
+                ReliableAlekhineValidator.ValidationReport report = validator.validateCompletedGame(aiWasWhite);
                 
                 // Show results on main thread
                 runOnUiThread(() -> {

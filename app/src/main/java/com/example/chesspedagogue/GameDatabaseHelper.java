@@ -35,7 +35,7 @@ import java.util.Map;
 public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String TAG = "GameDatabaseHelper";
     private static final String DATABASE_NAME = "chess_games.db";
-    private static final int DATABASE_VERSION = 5; // Incremented for emotional strategy learning!
+    private static final int DATABASE_VERSION = 6; // Incremented for last_move column!
 
     // EXISTING: Saved games table
     private static final String TABLE_GAMES = "saved_games";
@@ -59,6 +59,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
     private static final String COLUMN_SIGNIFICANCE = "significance";
     private static final String COLUMN_MOVE_NUMBER = "move_number";
     private static final String COLUMN_ANNOTATION = "annotation";
+    private static final String COLUMN_LAST_MOVE = "last_move";
     private static final String COLUMN_TAGS = "tags";
 
     // EXISTING: Create saved games table
@@ -150,6 +151,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     + COLUMN_SIGNIFICANCE + " TEXT,"
                     + COLUMN_MOVE_NUMBER + " INTEGER,"
                     + COLUMN_ANNOTATION + " TEXT,"
+                    + COLUMN_LAST_MOVE + " TEXT,"
                     + COLUMN_TAGS + " TEXT"
                     + ")";
 
@@ -409,6 +411,13 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             db.execSQL(CREATE_EMOTIONAL_STRATEGY_LEARNING_INDEX);
             
             Log.d(TAG, "🧠🎯 Database upgraded with emotional strategy learning - Masters will now adapt and learn optimal approaches!");
+        }
+        
+        if (oldVersion < 6) {
+            // Add last_move column to master positions table
+            db.execSQL("ALTER TABLE " + TABLE_MASTER_POSITIONS + " ADD COLUMN " + COLUMN_LAST_MOVE + " TEXT");
+            
+            Log.d(TAG, "🎯 Database upgraded with last_move column - Historical moves will now be properly stored!");
         }
     }
 
@@ -677,16 +686,21 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         String move = null;
 
         try {
-            String query = "SELECT " + COLUMN_ANNOTATION + " FROM " + TABLE_MASTER_POSITIONS +
+            String query = "SELECT " + COLUMN_LAST_MOVE + " FROM " + TABLE_MASTER_POSITIONS +
                     " WHERE " + COLUMN_FEN + " = ? AND " + COLUMN_MASTER_NAME + " = ?" +
                     " LIMIT 1";
 
             Cursor cursor = db.rawQuery(query, new String[]{fen, masterName});
 
             if (cursor.moveToFirst()) {
-                String annotation = cursor.getString(0);
-                move = extractMoveFromAnnotation(annotation);
-                Log.d(TAG, "🎯 Historical move found: " + move);
+                move = cursor.getString(0);
+                if (move != null && !move.trim().isEmpty()) {
+                    Log.d(TAG, "🎯 Historical move found: " + move);
+                } else {
+                    Log.d(TAG, "⚠️ Empty last_move found, falling back to annotation extraction");
+                    // Fallback to annotation extraction for backwards compatibility
+                    move = getHistoricalMoveFromAnnotation(fen, masterName);
+                }
             }
 
             cursor.close();
@@ -696,6 +710,36 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         }
 
         return move;
+    }
+    
+    /**
+     * Fallback method to extract move from annotation (for backwards compatibility)
+     */
+    private String getHistoricalMoveFromAnnotation(String fen, String masterName) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            String query = "SELECT " + COLUMN_ANNOTATION + " FROM " + TABLE_MASTER_POSITIONS +
+                    " WHERE " + COLUMN_FEN + " = ? AND " + COLUMN_MASTER_NAME + " = ?" +
+                    " LIMIT 1";
+
+            Cursor cursor = db.rawQuery(query, new String[]{fen, masterName});
+
+            if (cursor.moveToFirst()) {
+                String annotation = cursor.getString(0);
+                String move = extractMoveFromAnnotation(annotation);
+                Log.d(TAG, "🔄 Fallback: extracted move from annotation: " + move);
+                cursor.close();
+                return move;
+            }
+
+            cursor.close();
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting historical move from annotation", e);
+        }
+        
+        return null;
     }
 
     /**
@@ -1198,6 +1242,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 values.put(COLUMN_SIGNIFICANCE, chunk.optString("significance", ""));
                 values.put(COLUMN_MOVE_NUMBER, chunk.optInt("move_number", 0));
                 values.put(COLUMN_ANNOTATION, chunk.optString("annotation", ""));
+                values.put(COLUMN_LAST_MOVE, chunk.optString("last_move", ""));
                 // 🚨 SAFE: Handle potentially null tags array
                 JSONArray tagsArray = chunk.optJSONArray("tags");
                 if (tagsArray != null) {
@@ -1498,6 +1543,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             int yearIndex = cursor.getColumnIndex(COLUMN_YEAR);
             int tournamentIndex = cursor.getColumnIndex(COLUMN_TOURNAMENT);
             int annotationIndex = cursor.getColumnIndex(COLUMN_ANNOTATION);
+            int lastMoveIndex = cursor.getColumnIndex(COLUMN_LAST_MOVE);
             int significanceIndex = cursor.getColumnIndex(COLUMN_SIGNIFICANCE);
             int tagsIndex = cursor.getColumnIndex(COLUMN_TAGS);
             int moveNumberIndex = cursor.getColumnIndex(COLUMN_MOVE_NUMBER);
@@ -1510,6 +1556,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                 position.year = cursor.getString(yearIndex);
                 position.tournament = cursor.getString(tournamentIndex);
                 position.annotation = cursor.getString(annotationIndex);
+                position.lastMove = cursor.getString(lastMoveIndex);
                 position.significance = cursor.getString(significanceIndex);
                 position.moveNumber = cursor.getInt(moveNumberIndex);
                 position.tags = parseTagsFromJson(cursor.getString(tagsIndex));
@@ -1659,6 +1706,7 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         public String year;
         public String tournament;
         public String annotation;
+        public String lastMove;
         public String significance;
         public int moveNumber;
         public List<String> tags;
@@ -1683,6 +1731,51 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
                     1.0f // High similarity since it's a local match
             );
         }
+    }
+    
+    /**
+     * 🧪 Test the lastMove field functionality with sample data
+     */
+    public String testLastMoveField() {
+        StringBuilder result = new StringBuilder();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            result.append("🧪 TESTING LAST_MOVE FIELD:\n");
+            
+            // Query some sample positions with last_move field
+            String query = "SELECT " + COLUMN_MASTER_NAME + ", " + COLUMN_FEN + ", " + 
+                          COLUMN_ANNOTATION + ", " + COLUMN_LAST_MOVE + " FROM " + 
+                          TABLE_MASTER_POSITIONS + " WHERE " + COLUMN_MASTER_NAME + " = 'alekhine' LIMIT 5";
+            
+            Cursor cursor = db.rawQuery(query, null);
+            int count = 0;
+            
+            while (cursor.moveToNext()) {
+                count++;
+                String master = cursor.getString(0);
+                String fen = cursor.getString(1);
+                String annotation = cursor.getString(2);
+                String lastMove = cursor.getString(3);
+                
+                result.append(String.format("Entry %d:\n", count));
+                result.append(String.format("  Master: %s\n", master));
+                result.append(String.format("  FEN: %s\n", fen.substring(0, Math.min(30, fen.length())) + "..."));
+                result.append(String.format("  Annotation: %s\n", annotation != null ? annotation.substring(0, Math.min(40, annotation.length())) + "..." : "NULL"));
+                result.append(String.format("  Last Move: %s\n", lastMove != null ? lastMove : "NULL"));
+                result.append("\n");
+            }
+            
+            cursor.close();
+            result.append(String.format("✅ Found %d entries for testing\n", count));
+            
+        } catch (Exception e) {
+            result.append("❌ Error during lastMove test: ").append(e.getMessage()).append("\n");
+        }
+        
+        String testResult = result.toString();
+        Log.d(TAG, testResult);
+        return testResult;
     }
     
     /**

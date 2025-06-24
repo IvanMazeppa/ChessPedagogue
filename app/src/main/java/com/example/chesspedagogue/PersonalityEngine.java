@@ -256,24 +256,110 @@ public class PersonalityEngine {
      * Get top move candidates from Stockfish with evaluations
      */
     private List<PersonalityMove> getEngineCandidates(String currentFen) {
+        // CRITICAL DIAGNOSTIC: Force log to verify this method is called
+        Log.e(TAG, "🚨🚨🚨 CRITICAL: getEngineCandidates() METHOD ENTRY - THIS LOG MUST APPEAR! 🚨🚨🚨");
+        System.out.println("🚨🚨🚨 SYSTEM.OUT: getEngineCandidates() called for FEN: " + currentFen.substring(0, Math.min(30, currentFen.length())));
+        
         List<PersonalityMove> candidates = new ArrayList<>();
 
         try {
+            // CRITICAL FIX: Configure Stockfish for multiple candidates BEFORE analysis
+            Log.d(TAG, String.format("🔧 Configuring Stockfish for %d candidates", STOCKFISH_CANDIDATES));
+            boolean optionSet = stockfishManager.setOption("MultiPV", String.valueOf(STOCKFISH_CANDIDATES));
+            Log.d(TAG, String.format("🔧 MultiPV setOption result: %s", optionSet ? "SUCCESS" : "FAILED"));
+            
+            if (!optionSet) {
+                Log.e(TAG, "❌ CRITICAL: Failed to set MultiPV option - falling back to single move");
+            }
+            
+            // Wait longer for option to take effect
+            boolean ready = stockfishManager.waitForReady(1000);
+            Log.d(TAG, String.format("🔍 Stockfish ready after MultiPV config: %s", ready ? "YES" : "NO"));
+            
+            // DEBUG: Verify MultiPV setting by testing with a simple command
+            Log.d(TAG, "🔍 MultiPV configuration verification - testing engine responsiveness");
+            
             stockfishManager.setPosition(currentFen);
             String analysis = stockfishManager.getDetailedAnalysis(2000);
+            
+            // CRITICAL DEBUG: Comprehensive analysis logging
+            Log.d(TAG, "🔍 RAW STOCKFISH ANALYSIS LENGTH: " + analysis.length() + " characters");
+            String[] analysisLines = analysis.split("\n");
+            Log.d(TAG, "🔍 TOTAL ANALYSIS LINES: " + analysisLines.length);
+            
+            // Count relevant analysis lines with "info" and "pv"
+            int relevantLines = 0;
+            for (String line : analysisLines) {
+                if (line.contains("info depth") && line.contains("score") && line.contains("pv")) {
+                    relevantLines++;
+                }
+            }
+            Log.d(TAG, String.format("🔍 RELEVANT ANALYSIS LINES: %d (expected: %d)", relevantLines, STOCKFISH_CANDIDATES));
+            
+            // Show first 15 lines of analysis
+            Log.d(TAG, "🔍 Raw Stockfish analysis preview:");
+            for (int i = 0; i < Math.min(15, analysisLines.length); i++) {
+                Log.d(TAG, "  Line " + i + ": " + analysisLines[i]);
+            }
+            
+            // CRITICAL: Check if analysis contains multiple PV lines
+            if (relevantLines < 2) {
+                Log.e(TAG, "❌ CRITICAL: Only " + relevantLines + " relevant analysis lines found!");
+                Log.e(TAG, "❌ This suggests MultiPV setting failed or Stockfish didn't respond correctly");
+                Log.e(TAG, "🔧 TROUBLESHOOTING: Let's check if analysis contains any useful data");
+                
+                // Show ALL lines to debug what Stockfish actually returned
+                for (int i = 0; i < analysisLines.length; i++) {
+                    if (analysisLines[i].contains("info") || analysisLines[i].contains("depth") || 
+                        analysisLines[i].contains("score") || analysisLines[i].contains("pv") ||
+                        analysisLines[i].contains("bestmove")) {
+                        Log.d(TAG, "🔧 DEBUG Line " + i + ": " + analysisLines[i]);
+                    }
+                }
+            }
+            
             candidates = parseStockfishAnalysis(analysis);
 
+            Log.d(TAG, String.format("🔍 Raw analysis yielded %d candidate moves", candidates.size()));
+            
             if (candidates.isEmpty()) {
+                Log.w(TAG, "⚠️ No candidates from analysis - falling back to best move");
                 String bestMove = stockfishManager.getBestMove(1000);
                 if (bestMove != null && !bestMove.isEmpty()) {
                     candidates.add(new PersonalityMove(bestMove, 0.0f, 0.0f, "Engine's top choice", false));
                 }
+            } else if (candidates.size() == 1) {
+                Log.w(TAG, String.format("⚠️ Only 1 candidate found: %s (expected %d)", 
+                        candidates.get(0).move, STOCKFISH_CANDIDATES));
+                Log.w(TAG, "🔍 This suggests MultiPV setting didn't take effect");
+                
+                // FALLBACK: Try to get more moves by adjusting depth/time
+                Log.w(TAG, "🔧 FALLBACK: Attempting alternative method to get more candidates");
+                try {
+                    // Reset MultiPV and try again with longer analysis
+                    stockfishManager.setOption("MultiPV", "4"); // Try smaller number first
+                    stockfishManager.waitForReady(1000);
+                    String fallbackAnalysis = stockfishManager.getDetailedAnalysis(3000); // Longer time
+                    List<PersonalityMove> fallbackCandidates = parseStockfishAnalysis(fallbackAnalysis);
+                    
+                    if (fallbackCandidates.size() > candidates.size()) {
+                        Log.d(TAG, String.format("✅ Fallback worked! Got %d candidates instead of %d", 
+                                fallbackCandidates.size(), candidates.size()));
+                        candidates = fallbackCandidates;
+                    } else {
+                        Log.w(TAG, "❌ Fallback didn't help - still only " + fallbackCandidates.size() + " candidates");
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "❌ Fallback attempt failed", e);
+                }
+            } else {
+                Log.d(TAG, String.format("✅ Good! Found %d candidates from MultiPV analysis", candidates.size()));
             }
 
-            Log.d(TAG, "🔍 Parsed " + candidates.size() + " moves from engine analysis");
+            Log.d(TAG, "✅ Final candidate count: " + candidates.size());
 
         } catch (Exception e) {
-            Log.e(TAG, "Error getting engine candidates", e);
+            Log.e(TAG, "❌ Error getting engine candidates", e);
         }
 
         return candidates;

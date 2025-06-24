@@ -432,17 +432,64 @@ public class AIStyleAdvisor {
     }
     
     /**
-     * 🔧 Extract JSON from AI response text
+     * 🔧 Extract and fix JSON from AI response text
      */
     private String extractJSON(String response) {
         int jsonStart = response.indexOf("{");
         int jsonEnd = response.lastIndexOf("}");
         
         if (jsonStart >= 0 && jsonEnd > jsonStart) {
-            return response.substring(jsonStart, jsonEnd + 1);
+            String rawJson = response.substring(jsonStart, jsonEnd + 1);
+            
+            // Fix common JSON formatting issues from AI responses
+            String fixedJson = fixMalformedJSON(rawJson);
+            Log.d(TAG, "🔧 Fixed JSON: " + fixedJson.substring(0, Math.min(100, fixedJson.length())) + "...");
+            
+            return fixedJson;
         }
         
         return null;
+    }
+    
+    /**
+     * 🛠️ Fix common JSON formatting issues from AI responses
+     */
+    private String fixMalformedJSON(String rawJson) {
+        // Fix mixed quote types - normalize all quotes to standard double quotes
+        String fixed = rawJson;
+        
+        // Replace escaped quotes that should be regular quotes
+        // Pattern: \"reason\": \"text\" should become "reason": "text"
+        fixed = fixed.replaceAll("\\\\\"([a-zA-Z_]+)\\\\\"\\s*:", "\"$1\":");
+        
+        // Fix other common escape issues
+        fixed = fixed.replaceAll("\\\\\"([^\"]+)\\\\\"", "\"$1\"");
+        
+        // Ensure all keys and string values use proper double quotes
+        // This regex finds unquoted keys and fixes them
+        fixed = fixed.replaceAll("([{,]\\s*)([a-zA-Z_][a-zA-Z0-9_]*)\\s*:", "$1\"$2\":");
+        
+        // Fix trailing commas that break JSON parsing
+        fixed = fixed.replaceAll(",\\s*([}\\]])", "$1");
+        
+        // Fix double quotes inside string values that break JSON
+        // Pattern: "text with "quotes" inside" -> "text with 'quotes' inside"
+        fixed = fixed.replaceAll("\"([^\"]*?)\"([^\"]*?)\"([^\"]*?)\"\\s*([,}])", "\"$1'$2'$3\"$4");
+        
+        // Fix specific issue from your log: extra quote at end of string
+        fixed = fixed.replaceAll("\"\"\\s*([,}])", "\"$1");
+        
+        // CRITICAL FIX: Handle the specific pattern from logs: "reason': ' instead of "reason": "
+        fixed = fixed.replaceAll("\"([a-zA-Z_]+)'\\s*:\\s*'", "\"$1\": \"");
+        
+        // Fix other quote/colon mismatches
+        fixed = fixed.replaceAll("'\\s*:\\s*'", "\": \"");
+        fixed = fixed.replaceAll("'\\s*:", "\":");
+        fixed = fixed.replaceAll(":\\s*'", ": \"");
+        
+        Log.d(TAG, "🛠️ JSON fix applied - original length: " + rawJson.length() + ", fixed length: " + fixed.length());
+        
+        return fixed;
     }
     
     /**
