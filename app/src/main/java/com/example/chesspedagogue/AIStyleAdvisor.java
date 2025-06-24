@@ -455,6 +455,15 @@ public class AIStyleAdvisor {
      * 🛠️ Fix common JSON formatting issues from AI responses
      */
     private String fixMalformedJSON(String rawJson) {
+        // CRITICAL FIX: Test if JSON is already valid before applying any fixes
+        try {
+            new JSONObject(rawJson);
+            Log.d(TAG, "✅ JSON is already valid - no fixes needed");
+            return rawJson; // Return original if it's already valid
+        } catch (JSONException e) {
+            Log.d(TAG, "🔧 JSON needs fixing: " + e.getMessage());
+        }
+        
         // Fix mixed quote types - normalize all quotes to standard double quotes
         String fixed = rawJson;
         
@@ -479,13 +488,17 @@ public class AIStyleAdvisor {
         // Fix specific issue from your log: extra quote at end of string
         fixed = fixed.replaceAll("\"\"\\s*([,}])", "\"$1");
         
-        // CRITICAL FIX: Handle the specific pattern from logs: "reason': ' instead of "reason": "
-        fixed = fixed.replaceAll("\"([a-zA-Z_]+)'\\s*:\\s*'", "\"$1\": \"");
-        
-        // Fix other quote/colon mismatches
-        fixed = fixed.replaceAll("'\\s*:\\s*'", "\": \"");
-        fixed = fixed.replaceAll("'\\s*:", "\":");
-        fixed = fixed.replaceAll(":\\s*'", ": \"");
+        // ONLY apply the problematic regex if there's actually a quote mismatch
+        if (fixed.contains("':")  || fixed.contains(":'")) {
+            Log.d(TAG, "🔧 Applying quote mismatch fixes");
+            // CRITICAL FIX: Handle the specific pattern from logs: "reason': ' instead of "reason": "
+            fixed = fixed.replaceAll("\"([a-zA-Z_]+)'\\s*:\\s*'", "\"$1\": \"");
+            
+            // Fix other quote/colon mismatches
+            fixed = fixed.replaceAll("'\\s*:\\s*'", "\": \"");
+            fixed = fixed.replaceAll("'\\s*:", "\":");
+            fixed = fixed.replaceAll(":\\s*'", ": \"");
+        }
         
         Log.d(TAG, "🛠️ JSON fix applied - original length: " + rawJson.length() + ", fixed length: " + fixed.length());
         

@@ -263,29 +263,46 @@ public class PersonalityEngine {
         List<PersonalityMove> candidates = new ArrayList<>();
 
         try {
+            // CRITICAL: Add checkpoint logging to track execution flow
+            Log.e(TAG, "🔍 CHECKPOINT 1: About to configure MultiPV");
+            System.out.println("🔍 CHECKPOINT 1: About to configure MultiPV");
             // CRITICAL FIX: Configure Stockfish for multiple candidates BEFORE analysis
             Log.d(TAG, String.format("🔧 Configuring Stockfish for %d candidates", STOCKFISH_CANDIDATES));
             boolean optionSet = stockfishManager.setOption("MultiPV", String.valueOf(STOCKFISH_CANDIDATES));
-            Log.d(TAG, String.format("🔧 MultiPV setOption result: %s", optionSet ? "SUCCESS" : "FAILED"));
+            Log.e(TAG, String.format("🔧 MultiPV setOption result: %s", optionSet ? "SUCCESS" : "FAILED"));
+            System.out.println("🔧 MultiPV setOption result: " + (optionSet ? "SUCCESS" : "FAILED"));
             
             if (!optionSet) {
                 Log.e(TAG, "❌ CRITICAL: Failed to set MultiPV option - falling back to single move");
+                System.out.println("❌ CRITICAL: Failed to set MultiPV option");
             }
+            
+            Log.e(TAG, "🔍 CHECKPOINT 2: About to wait for ready");
+            System.out.println("🔍 CHECKPOINT 2: About to wait for ready");
             
             // Wait longer for option to take effect
             boolean ready = stockfishManager.waitForReady(1000);
-            Log.d(TAG, String.format("🔍 Stockfish ready after MultiPV config: %s", ready ? "YES" : "NO"));
+            Log.e(TAG, String.format("🔍 Stockfish ready after MultiPV config: %s", ready ? "YES" : "NO"));
+            System.out.println("🔍 Stockfish ready: " + (ready ? "YES" : "NO"));
             
             // DEBUG: Verify MultiPV setting by testing with a simple command
             Log.d(TAG, "🔍 MultiPV configuration verification - testing engine responsiveness");
             
+            Log.e(TAG, "🔍 CHECKPOINT 3: About to set position and get analysis");
+            System.out.println("🔍 CHECKPOINT 3: About to set position and get analysis");
+            
             stockfishManager.setPosition(currentFen);
             String analysis = stockfishManager.getDetailedAnalysis(2000);
             
+            Log.e(TAG, "🔍 CHECKPOINT 4: Analysis received, length: " + analysis.length());
+            System.out.println("🔍 CHECKPOINT 4: Analysis received, length: " + analysis.length());
+            
             // CRITICAL DEBUG: Comprehensive analysis logging
-            Log.d(TAG, "🔍 RAW STOCKFISH ANALYSIS LENGTH: " + analysis.length() + " characters");
+            Log.e(TAG, "🔍 RAW STOCKFISH ANALYSIS LENGTH: " + analysis.length() + " characters");
+            System.out.println("🔍 RAW STOCKFISH ANALYSIS LENGTH: " + analysis.length() + " characters");
             String[] analysisLines = analysis.split("\n");
-            Log.d(TAG, "🔍 TOTAL ANALYSIS LINES: " + analysisLines.length);
+            Log.e(TAG, "🔍 TOTAL ANALYSIS LINES: " + analysisLines.length);
+            System.out.println("🔍 TOTAL ANALYSIS LINES: " + analysisLines.length);
             
             // Count relevant analysis lines with "info" and "pv"
             int relevantLines = 0;
@@ -294,12 +311,15 @@ public class PersonalityEngine {
                     relevantLines++;
                 }
             }
-            Log.d(TAG, String.format("🔍 RELEVANT ANALYSIS LINES: %d (expected: %d)", relevantLines, STOCKFISH_CANDIDATES));
+            Log.e(TAG, String.format("🔍 RELEVANT ANALYSIS LINES: %d (expected: %d)", relevantLines, STOCKFISH_CANDIDATES));
+            System.out.println("🔍 RELEVANT ANALYSIS LINES: " + relevantLines + " (expected: " + STOCKFISH_CANDIDATES + ")");
             
             // Show first 15 lines of analysis
-            Log.d(TAG, "🔍 Raw Stockfish analysis preview:");
+            Log.e(TAG, "🔍 Raw Stockfish analysis preview:");
+            System.out.println("🔍 Raw Stockfish analysis preview:");
             for (int i = 0; i < Math.min(15, analysisLines.length); i++) {
-                Log.d(TAG, "  Line " + i + ": " + analysisLines[i]);
+                Log.e(TAG, "  Line " + i + ": " + analysisLines[i]);
+                if (i < 5) System.out.println("  Line " + i + ": " + analysisLines[i]);
             }
             
             // CRITICAL: Check if analysis contains multiple PV lines
@@ -320,7 +340,8 @@ public class PersonalityEngine {
             
             candidates = parseStockfishAnalysis(analysis);
 
-            Log.d(TAG, String.format("🔍 Raw analysis yielded %d candidate moves", candidates.size()));
+            Log.e(TAG, String.format("🔍 Raw analysis yielded %d candidate moves", candidates.size()));
+            System.out.println("🔍 Raw analysis yielded " + candidates.size() + " candidate moves");
             
             if (candidates.isEmpty()) {
                 Log.w(TAG, "⚠️ No candidates from analysis - falling back to best move");
@@ -359,9 +380,13 @@ public class PersonalityEngine {
             Log.d(TAG, "✅ Final candidate count: " + candidates.size());
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error getting engine candidates", e);
+            Log.e(TAG, "❌ CRITICAL ERROR in getEngineCandidates!", e);
+            System.out.println("❌ CRITICAL ERROR in getEngineCandidates: " + e.getMessage());
+            e.printStackTrace();
         }
 
+        Log.e(TAG, "🔍 CHECKPOINT 5: Method ending, returning " + candidates.size() + " candidates");
+        System.out.println("🔍 CHECKPOINT 5: Method ending, returning " + candidates.size() + " candidates");
         return candidates;
     }
 
@@ -371,11 +396,20 @@ public class PersonalityEngine {
     private List<PersonalityMove> parseStockfishAnalysis(String analysis) {
         List<PersonalityMove> moves = new ArrayList<>();
 
+        Log.e(TAG, "🔍 PARSING: Starting to parse " + analysis.length() + " character analysis");
+        System.out.println("🔍 PARSING: Starting analysis parsing");
+
         try {
             String[] lines = analysis.split("\n");
+            Log.e(TAG, "🔍 PARSING: Split into " + lines.length + " lines");
+            
+            int relevantLineCount = 0;
 
             for (String line : lines) {
                 if (line.contains("info depth") && line.contains("score") && line.contains("pv")) {
+                    relevantLineCount++;
+                    Log.e(TAG, "🔍 PARSING: Processing relevant line " + relevantLineCount + ": " + line.substring(0, Math.min(100, line.length())));
+                    System.out.println("🔍 PARSING: Processing relevant line " + relevantLineCount);
                     try {
                         float score = 0.0f;
                         if (line.contains("score cp")) {
@@ -393,22 +427,34 @@ public class PersonalityEngine {
                         if (pvIndex > 2) {
                             String pvSection = line.substring(pvIndex);
                             String[] pvMoves = pvSection.split(" ");
+                            Log.e(TAG, "🔍 PARSING: PV section: '" + pvSection.substring(0, Math.min(50, pvSection.length())) + "'");
                             if (pvMoves.length > 0 && !pvMoves[0].isEmpty()) {
                                 String move = pvMoves[0].trim();
+                                Log.e(TAG, "🔍 PARSING: Extracted move: '" + move + "' (length: " + move.length() + ")");
                                 if (move.length() >= 4) {
                                     moves.add(new PersonalityMove(move, score, 0.0f, "Stockfish analysis", false));
+                                    Log.e(TAG, "✅ PARSING: Added move: " + move + " with score: " + score);
+                                } else {
+                                    Log.e(TAG, "❌ PARSING: Move too short: '" + move + "'");
                                 }
+                            } else {
+                                Log.e(TAG, "❌ PARSING: No moves in PV section");
                             }
+                        } else {
+                            Log.e(TAG, "❌ PARSING: No 'pv ' found in line");
                         }
 
                     } catch (Exception e) {
-                        Log.w(TAG, "Error parsing analysis line: " + line, e);
+                        Log.e(TAG, "❌ CRITICAL PARSING ERROR for line: " + line, e);
+                        System.out.println("❌ CRITICAL PARSING ERROR: " + e.getMessage());
                     }
                 }
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing Stockfish analysis", e);
+            Log.e(TAG, "❌ CRITICAL ERROR in parseStockfishAnalysis!", e);
+            System.out.println("❌ CRITICAL ERROR in parseStockfishAnalysis: " + e.getMessage());
+            e.printStackTrace();
         }
 
         Map<String, PersonalityMove> uniqueMoves = new HashMap<>();
@@ -422,7 +468,14 @@ public class PersonalityEngine {
         List<PersonalityMove> result = new ArrayList<>(uniqueMoves.values());
         Collections.sort(result, (a, b) -> Float.compare(b.engineScore, a.engineScore));
 
-        return result.subList(0, Math.min(STOCKFISH_CANDIDATES, result.size()));
+        Log.e(TAG, "🔍 PARSING: Found " + moves.size() + " total moves, " + uniqueMoves.size() + " unique moves");
+        System.out.println("🔍 PARSING: Found " + moves.size() + " total moves, " + uniqueMoves.size() + " unique moves");
+        
+        int finalCount = Math.min(STOCKFISH_CANDIDATES, result.size());
+        Log.e(TAG, "🔍 PARSING: Returning " + finalCount + " candidates (limit: " + STOCKFISH_CANDIDATES + ")");
+        System.out.println("🔍 PARSING: Returning " + finalCount + " candidates");
+
+        return result.subList(0, finalCount);
     }
 
     private void findSimilarPositionsLocally(String currentFen, List<PersonalityMove> engineCandidates,
