@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -1075,6 +1076,99 @@ public class OpenAIService {
         void onError(Exception e);
     }
 
+
+    /**
+     * 🎯 Get style validation response using latest GPT model
+     * Specifically designed for chess master style identification
+     */
+    public CompletableFuture<String> getStyleValidationResponse(String prompt, String modelId, int maxTokens, double temperature) {
+        CompletableFuture<String> future = new CompletableFuture<>();
+        
+        // Execute validation request in background
+        executeAsync(() -> {
+            try {
+                Log.d(TAG, "🤖 Sending style validation request to " + modelId);
+                
+                // Create request payload
+                JSONObject requestBody = new JSONObject();
+                requestBody.put("model", modelId);
+                requestBody.put("max_tokens", maxTokens);
+                requestBody.put("temperature", temperature);
+                
+                // Create messages array
+                JSONArray messages = new JSONArray();
+                
+                // Add system message for style validation context
+                JSONObject systemMessage = new JSONObject();
+                systemMessage.put("role", "system");
+                systemMessage.put("content", 
+                    "You are a world-class chess analyst and historian specializing in identifying the playing styles of legendary chess masters. " +
+                    "Provide detailed, accurate analysis with confidence scores. Always respond in valid JSON format exactly as requested.");
+                messages.put(systemMessage);
+                
+                // Add user prompt
+                JSONObject userMessage = new JSONObject();
+                userMessage.put("role", "user");
+                userMessage.put("content", prompt);
+                messages.put(userMessage);
+                
+                requestBody.put("messages", messages);
+                
+                // Make API request
+                String requestBodyString = requestBody.toString();
+                Log.d(TAG, "📤 Validation request body length: " + requestBodyString.length());
+                
+                RequestBody body = RequestBody.create(requestBodyString, MediaType.parse("application/json"));
+                Request request = new Request.Builder()
+                    .url(API_URL)
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .post(body)
+                    .build();
+                
+                try (Response response = client.newCall(request).execute()) {
+                    if (!response.isSuccessful()) {
+                        String errorBody = response.body() != null ? response.body().string() : "No error body";
+                        throw new IOException("Style validation request failed: " + response.code() + " - " + errorBody);
+                    }
+                    
+                    String responseBody = response.body().string();
+                    Log.d(TAG, "📥 Validation response received, length: " + responseBody.length());
+                    
+                    // Parse response to extract content
+                    JSONObject jsonResponse = new JSONObject(responseBody);
+                    JSONArray choices = jsonResponse.getJSONArray("choices");
+                    
+                    if (choices.length() > 0) {
+                        JSONObject firstChoice = choices.getJSONObject(0);
+                        JSONObject message = firstChoice.getJSONObject("message");
+                        String content = message.getString("content");
+                        
+                        Log.d(TAG, "✅ Style validation response extracted successfully");
+                        return content;
+                    } else {
+                        throw new IOException("No choices in validation response");
+                    }
+                }
+                
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error in style validation request", e);
+                throw new RuntimeException("Style validation failed", e);
+            }
+        }, new ApiCallback<String>() {
+            @Override
+            public void onSuccess(String result) {
+                future.complete(result);
+            }
+            
+            @Override
+            public void onFailure(Exception e) {
+                future.completeExceptionally(e);
+            }
+        });
+        
+        return future;
+    }
 
     /**
      * 🚨 GUARDRAIL DIAGNOSTIC: Verify all guardrails are working correctly

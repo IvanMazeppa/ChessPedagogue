@@ -416,32 +416,36 @@ public class PersonalityEngine {
                             int cpIndex = line.indexOf("score cp") + 8;
                             int nextSpace = line.indexOf(" ", cpIndex);
                             if (nextSpace > cpIndex) {
-                                int centipawns = Integer.parseInt(line.substring(cpIndex, nextSpace).trim());
+                                String scoreStr = line.substring(cpIndex, nextSpace).trim();
+                                int centipawns = Integer.parseInt(scoreStr);
                                 score = centipawns / 100.0f;
+                                Log.e(TAG, "🔍 PARSING: Extracted centipawn score: " + centipawns + " -> " + score);
+                            } else {
+                                Log.e(TAG, "❌ PARSING: Could not find next space after 'score cp'");
                             }
                         } else if (line.contains("score mate")) {
                             score = 10.0f;
+                            Log.e(TAG, "🔍 PARSING: Found mate score, setting to: " + score);
+                        } else {
+                            Log.e(TAG, "❌ PARSING: No recognized score format in line");
                         }
 
-                        int pvIndex = line.indexOf("pv ") + 3;
-                        if (pvIndex > 2) {
-                            String pvSection = line.substring(pvIndex);
-                            String[] pvMoves = pvSection.split(" ");
-                            Log.e(TAG, "🔍 PARSING: PV section: '" + pvSection.substring(0, Math.min(50, pvSection.length())) + "'");
+                        // Extract move from "time 700 pv e7e6" -> get "e7e6"
+                        // CRITICAL: Find the LAST "pv " not the first (multipv vs pv)
+                        int pvIndex = line.lastIndexOf(" pv ");
+                        // Extract move from "time 700 pv e7e6" -> get "e7e6"
+                        if (pvIndex != -1) {
+                            String pvSection = line.substring(pvIndex + 4); // Skip " pv "
+                            String[] pvMoves = pvSection.trim().split("\\s+");
                             if (pvMoves.length > 0 && !pvMoves[0].isEmpty()) {
                                 String move = pvMoves[0].trim();
-                                Log.e(TAG, "🔍 PARSING: Extracted move: '" + move + "' (length: " + move.length() + ")");
-                                if (move.length() >= 4) {
+                                
+                                // Check if move is valid UCI format (e2e4, g1f3, etc.)
+                                if (move.length() >= 4 && move.matches("[a-h][1-8][a-h][1-8].*")) {
                                     moves.add(new PersonalityMove(move, score, 0.0f, "Stockfish analysis", false));
-                                    Log.e(TAG, "✅ PARSING: Added move: " + move + " with score: " + score);
-                                } else {
-                                    Log.e(TAG, "❌ PARSING: Move too short: '" + move + "'");
+                                    System.out.println("✅ Added: " + move + " (" + score + ")");
                                 }
-                            } else {
-                                Log.e(TAG, "❌ PARSING: No moves in PV section");
                             }
-                        } else {
-                            Log.e(TAG, "❌ PARSING: No 'pv ' found in line");
                         }
 
                     } catch (Exception e) {
@@ -471,11 +475,16 @@ public class PersonalityEngine {
         Log.e(TAG, "🔍 PARSING: Found " + moves.size() + " total moves, " + uniqueMoves.size() + " unique moves");
         System.out.println("🔍 PARSING: Found " + moves.size() + " total moves, " + uniqueMoves.size() + " unique moves");
         
+        if (moves.size() == 0) {
+            Log.e(TAG, "🚨 CRITICAL: NO MOVES EXTRACTED! Check UCI format and PV parsing above!");
+            System.out.println("🚨 CRITICAL: NO MOVES EXTRACTED FROM STOCKFISH ANALYSIS!");
+        }
+        
         int finalCount = Math.min(STOCKFISH_CANDIDATES, result.size());
         Log.e(TAG, "🔍 PARSING: Returning " + finalCount + " candidates (limit: " + STOCKFISH_CANDIDATES + ")");
         System.out.println("🔍 PARSING: Returning " + finalCount + " candidates");
 
-        return result.subList(0, finalCount);
+        return finalCount > 0 ? result.subList(0, finalCount) : result;
     }
 
     private void findSimilarPositionsLocally(String currentFen, List<PersonalityMove> engineCandidates,
@@ -1258,6 +1267,16 @@ public class PersonalityEngine {
                 return "morphy_full_positions.json";
             case "botvinnik":
                 return "botvinnik_full_positions.json";
+            // NEW: Add the unmapped masters that have files
+            case "dommaraju":
+            case "gukesh":
+                return "dommaraju_full_positions.json";
+            case "nakamura":
+            case "hikaru":
+                return "nakamura_full_positions.json";
+            case "short":
+            case "nigel":
+                return "short_full_positions.json";
             default:
                 // Fallback to old naming convention
                 return masterName.toLowerCase() + "_positions.json";
@@ -1472,12 +1491,19 @@ public class PersonalityEngine {
             return 0.0f;
         }
         
-        // Check if this move is AI-preferred
-        if (aiAdvice.preferredMoves.contains(candidate.move)) {
+        // Find move's ranking in AI preferences (0 = top choice, 1 = second, etc.)
+        int moveRank = aiAdvice.preferredMoves.indexOf(candidate.move);
+        if (moveRank >= 0) {
             float aiWeight = Math.min(aiAdvice.styleWeight, 0.8f); // Cap AI influence
-            float bonus = personalityWeight * aiWeight * 0.5f; // Scale AI bonus
             
-            Log.d(TAG, "🧠 AI prefers " + candidate.move + " (weight=" + aiWeight + ", bonus=" + bonus + ")");
+            // Weight bonus by AI ranking: top choice gets full bonus, others get diminishing bonus
+            float rankingMultiplier = 1.0f - (moveRank * 0.15f); // 1.0, 0.85, 0.70, 0.55, etc.
+            rankingMultiplier = Math.max(rankingMultiplier, 0.25f); // Minimum 25% bonus for any AI-preferred move
+            
+            float bonus = personalityWeight * aiWeight * 0.6f * rankingMultiplier; // Increased base bonus
+            
+            Log.d(TAG, "🧠 AI: " + candidate.move + " #" + (moveRank + 1) + " bonus=" + bonus);
+            System.out.println("🧠 AI: " + candidate.move + " #" + (moveRank + 1) + " +" + bonus);
             return bonus;
         }
         

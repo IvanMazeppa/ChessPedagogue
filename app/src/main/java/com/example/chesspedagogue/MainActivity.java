@@ -1539,6 +1539,26 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             Intent intent = new Intent(this, ChessSetSelectionActivity.class);
             startActivityForResult(intent, REQUEST_CHESS_SET_SELECTION);
             return true;
+
+        } else if (itemId == R.id.action_import_masters) {
+            Log.d(TAG, "🚀 Running bulk master database import");
+            runBulkMasterImport();
+            return true;
+
+        } else if (itemId == R.id.action_retry_failed_masters) {
+            Log.d(TAG, "🔄 Retrying failed master imports");
+            retryFailedMasterImports();
+            return true;
+
+        } else if (itemId == R.id.action_quick_style_validation) {
+            Log.d(TAG, "⚡ Running quick style validation");
+            runQuickStyleValidation();
+            return true;
+
+        } else if (itemId == R.id.action_historical_validation) {
+            Log.d(TAG, "🎯 Running historical move validation");
+            runHistoricalValidation();
+            return true;
         }
 
         return super.onOptionsItemSelected(item);
@@ -3422,5 +3442,275 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                 });
             }
         });
+    }
+
+    /**
+     * 🚀 Run bulk import of all chess master databases
+     */
+    private void runBulkMasterImport() {
+        Log.d(TAG, "🚀 Starting bulk master database import...");
+        
+        // Show progress to user
+        Toast.makeText(this, "🚀 Importing all master databases...", Toast.LENGTH_SHORT).show();
+        
+        // Run import in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Create bulk importer and run
+                MasterDatabaseBulkImporter importer = new MasterDatabaseBulkImporter(this);
+                MasterDatabaseBulkImporter.ImportResults results = importer.importAllMasters();
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    String summary = String.format("✅ Import Complete!\n\nSuccessful: %d/%d masters\nTotal positions: %d\n\n%s", 
+                        results.getSuccessCount(), 
+                        results.getResults().size(),
+                        results.getTotalPositions(),
+                        results.getMissingFiles().isEmpty() ? "All files imported!" : 
+                            "Missing files: " + results.getMissingFiles());
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("🚀 Master Database Import")
+                           .setMessage(summary)
+                           .setPositiveButton("Great!", null)
+                           .show();
+                    
+                    Log.d(TAG, "📊 Import summary: " + summary);
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running bulk import", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Import failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Import Error")
+                           .setMessage("Import failed: " + e.getMessage() + 
+                                     "\n\nCheck that master position files exist in assets/")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
+    }
+
+    /**
+     * 🔄 Retry failed master imports with updated name mapping
+     */
+    private void retryFailedMasterImports() {
+        Log.d(TAG, "🔄 Starting retry of failed master imports...");
+        
+        // Show progress to user
+        Toast.makeText(this, "🔄 Retrying failed master imports...", Toast.LENGTH_SHORT).show();
+        
+        // Masters that failed in the previous import
+        String[] failedMasters = {"dommaraju", "nakamura", "short"};
+        
+        // Run retry in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Create bulk importer and retry failed masters
+                MasterDatabaseBulkImporter importer = new MasterDatabaseBulkImporter(this);
+                MasterDatabaseBulkImporter.ImportResults results = importer.retryFailedMasters(failedMasters);
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    String summary = String.format("🔄 Retry Complete!\n\nSuccessful: %d/%d masters\nPositions imported: %d\n\n%s", 
+                        results.getSuccessCount(), 
+                        failedMasters.length,
+                        results.getTotalPositions(),
+                        results.getSuccessCount() == failedMasters.length ? "All retries successful! ✅" : 
+                            "Some retries still failed. Check logs for details.");
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("🔄 Master Import Retry")
+                           .setMessage(summary)
+                           .setPositiveButton("OK", null)
+                           .show();
+                    
+                    Log.d(TAG, "📊 Retry summary: " + summary);
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running retry imports", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Retry failed: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Retry Error")
+                           .setMessage("Retry failed: " + e.getMessage() + 
+                                     "\n\nCheck that the master position files exist and have correct format.")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
+    }
+
+    /**
+     * ⚡ Run quick style validation using Claude 4.0 Opus
+     */
+    private void runQuickStyleValidation() {
+        Log.d(TAG, "⚡ Starting quick style validation...");
+        
+        // Show progress to user
+        Toast.makeText(this, "⚡ Running quick Alekhine style validation...", Toast.LENGTH_SHORT).show();
+        
+        // Run validation in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get PersonalityEngine instance
+                PersonalityEngine personalityEngine = PersonalityEngine.getInstance(this, 
+                    gameViewModel.getGameRepository().stockfishManager);
+                
+                // Create lightweight validator with StockfishManager access
+                LightweightStyleValidator validator = new LightweightStyleValidator(this, personalityEngine, 
+                    gameViewModel.getGameRepository().stockfishManager);
+                
+                // Run quick validation on 20 sample positions
+                LightweightStyleValidator.QuickValidationResult result = 
+                    validator.validateAlekhineAssistant(20).get();
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    if (result.success) {
+                        String grade = getValidationGrade(result.accuracy);
+                        String summary = String.format("⚡ Quick Validation Complete!\\n\\n" +
+                            "Alekhine Style Accuracy: %.1f%%\\n" +
+                            "Grade: %s\\n\\n%s", 
+                            result.accuracy * 100, grade, result.summary);
+                        
+                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                        builder.setTitle("⚡ Quick Style Validation")
+                               .setMessage(summary)
+                               .setPositiveButton("Great!", null)
+                               .setNegativeButton("View Details", (dialog, which) -> {
+                                   // Could expand to show detailed results
+                                   Log.d(TAG, "📊 Full validation details: " + result.summary);
+                               })
+                               .show();
+                        
+                        Log.d(TAG, "📊 Validation result: " + result.accuracy + " accuracy, " + grade);
+                    } else {
+                        Toast.makeText(this, "❌ Validation failed: " + result.summary, Toast.LENGTH_LONG).show();
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running quick validation", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Validation error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Validation Error")
+                           .setMessage("Quick validation failed: " + e.getMessage() + 
+                                     "\\n\\nEnsure Alekhine positions are loaded and AI services are configured.")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
+    }
+
+    /**
+     * 🎯 Run corrected historical validation that tests assistant's actual move choices
+     */
+    private void runHistoricalValidation() {
+        Log.d(TAG, "🎯 Starting historical move validation...");
+        
+        // Show progress to user
+        Toast.makeText(this, "🎯 Testing assistant against historical Alekhine moves...", Toast.LENGTH_SHORT).show();
+        
+        // Run validation in background thread
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.execute(() -> {
+            try {
+                // Get PersonalityEngine instance
+                PersonalityEngine personalityEngine = PersonalityEngine.getInstance(this, 
+                    gameViewModel.getGameRepository().stockfishManager);
+                
+                // Create lightweight validator with StockfishManager access
+                LightweightStyleValidator validator = new LightweightStyleValidator(this, personalityEngine, 
+                    gameViewModel.getGameRepository().stockfishManager);
+                
+                // Run historical validation on 15 sample positions
+                LightweightStyleValidator.HistoricalValidationResult result = 
+                    validator.validateAgainstHistoricalMoves(15).get();
+                
+                // Show results on main thread
+                runOnUiThread(() -> {
+                    if (result.success) {
+                        String exactGrade = getValidationGrade(result.exactMatchRate);
+                        String styleGrade = getValidationGrade(result.styleMatchRate);
+                        double combinedScore = (result.exactMatchRate * 0.6) + (result.styleMatchRate * 0.4);
+                        String combinedGrade = getValidationGrade(combinedScore);
+                        
+                        String summary = String.format(
+                            "🎯 Historical Validation Complete!\\n\\n" +
+                            "📊 RESULTS:\\n" +
+                            "Exact Matches: %.1f%% (%s)\\n" +
+                            "Style Matches: %.1f%% (%s)\\n" +
+                            "Combined Score: %.1f%% (%s)\\n\\n" +
+                            "🎯 This tests your ACTUAL assistant's move choices against what Alekhine played in similar positions!",
+                            result.exactMatchRate * 100, exactGrade,
+                            result.styleMatchRate * 100, styleGrade,
+                            combinedScore * 100, combinedGrade);
+                        
+                        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                        builder.setTitle("🎯 Historical Move Validation")
+                               .setMessage(summary)
+                               .setPositiveButton("Excellent!", null)
+                               .setNegativeButton("View Details", (dialog, which) -> {
+                                   // Show detailed assessment breakdown
+                                   String details = result.summary + "\\n\\nThis validation method tests your assistant by:\\n" +
+                                       "1. Giving it historical positions\\n" +
+                                       "2. Recording its move choices\\n" +
+                                       "3. Comparing to Alekhine's actual moves\\n" +
+                                       "4. Verifying style authenticity via GPT-4.1";
+                                   
+                                   AlertDialog.Builder detailBuilder = new AlertDialog.Builder(this);
+                                   detailBuilder.setTitle("📊 Detailed Results")
+                                                .setMessage(details)
+                                                .setPositiveButton("Got it!", null)
+                                                .show();
+                               })
+                               .show();
+                        
+                        Log.d(TAG, String.format("📊 Historical validation: %.1f%% exact, %.1f%% style, %.1f%% combined", 
+                            result.exactMatchRate * 100, result.styleMatchRate * 100, combinedScore * 100));
+                    } else {
+                        Toast.makeText(this, "❌ Historical validation failed: " + result.summary, Toast.LENGTH_LONG).show();
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "💥 Error running historical validation", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "❌ Historical validation error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                    
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("❌ Historical Validation Error")
+                           .setMessage("Historical validation failed: " + e.getMessage() + 
+                                     "\\n\\nEnsure Alekhine positions are loaded, AI services configured, and assistant is accessible.")
+                           .setPositiveButton("OK", null)
+                           .show();
+                });
+            }
+        });
+    }
+    
+    /**
+     * 📊 Get validation grade based on accuracy
+     */
+    private String getValidationGrade(double accuracy) {
+        if (accuracy >= 0.9) return "A+ (Exceptional Authenticity)";
+        if (accuracy >= 0.8) return "A (Strong Authenticity)"; 
+        if (accuracy >= 0.7) return "B (Good Authenticity)";
+        if (accuracy >= 0.6) return "C (Moderate Authenticity)";
+        if (accuracy >= 0.5) return "D (Weak Authenticity)";
+        return "F (Poor Authenticity)";
     }
 }

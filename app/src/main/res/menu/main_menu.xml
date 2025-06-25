@@ -68,6 +68,31 @@
         android:icon="@android:drawable/ic_menu_preferences"
         app:showAsAction="never" />
 
+    <!-- Debug Tools -->
+    <item
+        android:id="@+id/action_import_masters"
+        android:title="🚀 Import All Masters"
+        android:icon="@android:drawable/ic_menu_upload"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_retry_failed_masters"
+        android:title="🔄 Retry Failed Masters"
+        android:icon="@android:drawable/ic_menu_revert"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_quick_style_validation"
+        android:title="⚡ Quick Style Validation"
+        android:icon="@android:drawable/ic_menu_search"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_historical_validation"
+        android:title="🎯 Historical Move Validation"
+        android:icon="@android:drawable/ic_menu_agenda"
+        app:showAsAction="never" />
+
     <!-- About -->
     <item
         android:id="@+id/action_about"

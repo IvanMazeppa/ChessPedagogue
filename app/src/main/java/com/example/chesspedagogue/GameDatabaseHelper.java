@@ -1526,6 +1526,12 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
             return "anand";
         } else if (normalized.contains("mikhail botvinnik") || normalized.contains("botvinnik")) {
             return "botvinnik";
+        } else if (normalized.contains("gukesh dommaraju") || normalized.contains("dommaraju") || normalized.contains("gukesh")) {
+            return "dommaraju";
+        } else if (normalized.contains("hikaru nakamura") || normalized.contains("nakamura") || normalized.contains("hikaru")) {
+            return "nakamura";
+        } else if (normalized.contains("nigel short") || normalized.contains("short") || normalized.contains("nigel")) {
+            return "short";
         }
         
         // Fallback - return original name

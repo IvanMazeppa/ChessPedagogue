@@ -379,55 +379,29 @@ public class AIStyleAdvisor {
             
             JSONObject json = new JSONObject(jsonStr);
             
-            // 🎯 NEW: Parse move scores and rank by style fit
-            List<String> preferredMoves = new ArrayList<>();
-            Map<String, Float> moveScores = new HashMap<>();
+            // Use the extracted helper method for cleaner code
+            AIStyleAdvice advice = parseJsonResponse(json, candidateMoves);
             
-            if (json.has("move_scores")) {
-                JSONObject scoresObj = json.getJSONObject("move_scores");
-                
-                // Extract all move scores
-                for (String move : candidateMoves) {
-                    if (scoresObj.has(move)) {
-                        JSONObject moveData = scoresObj.getJSONObject(move);
-                        float score = (float) moveData.optDouble("score", 0.5);
-                        moveScores.put(move, score);
-                        
-                        // Add to preferred moves if score > 0.6 (strong style fit)
-                        if (score > 0.6) {
-                            preferredMoves.add(move);
-                            Log.d(TAG, "🎭 Style match: " + move + " = " + score);
-                        }
-                    }
-                }
-                
-                // Sort preferred moves by score (highest first)
-                preferredMoves.sort((a, b) -> Float.compare(moveScores.get(b), moveScores.get(a)));
-            }
+            Log.d(TAG, "🎭 Parsed: " + advice.preferredMoves.size() + " moves, conf=" + advice.styleWeight);
+            Log.d(TAG, "🎭 AI moves: " + advice.preferredMoves);
             
-            // 🎯 NEW: Get top choice directly
-            String topChoice = json.optString("top_choice", "");
-            if (!topChoice.isEmpty() && candidateMoves.contains(topChoice) && !preferredMoves.contains(topChoice)) {
-                preferredMoves.add(0, topChoice); // Add to front
-            }
-            
-            // Extract other fields with defaults
-            float confidence = (float) json.optDouble("confidence", 0.5);
-            String reasoning = json.optString("style_reasoning", "Style-based preference");
-            String masterInsight = "Style confidence: " + confidence;
-            boolean isAttacking = reasoning.toLowerCase().contains("attack");
-            boolean isPositional = reasoning.toLowerCase().contains("positional");
-            
-            Log.d(TAG, "🎭 Parsed style evaluation: " + preferredMoves.size() + " moves, confidence=" + confidence);
-            Log.d(TAG, "🎭 AI preferred moves: " + preferredMoves);
-            Log.d(TAG, "💭 AI reasoning: " + reasoning);
-            
-            return new AIStyleAdvice(preferredMoves, confidence, reasoning, 
-                                   masterInsight, isAttacking, isPositional);
+            return advice;
             
         } catch (JSONException e) {
-            Log.w(TAG, "⚠️ JSON parsing failed, falling back to text analysis", e);
-            return parseTextResponse(response, master, candidateMoves);
+            Log.w(TAG, "⚠️ JSON parsing failed: " + e.getMessage());
+            Log.w(TAG, "🔧 Attempting enhanced JSON repair...");
+            
+            // Try more aggressive JSON fixing
+            String enhancedFixed = enhancedJsonFix(fixMalformedJSON(response));
+            try {
+                JSONObject retryJson = new JSONObject(enhancedFixed);
+                Log.d(TAG, "✅ Enhanced JSON fix succeeded!");
+                // Retry parsing with fixed JSON
+                return parseJsonResponse(retryJson, candidateMoves);
+            } catch (JSONException e2) {
+                Log.w(TAG, "❌ Enhanced JSON fix failed, falling back to text analysis");
+                return parseTextResponse(response, master, candidateMoves);
+            }
         }
     }
     
@@ -503,6 +477,74 @@ public class AIStyleAdvisor {
         Log.d(TAG, "🛠️ JSON fix applied - original length: " + rawJson.length() + ", fixed length: " + fixed.length());
         
         return fixed;
+    }
+    
+    /**
+     * 🔧 Enhanced JSON fixing for complex parsing issues
+     */
+    private String enhancedJsonFix(String jsonStr) {
+        String fixed = fixMalformedJSON(jsonStr);
+        
+        // Additional fixes for common AI response issues
+        // Fix escaped quotes in JSON values: \"reason\": \"text\"
+        fixed = fixed.replaceAll("\\\\\"", "\"");
+        
+        // Fix single quotes around JSON keys/values
+        fixed = fixed.replaceAll("'([a-zA-Z_]+)'\\s*:", "\"$1\":");
+        fixed = fixed.replaceAll(":\\s*'([^']*)'", ": \"$1\"");
+        
+        // Fix malformed numbers (e.g., "score": 0.0,} -> "score": 0.0})  
+        fixed = fixed.replaceAll("([0-9.]+),\\s*([}\\]])", "$1$2");
+        
+        // Remove extra commas before closing brackets
+        fixed = fixed.replaceAll(",+\\s*([}\\]])", "$1");
+        
+        return fixed;
+    }
+    
+    /**
+     * 🎯 Parse JSON response (extracted from main method for reuse)
+     */
+    private AIStyleAdvice parseJsonResponse(JSONObject json, List<String> candidateMoves) throws JSONException {
+        List<String> preferredMoves = new ArrayList<>();
+        Map<String, Float> moveScores = new HashMap<>();
+        
+        if (json.has("move_scores")) {
+            JSONObject scoresObj = json.getJSONObject("move_scores");
+            
+            // Extract all move scores
+            for (String move : candidateMoves) {
+                if (scoresObj.has(move)) {
+                    JSONObject moveData = scoresObj.getJSONObject(move);
+                    float score = (float) moveData.optDouble("score", 0.5);
+                    moveScores.put(move, score);
+                    
+                    // Add to preferred moves if score > 0.6 (strong style fit)
+                    if (score > 0.6) {
+                        preferredMoves.add(move);
+                    }
+                }
+            }
+            
+            // Sort preferred moves by score (highest first)
+            preferredMoves.sort((a, b) -> Float.compare(moveScores.get(b), moveScores.get(a)));
+        }
+        
+        // Get top choice directly
+        String topChoice = json.optString("top_choice", "");
+        if (!topChoice.isEmpty() && candidateMoves.contains(topChoice) && !preferredMoves.contains(topChoice)) {
+            preferredMoves.add(0, topChoice); // Add to front
+        }
+        
+        // Extract other fields with defaults
+        float confidence = (float) json.optDouble("confidence", 0.5);
+        String reasoning = json.optString("style_reasoning", "Style-based preference");
+        String masterInsight = "Style confidence: " + confidence;
+        boolean isAttacking = reasoning.toLowerCase().contains("attack");
+        boolean isPositional = reasoning.toLowerCase().contains("positional");
+        
+        return new AIStyleAdvice(preferredMoves, confidence, reasoning, 
+                               masterInsight, isAttacking, isPositional);
     }
     
     /**
