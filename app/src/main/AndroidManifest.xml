@@ -161,6 +161,19 @@
                 android:value=".MainActivity" />
         </activity>
 
+        <!-- Tactical Puzzle Activity -->
+        <activity
+            android:name=".TacticalPuzzleActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.ChessPedagogue.NoActionBar"
+            android:label="🧩 Tactical Puzzles"
+            android:parentActivityName=".MainActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+
     </application>
 
 </manifest>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_competitive_mode"
+        android:title="🤖 Toggle AI Competition"
+        android:icon="@android:drawable/ic_menu_share"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_change_difficulty"
+        android:title="⭐ Change Difficulty"
+        android:icon="@android:drawable/ic_menu_sort_by_size"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_change_theme"
+        android:title="🎯 Change Theme"
+        android:icon="@android:drawable/ic_menu_agenda"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_view_stats"
+        android:title="📊 View Statistics"
+        android:icon="@android:drawable/ic_menu_info_details"
+        app:showAsAction="never" />
+
+</menu>

@@ -83,4 +83,10 @@
     <color name="shadow_light">#1A000000</color>
     <color name="shadow_medium">#33000000</color>
     <color name="shadow_dark">#4D000000</color>
+
+    <!-- Tactical Puzzle UI Colors -->
+    <color name="background_color">#F5F5F5</color>
+    <color name="primary_text_color">#2E1810</color>
+    <color name="secondary_text_color">#6D4C41</color>
+    <color name="accent_color">#FFD700</color>
 </resources>

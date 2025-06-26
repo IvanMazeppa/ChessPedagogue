@@ -36,6 +36,13 @@
         android:icon="@android:drawable/ic_menu_compass"
         app:showAsAction="never" />
 
+    <!-- Tactical Training -->
+    <item
+        android:id="@+id/action_tactical_puzzles"
+        android:title="🧩 Tactical Puzzles"
+        android:icon="@android:drawable/ic_menu_edit"
+        app:showAsAction="never" />
+
     <!-- Coach and Learning -->
     <item
         android:id="@+id/action_coach_conversation"

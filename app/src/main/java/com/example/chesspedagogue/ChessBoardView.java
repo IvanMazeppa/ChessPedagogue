@@ -127,24 +127,42 @@ public class ChessBoardView extends View {
     /* ───────── 🎯 BOARD SCALING FIX ───────── */
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
+        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
+        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
+        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
         
-        int measuredWidth = getMeasuredWidth();
-        int measuredHeight = getMeasuredHeight();
+        int desiredSize;
         
-        // Only proceed if measurements have actually changed significantly
-        if (Math.abs(measuredWidth - lastMeasuredWidth) > 5 || 
-            Math.abs(measuredHeight - lastMeasuredHeight) > 5 || 
-            lastMeasuredWidth == -1) {
-            
-            lastMeasuredWidth = measuredWidth;
-            lastMeasuredHeight = measuredHeight;
-            
-            Log.d("ChessBoardView", "🎯 Measure: " + measuredWidth + "x" + measuredHeight);
+        if (widthMode == MeasureSpec.EXACTLY && heightMode == MeasureSpec.EXACTLY) {
+            // Both dimensions fixed - use the smaller one
+            desiredSize = Math.min(widthSize, heightSize);
+        } else if (widthMode == MeasureSpec.EXACTLY) {
+            // Width is fixed - make square
+            desiredSize = widthSize;
+        } else if (heightMode == MeasureSpec.EXACTLY) {
+            // Height is fixed - make square  
+            desiredSize = heightSize;
         } else {
-            // Keep previous measurements to prevent micro-adjustments
-            setMeasuredDimension(lastMeasuredWidth, lastMeasuredHeight);
+            // wrap_content - use maximum horizontal width for tactical puzzles
+            int availableWidth = widthMode == MeasureSpec.AT_MOST ? widthSize : 1200;
+            int availableHeight = heightMode == MeasureSpec.AT_MOST ? heightSize : 1200;
+            
+            // Prioritize horizontal space - use 95% of available width
+            desiredSize = Math.max((int)(availableWidth * 0.95), availableHeight - 150);
+            
+            if (desiredSize <= 0) {
+                desiredSize = 900; // Even larger fallback
+            }
         }
+        
+        // Use nearly full horizontal width - only leave minimal margins
+        desiredSize = Math.max(800, Math.min(desiredSize, 1600));
+        
+        setMeasuredDimension(desiredSize, desiredSize);
+        
+        Log.d("ChessBoardView", String.format("🎯 Measured: %dx%d (modes: w=%d h=%d)", 
+            desiredSize, desiredSize, widthMode, heightMode));
     }
     
     /* ───────── 🎯 BOARD SCALING FIX ───────── */

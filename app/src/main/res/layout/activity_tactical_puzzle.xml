@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background_color">
+
+    <!-- Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="?attr/colorPrimary"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+
+    <!-- Main Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <!-- Puzzle Header - Compact -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_background"
+                android:padding="8dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:id="@+id/puzzle_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🧩 Loading Puzzle..."
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_text_color"
+                    android:gravity="center" />
+
+                <TextView
+                    android:id="@+id/puzzle_description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Get ready for tactical training!"
+                    android:textSize="14sp"
+                    android:textColor="@color/secondary_text_color"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/timer_view"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⏱️ 0:00"
+                        android:textSize="14sp"
+                        android:textColor="@color/accent_color"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="1dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/puzzle_stats"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📊 Stats loading..."
+                        android:textSize="12sp"
+                        android:textColor="@color/secondary_text_color" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <!-- Chess Board - Optimized sizing -->
+            <com.example.chesspedagogue.ChessBoardView
+                android:id="@+id/chess_board"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/board_background" />
+
+            <!-- Move Input Section - Compact with touch support -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_background"
+                android:padding="8dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎯 Tap pieces on board or type move:"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/primary_text_color"
+                    android:layout_marginBottom="6dp"
+                    android:gravity="center" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <EditText
+                        android:id="@+id/move_input"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:hint="e.g., e4, Nf3"
+                        android:inputType="text"
+                        android:imeOptions="actionDone"
+                        android:background="@drawable/edit_text_background"
+                        android:padding="8dp"
+                        android:textSize="14sp"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/submit_move_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="✓"
+                        android:background="@drawable/button_primary"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/hint_button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="40dp"
+                        android:text="💡"
+                        android:background="@drawable/button_secondary"
+                        android:textColor="@color/accent_color"
+                        android:paddingLeft="12dp"
+                        android:paddingRight="12dp" />
+
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/next_puzzle_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:text="➡️ Next Puzzle"
+                    android:background="@drawable/button_primary"
+                    android:textColor="@android:color/white"
+                    android:textStyle="bold"
+                    android:layout_marginTop="6dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- Result Display - Compact -->
+            <LinearLayout
+                android:id="@+id/result_layout"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/rounded_background"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/result_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Result will appear here"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:id="@+id/assistant_result"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🤖 Assistant analysis"
+                    android:textSize="14sp"
+                    android:textColor="@color/secondary_text_color"
+                    android:gravity="center"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+            <!-- Loading Progress -->
+            <ProgressBar
+                android:id="@+id/loading_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</LinearLayout>

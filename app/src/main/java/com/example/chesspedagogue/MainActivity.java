@@ -1509,6 +1509,11 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             WorkingMastersTournamentDemo.showTournamentSelectionDialog(this);
             return true;
 
+        } else if (itemId == R.id.action_tactical_puzzles) {
+            Log.d(TAG, "🧩 Opening tactical puzzles");
+            showTacticalPuzzleOptions();
+            return true;
+
         } else if (itemId == R.id.action_coach_conversation) {
             // Launch coach conversation
             Intent intent = new Intent(this, ChessConversationActivity.class);
@@ -3702,6 +3707,92 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         });
     }
     
+    /**
+     * 🧩 Show tactical puzzle options dialog
+     */
+    private void showTacticalPuzzleOptions() {
+        Log.d(TAG, "🎯 Showing tactical puzzle options");
+        
+        String[] options = {
+            "🧩 Practice Mode - Solo Training",
+            "🏆 Competitive Mode - vs Alekhine",
+            "🎯 Themed Training - Focus Areas",
+            "🔍 Validation Mode - Test Assistant"
+        };
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🧩 Tactical Puzzle Training")
+               .setIcon(android.R.drawable.ic_menu_edit)
+               .setItems(options, (dialog, which) -> {
+                   switch (which) {
+                       case 0:
+                           launchTacticalPuzzles("practice", "all", 0, false);
+                           break;
+                       case 1:
+                           launchTacticalPuzzles("competitive", "all", 0, true);
+                           break;
+                       case 2:
+                           showThemedTrainingOptions();
+                           break;
+                       case 3:
+                           launchTacticalPuzzles("validation", "all", 0, true);
+                           break;
+                   }
+               })
+               .setNegativeButton("Cancel", null)
+               .show();
+    }
+    
+    /**
+     * 🎯 Show themed training options
+     */
+    private void showThemedTrainingOptions() {
+        String[] themes = {
+            "📌 Pins - Trap pieces to their king",
+            "🍴 Forks - Attack two pieces at once", 
+            "🍢 Skewers - Force valuable piece to move",
+            "🔍 Discoveries - Unleash hidden attacks",
+            "🎯 Deflection - Remove key defenders",
+            "💥 Sacrifices - Give up material for advantage",
+            "⚔️ Attacks - Assault the enemy king",
+            "🚀 Breakthroughs - Break open positions"
+        };
+        
+        String[] themeValues = {"pin", "fork", "skewer", "discovery", "deflection", "sacrifice", "attack", "breakthrough"};
+        
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🎯 Choose Training Theme")
+               .setItems(themes, (dialog, which) -> {
+                   if (which < themeValues.length) {
+                       launchTacticalPuzzles("themed", themeValues[which], 0, false);
+                   }
+               })
+               .setNegativeButton("Back", null)
+               .show();
+    }
+    
+    /**
+     * 🚀 Launch tactical puzzle activity
+     */
+    private void launchTacticalPuzzles(String mode, String theme, int difficulty, boolean assistantMode) {
+        try {
+            Intent intent = new Intent(this, TacticalPuzzleActivity.class);
+            intent.putExtra("mode", mode);
+            intent.putExtra("theme", theme);
+            intent.putExtra("difficulty", difficulty);
+            intent.putExtra("assistant_mode", assistantMode);
+            
+            startActivity(intent);
+            
+            Log.d(TAG, String.format("🚀 Launched tactical puzzles: mode=%s, theme=%s, assistant=%s", 
+                mode, theme, assistantMode));
+                
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error launching tactical puzzles", e);
+            Toast.makeText(this, "Error opening tactical puzzles: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
     /**
      * 📊 Get validation grade based on accuracy
      */
