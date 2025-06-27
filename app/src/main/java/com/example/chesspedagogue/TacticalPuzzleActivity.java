@@ -260,6 +260,9 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
             // Flip board if black to move (so black pieces are at bottom)
             chessBoardView.setFlipped(!isWhiteTurn);
             
+            // Show opponent's setup move with highlighting and animation
+            showOpponentSetupMove(puzzle.opponentMove, !isWhiteTurn);
+            
             Log.d(TAG, String.format("🎯 Board setup: Original FEN=%s", puzzle.fen));
             Log.d(TAG, String.format("🎯 Board setup: After move %s: %s, WhiteTurn=%s, BoardFlipped=%s", 
                 puzzle.opponentMove, currentBoardPosition, isWhiteTurn, !isWhiteTurn));
@@ -307,30 +310,33 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
                 
                 runOnUiThread(() -> {
                     if (isCorrect) {
-                        // Apply the user's move to the board
-                        applyMoveToBoard(userMove);
-                        currentSolutionIndex++;
-                        
-                        if (currentPuzzle.isSolutionComplete(currentSolutionIndex)) {
-                            // Puzzle completely solved!
-                            ModernTacticalEngine.PuzzleResult result = tacticalEngine.submitSolution(userMove);
-                            displayResult(result);
-                            stopTimer();
+                        // Show user move animation first, then apply to board
+                        showUserMoveAnimation(userUci, () -> {
+                            // Apply the user's move to the board after animation
+                            applyMoveToBoard(userMove);
+                            currentSolutionIndex++;
                             
-                            // Update stats with professional system
-                            userStats = tacticalEngine.getUserStatistics();
-                            updateStatsDisplay();
-                        } else {
-                            // Check if next move is opponent's response (should be auto-played)
-                            if (isOpponentMove(currentSolutionIndex)) {
-                                // Auto-play opponent's response
-                                autoPlayOpponentMove();
+                            if (currentPuzzle.isSolutionComplete(currentSolutionIndex)) {
+                                // Puzzle completely solved!
+                                ModernTacticalEngine.PuzzleResult result = tacticalEngine.submitSolution(userMove);
+                                displayResult(result);
+                                stopTimer();
+                                
+                                // Update stats with professional system
+                                userStats = tacticalEngine.getUserStatistics();
+                                updateStatsDisplay();
                             } else {
-                                // More user moves needed - continue sequence
-                                updateBoardForNextMove();
-                                displayContinuationResult(currentSolutionIndex);
+                                // Check if next move is opponent's response (should be auto-played)
+                                if (isOpponentMove(currentSolutionIndex)) {
+                                    // Auto-play opponent's response
+                                    autoPlayOpponentMove();
+                                } else {
+                                    // More user moves needed - continue sequence
+                                    updateBoardForNextMove();
+                                    displayContinuationResult(currentSolutionIndex);
+                                }
                             }
-                        }
+                        });
                     } else {
                         // Incorrect move
                         displayIncorrectMoveResult(userMove);
@@ -791,24 +797,29 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
             
             // Add a small delay to make auto-play feel more natural
             timerHandler.postDelayed(() -> {
-                // Apply opponent's move to the board (UCI format)
-                String newPosition = applyUciMoveToPosition(currentBoardPosition, opponentMove);
-                if (newPosition != null) {
-                    currentBoardPosition = newPosition;
-                    chessBoardView.updateBoardFromFen(newPosition);
-                    
-                    // Advance to next move in sequence
-                    currentSolutionIndex++;
-                    
-                    // Update UI for next user move
-                    updateBoardForNextMove();
-                    
-                    // Show continuation message
-                    displayOpponentResponseAndContinuation(opponentMove);
+                // Show opponent move with highlighting and animation first
+                showOpponentMoveAnimation(opponentMove);
+                
+                // Apply opponent's move to the board (UCI format) after animation delay
+                timerHandler.postDelayed(() -> {
+                    String newPosition = applyUciMoveToPosition(currentBoardPosition, opponentMove);
+                    if (newPosition != null) {
+                        currentBoardPosition = newPosition;
+                        chessBoardView.updateBoardFromFen(newPosition);
+                        
+                        // Advance to next move in sequence
+                        currentSolutionIndex++;
+                        
+                        // Update UI for next user move
+                        updateBoardForNextMove();
+                        
+                        // Show continuation message
+                        displayOpponentResponseAndContinuation(opponentMove);
                     
                     Log.d(TAG, String.format("✅ Opponent move applied: %s, next user move: %d/%d", 
                         opponentMove, currentSolutionIndex + 1, currentPuzzle.getSolutionLength()));
-                }
+                    }
+                }, 350); // Board update after animation completes
             }, 800); // 800ms delay for natural feel
             
         } catch (Exception e) {
@@ -1031,7 +1042,7 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
     }
     
     /**
-     * 🔢 Convert user's move to UCI based on coordinates (RELIABLE)
+     * 🔢 Convert user's move to UCI based on coordinates (with promotion detection)
      */
     private String convertUserMoveToUci(String algebraicMove, int fromRow, int fromCol, int toRow, int toCol) {
         try {
@@ -1042,6 +1053,28 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
             int toRank = 8 - toRow;
             
             String uciMove = "" + fromFile + fromRank + toFile + toRank;
+            
+            // Check for pawn promotion
+            char movingPiece = chessBoardView.getPieceAt(fromRow, fromCol);
+            boolean isPawn = Character.toLowerCase(movingPiece) == 'p';
+            boolean isPromotionRank = (toRank == 8 || toRank == 1); // 8th rank for white, 1st rank for black
+            
+            if (isPawn && isPromotionRank) {
+                // Detect promotion piece from expected solution
+                String expectedMove = currentPuzzle.getSolutionMove(currentSolutionIndex);
+                if (expectedMove.length() == 5 && expectedMove.startsWith(uciMove)) {
+                    // Add promotion piece from solution (e.g., 'q', 'r', 'b', 'n')
+                    char promotionPiece = expectedMove.charAt(4);
+                    uciMove += promotionPiece;
+                    Log.d(TAG, String.format("🎯 Promotion detected: %s → %s (piece: %c)", 
+                        uciMove.substring(0, 4), uciMove, promotionPiece));
+                } else {
+                    // Default to queen promotion if no specific piece found
+                    uciMove += "q";
+                    Log.d(TAG, String.format("🎯 Default queen promotion: %s", uciMove));
+                }
+            }
+            
             Log.d(TAG, String.format("🎯 Coordinate→UCI: (%d,%d)→(%d,%d) = %s", 
                 fromRow, fromCol, toRow, toCol, uciMove));
             
@@ -1050,6 +1083,183 @@ public class TacticalPuzzleActivity extends AppCompatActivity {
         } catch (Exception e) {
             Log.e(TAG, "❌ Error converting coordinates to UCI", e);
             return null;
+        }
+    }
+    
+    /**
+     * 🎯 Convert UCI move to board coordinates (handles promotion moves)
+     */
+    private int[] uciToCoordinates(String uciMove) {
+        if (uciMove == null || uciMove.length() < 4) {
+            return null;
+        }
+        
+        try {
+            // Parse "e2e4" or "e7e8q" format (ignores promotion piece suffix)
+            char fromFile = uciMove.charAt(0);
+            char fromRank = uciMove.charAt(1);
+            char toFile = uciMove.charAt(2);
+            char toRank = uciMove.charAt(3);
+            
+            // Convert to board coordinates (0-7)
+            int fromCol = fromFile - 'a';
+            int fromRow = 8 - (fromRank - '0');
+            int toCol = toFile - 'a';
+            int toRow = 8 - (toRank - '0');
+            
+            return new int[]{fromRow, fromCol, toRow, toCol};
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error converting UCI to coordinates: " + uciMove, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 🎬 Show opponent's setup move with highlighting and animation (Lichess style)
+     */
+    private void showOpponentSetupMove(String uciMove, boolean boardFlipped) {
+        if (uciMove == null || uciMove.isEmpty()) {
+            return;
+        }
+        
+        try {
+            int[] coords = uciToCoordinates(uciMove);
+            if (coords == null) {
+                Log.e(TAG, "❌ Could not parse UCI move for setup animation: " + uciMove);
+                return;
+            }
+            
+            int fromRow = coords[0];
+            int fromCol = coords[1];
+            int toRow = coords[2];
+            int toCol = coords[3];
+            
+            // Convert board coordinates to algebraic notation for highlighting
+            String fromSquare = coordinatesToAlgebraic(fromRow, fromCol);
+            String toSquare = coordinatesToAlgebraic(toRow, toCol);
+            
+            Log.d(TAG, String.format("🎬 Setup move animation: %s (%s→%s) coords:(%d,%d)→(%d,%d) flipped:%s", 
+                uciMove, fromSquare, toSquare, fromRow, fromCol, toRow, toCol, boardFlipped));
+            
+            // Add highlighting for the move (similar to Lichess)
+            int highlightColor = 0x88FFA500; // Semi-transparent orange
+            chessBoardView.highlightSquare(fromSquare, highlightColor, 3000); // 3 second duration
+            chessBoardView.highlightSquare(toSquare, highlightColor, 3000);
+            
+            // Add small delay then animate the piece movement
+            timerHandler.postDelayed(() -> {
+                chessBoardView.animateMove(fromRow, fromCol, toRow, toCol);
+                Log.d(TAG, "✅ Setup move animation started");
+            }, 500); // 500ms delay to let board finish updating
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing opponent setup move", e);
+        }
+    }
+    
+    /**
+     * 🔢 Convert board coordinates to algebraic notation
+     */
+    private String coordinatesToAlgebraic(int row, int col) {
+        char file = (char)('a' + col);
+        int rank = 8 - row;
+        return "" + file + rank;
+    }
+    
+    /**
+     * 🎬 Show opponent move with highlighting and animation during multi-move sequences
+     */
+    private void showOpponentMoveAnimation(String uciMove) {
+        if (uciMove == null || uciMove.isEmpty()) {
+            return;
+        }
+        
+        try {
+            int[] coords = uciToCoordinates(uciMove);
+            if (coords == null) {
+                Log.e(TAG, "❌ Could not parse UCI move for opponent animation: " + uciMove);
+                return;
+            }
+            
+            int fromRow = coords[0];
+            int fromCol = coords[1];
+            int toRow = coords[2];
+            int toCol = coords[3];
+            
+            // Convert board coordinates to algebraic notation for highlighting
+            String fromSquare = coordinatesToAlgebraic(fromRow, fromCol);
+            String toSquare = coordinatesToAlgebraic(toRow, toCol);
+            
+            Log.d(TAG, String.format("🎬 Opponent move animation: %s (%s→%s) coords:(%d,%d)→(%d,%d)", 
+                uciMove, fromSquare, toSquare, fromRow, fromCol, toRow, toCol));
+            
+            // Add highlighting for opponent move (different color than setup move)
+            int highlightColor = 0x88FF6B6B; // Semi-transparent red for opponent moves
+            chessBoardView.highlightSquare(fromSquare, highlightColor, 2000); // 2 second duration
+            chessBoardView.highlightSquare(toSquare, highlightColor, 2000);
+            
+            // Animate the piece movement immediately
+            chessBoardView.animateMove(fromRow, fromCol, toRow, toCol);
+            Log.d(TAG, "✅ Opponent move animation started");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing opponent move animation", e);
+        }
+    }
+    
+    /**
+     * 🎬 Show user move with highlighting and animation
+     */
+    private void showUserMoveAnimation(String uciMove, Runnable onAnimationComplete) {
+        if (uciMove == null || uciMove.isEmpty()) {
+            if (onAnimationComplete != null) {
+                onAnimationComplete.run();
+            }
+            return;
+        }
+        
+        try {
+            int[] coords = uciToCoordinates(uciMove);
+            if (coords == null) {
+                Log.e(TAG, "❌ Could not parse UCI move for user animation: " + uciMove);
+                if (onAnimationComplete != null) {
+                    onAnimationComplete.run();
+                }
+                return;
+            }
+            
+            int fromRow = coords[0];
+            int fromCol = coords[1];
+            int toRow = coords[2];
+            int toCol = coords[3];
+            
+            // Convert board coordinates to algebraic notation for highlighting
+            String fromSquare = coordinatesToAlgebraic(fromRow, fromCol);
+            String toSquare = coordinatesToAlgebraic(toRow, toCol);
+            
+            Log.d(TAG, String.format("🎬 User move animation: %s (%s→%s) coords:(%d,%d)→(%d,%d)", 
+                uciMove, fromSquare, toSquare, fromRow, fromCol, toRow, toCol));
+            
+            // Add highlighting for user move (different color - green/blue)
+            int highlightColor = 0x8887CEEB; // Semi-transparent sky blue for user moves
+            chessBoardView.highlightSquare(fromSquare, highlightColor, 2000); // 2 second duration
+            chessBoardView.highlightSquare(toSquare, highlightColor, 2000);
+            
+            // Animate the piece movement
+            chessBoardView.animateMove(fromRow, fromCol, toRow, toCol);
+            Log.d(TAG, "✅ User move animation started");
+            
+            // Run completion callback after animation finishes (250ms animation + small buffer)
+            if (onAnimationComplete != null) {
+                timerHandler.postDelayed(onAnimationComplete, 300);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error showing user move animation", e);
+            if (onAnimationComplete != null) {
+                onAnimationComplete.run();
+            }
         }
     }
     
