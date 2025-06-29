@@ -804,11 +804,11 @@ public class GameViewModel extends AndroidViewModel {
         // Set a longer timeout for personality engine (AI database search takes time)
         Handler timeoutHandler = new Handler(Looper.getMainLooper());
         Runnable timeoutRunnable = () -> {
-            Log.w(TAG, "⏰ Personality engine timeout (30s), falling back to standard engine");
+            Log.w(TAG, "⏰ Personality engine timeout (90s), falling back to standard engine");
             statusMessage.setValue("🔄 Tal is thinking deeply... switching to faster mode");
             requestStandardEngineMove();
         };
-        timeoutHandler.postDelayed(timeoutRunnable, 10000); // 30 second timeout for database search
+        timeoutHandler.postDelayed(timeoutRunnable, 90000); // 90 second timeout for reasoning models
 
         LogThrottler.force("GameViewModel", "🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()");
         LogThrottler.force("GameViewModel", "🔧 DEBUG: gameRepository instance = " + (gameRepository != null ? "NOT NULL" : "NULL"));
