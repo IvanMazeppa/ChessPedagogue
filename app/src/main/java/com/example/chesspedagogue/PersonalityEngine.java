@@ -248,10 +248,13 @@ public class PersonalityEngine {
                 }
 
                 // 🧠 ALEKHINE DIRECT PATH: Use OptimizedAlekhineAgent for direct move selection
+                Log.e(TAG, "🔍 CHECKING ALEKHINE PATH: currentMaster='" + currentMaster + "', optimizedAlekhineAgent=" + (optimizedAlekhineAgent != null ? "NOT NULL" : "NULL"));
                 if ("alekhine".equals(currentMaster.toLowerCase()) && optimizedAlekhineAgent != null) {
-                    Log.d(TAG, "🧠 Using OptimizedAlekhineAgent for direct Alekhine move selection");
+                    Log.e(TAG, "🚨 ALEKHINE PATH TAKEN: Using OptimizedAlekhineAgent for direct Alekhine move selection");
                     selectAlekhineDirectMove(currentFen, engineCandidates, callback);
                     return;
+                } else {
+                    Log.e(TAG, "🚨 ALEKHINE PATH SKIPPED: Using regular personality system for " + currentMaster);
                 }
                 
                 // Step 2: INSTANT local database lookup - no network delays!
@@ -1109,7 +1112,9 @@ public class PersonalityEngine {
     }
 
     public void setCurrentMaster(String master) {
+        Log.e(TAG, "🚨 setCurrentMaster() CALLED: changing from '" + this.currentMaster + "' to '" + master + "'");
         this.currentMaster = master.toLowerCase();
+        Log.e(TAG, "🚨 setCurrentMaster() COMPLETED: currentMaster is now '" + this.currentMaster + "'");
 
         // Check if we have data for this master
         boolean hasData = databaseHelper.hasMasterData(master.toLowerCase());
@@ -1541,51 +1546,88 @@ public class PersonalityEngine {
      * 🧠 Direct Alekhine move selection using OptimizedAlekhineAgent
      */
     private void selectAlekhineDirectMove(String fen, List<PersonalityMove> engineCandidates, PersonalityMoveCallback callback) {
-        Log.d(TAG, "🧠 ALEKHINE DIRECT: Starting optimized agent move selection");
+        Log.e(TAG, "🚨 ALEKHINE HYBRID: Starting adaptive strength + reasoning agent move selection");
+        Log.e(TAG, "🚨 ALEKHINE HYBRID: Method entry - this should appear in logs!");
         
         try {
-            // 🎯 CRITICAL: Use DIRECT ANALYSIS mode - no engine candidates
-            Log.d(TAG, "🎯 ALEKHINE DIRECT: Using pure reasoning analysis (no engine constraints)");
-            Log.d(TAG, "🎯 This should produce 2800+ Elo moves with full position understanding");
+            // 🎯 HYBRID EVALUATION: Extract adaptive strength candidates
+            List<String> candidateMoves = new ArrayList<>();
+            for (PersonalityMove move : engineCandidates) {
+                candidateMoves.add(move.move);
+            }
             
-            // Get Alekhine's move choice using DIRECT analysis
+            Log.e(TAG, "🎯 ALEKHINE HYBRID: Using " + candidateMoves.size() + " adaptive strength candidates");
+            Log.e(TAG, "🎯 Reasoning model will pick most Alekhine-like move from strength-appropriate options");
+            Log.e(TAG, "🎯 Candidates: " + candidateMoves.toString());
+            
+            // Get Alekhine's move choice from adaptive candidates
+            Log.e(TAG, "🚨 CALLING OptimizedAlekhineAgent.getMoveForPositionSync...");
             OptimizedAlekhineAgent.AlekhineResponse alekhineResponse = 
-                optimizedAlekhineAgent.getMoveForPositionSync(fen, null, null); // 🚀 NULL = Direct analysis
+                optimizedAlekhineAgent.getMoveForPositionSync(fen, null, candidateMoves); // 🎯 Use adaptive candidates
             
-            Log.d(TAG, "🎯 ALEKHINE DIRECT: o4-mini reasoning chose " + alekhineResponse.move + 
-                      " (confidence: " + alekhineResponse.confidence + ")");
-            Log.d(TAG, "🎯 REASONING EXPLANATION: " + alekhineResponse.explanation);
+            Log.e(TAG, "🚨 ALEKHINE AGENT RETURNED: " + alekhineResponse.move);
             
-            // Create the final PersonalityMove with Alekhine's direct choice
+            Log.e(TAG, "🎯 ALEKHINE HYBRID: o4-mini reasoning chose " + alekhineResponse.move + 
+                      " from " + candidateMoves.size() + " adaptive candidates");
+            Log.e(TAG, "🎯 HYBRID EXPLANATION: " + alekhineResponse.explanation);
+            
+            // Find the corresponding engine score for the chosen move
+            float engineScore = 0.0f;
+            for (PersonalityMove candidate : engineCandidates) {
+                if (candidate.move.equals(alekhineResponse.move)) {
+                    engineScore = candidate.engineScore;
+                    Log.e(TAG, "🎯 FOUND ENGINE SCORE: " + engineScore + " for move " + alekhineResponse.move);
+                    break;
+                }
+            }
+            
+            // Create the final PersonalityMove with Alekhine's hybrid choice
             PersonalityMove alekhineMove = new PersonalityMove(
                 alekhineResponse.move,
-                2.0f, // Max score - this is the reasoning model's choice
-                (float) alekhineResponse.confidence, // Use Alekhine's confidence as personality bonus
-                "o4-mini Reasoning: " + alekhineResponse.explanation,
-                true // Always quality verified for reasoning model
+                engineScore, // Use the actual engine score from adaptive system
+                (float) alekhineResponse.confidence, // Alekhine style confidence as personality bonus
+                "Hybrid Alekhine (Adaptive Strength + o4-mini): " + alekhineResponse.explanation,
+                true // Quality verified - reasoning model chose from pre-filtered candidates
             );
             
-            // For direct analysis, only show the reasoning model's choice
-            List<PersonalityMove> allCandidates = new ArrayList<>();
-            allCandidates.add(alekhineMove);
-            // Don't include engine candidates - we're trusting the reasoning model completely
+            Log.e(TAG, "🚨 CREATED ALEKHINE MOVE: " + alekhineMove.move + " (score: " + alekhineMove.finalScore + ")");
             
-            Log.d(TAG, "🧠 ALEKHINE DIRECT: Move selected, returning to callback");
+            // Show all candidates with the reasoning model's choice highlighted
+            List<PersonalityMove> allCandidates = new ArrayList<>(engineCandidates);
+            // Replace the chosen candidate with our enhanced version
+            for (int i = 0; i < allCandidates.size(); i++) {
+                if (allCandidates.get(i).move.equals(alekhineResponse.move)) {
+                    allCandidates.set(i, alekhineMove);
+                    Log.e(TAG, "🎯 REPLACED CANDIDATE " + i + " with enhanced Alekhine move");
+                    break;
+                }
+            }
+            
+            Log.e(TAG, "🧠 ALEKHINE HYBRID: About to call callback with move: " + alekhineMove.move);
             
             // Return the move via callback
+            Log.e(TAG, "🚨 POSTING CALLBACK TO MAIN HANDLER...");
             mainHandler.post(() -> {
+                Log.e(TAG, "🚨 CALLBACK EXECUTING ON MAIN THREAD - calling onPersonalityMoveSelected with: " + alekhineMove.move);
                 callback.onPersonalityMoveSelected(alekhineMove, allCandidates);
+                Log.e(TAG, "🚨 CALLBACK: onPersonalityMoveSelected completed");
+                
                 callback.onPersonalityAnalysisComplete(
                     alekhineResponse.explanation,
-                    "Alexander Alekhine speaks: \"" + alekhineResponse.explanation + "\""
+                    "Alexander Alekhine (Adaptive Strength): \"" + alekhineResponse.explanation + 
+                    " [Selected from " + candidateMoves.size() + " moves at target difficulty]\""
                 );
+                Log.e(TAG, "🚨 CALLBACK: onPersonalityAnalysisComplete completed");
             });
             
+            Log.e(TAG, "🚨 ALEKHINE HYBRID: Callback posted successfully - method completing normally");
+            
         } catch (Exception e) {
-            Log.e(TAG, "❌ ALEKHINE DIRECT: OptimizedAlekhineAgent failed: " + e.getMessage(), e);
+            Log.e(TAG, "❌ ALEKHINE HYBRID: OptimizedAlekhineAgent failed: " + e.getMessage(), e);
+            e.printStackTrace(); // Full stack trace
             
             // Fallback to regular personality system
-            Log.d(TAG, "🛡️ ALEKHINE DIRECT: Falling back to regular personality system");
+            Log.e(TAG, "🛡️ ALEKHINE HYBRID: Falling back to regular personality system");
             findSimilarPositionsLocally(fen, engineCandidates, callback);
         }
     }
@@ -1601,27 +1643,26 @@ public class PersonalityEngine {
                 candidateMoves.add(move.move);
             }
             
-            // 🔍 CRITICAL DEBUG: Log what we're sending to the agent
+            // 🔍 HYBRID DEBUG: Log what we're sending to the agent
             String currentFEN = getCurrentFEN();
-            Log.d(TAG, "🧠 Using OptimizedAlekhineAgent in DIRECT ANALYSIS mode (no engine candidates)");
-            Log.e(TAG, "🎯 DIRECT ANALYSIS: Sending FEN to agent: " + currentFEN);
-            Log.e(TAG, "🎯 DIRECT ANALYSIS: No candidates - letting o4-mini reasoning analyze position directly");
+            Log.d(TAG, "🧠 Using OptimizedAlekhineAgent in HYBRID mode (adaptive candidates)");
+            Log.e(TAG, "🎯 HYBRID ANALYSIS: Sending FEN to agent: " + currentFEN);
+            Log.e(TAG, "🎯 HYBRID ANALYSIS: Using " + candidateMoves.size() + " adaptive strength candidates");
+            Log.e(TAG, "🎯 Candidates: " + candidateMoves.toString());
             
-            // Note: We're not providing candidates to allow full reasoning model analysis
-            Log.e(TAG, "🚀 This should produce 2800+ Elo moves instead of being constrained by engine candidates");
+            // Note: We're providing adaptive strength candidates for style-aware selection
+            Log.e(TAG, "🚀 Reasoning model will pick most Alekhine-like move from strength-appropriate options");
             
-            // Get Alekhine's move choice using the optimized agent
-            // 🎯 CRITICAL FIX: Let the reasoning model analyze the FEN directly without engine constraints
-            // This allows 2800+ Elo play instead of being limited to potentially weak engine candidates
+            // Get Alekhine's move choice using the optimized agent with adaptive candidates
             OptimizedAlekhineAgent.AlekhineResponse alekhineResponse = 
                 optimizedAlekhineAgent.getMoveForPositionSync(
                     getCurrentFEN(), 
                     null, // No PGN context for style advice
-                    null  // 🚀 NO CANDIDATES: Let o4-mini reasoning analyze position directly
+                    candidateMoves  // 🎯 HYBRID: Use adaptive strength candidates
                 );
             
             Log.d(TAG, "🧠 OptimizedAlekhineAgent chose: " + alekhineResponse.move + 
-                      " (confidence: " + alekhineResponse.confidence + ")");
+                      " from " + candidateMoves.size() + " adaptive candidates (confidence: " + alekhineResponse.confidence + ")");
             
             // Convert Alekhine's choice to style advice format
             List<String> preferredMoves = new ArrayList<>();
