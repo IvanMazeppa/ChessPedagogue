@@ -20,6 +20,7 @@ import com.example.chesspedagogue.MoveHistoryObserver;
 import com.example.chesspedagogue.StockfishManager;
 import com.example.chesspedagogue.model.GameState;
 import com.example.chesspedagogue.repository.GameRepository;
+import com.example.chesspedagogue.reasoning.ReasoningEngineManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -84,11 +85,21 @@ public class GameViewModel extends AndroidViewModel {
 
     // Add the missing playerColor field here
     private String playerColor = "white"; // Default to white
+    
+    // NEW: Reasoning engine integration
+    private ReasoningEngineManager reasoningEngineManager;
+    private int targetElo = 2200; // Default target ELO
 
     public GameViewModel(Application application) {
         super(application);
         // Initialize the repository - this will handle Stockfish and game data
         gameRepository = new GameRepository(application);
+        
+        // Initialize reasoning engine and set the Stockfish manager
+        reasoningEngineManager = ReasoningEngineManager.getInstance(application);
+        reasoningEngineManager.setStockfishManager(gameRepository.stockfishManager);
+        reasoningEngineManager.initialize();
+        
         initializePersonalityLiveData();
 
         // Set initial values
@@ -794,18 +805,89 @@ public class GameViewModel extends AndroidViewModel {
             return;
         }
 
-        Log.d(TAG, "🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!");
+        String currentMaster = personalityMaster.getValue();
+        if (currentMaster == null) currentMaster = "tal";
 
-        // Show exciting progress message
-        String masterName = FineTunedModelManager.getInstance(getApplication())
-                .getMasterDisplayName(personalityMaster.getValue());
-        statusMessage.setValue(String.format("🎭 %s is searching his game archive...", masterName));
+        Log.d(TAG, String.format("🎭 REQUESTING MOVE FOR MASTER: %s", currentMaster));
+
+        // Check if master supports reasoning engine
+        if (ReasoningEngineManager.supportsReasoning(currentMaster)) {
+            Log.d(TAG, "🧠 Using reasoning engine for " + currentMaster);
+            requestReasoningEngineMove(currentMaster);
+        } else {
+            Log.d(TAG, "🎭 Using traditional personality engine for " + currentMaster);
+            requestTraditionalPersonalityMove(currentMaster);
+        }
+    }
+
+    /**
+     * Request move using new reasoning engine for supported masters
+     */
+    private void requestReasoningEngineMove(String masterName) {
+        String masterDisplayName = FineTunedModelManager.getInstance(getApplication())
+                .getMasterDisplayName(masterName);
+        statusMessage.setValue(String.format("🧠 %s is analyzing with reasoning model...", masterDisplayName));
+
+        // Set timeout for reasoning engine
+        Handler timeoutHandler = new Handler(Looper.getMainLooper());
+        Runnable timeoutRunnable = () -> {
+            Log.w(TAG, "⏰ Reasoning engine timeout, falling back to traditional personality");
+            statusMessage.setValue(String.format("🔄 %s switching to faster mode...", masterDisplayName));
+            requestTraditionalPersonalityMove(masterName);
+        };
+        timeoutHandler.postDelayed(timeoutRunnable, 120000); // 2 minute timeout for reasoning
+
+        String currentFen = currentFEN.getValue();
+        if (currentFen == null) currentFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+        // Build game context from move history
+        String gameContext = buildGameContext();
+
+        reasoningEngineManager.calculateMove(currentFen, masterName, targetElo, gameContext, 
+            new ReasoningEngineManager.ReasoningCallback() {
+                @Override
+                public void onMoveSelected(String move, String explanation, float confidence) {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                    
+                    Log.d(TAG, String.format("🧠 REASONING MOVE: %s (confidence: %.2f)", move, confidence));
+                    
+                    mainHandler.post(() -> {
+                        handleMoveResult(move, explanation, true, confidence >= 0.7f);
+                    });
+                }
+
+                @Override
+                public void onError(String error) {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                    
+                    Log.w(TAG, "⚠️ Reasoning engine error: " + error + ", falling back to traditional");
+                    mainHandler.post(() -> {
+                        requestTraditionalPersonalityMove(masterName);
+                    });
+                }
+
+                @Override
+                public void onProgress(String status) {
+                    mainHandler.post(() -> {
+                        statusMessage.setValue(String.format("🧠 %s: %s", masterDisplayName, status));
+                    });
+                }
+            });
+    }
+
+    /**
+     * Request move using traditional personality engine
+     */
+    private void requestTraditionalPersonalityMove(String masterName) {
+        String masterDisplayName = FineTunedModelManager.getInstance(getApplication())
+                .getMasterDisplayName(masterName);
+        statusMessage.setValue(String.format("🎭 %s is searching his game archive...", masterDisplayName));
 
         // Set a longer timeout for personality engine (AI database search takes time)
         Handler timeoutHandler = new Handler(Looper.getMainLooper());
         Runnable timeoutRunnable = () -> {
             Log.w(TAG, "⏰ Personality engine timeout (90s), falling back to standard engine");
-            statusMessage.setValue("🔄 Tal is thinking deeply... switching to faster mode");
+            statusMessage.setValue("🔄 Switching to faster mode...");
             requestStandardEngineMove();
         };
         timeoutHandler.postDelayed(timeoutRunnable, 90000); // 90 second timeout for reasoning models
@@ -1218,6 +1300,128 @@ public class GameViewModel extends AndroidViewModel {
     
     // Add getter for game repository access
     public GameRepository getGameRepository() { return gameRepository; }
+
+    /**
+     * Build game context from move history for reasoning engine
+     */
+    private String buildGameContext() {
+        List<String> history = moveHistory.getValue();
+        if (history == null || history.isEmpty()) {
+            return "Starting position";
+        }
+        
+        StringBuilder context = new StringBuilder();
+        context.append("Move history: ");
+        for (int i = 0; i < Math.min(10, history.size()); i++) {
+            if (i > 0) context.append(" ");
+            context.append(String.format("%d.%s", (i/2) + 1, i % 2 == 0 ? "" : ".."));
+            context.append(history.get(i));
+        }
+        
+        if (history.size() > 10) {
+            context.append(" (").append(history.size() - 10).append(" more moves)");
+        }
+        
+        return context.toString();
+    }
+
+    /**
+     * Handle move result from reasoning or traditional engine
+     */
+    private void handleMoveResult(String move, String explanation, boolean isReasoningMove, boolean isHighConfidence) {
+        if (move == null || move.trim().isEmpty()) {
+            Log.w(TAG, "⚠️ Engine returned empty move, using standard engine");
+            requestStandardEngineMove();
+            return;
+        }
+
+        // Get current move history
+        List<String> history = moveHistory.getValue();
+        if (history == null) {
+            history = new ArrayList<>();
+        }
+
+        // Add the engine's move to history
+        history.add(move);
+
+        // Apply ALL moves to keep state in sync
+        boolean success = gameRepository.applyMoves(history);
+
+        if (success) {
+            // Update LiveData with new state
+            String newFen = gameRepository.getCurrentFEN();
+            currentFEN.setValue(newFen);
+
+            // Create a defensive copy to trigger LiveData
+            List<String> updatedHistory = new ArrayList<>(history);
+            moveHistory.setValue(updatedHistory);
+
+            // Update GameHistoryManager for engine moves
+            GameHistoryManager.getInstance().addMove(move);
+
+            // Update the central game state repository
+            GameStateRepository.updateState(newFen, updatedHistory, playerColor);
+
+            // Request evaluation after engine move
+            requestPositionEvaluation();
+
+            // Update personality context
+            if (isReasoningMove) {
+                lastMoveExplanation.setValue(explanation);
+                isHistoricalMove.setValue(false); // Reasoning moves are not historical by default
+                
+                String masterName = FineTunedModelManager.getInstance(getApplication())
+                        .getMasterDisplayName(personalityMaster.getValue());
+                
+                if (isHighConfidence) {
+                    statusMessage.setValue(String.format("🧠 %s played %s - high confidence reasoning! Your turn.",
+                            masterName, move));
+                } else {
+                    statusMessage.setValue(String.format("🧠 %s played %s - analyzed move. Your turn.",
+                            masterName, move));
+                }
+            } else {
+                // Get the personality context for traditional moves
+                GameRepository.PersonalityMoveContext context = gameRepository.getLastPersonalityContext();
+                if (context != null) {
+                    updatePersonalityContext(context, move);
+                }
+                
+                String masterName = FineTunedModelManager.getInstance(getApplication())
+                        .getMasterDisplayName(personalityMaster.getValue());
+                
+                if (context != null && context.isHistoricalMatch) {
+                    statusMessage.setValue(String.format("🎯 %s played %s - a historical move! Your turn.",
+                            masterName, move));
+                } else {
+                    statusMessage.setValue(String.format("🎭 %s played %s. Your turn.",
+                            masterName, move));
+                }
+            }
+
+            isPlayerTurn.setValue(true);
+
+            // Check for game end conditions
+            checkGameEndConditions();
+
+        } else {
+            // Handle error - fall back to standard engine
+            Log.e(TAG, "❌ Failed to apply move, using standard engine");
+            requestStandardEngineMove();
+        }
+    }
+
+    /**
+     * Set target ELO for reasoning engine
+     */
+    public void setTargetElo(int elo) {
+        this.targetElo = Math.max(1200, Math.min(3200, elo));
+        Log.d(TAG, String.format("🎯 Target ELO set to %d", this.targetElo));
+    }
+    
+    public int getTargetElo() {
+        return targetElo;
+    }
 
     @Override
     protected void onCleared() {

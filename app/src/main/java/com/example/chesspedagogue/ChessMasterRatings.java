@@ -46,6 +46,23 @@ public class ChessMasterRatings {
     }
 
     /**
+     * Convert ELO rating to Stockfish skill level (0-20)
+     */
+    public static int getSkillLevelForElo(int targetElo) {
+        // Map ELO ranges to Stockfish skill levels
+        if (targetElo >= 2800) return 20; // Super-GM level
+        if (targetElo >= 2600) return 18; // GM level
+        if (targetElo >= 2400) return 16; // IM level
+        if (targetElo >= 2200) return 14; // FM level
+        if (targetElo >= 2000) return 12; // Expert level
+        if (targetElo >= 1800) return 10; // Advanced
+        if (targetElo >= 1600) return 8;  // Intermediate
+        if (targetElo >= 1400) return 6;  // Beginner+
+        if (targetElo >= 1200) return 4;  // Beginner
+        return 2; // Very beginner
+    }
+
+    /**
      * Get all available masters with their ratings
      */
     public static Map<String, Integer> getAllPeakRatings() {
