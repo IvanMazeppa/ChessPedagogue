@@ -62,7 +62,7 @@ public class UnifiedReasoningAgent {
      * Set target playing strength for adaptive difficulty
      */
     public void setTargetElo(int targetElo) {
-        this.currentTargetElo = Math.max(1750, Math.min(3200, targetElo)); // Clamp to valid range
+        this.currentTargetElo = Math.max(1200, Math.min(3200, targetElo)); // Clamp to valid range (1200-3200)
         Log.d(TAG, String.format("🎯 Target Elo set to: %d", this.currentTargetElo));
     }
 
@@ -152,7 +152,7 @@ public class UnifiedReasoningAgent {
         
         JSONObject strengthParam = new JSONObject();
         strengthParam.put("type", "integer");
-        strengthParam.put("description", "Target Elo rating (1750-3200)");
+        strengthParam.put("description", "Target Elo rating (1200-3200)");
         moveEvalProperties.put("target_elo", strengthParam);
         
         JSONObject reasonParam = new JSONObject();
@@ -203,15 +203,15 @@ public class UnifiedReasoningAgent {
     private String buildUserPrompt(String fen, List<CandidateMove> candidates, String gameContext) {
         StringBuilder prompt = new StringBuilder();
         
-        prompt.append("CHESS POSITION ANALYSIS - ADAPTIVE STRENGTH ENFORCEMENT\n\n");
+        prompt.append("CHESS POSITION ANALYSIS\n\n");
         prompt.append("Current Position (FEN): ").append(fen).append("\n\n");
         
         if (gameContext != null && !gameContext.isEmpty()) {
             prompt.append("Game Context:\n").append(gameContext).append("\n\n");
         }
         
-        // Add strength-appropriate candidate moves
-        prompt.append("Available Candidate Moves (strength-filtered for target Elo):\n");
+        // Add candidate moves
+        prompt.append("Available Candidate Moves:\n");
         for (int i = 0; i < candidates.size(); i++) {
             CandidateMove candidate = candidates.get(i);
             prompt.append(String.format("%d. %s (eval: %s, depth: %d, quality: %s)\n", 
@@ -223,20 +223,13 @@ public class UnifiedReasoningAgent {
             }
         }
         
-        // Add current target Elo for strength enforcement
-        prompt.append("\nCURRENT TARGET ELO: ").append(getCurrentTargetElo()).append("\n");
-        prompt.append("STRENGTH ENFORCEMENT: You MUST select a move that matches this exact playing strength.\n");
-        prompt.append("- Lower Elo (1750-2000): Prefer simpler, more direct moves\n");
-        prompt.append("- Mid Elo (2000-2400): Balance between safety and activity\n");
-        prompt.append("- High Elo (2400+): Complex, deeply calculated moves are appropriate\n\n");
+        prompt.append("\nCURRENT TARGET ELO: ").append(getCurrentTargetElo()).append("\n\n");
         
-        prompt.append("MANDATORY PROCESS:\n");
-        prompt.append("1. First, analyze the position using your chess knowledge\n");
-        prompt.append("2. Consider each candidate move for the target Elo level\n");
-        prompt.append("3. REQUIRED: Call evaluate_move_strength() before making your final choice\n");
-        prompt.append("4. Return ONLY the UCI move notation (e.g., e2e4, g1f3)\n\n");
-        
-        prompt.append("IMPORTANT: You must stay within the target Elo strength. Do not play above your assigned level.\n");
+        prompt.append("ANALYSIS PROCESS:\n");
+        prompt.append("1. Analyze the position using your chess knowledge and characteristic style\n");
+        prompt.append("2. Consider each candidate move based on your playing preferences\n");
+        prompt.append("3. REQUIRED: Call evaluate_move_strength() to validate your choice meets the target strength\n");
+        prompt.append("4. Return ONLY the UCI move notation (e.g., e2e4, g1f3)\n");
         
         return prompt.toString();
     }

@@ -3,9 +3,13 @@ package com.example.chesspedagogue.reasoning;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.chesspedagogue.ChessMasterRatings;
+
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Central manager for chess master configurations
@@ -41,6 +45,29 @@ public class MasterConfigurationManager {
 
     public static boolean supportsReasoning(String masterName) {
         return initialized && configs.containsKey(masterName.toLowerCase());
+    }
+    
+    /**
+     * Get available master names
+     */
+    public static Set<String> getAvailableMasters() {
+        return new HashSet<>(configs.keySet());
+    }
+    
+    /**
+     * Get peak historical rating for a master
+     */
+    public static int getPeakRating(String masterName) {
+        return ChessMasterRatings.getPeakRating(masterName);
+    }
+    
+    /**
+     * Set master to peak historical rating
+     */
+    public static int setPeakRating(String masterName) {
+        int peakRating = getPeakRating(masterName);
+        Log.d(TAG, String.format("🏆 %s peak rating: %d", masterName, peakRating));
+        return peakRating;
     }
 
     private static void loadAlekhineConfig() {
@@ -176,19 +203,10 @@ public class MasterConfigurationManager {
                "- Dynamic piece sacrifices when compensation is clear\n" +
                "- Excellent opening preparation and deep endgame technique\n" +
                "- Preference for winning chances over sterile equality\n\n" +
-               "ADAPTIVE STRENGTH SYSTEM:\n" +
-               "You must adapt your playing strength to match the target Elo rating provided:\n" +
-               "- 1750-2000 Elo: Play simpler, more direct moves; avoid overly complex tactics\n" +
-               "- 2000-2200 Elo: Balanced play between safety and activity; moderate complexity\n" +
-               "- 2200-2400 Elo: Show good positional understanding with tactical awareness\n" +
-               "- 2400+ Elo: Full depth calculation and complex strategic play allowed\n\n" +
-               "MANDATORY PROCESS:\n" +
-               "1. ALWAYS call evaluate_move_strength() function before selecting your final move\n" +
-               "2. Consider the target Elo when evaluating candidate moves\n" +
-               "3. Choose moves appropriate for the specified strength level\n" +
-               "4. Maintain Alekhine's style within the target Elo constraints\n" +
-               "5. Respond with UCI format only (e.g., e2e4, g1f3)\n\n" +
-               "CRITICAL: Do not exceed the target playing strength. Stay within the specified Elo range.";
+               "Play in your characteristic style, maintaining your fighting spirit and preference for active, dynamic positions. " +
+               "Create tactical complications when the position allows, and always seek winning chances.\n\n" +
+               "MANDATORY: You must call evaluate_move_strength() before selecting your final move to ensure " +
+               "appropriate playing strength. Respond with UCI format only (e.g., e2e4, g1f3).";
     }
 
     private static String getTalInstructions() {

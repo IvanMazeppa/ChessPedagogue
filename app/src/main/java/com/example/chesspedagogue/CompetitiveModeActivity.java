@@ -371,21 +371,33 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      */
     private void configureDifficulty() {
         try {
+            int targetElo;
             if (useMaxDifficulty) {
-                // Use maximum difficulty for the selected master
-                int maxElo = getMasterMaxELO(selectedMaster);
-                stockfishManager.setEngineStrength(maxElo);
-                stockfishManager.setSkillLevel(20); // Maximum skill
-                Log.d(TAG, "🔥 Using MAX difficulty - ELO: " + maxElo + ", Skill: 20");
+                // Use peak historical rating for the selected master
+                targetElo = ChessMasterRatings.getPeakRating(selectedMaster);
+                Log.d(TAG, "🔥 Using PEAK difficulty - " + selectedMaster + " at " + targetElo + " ELO");
             } else {
                 // Use splash screen configuration
-                stockfishManager.setEngineStrength(engineElo);
-                stockfishManager.setSkillLevel(skillLevel);
-                Log.d(TAG, "⚖️ Using splash difficulty - ELO: " + engineElo + ", Skill: " + skillLevel);
+                targetElo = engineElo;
+                Log.d(TAG, "⚖️ Using splash difficulty - ELO: " + targetElo);
+            }
+            
+            // Configure Stockfish for the target ELO
+            ChessMasterRatings.StockfishConfig config = ChessMasterRatings.getStockfishConfigForElo(targetElo);
+            stockfishManager.setEngineStrength(config.targetElo);
+            stockfishManager.setSkillLevel(config.skillLevel);
+            
+            // Update game view model with target ELO for reasoning engine
+            if (gameViewModel != null) {
+                gameViewModel.setTargetElo(targetElo);
+                Log.d(TAG, "🧠 Updated reasoning engine target ELO: " + targetElo);
             }
             
             // Enable personality-driven move selection
             personalityEngine.setPersonalityWeight(0.3f); // 30% personality influence
+            
+            Log.d(TAG, String.format("✅ Difficulty configured: ELO=%d, Skill=%d, Time=%dms", 
+                    config.targetElo, config.skillLevel, config.thinkTimeMs));
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to configure difficulty", e);
@@ -394,23 +406,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
 
     /**
      * 🎯 Get maximum ELO for each master (historical peak ratings)
+     * @deprecated Use ChessMasterRatings.getPeakRating() instead
      */
+    @Deprecated
     private int getMasterMaxELO(String master) {
-        switch (master.toLowerCase()) {
-            case "tal": return 2705;     // Peak: 2705 (1980)
-            case "fischer": return 2785; // Peak: 2785 (1972)
-            case "carlsen": return 2882; // Peak: 2882 (2014)
-            case "kasparov": return 2851; // Peak: 2851 (1999)
-            case "karpov": return 2780;  // Peak: 2780 (1994)
-            case "kramnik": return 2817; // Peak: 2817 (2016)
-            case "alekhine": return 2690; // Estimated peak
-            case "capablanca": return 2720; // Estimated peak
-            case "morphy": return 2750;  // Estimated peak
-            case "lasker": return 2720;  // Estimated peak
-            case "anand": return 2817;   // Peak: 2817 (2011)
-            case "botvinnik": return 2700; // Estimated peak
-            default: return 2800; // Default high rating
-        }
+        return ChessMasterRatings.getPeakRating(master);
     }
 
     /**

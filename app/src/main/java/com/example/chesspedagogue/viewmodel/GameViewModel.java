@@ -733,6 +733,10 @@ public class GameViewModel extends AndroidViewModel {
 
         // NEW: Configure engine with splash screen settings
         gameRepository.configureEngine(skillLevel, engineElo);
+        
+        // CRITICAL: Set target Elo for reasoning engine
+        setTargetElo(engineElo);
+        Log.d(TAG, "🧠 Set reasoning engine target Elo: " + engineElo);
 
         currentFEN.setValue(gameRepository.getCurrentFEN());
         moveHistory.setValue(new ArrayList<>());

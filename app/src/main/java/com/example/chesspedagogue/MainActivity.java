@@ -29,6 +29,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.chesspedagogue.ChessMasterRatings;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -988,8 +990,19 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         Intent intent = getIntent();
         if (intent.hasExtra("PLAYER_COLOR")) {
             configuredPlayerColor = intent.getStringExtra("PLAYER_COLOR");
-            configuredSkillLevel = intent.getIntExtra("SKILL_LEVEL", 10);
-            configuredEngineElo = intent.getIntExtra("ENGINE_ELO", 1750);
+            
+            // Handle new slider-based Elo system
+            if (intent.hasExtra("SLIDER_POSITION")) {
+                int sliderPosition = intent.getIntExtra("SLIDER_POSITION", 12);
+                configuredEngineElo = intent.getIntExtra("ENGINE_ELO", mapSliderToElo(sliderPosition));
+                configuredSkillLevel = ChessMasterRatings.getSkillLevelForElo(configuredEngineElo);
+                Log.d(TAG, "📝 Using NEW slider system: Position=" + sliderPosition + ", Elo=" + configuredEngineElo);
+            } else {
+                // Legacy system fallback
+                configuredSkillLevel = intent.getIntExtra("SKILL_LEVEL", 10);
+                configuredEngineElo = intent.getIntExtra("ENGINE_ELO", 1750);
+                Log.d(TAG, "📝 Using LEGACY system: Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
+            }
 
             Log.d(TAG, "📝 Configuration from splash: Color=" + configuredPlayerColor +
                     ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
@@ -1000,12 +1013,39 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             // Fallback to SharedPreferences
             SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", MODE_PRIVATE);
             configuredPlayerColor = prefs.getString("PLAYER_COLOR", "white");
-            configuredSkillLevel = prefs.getInt("SKILL_LEVEL", 10);
-            configuredEngineElo = prefs.getInt("ENGINE_ELO", 1750);
+            
+            // Handle new slider-based system in SharedPreferences too
+            if (prefs.contains("SLIDER_POSITION")) {
+                int sliderPosition = prefs.getInt("SLIDER_POSITION", 12);
+                configuredEngineElo = prefs.getInt("ENGINE_ELO", mapSliderToElo(sliderPosition));
+                configuredSkillLevel = ChessMasterRatings.getSkillLevelForElo(configuredEngineElo);
+            } else {
+                // Legacy fallback
+                configuredSkillLevel = prefs.getInt("SKILL_LEVEL", 10);
+                configuredEngineElo = prefs.getInt("ENGINE_ELO", 1750);
+            }
 
             Log.d(TAG, "📝 Configuration from prefs: Color=" + configuredPlayerColor +
                     ", Skill=" + configuredSkillLevel + ", Elo=" + configuredEngineElo);
         }
+    }
+    
+    /**
+     * Map slider position to Elo rating (matching SplashActivity)
+     */
+    private int mapSliderToElo(int sliderPosition) {
+        int[] eloLevels = {
+            1200, 1300, 1400, 1500, 1600, 1700, // Beginner to Intermediate (0-5)
+            1750, 1800, 1850, 1900, 1950, 2000, // Advanced (6-11)
+            2050, 2100, 2150, 2200, 2250, 2300, // Expert to Master (12-17)
+            2350, 2400, 2450, 2500, 2600, 2700, // Master to GM (18-23)
+            2800  // Super-GM (24)
+        };
+        
+        if (sliderPosition >= 0 && sliderPosition < eloLevels.length) {
+            return eloLevels[sliderPosition];
+        }
+        return 2200; // Default fallback
     }
     
     /**

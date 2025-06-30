@@ -153,12 +153,12 @@ public class SplashActivity extends AppCompatActivity {
     private void setupStrengthSlider() {
         Log.d(TAG, "⚡ Setting up strength slider...");
         
-        // Configure slider
-        strengthSeekBar.setMax(20);
-        strengthSeekBar.setProgress(10);  // default mid-level
+        // Configure slider - expand range for better granularity
+        strengthSeekBar.setMax(24);  // Increased from 20 to support more levels
+        strengthSeekBar.setProgress(12);  // default mid-level (2200 Elo)
         
         // Update display
-        updateStrengthDisplay(10);
+        updateStrengthDisplay(12);
         
         // Listen for changes
         strengthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -173,11 +173,41 @@ public class SplashActivity extends AppCompatActivity {
         Log.d(TAG, "✅ Strength slider setup completed");
     }
 
-    private void updateStrengthDisplay(int skillLevel) {
-        int approxElo = 300 + skillLevel * 145;
-        String strengthText = "Engine Strength: ~" + approxElo + " Elo (Level " + skillLevel + ")";
+    private void updateStrengthDisplay(int sliderPosition) {
+        // Map slider position to actual Elo ratings with better distribution
+        int targetElo = mapSliderToElo(sliderPosition);
+        String levelName = getStrengthLevelName(targetElo);
+        String strengthText = "Engine Strength: " + targetElo + " Elo (" + levelName + ")";
         strengthValueTextView.setText(strengthText);
         Log.d(TAG, "⚡ Strength updated: " + strengthText);
+    }
+    
+    private int mapSliderToElo(int sliderPosition) {
+        // Better Elo distribution across slider range (0-24)
+        int[] eloLevels = {
+            1200, 1300, 1400, 1500, 1600, 1700, // Beginner to Intermediate (0-5)
+            1750, 1800, 1850, 1900, 1950, 2000, // Advanced (6-11)
+            2050, 2100, 2150, 2200, 2250, 2300, // Expert to Master (12-17)
+            2350, 2400, 2450, 2500, 2600, 2700, // Master to GM (18-23)
+            2800  // Super-GM (24)
+        };
+        
+        if (sliderPosition >= 0 && sliderPosition < eloLevels.length) {
+            return eloLevels[sliderPosition];
+        }
+        return 2200; // Default fallback
+    }
+    
+    private String getStrengthLevelName(int elo) {
+        if (elo >= 2800) return "Super-GM";
+        if (elo >= 2600) return "Grandmaster";
+        if (elo >= 2400) return "International Master";
+        if (elo >= 2200) return "FIDE Master";
+        if (elo >= 2000) return "Expert";
+        if (elo >= 1800) return "Advanced";
+        if (elo >= 1600) return "Intermediate";
+        if (elo >= 1400) return "Beginner+";
+        return "Beginner";
     }
 
     private void setupStartButton() {
@@ -197,12 +227,12 @@ public class SplashActivity extends AppCompatActivity {
     private void startGame() {
         // Get current configuration
         String playerColor = getSelectedColor();
-        int skillLevel = strengthSeekBar.getProgress();
-        int engineElo = 300 + skillLevel * 145;
+        int sliderPosition = strengthSeekBar.getProgress();
+        int engineElo = mapSliderToElo(sliderPosition);
         
         Log.d(TAG, "🎮 Starting game with configuration:");
         Log.d(TAG, "   🎨 Player Color: " + playerColor);
-        Log.d(TAG, "   ⚡ Skill Level: " + skillLevel);
+        Log.d(TAG, "   ⚡ Slider Position: " + sliderPosition);
         Log.d(TAG, "   🏆 Engine Elo: " + engineElo);
         
         // Check if this is first run
@@ -219,7 +249,7 @@ public class SplashActivity extends AppCompatActivity {
             // Store the game settings for later use
             prefs.edit()
                     .putString("PLAYER_COLOR", playerColor)
-                    .putInt("SKILL_LEVEL", skillLevel)
+                    .putInt("SLIDER_POSITION", sliderPosition)
                     .putInt("ENGINE_ELO", engineElo)
                     .apply();
 
@@ -232,7 +262,7 @@ public class SplashActivity extends AppCompatActivity {
             Log.d(TAG, "🎮 Regular start - going to MainActivity");
             Intent intent = new Intent(SplashActivity.this, MainActivity.class);
             intent.putExtra("PLAYER_COLOR", playerColor);
-            intent.putExtra("SKILL_LEVEL", skillLevel);
+            intent.putExtra("SLIDER_POSITION", sliderPosition);
             intent.putExtra("ENGINE_ELO", engineElo);
             startActivity(intent);
         }
