@@ -122,7 +122,7 @@ public class UnifiedReasoningAgent {
         payload.put("instructions", currentConfig.getSystemInstructions());
         payload.put("max_output_tokens", currentConfig.getMaxOutputTokens());
         payload.put("store", true); // Match working agent
-        payload.put("temperature", currentConfig.getTemperature());
+        // NOTE: o4-mini doesn't support temperature parameter in Responses API
         
         // Reasoning configuration
         JSONObject reasoning = new JSONObject();
@@ -190,8 +190,8 @@ public class UnifiedReasoningAgent {
         
         payload.put("tools", tools);
         
-        Log.d(TAG, String.format("📤 Request payload: model=%s, temp=%.2f, effort=%s, tokens=%d", 
-                currentConfig.getReasoningModel(), currentConfig.getTemperature(), 
+        Log.d(TAG, String.format("📤 Request payload: model=%s, effort=%s, tokens=%d", 
+                currentConfig.getReasoningModel(), 
                 currentConfig.getReasoningEffort(), currentConfig.getMaxOutputTokens()));
         
         return payload;

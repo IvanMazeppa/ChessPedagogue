@@ -6,6 +6,7 @@ import android.os.Looper;
 import android.util.Log;
 
 import com.example.chesspedagogue.repository.GameRepository;
+import com.example.chesspedagogue.reasoning.ReasoningEngineManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ public class AIvsAIGameManager {
     private final GameRepository gameRepository;
     private final ExecutorService executorService;
     private final Handler mainHandler;
+    private final ReasoningEngineManager reasoningEngineManager;
 
     // Game state - ENHANCED with better validation
     private String whitePlayer;
@@ -51,8 +53,13 @@ public class AIvsAIGameManager {
         this.executorService = Executors.newCachedThreadPool();
         this.mainHandler = new Handler(Looper.getMainLooper());
         this.gameHistory = new ArrayList<>();
+        
+        // Initialize new reasoning engine system
+        this.reasoningEngineManager = ReasoningEngineManager.getInstance(context);
+        this.reasoningEngineManager.setStockfishManager(gameRepository.stockfishManager);
+        this.reasoningEngineManager.initialize();
 
-        Log.d(TAG, "✅ FIXED AIvsAIGameManager initialized with enhanced move validation");
+        Log.d(TAG, "✅ AIvsAIGameManager initialized with NEW reasoning engine system");
     }
 
     public void initializeGame(String whitePlayer, String blackPlayer) {
@@ -517,70 +524,118 @@ public class AIvsAIGameManager {
     }
 
     /**
-     * ENHANCED: Configure engine for specific player
+     * NEW: Configure reasoning engine for specific player with peak rating
      */
     private void configureEngineForPlayer(String activePlayer) {
         try {
-            Log.d(TAG, "🎭 Configuring engine for: " + activePlayer);
+            Log.d(TAG, "🧠 Configuring NEW reasoning engine for: " + activePlayer);
 
-            // Use historical peak rating for authentic strength
+            // SPECTATOR MODE: Always use historical peak rating for authentic strength
             int peakRating = ChessMasterRatings.getPeakRating(activePlayer);
-            Log.d(TAG, "🏆 Setting " + activePlayer + " to peak rating: " + peakRating);
+            Log.d(TAG, "🏆 SpectatorMode: Setting " + activePlayer + " to PEAK rating: " + peakRating);
 
-            // Configure engine with historical strength
+            // Configure basic engine settings (still needed for fallback)
             gameRepository.configureEngineForMaster(activePlayer);
 
-            // Configure personality with enhanced weight for historical accuracy
-            float personalityWeight = calculatePersonalityWeight(activePlayer, peakRating);
-            Log.d(TAG, "🔧 DEBUG: About to call gameRepository.configurePersonalityEngine with: master=" + activePlayer + ", weight=" + personalityWeight + ", enabled=true");
-            
-            // 🚨 CRITICAL DEBUG: Force database verification before configuration
-            Log.d(TAG, "🔍 PRE-CONFIG DEBUG: Forcing database verification for " + activePlayer);
-            gameRepository.configurePersonalityEngine(activePlayer, personalityWeight, true);
-
-            // 🚨 NEW: Additional verification after configuration
-            Log.d(TAG, "🔍 POST-CONFIG DEBUG: Verifying personality engine availability...");
-            boolean isAvailable = gameRepository.isPersonalityEngineAvailable();
-            Log.d(TAG, "🎯 Personality engine available: " + isAvailable);
-
-            Log.d(TAG, "✅ Engine configured for " + activePlayer + " (rating: " + peakRating + ", personality: " + personalityWeight + ")");
+            Log.d(TAG, "✅ NEW reasoning engine configured for " + activePlayer + " (peak rating: " + peakRating + ")");
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error configuring engine for " + activePlayer, e);
+            Log.e(TAG, "❌ Error configuring reasoning engine for " + activePlayer, e);
         }
     }
 
     /**
-     * ENHANCED: Calculate validated move with proper error handling
+     * NEW: Calculate move using reasoning engine with peak rating
      */
     private void calculateValidatedMove(String activePlayer) {
         try {
-            Log.d(TAG, "🎯 Calculating validated move for " + activePlayer);
+            Log.d(TAG, "🧠 Calculating move with NEW reasoning engine for " + activePlayer);
 
-            // Use personality engine for move calculation
+            // Get current position for reasoning engine
+            String currentFEN = gameRepository.getCurrentFEN();
+            if (currentFEN == null || currentFEN.trim().isEmpty()) {
+                Log.e(TAG, "❌ No current FEN available for reasoning engine");
+                attemptFallbackMove();
+                return;
+            }
+
+            // SPECTATOR MODE: Always use peak rating for authentic strength
+            int peakRating = ChessMasterRatings.getPeakRating(activePlayer);
+            
+            // Build game context for reasoning engine
+            String gameContext = String.format("SpectatorMode AI vs AI: %s vs %s, Move %d", 
+                whitePlayer, blackPlayer, gameHistory.size() + 1);
+
+            Log.d(TAG, String.format("🧠 Reasoning request: master=%s, rating=%d, FEN=%s", 
+                activePlayer, peakRating, currentFEN));
+
+            // Use NEW reasoning engine system
+            reasoningEngineManager.calculateMove(currentFEN, activePlayer, peakRating, gameContext, 
+                new ReasoningEngineManager.ReasoningCallback() {
+                    @Override
+                    public void onMoveSelected(String move, String explanation, float confidence) {
+                        Log.d(TAG, String.format("🧠 %s reasoning result: move=%s, confidence=%.2f", 
+                            activePlayer, move, confidence));
+                        Log.d(TAG, "📝 Reasoning: " + explanation);
+
+                        if (move != null && !move.trim().isEmpty()) {
+                            // Validate and apply the reasoning engine move
+                            validateAndApplyMoveEnhanced(move);
+                        } else {
+                            Log.e(TAG, "❌ Empty move from reasoning engine");
+                            attemptFallbackMove();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "❌ Reasoning engine error: " + error);
+                        Log.w(TAG, "🔄 Falling back to legacy move calculation...");
+                        calculateLegacyMove(activePlayer);
+                    }
+
+                    @Override
+                    public void onProgress(String status) {
+                        Log.d(TAG, "🧠 Reasoning progress: " + status);
+                    }
+                });
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in NEW reasoning engine calculation", e);
+            Log.w(TAG, "🔄 Falling back to legacy move calculation...");
+            calculateLegacyMove(activePlayer);
+        }
+    }
+
+    /**
+     * Fallback to legacy PersonalityEngine if reasoning engine fails
+     */
+    private void calculateLegacyMove(String activePlayer) {
+        try {
+            Log.w(TAG, "🔄 Using legacy PersonalityEngine fallback for " + activePlayer);
+
             gameRepository.calculatePersonalityMove(new GameRepository.MoveCallback() {
                 @Override
                 public void onMoveCalculated(String move) {
-                    Log.d(TAG, "🎯 " + activePlayer + " calculated move: " + move);
+                    Log.d(TAG, "🔄 Legacy move calculated: " + move);
 
                     if (move != null && !move.trim().isEmpty()) {
-                        // CRITICAL: Validate move before applying
                         validateAndApplyMoveEnhanced(move);
                     } else {
-                        Log.e(TAG, "Empty move from personality engine");
+                        Log.e(TAG, "❌ Empty move from legacy engine");
                         attemptFallbackMove();
                     }
                 }
 
                 @Override
                 public void onError(String errorMessage) {
-                    Log.e(TAG, "Personality engine error: " + errorMessage);
+                    Log.e(TAG, "❌ Legacy engine error: " + errorMessage);
                     attemptFallbackMove();
                 }
             });
 
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error in move calculation", e);
+            Log.e(TAG, "❌ Error in legacy fallback calculation", e);
             attemptFallbackMove();
         }
     }

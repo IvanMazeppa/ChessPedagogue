@@ -239,5 +239,27 @@
         <item name="android:paddingTop">8dp</item>
         <item name="android:paddingBottom">8dp</item>
     </style>
+    <style name="GlassCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="android:background">@drawable/glass_frost</item>
+        <item name="cardElevation">10dp</item>
+        <item name="cardUseCompatPadding">true</item>
+        <item name="cardCornerRadius">28dp</item>
+        <!-- keep cardBackgroundColor, but it’s ignored visually -->
+        <item name="cardBackgroundColor">@android:color/transparent</item>
+    </style>
+
+
+    <style name="GlassChip" parent="Widget.Material3.Chip.Filter">
+        <item name="chipBackgroundColor">@drawable/glass_frost</item>
+        <item name="chipStrokeWidth">0dp</item>
+        <item name="chipCornerRadius">28dp</item>
+    </style>
+
+    <style name="GlassButton" parent="Widget.Material3.Button">
+        <item name="backgroundTint">@drawable/glass_frost</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="elevation">8dp</item>
+    </style>
+
 
 </resources>

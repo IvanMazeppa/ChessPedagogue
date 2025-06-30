@@ -111,7 +111,7 @@ public class ReasoningEngineManager {
             try {
                 // Step 1: Generate strength-appropriate candidates
                 callback.onProgress("Generating candidate moves...");
-                List<CandidateMove> candidates = adaptiveEngine.generateCandidates(fen, targetElo, 8);
+                List<CandidateMove> candidates = adaptiveEngine.generateCandidates(fen, targetElo, 8, masterName);
                 
                 if (candidates.isEmpty()) {
                     Log.e(TAG, "❌ No candidates generated");

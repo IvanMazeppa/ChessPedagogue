@@ -24,12 +24,25 @@ public class MasterConfigurationManager {
         
         Log.d(TAG, "🧠 Initializing master configurations for reasoning engine...");
         
+        // Load all 17 chess masters with reasoning configurations
         loadAlekhineConfig();
         loadTalConfig();
         loadFischerConfig();
         loadCarlsenConfig();
         loadKasparovConfig();
         loadKarpovConfig();
+        // Load missing masters from extensions
+        MasterConfigurationManagerExtensions.loadMorphyConfig();
+        MasterConfigurationManagerExtensions.loadCapablancaConfig();
+        MasterConfigurationManagerExtensions.loadLaskerConfig();
+        MasterConfigurationManagerExtensions.loadBotvinnikConfig();
+        MasterConfigurationManagerExtensions.loadPetrosianConfig();
+        MasterConfigurationManagerExtensions.loadAnandConfig();
+        MasterConfigurationManagerExtensions.loadKramnikConfig();
+        MasterConfigurationManagerExtensions.loadNakamuraConfig();
+        MasterConfigurationManagerExtensions.loadGukeshConfig();
+        MasterConfigurationManagerExtensions.loadShortConfig();
+        MasterConfigurationManagerExtensions.loadNimzowitschConfig();
         
         initialized = true;
         Log.d(TAG, "✅ Master configurations loaded: " + configs.keySet());
@@ -68,6 +81,13 @@ public class MasterConfigurationManager {
         int peakRating = getPeakRating(masterName);
         Log.d(TAG, String.format("🏆 %s peak rating: %d", masterName, peakRating));
         return peakRating;
+    }
+
+    /**
+     * Add configuration from external source (used by extensions)
+     */
+    public static void addConfig(String masterName, MasterConfiguration config) {
+        configs.put(masterName.toLowerCase(), config);
     }
 
     private static void loadAlekhineConfig() {

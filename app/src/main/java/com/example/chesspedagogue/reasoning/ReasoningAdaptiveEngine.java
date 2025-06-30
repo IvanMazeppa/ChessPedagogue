@@ -32,6 +32,13 @@ public class ReasoningAdaptiveEngine {
      * Generate candidate moves appropriate for target ELO
      */
     public List<CandidateMove> generateCandidates(String fen, int targetElo, int maxCandidates) {
+        return generateCandidates(fen, targetElo, maxCandidates, null);
+    }
+    
+    /**
+     * Generate candidate moves with master-specific personality weighting
+     */
+    public List<CandidateMove> generateCandidates(String fen, int targetElo, int maxCandidates, String masterName) {
         Log.d(TAG, String.format("🎯 Generating candidates for ELO %d (max %d candidates)", targetElo, maxCandidates));
         
         try {
@@ -55,7 +62,14 @@ public class ReasoningAdaptiveEngine {
             String analysisResults = stockfishManager.getDetailedAnalysis(searchTimeMs);
             
             // Parse the analysis results
-            return parseMultiPVResults(analysisResults, maxCandidates);
+            List<CandidateMove> candidates = parseMultiPVResults(analysisResults, maxCandidates);
+            
+            // Apply master-specific personality weighting
+            if (masterName != null) {
+                candidates = applyPersonalityWeighting(candidates, masterName, fen);
+            }
+            
+            return candidates;
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error generating candidates: " + e.getMessage(), e);
@@ -240,5 +254,263 @@ public class ReasoningAdaptiveEngine {
             Log.w(TAG, "⚠️ Could not validate move legality: " + move, e);
             return true; // Assume legal if we can't check
         }
+    }
+    
+    /**
+     * Apply master-specific personality weighting to candidate moves
+     */
+    private List<CandidateMove> applyPersonalityWeighting(List<CandidateMove> candidates, String masterName, String fen) {
+        if ("alekhine".equalsIgnoreCase(masterName)) {
+            return applyAlekhineWeighting(candidates, fen);
+        }
+        // Add other masters here as needed
+        return candidates;
+    }
+    
+    /**
+     * Apply Alekhine-specific personality weighting to candidates
+     * Alekhine preferences: aggressive attacking, tactical complexity, piece activity
+     */
+    private List<CandidateMove> applyAlekhineWeighting(List<CandidateMove> candidates, String fen) {
+        Log.d(TAG, "🎭 Applying Alekhine personality weighting to " + candidates.size() + " candidates");
+        
+        List<CandidateMove> weightedCandidates = new ArrayList<>();
+        
+        for (CandidateMove candidate : candidates) {
+            float personalityScore = calculateAlekhineScore(candidate, fen);
+            
+            // Create new candidate with adjusted evaluation based on personality
+            float adjustedEval = candidate.getEvaluation() + personalityScore;
+            
+            CandidateMove weightedCandidate = new CandidateMove(
+                candidate.getMove(),
+                adjustedEval,
+                candidate.getDepth(),
+                candidate.getVariation(),
+                candidate.getNodes(),
+                candidate.getMultiPvRank()
+            );
+            
+            weightedCandidates.add(weightedCandidate);
+            
+            Log.d(TAG, String.format("🎯 %s: eval %.1f -> %.1f (personality +%.1f)", 
+                candidate.getMove(), candidate.getEvaluation(), adjustedEval, personalityScore));
+        }
+        
+        // Sort by adjusted evaluation (higher is better)
+        weightedCandidates.sort((a, b) -> Float.compare(b.getEvaluation(), a.getEvaluation()));
+        
+        Log.d(TAG, "✅ Alekhine personality weighting applied");
+        return weightedCandidates;
+    }
+    
+    /**
+     * Calculate Alekhine personality score for a candidate move
+     * Positive scores favor the move, negative scores discourage it
+     */
+    private float calculateAlekhineScore(CandidateMove candidate, String fen) {
+        float score = 0;
+        String move = candidate.getMove();
+        String variation = candidate.getVariation();
+        
+        // TACTICAL COMPLEXITY BONUS (+0.2 to +0.4)
+        if (isTacticalMove(move, variation)) {
+            score += 30; // +0.3 pawns for tactical moves
+            Log.d(TAG, "📊 " + move + ": +30cp tactical complexity");
+        }
+        
+        // PIECE ACTIVITY BONUS (+0.1 to +0.3)
+        if (isPieceActivatingMove(move)) {
+            score += 20; // +0.2 pawns for piece activity
+            Log.d(TAG, "📊 " + move + ": +20cp piece activity");
+        }
+        
+        // AGGRESSIVE MOVE BONUS (+0.1 to +0.2)
+        if (isAggressiveMove(move, variation)) {
+            score += 15; // +0.15 pawns for aggression
+            Log.d(TAG, "📊 " + move + ": +15cp aggression");
+        }
+        
+        // SACRIFICIAL MOVE BONUS (+0.2 to +0.5) - If compensation unclear
+        if (isSacrificialMove(move, variation, candidate.getEvaluation())) {
+            score += 25; // +0.25 pawns for interesting sacrifices
+            Log.d(TAG, "📊 " + move + ": +25cp sacrificial play");
+        }
+        
+        // PASSIVE MOVE PENALTY (-0.2 to -0.4)
+        if (isPassiveMove(move, fen)) {
+            score -= 25; // -0.25 pawns for passive moves
+            Log.d(TAG, "📊 " + move + ": -25cp passive play");
+        }
+        
+        // KING SAFETY MODERATE PENALTY (-0.1) - Alekhine takes calculated risks
+        if (weakensKingSafety(move, fen)) {
+            score -= 10; // -0.1 pawns (less penalty than other masters)
+            Log.d(TAG, "📊 " + move + ": -10cp king safety risk");
+        }
+        
+        return score;
+    }
+    
+    /**
+     * Check if move involves tactical complexity (checks, captures, threats)
+     */
+    private boolean isTacticalMove(String move, String variation) {
+        // Check for captures (x in variation)
+        if (variation.contains("x")) return true;
+        
+        // Check for checks (+ in variation)
+        if (variation.contains("+")) return true;
+        
+        // Check for promotion
+        if (move.length() == 5) return true;
+        
+        // Check for piece moves to central squares (tactical potential)
+        String toSquare = move.substring(2, 4);
+        String[] centralSquares = {"d4", "d5", "e4", "e5", "c4", "c5", "f4", "f5"};
+        for (String square : centralSquares) {
+            if (square.equals(toSquare)) return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if move activates pieces (knights, bishops to good squares)
+     */
+    private boolean isPieceActivatingMove(String move) {
+        String fromSquare = move.substring(0, 2);
+        String toSquare = move.substring(2, 4);
+        
+        // Knight moves to good squares
+        if (isKnightMove(fromSquare, toSquare)) {
+            String[] goodKnightSquares = {"c3", "f3", "c6", "f6", "d5", "e5", "d4", "e4"};
+            for (String square : goodKnightSquares) {
+                if (square.equals(toSquare)) return true;
+            }
+        }
+        
+        // Bishop moves to long diagonals
+        if (isBishopMove(fromSquare, toSquare)) {
+            String[] goodBishopSquares = {"c4", "f4", "c5", "f5", "b5", "g5", "b2", "g2"};
+            for (String square : goodBishopSquares) {
+                if (square.equals(toSquare)) return true;
+            }
+        }
+        
+        // Rook moves to open files (simplified heuristic)
+        if (isRookMove(fromSquare, toSquare)) {
+            char file = toSquare.charAt(0);
+            if (file == 'd' || file == 'e' || file == 'c' || file == 'f') return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if move is aggressive (advances toward opponent)
+     */
+    private boolean isAggressiveMove(String move, String variation) {
+        String toSquare = move.substring(2, 4);
+        int toRank = Character.getNumericValue(toSquare.charAt(1));
+        
+        // Moves advancing toward opponent (assuming white perspective for simplicity)
+        if (toRank >= 5) return true;
+        
+        // Pawn advances
+        String fromSquare = move.substring(0, 2);
+        if (isPawnMove(fromSquare, toSquare)) {
+            int fromRank = Character.getNumericValue(fromSquare.charAt(1));
+            if (toRank > fromRank) return true; // Advancing pawn
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if move involves a sacrifice with unclear compensation
+     */
+    private boolean isSacrificialMove(String move, String variation, float evaluation) {
+        // Look for captures where evaluation drops (indicating sacrifice)
+        if (variation.contains("x")) {
+            // If evaluation is negative but move contains capture, might be sacrifice
+            if (evaluation < -50) return true;
+        }
+        
+        // Check for typical sacrificial patterns
+        String toSquare = move.substring(2, 4);
+        String[] sacrificialSquares = {"f7", "f2", "g7", "g2", "h7", "h2"};
+        for (String square : sacrificialSquares) {
+            if (square.equals(toSquare) && variation.contains("x")) return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Check if move is passive (retreating or defensive)
+     */
+    private boolean isPassiveMove(String move, String fen) {
+        String fromSquare = move.substring(0, 2);
+        String toSquare = move.substring(2, 4);
+        
+        int fromRank = Character.getNumericValue(fromSquare.charAt(1));
+        int toRank = Character.getNumericValue(toSquare.charAt(1));
+        
+        // Piece retreating toward own back rank
+        if (toRank < fromRank && toRank <= 3) return true;
+        
+        // King moves (often defensive)
+        if (isKingMove(fromSquare, toSquare)) return true;
+        
+        return false;
+    }
+    
+    /**
+     * Check if move weakens king safety
+     */
+    private boolean weakensKingSafety(String move, String fen) {
+        String toSquare = move.substring(2, 4);
+        
+        // Moves that weaken castling position
+        String[] kingSideWeakening = {"g3", "h3", "g4", "h4", "f3", "f4"};
+        String[] queenSideWeakening = {"a3", "b3", "c3", "a4", "b4", "c4"};
+        
+        for (String square : kingSideWeakening) {
+            if (square.equals(toSquare)) return true;
+        }
+        
+        for (String square : queenSideWeakening) {
+            if (square.equals(toSquare)) return true;
+        }
+        
+        return false;
+    }
+    
+    // Helper methods for piece movement detection
+    private boolean isKnightMove(String from, String to) {
+        int dx = Math.abs(from.charAt(0) - to.charAt(0));
+        int dy = Math.abs(from.charAt(1) - to.charAt(1));
+        return (dx == 2 && dy == 1) || (dx == 1 && dy == 2);
+    }
+    
+    private boolean isBishopMove(String from, String to) {
+        int dx = Math.abs(from.charAt(0) - to.charAt(0));
+        int dy = Math.abs(from.charAt(1) - to.charAt(1));
+        return dx == dy && dx > 0;
+    }
+    
+    private boolean isRookMove(String from, String to) {
+        return (from.charAt(0) == to.charAt(0)) || (from.charAt(1) == to.charAt(1));
+    }
+    
+    private boolean isPawnMove(String from, String to) {
+        return from.charAt(0) == to.charAt(0) || Math.abs(from.charAt(0) - to.charAt(0)) == 1;
+    }
+    
+    private boolean isKingMove(String from, String to) {
+        int dx = Math.abs(from.charAt(0) - to.charAt(0));
+        int dy = Math.abs(from.charAt(1) - to.charAt(1));
+        return dx <= 1 && dy <= 1;
     }
 }
