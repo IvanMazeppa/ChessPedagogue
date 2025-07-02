@@ -1,58 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme with explicit Material Components support -->
-    <style name="Theme.ChessPedagogue" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
-        <item name="colorOnPrimary">@color/white</item>
-
-        <!-- Secondary brand color -->
-        <item name="colorSecondary">@color/colorAccent</item>
-        <item name="colorSecondaryVariant">@color/bronze</item>
-        <item name="colorOnSecondary">@color/black</item>
-
-        <!-- Status bar color -->
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-
-        <!-- Background colors -->
-        <item name="android:windowBackground">@color/parchment</item>
-        <item name="backgroundColor">@color/ivory</item>
-
-        <!-- CRITICAL: Explicit FAB styling to prevent theme conflicts -->
-        <item name="floatingActionButtonStyle">@style/Widget.MaterialComponents.FloatingActionButton</item>
-
-        <!-- Ensure Material Components are properly supported -->
+    <!-- Material Components Theme with Material 3 Colors for Android 15/16 -->
+    <style name="Theme.ChessPedagogue" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Material 3 Primary Colors -->
+        <item name="colorPrimary">@color/md_theme_light_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_light_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_light_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_light_onPrimaryContainer</item>
+        
+        <!-- Material 3 Secondary Colors -->
+        <item name="colorSecondary">@color/md_theme_light_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_light_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_light_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_light_onSecondaryContainer</item>
+        
+        <!-- Material 3 Tertiary Colors -->
+        <item name="colorTertiary">@color/md_theme_light_tertiary</item>
+        <item name="colorOnTertiary">@color/md_theme_light_onTertiary</item>
+        <item name="colorTertiaryContainer">@color/md_theme_light_tertiaryContainer</item>
+        <item name="colorOnTertiaryContainer">@color/md_theme_light_onTertiaryContainer</item>
+        
+        <!-- Error Colors -->
+        <item name="colorError">@color/md_theme_light_error</item>
+        <item name="colorOnError">@color/md_theme_light_onError</item>
+        <item name="colorErrorContainer">@color/md_theme_light_errorContainer</item>
+        <item name="colorOnErrorContainer">@color/md_theme_light_onErrorContainer</item>
+        
+        <!-- Surface Colors for Glassmorphism -->
+        <item name="colorSurface">@color/md_theme_light_surface</item>
+        <item name="colorOnSurface">@color/md_theme_light_onSurface</item>
+        <item name="colorSurfaceVariant">@color/md_theme_light_surfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/md_theme_light_onSurfaceVariant</item>
+        
+        <!-- Outline Colors -->
+        <item name="colorOutline">@color/md_theme_light_outline</item>
+        <item name="colorOutlineVariant">@color/md_theme_light_outlineVariant</item>
+        
+        <!-- Edge-to-Edge Configuration for Android 15 -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        
+        <!-- Gradient Background for Glassmorphism -->
+        <item name="android:windowBackground">@drawable/bg_gradient</item>
+        
+        <!-- Enable Window Content Transitions (API 21+) -->
+        <item name="android:windowContentTransitions">true</item>
+        
+        <!-- Material Components Styles -->
         <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
-        <item name="cardViewStyle">@style/Widget.MaterialComponents.CardView</item>
-
-        <!-- Additional Material Components theme attributes -->
-        <item name="colorSurface">@color/parchment</item>
-        <item name="colorOnSurface">@color/text_on_light</item>
-        <item name="colorError">@color/error_red</item>
-        <item name="colorOnError">@color/white</item>
+        <item name="materialCardViewStyle">@style/Widget.MaterialComponents.CardView</item>
+        <item name="floatingActionButtonStyle">@style/Widget.MaterialComponents.FloatingActionButton</item>
+        
+        <!-- Enable Predictive Back Gesture -->
+        <item name="android:enableOnBackInvokedCallback">true</item>
     </style>
 
-    <!-- NEW: No Action Bar variant for ChessMasterSelectionActivity -->
-    <style name="Theme.ChessPedagogue.NoActionBar" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Inherit all the same colors and styling -->
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryVariant">@color/colorPrimaryDark</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/colorAccent</item>
-        <item name="colorSecondaryVariant">@color/bronze</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="android:statusBarColor" tools:targetApi="l">?attr/colorPrimaryVariant</item>
-        <item name="android:windowBackground">@color/parchment</item>
-        <item name="backgroundColor">@color/ivory</item>
+    <!-- Glassmorphic Panel Style -->
+    <style name="GlassPanel">
+        <item name="android:background">@drawable/glass_panel_bg</item>
+        <item name="android:elevation">6dp</item>
+        <item name="android:layout_margin">8dp</item>
+    </style>
+    
+    <!-- Chess Master Card Style -->
+    <style name="ChessMasterCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/glass_background</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="cardElevation">8dp</item>
+        <item name="android:layout_margin">12dp</item>
+    </style>
+    
+    <!-- Game Mode Selection Card -->
+    <style name="GameModeCard" parent="Widget.MaterialComponents.CardView">
+        <item name="cardBackgroundColor">@color/glass_surface</item>
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">12dp</item>
+        <item name="android:layout_margin">16dp</item>
+    </style>
+    
+    <!-- Strength Slider Glass Style -->
+    <style name="GlassSliderContainer">
+        <item name="android:background">@drawable/glass_slider_bg</item>
+        <item name="android:padding">20dp</item>
+        <item name="android:elevation">6dp</item>
+    </style>
 
-        <!-- Same Material Components support -->
-        <item name="floatingActionButtonStyle">@style/Widget.MaterialComponents.FloatingActionButton</item>
-        <item name="materialButtonStyle">@style/Widget.MaterialComponents.Button</item>
-        <item name="cardViewStyle">@style/Widget.MaterialComponents.CardView</item>
-        <item name="colorSurface">@color/parchment</item>
-        <item name="colorOnSurface">@color/text_on_light</item>
-        <item name="colorError">@color/error_red</item>
-        <item name="colorOnError">@color/white</item>
+    <!-- Legacy No Action Bar variant (kept for compatibility) -->
+    <style name="Theme.ChessPedagogue.NoActionBar" parent="Theme.ChessPedagogue" />
+    
+    <!-- Splash Screen Theme -->
+    <style name="Theme.ChessPedagogue.Splash" parent="Theme.ChessPedagogue">
+        <item name="android:windowBackground">@drawable/splash_gradient_bg</item>
+        <item name="android:windowFullscreen">false</item>
     </style>
 </resources>

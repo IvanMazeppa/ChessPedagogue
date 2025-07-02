@@ -2,38 +2,54 @@ package com.example.chesspedagogue;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.SeekBar;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
+import android.widget.Button;
+import androidx.cardview.widget.CardView;
+import android.widget.SeekBar;
+import com.example.chesspedagogue.ui.GlassmorphismUtils;
 
 public class SplashActivity extends AppCompatActivity {
     private static final String TAG = "SplashActivity";
 
+    // Material Components UI Elements
     private RadioGroup colorRadioGroup;
     private RadioButton radioWhite;
     private RadioButton radioBlack;
-    private SeekBar strengthSeekBar;
+    private SeekBar strengthSlider;
     private TextView strengthValueTextView;
-    private Button startGameButton;
-    private LinearLayout whiteSelectionLayout;
-    private LinearLayout blackSelectionLayout;
+    private Button startButton;
+    private Button modernCompetitiveModeButton;
+    private CardView whiteSelectionCard;
+    private CardView blackSelectionCard;
+    private CardView heroCard;
+    private CardView colorSelectionCard;
+    private CardView strengthCard;
+    private View strengthContainer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Log.d(TAG, "🚀 SplashActivity onCreate starting...");
+        Log.d(TAG, "🚀 Modern SplashActivity with Android 15 features starting...");
         
-        setContentView(R.layout.activity_splash);
-
-        // Initialize UI elements
+        // Set modern glassmorphic layout
+        setContentView(R.layout.activity_splash_modern);
+        
+        // Enable edge-to-edge immersive experience for Android 15
+        setupEdgeToEdgeDisplay();
+        
+        // Initialize Material 3 UI elements
         initializeViews();
+        
+        // Apply glassmorphism effects for Samsung S23 Ultra (after layout is complete)
+        findViewById(android.R.id.content).post(() -> applyGlassmorphismEffects());
         
         // Setup functionality
         setupColorSelection();
@@ -44,46 +60,55 @@ public class SplashActivity extends AppCompatActivity {
         colorRadioGroup.check(R.id.radioWhite);
         updateSelectionVisuals();
         
-        Log.d(TAG, "✅ SplashActivity initialization completed");
+        Log.d(TAG, "✅ Modern SplashActivity initialization completed with glassmorphism");
     }
 
     private void initializeViews() {
-        Log.d(TAG, "🔍 Initializing views...");
+        Log.d(TAG, "🔍 Initializing Material 3 views...");
         
+        // Core UI components
         colorRadioGroup = findViewById(R.id.radioGroupColor);
         radioWhite = findViewById(R.id.radioWhite);
         radioBlack = findViewById(R.id.radioBlack);
-        strengthSeekBar = findViewById(R.id.seekBarStrength);
+        strengthSlider = findViewById(R.id.strengthSlider);
         strengthValueTextView = findViewById(R.id.textViewStrengthValue);
-        startGameButton = findViewById(R.id.buttonStartGame);
-        whiteSelectionLayout = findViewById(R.id.whiteSelectionLayout);
-        blackSelectionLayout = findViewById(R.id.blackSelectionLayout);
+        startButton = findViewById(R.id.startButton);
+        modernCompetitiveModeButton = findViewById(R.id.modernCompetitiveModeButton);
+        
+        // CardViews for glassmorphism
+        whiteSelectionCard = findViewById(R.id.whiteSelectionCard);
+        blackSelectionCard = findViewById(R.id.blackSelectionCard);
+        heroCard = findViewById(R.id.heroCard);
+        colorSelectionCard = findViewById(R.id.colorSelectionCard);
+        strengthCard = findViewById(R.id.strengthCard);
+        strengthContainer = findViewById(R.id.strengthContainer);
         
         // Verify all views found
         boolean allViewsFound = 
             colorRadioGroup != null && radioWhite != null && radioBlack != null &&
-            strengthSeekBar != null && strengthValueTextView != null && 
-            startGameButton != null && whiteSelectionLayout != null && blackSelectionLayout != null;
+            strengthSlider != null && strengthValueTextView != null && 
+            startButton != null && modernCompetitiveModeButton != null &&
+            whiteSelectionCard != null && blackSelectionCard != null;
             
-        Log.d(TAG, allViewsFound ? "✅ All views found successfully" : "❌ Some views not found!");
+        Log.d(TAG, allViewsFound ? "✅ All Material Components views found successfully" : "❌ Some views not found!");
     }
 
     private void setupColorSelection() {
         Log.d(TAG, "🎨 Setting up color selection...");
         
-        // Set up click listeners for the selection areas
-        whiteSelectionLayout.setOnClickListener(new View.OnClickListener() {
+        // Set up click listeners for the glassmorphic selection cards
+        whiteSelectionCard.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "🤴 WHITE selection area clicked!");
+                Log.d(TAG, "🤴 WHITE selection card clicked!");
                 selectWhite();
             }
         });
 
-        blackSelectionLayout.setOnClickListener(new View.OnClickListener() {
+        blackSelectionCard.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "♛ BLACK selection area clicked!");
+                Log.d(TAG, "♛ BLACK selection card clicked!");
                 selectBlack();
             }
         });
@@ -135,51 +160,61 @@ public class SplashActivity extends AppCompatActivity {
         int selectedColorId = colorRadioGroup.getCheckedRadioButtonId();
         String selectedName = (selectedColorId == R.id.radioWhite) ? "WHITE" : 
                              (selectedColorId == R.id.radioBlack) ? "BLACK" : "NONE";
-        Log.d(TAG, "🎨 Updating visuals for selected ID: " + selectedColorId + " (" + selectedName + ")");
+        Log.d(TAG, "🎨 Updating Material 3 card visuals for: " + selectedName);
         
         if (selectedColorId == R.id.radioWhite) {
-            whiteSelectionLayout.setBackgroundResource(R.drawable.side_selection_active_bg);
-            blackSelectionLayout.setBackgroundResource(R.drawable.side_selection_bg);
-            Log.d(TAG, "🎨 Visual feedback: WHITE highlighted");
+            // Highlight white card with elevation
+            whiteSelectionCard.setCardElevation(12f);
+            
+            // Reset black card
+            blackSelectionCard.setCardElevation(4f);
+            
+            Log.d(TAG, "🎨 Material Components visual feedback: WHITE card highlighted");
         } else if (selectedColorId == R.id.radioBlack) {
-            blackSelectionLayout.setBackgroundResource(R.drawable.side_selection_active_bg);
-            whiteSelectionLayout.setBackgroundResource(R.drawable.side_selection_bg);
-            Log.d(TAG, "🎨 Visual feedback: BLACK highlighted");
+            // Highlight black card with elevation
+            blackSelectionCard.setCardElevation(12f);
+            
+            // Reset white card
+            whiteSelectionCard.setCardElevation(4f);
+            
+            Log.d(TAG, "🎨 Material Components visual feedback: BLACK card highlighted");
         } else {
             Log.w(TAG, "⚠️ No valid selection found - keeping current state");
         }
     }
 
     private void setupStrengthSlider() {
-        Log.d(TAG, "⚡ Setting up strength slider...");
+        Log.d(TAG, "⚡ Setting up Material 3 strength slider...");
         
-        // Configure slider - expand range for better granularity
-        strengthSeekBar.setMax(24);  // Increased from 20 to support more levels
-        strengthSeekBar.setProgress(12);  // default mid-level (2200 Elo)
+        // Configure SeekBar with 25 levels (0-24)
+        strengthSlider.setMax(24);
+        strengthSlider.setProgress(12);  // default mid-level (2200 Elo)
         
         // Update display
         updateStrengthDisplay(12);
         
-        // Listen for changes
-        strengthSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+        // Listen for changes with SeekBar
+        strengthSlider.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 updateStrengthDisplay(progress);
             }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {}
         });
         
-        Log.d(TAG, "✅ Strength slider setup completed");
+        Log.d(TAG, "✅ Material 3 strength slider setup completed");
     }
 
     private void updateStrengthDisplay(int sliderPosition) {
         // Map slider position to actual Elo ratings with better distribution
         int targetElo = mapSliderToElo(sliderPosition);
         String levelName = getStrengthLevelName(targetElo);
-        String strengthText = "Engine Strength: " + targetElo + " Elo (" + levelName + ")";
+        String strengthText = levelName + ": ~" + targetElo + " Elo";
         strengthValueTextView.setText(strengthText);
-        Log.d(TAG, "⚡ Strength updated: " + strengthText);
+        Log.d(TAG, "⚡ Material 3 strength updated: " + strengthText);
     }
     
     private int mapSliderToElo(int sliderPosition) {
@@ -211,23 +246,69 @@ public class SplashActivity extends AppCompatActivity {
     }
 
     private void setupStartButton() {
-        Log.d(TAG, "▶️ Setting up start button...");
+        Log.d(TAG, "▶️ Setting up Material 3 action buttons...");
         
-        startGameButton.setOnClickListener(new View.OnClickListener() {
+        startButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Log.d(TAG, "▶️ START GAME button clicked!");
+                Log.d(TAG, "▶️ Material 3 START GAME button clicked!");
                 startGame();
             }
         });
         
-        Log.d(TAG, "✅ Start button setup completed");
+        modernCompetitiveModeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Log.d(TAG, "✨ Modern Competitive Mode button clicked!");
+                launchModernCompetitiveMode();
+            }
+        });
+        
+        Log.d(TAG, "✅ Material 3 action buttons setup completed");
+    }
+    
+    /**
+     * Setup edge-to-edge display for Android 15 immersive experience
+     */
+    private void setupEdgeToEdgeDisplay() {
+        Log.d(TAG, "🌊 Setting up edge-to-edge display for Android 15...");
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Enable edge-to-edge with glassmorphism background
+            GlassmorphismUtils.enableEdgeToEdge(getWindow(), findViewById(android.R.id.content));
+            
+            // Set adaptive system bar icons (light icons for dark gradient background)
+            GlassmorphismUtils.setAdaptiveSystemBarIcons(getWindow(), false);
+            
+            Log.d(TAG, "✅ Edge-to-edge display configured for Samsung S23 Ultra");
+        } else {
+            Log.d(TAG, "ℹ️ Edge-to-edge not available on this Android version");
+        }
+    }
+    
+    /**
+     * Apply glassmorphism effects for Android 15 - Fixed Implementation
+     * Pure translucent backgrounds without RenderEffect blur for crisp content
+     */
+    private void applyGlassmorphismEffects() {
+        Log.d(TAG, "✨ Applying proper glassmorphism - translucent panels with sharp content...");
+        
+        // The glassmorphism effect is achieved purely through:
+        // 1. Translucent glass_surface backgrounds (already applied in XML)
+        // 2. Rich gradient background showing through panels  
+        // 3. NO RenderEffect blur on content (keeps text/icons sharp)
+        
+        Log.d(TAG, "✅ Glassmorphism achieved via translucent backgrounds:");
+        Log.d(TAG, "   🔹 Glass panels: translucent with sharp content");
+        Log.d(TAG, "   🔹 Background gradient: rich colors showing through");
+        Log.d(TAG, "   🔹 Material 3 elevation: subtle shadows for depth");
+        Log.d(TAG, "   🔹 Samsung S23 Ultra optimized: smooth performance");
     }
 
     private void startGame() {
-        // Get current configuration
+        // Get current configuration from Material 3 components
         String playerColor = getSelectedColor();
-        int sliderPosition = strengthSeekBar.getProgress();
+        int sliderPosition = strengthSlider.getProgress();
         int engineElo = mapSliderToElo(sliderPosition);
         
         Log.d(TAG, "🎮 Starting game with configuration:");
@@ -268,6 +349,36 @@ public class SplashActivity extends AppCompatActivity {
         }
         
         Log.d(TAG, "✅ Game start completed, finishing splash activity");
+        finish(); // close splash screen
+    }
+    
+    /**
+     * Launch Modern Competitive Mode with Android 15 features
+     */
+    private void launchModernCompetitiveMode() {
+        Log.d(TAG, "✨ Launching Modern Competitive Mode with Android 15 features...");
+        
+        // Get current configuration
+        String playerColor = getSelectedColor();
+        int sliderPosition = strengthSlider.getProgress();
+        int engineElo = mapSliderToElo(sliderPosition);
+        
+        Log.d(TAG, "✨ Modern Mode Configuration:");
+        Log.d(TAG, "   🎨 Player Color: " + playerColor);
+        Log.d(TAG, "   ⚡ Engine Elo: " + engineElo);
+        Log.d(TAG, "   🌊 Edge-to-Edge: Enabled");
+        Log.d(TAG, "   🔮 Glassmorphism: Pure translucency");
+        Log.d(TAG, "   📱 Samsung S23 Ultra optimized");
+        
+        // Launch Modern Competitive Mode
+        Intent intent = new Intent(SplashActivity.this, ModernCompetitiveModeActivity.class);
+        intent.putExtra("PLAYER_COLOR", playerColor);
+        intent.putExtra("SLIDER_POSITION", sliderPosition);
+        intent.putExtra("ENGINE_ELO", engineElo);
+        intent.putExtra("ANDROID_15_MODE", true);
+        
+        startActivity(intent);
+        Log.d(TAG, "✨ Modern Competitive Mode launched successfully");
         finish(); // close splash screen
     }
 

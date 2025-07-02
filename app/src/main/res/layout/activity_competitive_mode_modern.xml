@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modern Glassmorphic Competitive Mode for Android 15/API 35 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_gradient"
+    android:orientation="vertical"
+    tools:context=".ModernCompetitiveModeActivity">
+
+    <!-- Frosted Glass Header Panel -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/competitiveHeaderContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
+
+            <!-- Player Info Section -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/playerAvatar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="4dp"
+                    android:contentDescription="Player Avatar"
+                    android:src="@drawable/ic_white_king" />
+
+                <TextView
+                    android:id="@+id/playerNameText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="Player"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/playerRatingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="1800"
+                    android:textColor="@color/md_theme_light_onSurfaceVariant"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- VS Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:fontFamily="serif"
+                android:text="VS"
+                android:textColor="@color/md_theme_light_primary"
+                android:textSize="24sp"
+                android:textStyle="bold" />
+
+            <!-- AI Master Section -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/masterAvatar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginBottom="4dp"
+                    android:contentDescription="Master Avatar"
+                    android:src="@drawable/ic_black_king" />
+
+                <TextView
+                    android:id="@+id/masterNameText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="Tal"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/masterRatingText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="2500"
+                    android:textColor="@color/md_theme_light_onSurfaceVariant"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- Action Buttons with Material 3 -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:orientation="vertical">
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/gameAnalysisButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:contentDescription="Game Analysis"
+                    android:src="@drawable/ic_game_analysis"
+                    app:backgroundTint="@color/glass_background"
+                    app:elevation="4dp"
+                    app:fabSize="mini"
+                    app:tint="@color/md_theme_light_onSurface" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/speakButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="Voice Input"
+                    android:src="@drawable/ic_speak_to_coach"
+                    app:backgroundTint="@color/glass_background"
+                    app:elevation="4dp"
+                    app:fabSize="mini"
+                    app:tint="@color/md_theme_light_onSurface" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Chess Board Area - EDGE TO EDGE using LinearLayout weight (like original) -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <!-- Evaluation Bar - NO MARGINS, EDGE TO EDGE -->
+            <com.example.chesspedagogue.EvaluationBarView
+                android:id="@+id/evaluationBarView"
+                android:layout_width="16dp"
+                android:layout_height="0dp"
+                android:background="@android:color/transparent"
+                app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/chessBoardView" />
+
+            <!-- Chess Board - EDGE TO EDGE, NO MARGINS -->
+            <com.example.chesspedagogue.ChessBoardView
+                android:id="@+id/chessBoardView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:transitionName="chessboard"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintDimensionRatio="1:1"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/evaluationBarView"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintVertical_bias="0.5" />
+
+            <!-- Master Thinking Indicator -->
+            <ProgressBar
+                android:id="@+id/masterThinkingProgressBar"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:indeterminateTint="@color/md_theme_light_primary"
+                android:visibility="gone"
+                style="?android:attr/progressBarStyle"
+                app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
+                app:layout_constraintEnd_toEndOf="@+id/chessBoardView"
+                app:layout_constraintStart_toStartOf="@+id/chessBoardView"
+                app:layout_constraintTop_toTopOf="@+id/chessBoardView" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
+
+    <!-- Control Buttons Panel (moved above move list) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/bottomControlsPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Top Row Control Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/pauseButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="PAUSE"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/voiceCommentButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="🎤 Voice"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/difficultyToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="⚙️ Normal"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/surrenderButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="🏳️ Resign"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Bottom Row Control Buttons -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/ttsToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="🔊 TTS"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/personalityToggleButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="🎭 AI"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/voiceSettingsButton"
+                    android:layout_width="0dp"
+                    android:layout_height="40dp"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/glass_button_bg"
+                    android:text="🎙️ VOICE"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Battle Progress Panel with Fixed Height and ScrollView -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/battleProgressPanel"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="3"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="8dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Battle Progress Header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFamily="serif"
+                    android:text="⚔️ Battle Progress"
+                    android:textColor="@color/md_theme_light_onSurface"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="serif"
+                    android:text="In Progress"
+                    android:textColor="@color/md_theme_light_onSurfaceVariant"
+                    android:textSize="14sp"
+                    android:textStyle="italic" />
+            </LinearLayout>
+
+            <!-- Scrollable Move History Section -->
+            <ScrollView
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:scrollbars="vertical">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Move History and Status -->
+                    <TextView
+                        android:id="@+id/moveHistoryTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="Game begins..."
+                        android:textColor="@color/md_theme_light_onSurface"
+                        android:textSize="14sp" />
+
+                    <!-- Game Result Display -->
+                    <TextView
+                        android:id="@+id/gameResultTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="serif"
+                        android:textColor="@color/md_theme_light_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+
+                    <!-- Status Display -->
+                    <TextView
+                        android:id="@+id/statusTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:fontFamily="serif"
+                        android:text="Ready to play"
+                        android:textColor="@color/md_theme_light_onSurfaceVariant"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </ScrollView>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+</LinearLayout>

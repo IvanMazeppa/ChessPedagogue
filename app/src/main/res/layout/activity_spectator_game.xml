@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1E1E1E"
+    android:background="@drawable/bg_gradient"
     android:fitsSystemWindows="true"
     android:orientation="vertical"
     tools:context=".SpectatorGameActivity">
@@ -14,39 +14,39 @@
         android:id="@+id/playerInfoContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#2A2A2A"
         android:orientation="horizontal"
-        android:padding="4dp"
-        android:background="#2A2A2A">
+        android:padding="4dp">
 
         <!-- White Player - Compact -->
         <TextView
             android:id="@+id/whitePlayerName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="2dp"
             android:layout_weight="1"
-            android:text="⚪ Mikhail Tal"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
+            android:background="#4CAF50"
             android:gravity="start"
             android:padding="8dp"
-            android:background="#4CAF50"
-            android:layout_marginEnd="2dp" />
+            android:text="⚪ Mikhail Tal"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
         <!-- Black Player - Compact -->
         <TextView
             android:id="@+id/blackPlayerName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="2dp"
             android:layout_weight="1"
-            android:text="⚫ Bobby Fischer"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:textColor="#FFFFFF"
+            android:background="#FF5722"
             android:gravity="end"
             android:padding="8dp"
-            android:background="#FF5722"
-            android:layout_marginStart="2dp" />
+            android:text="⚫ Bobby Fischer"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
@@ -57,8 +57,8 @@
         android:layout_height="0dp"
         android:layout_weight="3"
         android:paddingStart="8dp"
-        android:paddingEnd="8dp"
         android:paddingTop="2dp"
+        android:paddingEnd="8dp"
         android:paddingBottom="0dp">
 
         <!-- Chess Board - Flush with Both Edges -->
@@ -80,11 +80,11 @@
             android:id="@+id/evaluationBarView"
             android:layout_width="18dp"
             android:layout_height="0dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/chessBoardView"
-            app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
             android:layout_marginEnd="4dp"
-            android:background="@android:color/transparent" />
+            android:background="@android:color/transparent"
+            app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/chessBoardView" />
 
         <!-- Thinking Indicator -->
         <ProgressBar
@@ -94,10 +94,10 @@
             android:layout_centerInParent="true"
             android:indeterminateTint="#FF9800"
             android:visibility="gone"
-            app:layout_constraintStart_toStartOf="@+id/chessBoardView"
+            app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
             app:layout_constraintEnd_toEndOf="@+id/chessBoardView"
-            app:layout_constraintTop_toTopOf="@+id/chessBoardView"
-            app:layout_constraintBottom_toBottomOf="@+id/chessBoardView" />
+            app:layout_constraintStart_toStartOf="@+id/chessBoardView"
+            app:layout_constraintTop_toTopOf="@+id/chessBoardView" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -114,11 +114,11 @@
         <androidx.cardview.widget.CardView
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
             android:layout_marginEnd="4dp"
+            android:layout_weight="1"
+            app:cardBackgroundColor="#F5F5F5"
             app:cardCornerRadius="12dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#F5F5F5">
+            app:cardElevation="4dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -129,12 +129,12 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="📋 Game Moves"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="#2E7D32"
+                    android:layout_marginBottom="4dp"
                     android:gravity="center"
-                    android:layout_marginBottom="4dp" />
+                    android:text="📋 Game Moves"
+                    android:textColor="#2E7D32"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
 
                 <ScrollView
                     android:layout_width="match_parent"
@@ -145,11 +145,11 @@
                         android:id="@+id/moveHistoryTextView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🎭 Epic battle begins..."
-                        android:textSize="11sp"
                         android:fontFamily="monospace"
+                        android:lineSpacingExtra="1dp"
+                        android:text="🎭 Epic battle begins..."
                         android:textColor="#424242"
-                        android:lineSpacingExtra="1dp" />
+                        android:textSize="11sp" />
 
                 </ScrollView>
 
@@ -162,11 +162,11 @@
             android:id="@+id/dialogueCard"
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="1"
             android:layout_marginStart="4dp"
+            android:layout_weight="1"
+            app:cardBackgroundColor="#E8F8E8"
             app:cardCornerRadius="12dp"
-            app:cardElevation="6dp"
-            app:cardBackgroundColor="#E8F8E8">
+            app:cardElevation="6dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -178,9 +178,9 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginBottom="6dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="6dp">
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/currentSpeakerTextView"
@@ -188,9 +188,9 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="💬 Masters Conversing"
+                        android:textColor="#2E7D32"
                         android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:textColor="#2E7D32" />
+                        android:textStyle="bold" />
 
                     <!-- Live indicator -->
                     <View
@@ -212,11 +212,11 @@
                         android:id="@+id/dialogueTextView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="🎙️ Welcome to the AI Masters arena! Watch as chess legends come alive to discuss strategy and share their insights in real-time!"
-                        android:textSize="13sp"
-                        android:textColor="#1B5E20"
                         android:lineSpacingExtra="3dp"
-                        android:padding="4dp" />
+                        android:padding="4dp"
+                        android:text="🎙️ Welcome to the AI Masters arena! Watch as chess legends come alive to discuss strategy and share their insights in real-time!"
+                        android:textColor="#1B5E20"
+                        android:textSize="13sp" />
 
                 </ScrollView>
 
@@ -231,59 +231,59 @@
         android:id="@+id/controlsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#2A2A2A"
         android:orientation="vertical"
-        android:padding="8dp"
-        android:background="#2A2A2A">
+        android:padding="8dp">
 
         <!-- Start Game Button (Added Dynamically) Will Appear Here -->
-        
+
         <!-- Primary Controls Row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginBottom="4dp"
             android:gravity="center"
-            android:layout_marginBottom="4dp">
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/pauseResumeButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginEnd="4dp"
-                android:text="⏸️ Pause"
-                android:textSize="12sp"
-                android:textStyle="bold"
+                android:layout_weight="1"
                 android:backgroundTint="#FF9800"
+                android:text="⏸️ Pause"
                 android:textColor="#FFFFFF"
-                style="@style/Widget.MaterialComponents.Button" />
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/speedControlButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
-                android:text="⏱️ Normal"
-                android:textSize="12sp"
-                android:textStyle="bold"
+                android:layout_weight="1"
                 android:backgroundTint="#2196F3"
+                android:text="⏱️ Normal"
                 android:textColor="#FFFFFF"
-                style="@style/Widget.MaterialComponents.Button" />
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
             <Button
                 android:id="@+id/ttsToggleButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="0dp"
                 android:layout_height="48dp"
-                android:layout_weight="1"
                 android:layout_marginStart="4dp"
-                android:text="🔊 TTS"
-                android:textSize="12sp"
-                android:textStyle="bold"
+                android:layout_weight="1"
                 android:backgroundTint="#9C27B0"
+                android:text="🔊 TTS"
                 android:textColor="#FFFFFF"
-                style="@style/Widget.MaterialComponents.Button" />
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 
@@ -291,29 +291,29 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <!-- Main Comment Button with Quick Actions -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:orientation="horizontal"
                 android:background="@drawable/rounded_panel_background"
                 android:backgroundTint="#4CAF50"
+                android:orientation="horizontal"
                 android:padding="2dp">
 
                 <!-- Quick Voice Button -->
                 <Button
                     android:id="@+id/quickVoiceButton"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="48dp"
                     android:layout_height="40dp"
-                    android:text="🎤"
-                    android:textSize="16sp"
                     android:backgroundTint="#388E3C"
+                    android:text="🎤"
                     android:textColor="#FFFFFF"
-                    style="@style/Widget.MaterialComponents.Button" />
+                    android:textSize="16sp" />
 
                 <!-- Main Comment Button -->
                 <Button
@@ -321,9 +321,9 @@
                     style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="0dp"
                     android:layout_height="40dp"
-                    android:layout_weight="1"
                     android:layout_marginStart="2dp"
                     android:layout_marginEnd="2dp"
+                    android:layout_weight="1"
                     android:backgroundTint="@android:color/transparent"
                     android:text="Ask the Masters"
                     android:textColor="#FFFFFF"
@@ -333,13 +333,13 @@
                 <!-- Quick Type Button -->
                 <Button
                     android:id="@+id/quickTypeButton"
+                    style="@style/Widget.MaterialComponents.Button"
                     android:layout_width="48dp"
                     android:layout_height="40dp"
-                    android:text="⌨️"
-                    android:textSize="14sp"
                     android:backgroundTint="#388E3C"
+                    android:text="⌨️"
                     android:textColor="#FFFFFF"
-                    style="@style/Widget.MaterialComponents.Button" />
+                    android:textSize="14sp" />
 
             </LinearLayout>
 
@@ -349,21 +349,21 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_marginTop="4dp"
             android:gravity="center"
-            android:layout_marginTop="4dp">
+            android:orientation="horizontal">
 
             <Button
                 android:id="@+id/spectatorValidateButton"
+                style="@style/Widget.MaterialComponents.Button"
                 android:layout_width="0dp"
                 android:layout_height="36dp"
                 android:layout_weight="1"
-                android:text="🧪 Validate Master Styles"
-                android:textSize="12sp"
-                android:textStyle="bold"
                 android:backgroundTint="#FF9800"
+                android:text="🧪 Validate Master Styles"
                 android:textColor="#FFFFFF"
-                style="@style/Widget.MaterialComponents.Button" />
+                android:textSize="12sp"
+                android:textStyle="bold" />
 
         </LinearLayout>
 

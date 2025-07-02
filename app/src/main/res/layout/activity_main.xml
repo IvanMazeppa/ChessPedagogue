@@ -126,9 +126,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="3"
-                android:paddingEnd="2dp"
+                android:background="@drawable/bg_gradient"
                 android:paddingStart="2dp"
                 android:paddingTop="1dp"
+                android:paddingEnd="2dp"
                 android:paddingBottom="0dp">
 
                 <!-- Chess Board - Perfectly Centered and Sized - EXACTLY like your original -->
@@ -150,23 +151,23 @@
                     android:id="@+id/evaluationBarView"
                     android:layout_width="18dp"
                     android:layout_height="0dp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/chessBoardView"
-                    app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
                     android:layout_marginEnd="4dp"
-                    android:background="@android:color/transparent" />
+                    android:background="@android:color/transparent"
+                    app:layout_constraintBottom_toBottomOf="@+id/chessBoardView"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="@+id/chessBoardView" />
 
                 <!-- Loading Indicator - Subtle Overlay -->
                 <ProgressBar
                     android:id="@+id/evaluationProgressBar"
+                    style="?android:attr/progressBarStyleSmall"
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    app:layout_constraintStart_toStartOf="@+id/evaluationBarView"
-                    app:layout_constraintEnd_toEndOf="@+id/evaluationBarView"
-                    app:layout_constraintTop_toTopOf="@+id/evaluationBarView"
-                    app:layout_constraintBottom_toBottomOf="@+id/evaluationBarView"
                     android:visibility="gone"
-                    style="?android:attr/progressBarStyleSmall" />
+                    app:layout_constraintBottom_toBottomOf="@+id/evaluationBarView"
+                    app:layout_constraintEnd_toEndOf="@+id/evaluationBarView"
+                    app:layout_constraintStart_toStartOf="@+id/evaluationBarView"
+                    app:layout_constraintTop_toTopOf="@+id/evaluationBarView" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -1,11 +1,73 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Essential Material Design Colors (Required!) -->
-    <color name="colorPrimary">#8B4513</color>
-    <color name="colorPrimaryDark">#5D2F0A</color>
-    <color name="colorAccent">#FFD700</color>
+    <!-- Material 3 Expressive Color System - Android 15/16 Compatible -->
+    <color name="md_theme_light_primary">#6750A4</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#E9DDFF</color>
+    <color name="md_theme_light_onPrimaryContainer">#22005D</color>
+    <color name="md_theme_light_secondary">#625B71</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#E8DEF8</color>
+    <color name="md_theme_light_onSecondaryContainer">#1E192B</color>
+    <color name="md_theme_light_tertiary">#7E5260</color>
+    <color name="md_theme_light_onTertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiaryContainer">#FFD9E3</color>
+    <color name="md_theme_light_onTertiaryContainer">#31101D</color>
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+    <color name="md_theme_light_background">#FFFBFF</color>
+    <color name="md_theme_light_onBackground">#1C1B1F</color>
+    <color name="md_theme_light_surface">#FFFBFF</color>
+    <color name="md_theme_light_onSurface">#1C1B1F</color>
+    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_light_onSurfaceVariant">#49454F</color>
+    <color name="md_theme_light_outline">#7A757F</color>
+    <color name="md_theme_light_inverseOnSurface">#F4EFF4</color>
+    <color name="md_theme_light_inverseSurface">#313033</color>
+    <color name="md_theme_light_inversePrimary">#D0BCFF</color>
+    <color name="md_theme_light_shadow">#000000</color>
+    <color name="md_theme_light_surfaceTint">#6750A4</color>
+    <color name="md_theme_light_outlineVariant">#CAC4D0</color>
+    <color name="md_theme_light_scrim">#000000</color>
 
-    <!-- Material Theme Required Colors -->
+    <!-- Material 3 Dark Theme for Glassmorphic Background -->
+    <color name="md_theme_dark_primary">#D0BCFF</color>
+    <color name="md_theme_dark_onPrimary">#381E72</color>
+    <color name="md_theme_dark_primaryContainer">#4F378B</color>
+    <color name="md_theme_dark_onPrimaryContainer">#E9DDFF</color>
+    <color name="md_theme_dark_secondary">#CCC2DC</color>
+    <color name="md_theme_dark_onSecondary">#332D41</color>
+    <color name="md_theme_dark_secondaryContainer">#4A4458</color>
+    <color name="md_theme_dark_onSecondaryContainer">#E8DEF8</color>
+    <color name="md_theme_dark_tertiary">#EFB8C8</color>
+    <color name="md_theme_dark_onTertiary">#4A2532</color>
+    <color name="md_theme_dark_tertiaryContainer">#633B48</color>
+    <color name="md_theme_dark_onTertiaryContainer">#FFD9E3</color>
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    <color name="md_theme_dark_background">#1C1B1F</color>
+    <color name="md_theme_dark_onBackground">#E6E1E5</color>
+    <color name="md_theme_dark_surface">#1C1B1F</color>
+    <color name="md_theme_dark_onSurface">#E6E1E5</color>
+    <color name="md_theme_dark_surfaceVariant">#49454F</color>
+    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>
+    <color name="md_theme_dark_outline">#938F99</color>
+    <color name="md_theme_dark_inverseOnSurface">#1C1B1F</color>
+    <color name="md_theme_dark_inverseSurface">#E6E1E5</color>
+    <color name="md_theme_dark_inversePrimary">#6750A4</color>
+    <color name="md_theme_dark_shadow">#000000</color>
+    <color name="md_theme_dark_surfaceTint">#D0BCFF</color>
+    <color name="md_theme_dark_outlineVariant">#49454F</color>
+    <color name="md_theme_dark_scrim">#000000</color>
+
+    <!-- Legacy Colors for Backward Compatibility -->
+    <color name="colorPrimary">#6750A4</color>
+    <color name="colorPrimaryDark">#4F378B</color>
+    <color name="colorAccent">#D0BCFF</color>
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
@@ -16,7 +78,26 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Enhanced Wood Theme Colors - Richer and More Sophisticated -->
+    <!-- Glassmorphic UI Colors for Android 15 -->
+    <color name="glass_background">#80FFFFFF</color>
+    <color name="glass_background_dark">#40000000</color>
+    <color name="glass_surface">#60FFFFFF</color>
+    <color name="glass_surface_dark">#30FFFFFF</color>
+    <color name="glass_surface_variant">#50F5F5F5</color>
+    <color name="glass_outline">#40FFFFFF</color>
+    <color name="glass_outline_dark">#60000000</color>
+    <color name="glass_accent">#80D0BCFF</color>
+    <color name="glass_accent_dark">#60D0BCFF</color>
+
+    <!-- Enhanced Chess-themed Gradient Colors -->
+    <color name="gradient_start">#1A237E</color>
+    <color name="gradient_middle">#3949AB</color>
+    <color name="gradient_end">#4A148C</color>
+    <color name="gradient_chess_start">#2E1810</color>
+    <color name="gradient_chess_middle">#5D4037</color>
+    <color name="gradient_chess_end">#8B4513</color>
+
+    <!-- Wood Theme Colors (Preserved) -->
     <color name="brown_deep">#2E1810</color>
     <color name="brown_dark">#3E2723</color>
     <color name="brown_medium">#5D4037</color>
@@ -67,14 +148,25 @@
     <color name="chess_highlight_selected">#98FB98</color>
     <color name="chess_highlight_last_move">#FFEB3B</color>
 
-    <!-- Interactive Elements -->
-    <color name="button_primary">#8B4513</color>
-    <color name="button_primary_pressed">#654321</color>
-    <color name="button_secondary">#CD7F32</color>
-    <color name="button_secondary_pressed">#A0522D</color>
-    <color name="card_elevated">#FFFFFF</color>
-    <color name="card_surface">#F8F6F3</color>
-    <color name="card_selected">#FFF8DC</color>
+    <!-- Interactive Elements - Material 3 Expressive -->
+    <color name="button_primary">#6750A4</color>
+    <color name="button_primary_pressed">#4F378B</color>
+    <color name="button_secondary">#625B71</color>
+    <color name="button_secondary_pressed">#4A4458</color>
+    <color name="card_elevated">#FFFBFF</color>
+    <color name="card_surface">#F7F2FA</color>
+    <color name="card_selected">#E9DDFF</color>
+    <color name="card_glass">#80FFFFFF</color>
+    <color name="card_glass_dark">#40000000</color>
+
+    <!-- Surface Colors for Glassmorphism -->
+    <color name="surface_container_lowest">#FFFFFF</color>
+    <color name="surface_container_low">#F7F2FA</color>
+    <color name="surface_container">#F1ECF4</color>
+    <color name="surface_container_high">#ECE6F0</color>
+    <color name="surface_container_highest">#E6E0E9</color>
+    <color name="surface_dim">#DDD8E1</color>
+    <color name="surface_bright">#FFFBFF</color>
 
     <!-- Dialogue backgrounds -->
     <color name="user_interaction_bg">#E8F4FD</color>

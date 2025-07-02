@@ -87,13 +87,13 @@ public class ChessBoardView extends View {
 
     /* ───────── init ───────── */
     private void init() {
-        // Create clean, sophisticated colors that match your wood theme
+        // Glassmorphic colors that match the modern UI theme
         lightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lightPaint.setColor(0xFFF5F5DC); // Elegant ivory/cream color
+        lightPaint.setColor(0xFFE9DDFF); // Light purple to match md_theme_light_primaryContainer
         lightPaint.setStyle(Paint.Style.FILL);
 
         darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        darkPaint.setColor(0xFF8B5E3C); // Rich wood brown that matches your UI
+        darkPaint.setColor(0xFF6750A4); // Primary purple to match md_theme_light_primary
         darkPaint.setStyle(Paint.Style.FILL);
 
         // Keep all your other paint setups the same

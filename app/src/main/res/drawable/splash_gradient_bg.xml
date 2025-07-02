@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Enhanced gradient for splash screen with chess theme -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="@color/gradient_chess_start"
+                android:centerColor="@color/gradient_chess_middle"
+                android:endColor="@color/gradient_chess_end"
+                android:type="linear" />
+        </shape>
+    </item>
+    
+    <!-- Subtle overlay for depth -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="45"
+                android:startColor="#10FFFFFF"
+                android:centerColor="#00FFFFFF"
+                android:endColor="#20000000"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>
