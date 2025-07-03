@@ -1,14 +1,20 @@
 package com.example.chesspedagogue.ui;
 
+import android.animation.ValueAnimator;
+import android.content.Context;
+import android.graphics.Color;
 import android.graphics.RenderEffect;
 import android.graphics.Shader;
 import android.os.Build;
+import android.util.Log;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowInsetsController;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
+import com.google.android.material.color.DynamicColors;
 
 /**
  * Utility class for implementing glassmorphism effects on Android 15+
@@ -284,5 +290,162 @@ public class GlassmorphismUtils {
         
         // Conservative blur for other devices
         return MEDIUM_BLUR_RADIUS;
+    }
+    
+    /**
+     * Adaptive tinting based on game state (opening, midgame, endgame)
+     * Creates dynamic color shifts that reflect the chess game progression
+     */
+    public static void applyGameStateTinting(View view, float gameProgress, float evaluation) {
+        Log.d(TAG, "🎨 Applying adaptive game state tinting - Progress: " + gameProgress + ", Eval: " + evaluation);
+        
+        // Define color themes for different game phases
+        int openingColor = Color.parseColor("#1E3A8A");   // Deep blue (opening theory)
+        int midgameColor = Color.parseColor("#B45309");   // Amber (tactical complexity)
+        int endgameColor = Color.parseColor("#7C2D12");   // Dark red (precision endgame)
+        
+        // Interpolate between game phases
+        int currentPhaseColor;
+        if (gameProgress < 0.5f) {
+            // Opening to midgame transition
+            float factor = gameProgress * 2.0f; // Scale 0-0.5 to 0-1
+            currentPhaseColor = interpolateColor(openingColor, midgameColor, factor);
+        } else {
+            // Midgame to endgame transition
+            float factor = (gameProgress - 0.5f) * 2.0f; // Scale 0.5-1 to 0-1
+            currentPhaseColor = interpolateColor(midgameColor, endgameColor, factor);
+        }
+        
+        // Apply evaluation-based color shift
+        int whiteAdvantageColor = Color.parseColor("#F9FAFB"); // Light for white advantage
+        int blackAdvantageColor = Color.parseColor("#111827"); // Dark for black advantage
+        
+        int evalColor;
+        if (evaluation >= 0) {
+            // White advantage
+            evalColor = interpolateColor(currentPhaseColor, whiteAdvantageColor, Math.abs(evaluation));
+        } else {
+            // Black advantage
+            evalColor = interpolateColor(currentPhaseColor, blackAdvantageColor, Math.abs(evaluation));
+        }
+        
+        // Apply subtle tint overlay
+        view.setBackgroundTintList(android.content.res.ColorStateList.valueOf(evalColor));
+        
+        Log.d(TAG, "✨ Applied game state tint - Phase color: " + Integer.toHexString(currentPhaseColor) + 
+                  ", Final color: " + Integer.toHexString(evalColor));
+    }
+    
+    /**
+     * Animate panel color transition based on game events
+     */
+    public static void animateGameEventTint(View view, GameEvent event, long durationMs) {
+        int targetColor;
+        
+        switch (event) {
+            case CAPTURE:
+                targetColor = Color.parseColor("#DC2626"); // Red flash for captures
+                break;
+            case CHECK:
+                targetColor = Color.parseColor("#F59E0B"); // Orange for check
+                break;
+            case CHECKMATE:
+                targetColor = Color.parseColor("#7C3AED"); // Purple for checkmate
+                break;
+            case GOOD_MOVE:
+                targetColor = Color.parseColor("#10B981"); // Green for good moves
+                break;
+            default:
+                return; // No animation for other events
+        }
+        
+        // Get current background tint
+        android.content.res.ColorStateList currentTint = view.getBackgroundTintList();
+        int currentColor = currentTint != null ? currentTint.getDefaultColor() : Color.TRANSPARENT;
+        
+        // Create color animation
+        ValueAnimator colorAnimator = ValueAnimator.ofArgb(currentColor, targetColor, currentColor);
+        colorAnimator.setDuration(durationMs);
+        colorAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        colorAnimator.addUpdateListener(animation -> {
+            int animatedColor = (int) animation.getAnimatedValue();
+            view.setBackgroundTintList(android.content.res.ColorStateList.valueOf(animatedColor));
+        });
+        
+        colorAnimator.start();
+        
+        Log.d(TAG, "🎬 Started game event tint animation: " + event.name() + " -> " + Integer.toHexString(targetColor));
+    }
+    
+    /**
+     * Apply breathing effect to glass panels during AI thinking
+     */
+    public static void applyAIThinkingEffect(View view, boolean isThinking) {
+        if (isThinking) {
+            // Create pulsing alpha animation
+            ValueAnimator pulseAnimator = ValueAnimator.ofFloat(0.3f, 0.8f);
+            pulseAnimator.setDuration(1500);
+            pulseAnimator.setRepeatCount(ValueAnimator.INFINITE);
+            pulseAnimator.setRepeatMode(ValueAnimator.REVERSE);
+            pulseAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
+            
+            pulseAnimator.addUpdateListener(animation -> {
+                float alpha = (float) animation.getAnimatedValue();
+                view.setAlpha(alpha);
+            });
+            
+            // Store animator in view tag for later cleanup
+            view.setTag(com.example.chesspedagogue.R.id.thinking_animator, pulseAnimator);
+            pulseAnimator.start();
+            
+            Log.d(TAG, "🤔 Started AI thinking breathing effect");
+        } else {
+            // Stop and cleanup animation
+            ValueAnimator existingAnimator = (ValueAnimator) view.getTag(com.example.chesspedagogue.R.id.thinking_animator);
+            if (existingAnimator != null) {
+                existingAnimator.cancel();
+                view.setTag(com.example.chesspedagogue.R.id.thinking_animator, null);
+            }
+            view.setAlpha(1.0f); // Reset to full opacity
+            
+            Log.d(TAG, "🧠 Stopped AI thinking breathing effect");
+        }
+    }
+    
+    /**
+     * Helper method to interpolate between two colors
+     */
+    private static int interpolateColor(int colorA, int colorB, float factor) {
+        factor = Math.max(0.0f, Math.min(1.0f, factor)); // Clamp factor
+        
+        int aA = Color.alpha(colorA);
+        int aR = Color.red(colorA);
+        int aG = Color.green(colorA);
+        int aB = Color.blue(colorA);
+        
+        int bA = Color.alpha(colorB);
+        int bR = Color.red(colorB);
+        int bG = Color.green(colorB);
+        int bB = Color.blue(colorB);
+        
+        int resultA = (int) (aA + factor * (bA - aA));
+        int resultR = (int) (aR + factor * (bR - aR));
+        int resultG = (int) (aG + factor * (bG - aG));
+        int resultB = (int) (aB + factor * (bB - aB));
+        
+        return Color.argb(resultA, resultR, resultG, resultB);
+    }
+    
+    /**
+     * Game event types for adaptive tinting
+     */
+    public enum GameEvent {
+        CAPTURE,
+        CHECK,
+        CHECKMATE,
+        GOOD_MOVE,
+        BLUNDER,
+        THINKING
     }
 }

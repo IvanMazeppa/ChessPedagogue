@@ -1,26 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Enhanced gradient for splash screen with chess theme -->
+<!-- Modern blue-teal gradient for splash screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Base gradient -->
+    <!-- Base blue-teal gradient -->
     <item>
         <shape android:shape="rectangle">
             <gradient
                 android:angle="135"
-                android:startColor="@color/gradient_chess_start"
-                android:centerColor="@color/gradient_chess_middle"
-                android:endColor="@color/gradient_chess_end"
+                android:startColor="#1a1a3a"
+                android:centerColor="#2a4f84"
+                android:endColor="#1e3a5f"
                 android:type="linear" />
         </shape>
     </item>
     
-    <!-- Subtle overlay for depth -->
+    <!-- Purple-blue overlay for depth -->
     <item>
         <shape android:shape="rectangle">
             <gradient
                 android:angle="45"
-                android:startColor="#10FFFFFF"
-                android:centerColor="#00FFFFFF"
-                android:endColor="#20000000"
+                android:startColor="#15305f80"
+                android:centerColor="#00000000"
+                android:endColor="#20004080"
+                android:type="linear" />
+        </shape>
+    </item>
+    
+    <!-- Subtle teal highlight -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="90"
+                android:startColor="#00000000"
+                android:centerColor="#1000a080"
+                android:endColor="#00000000"
                 android:type="linear" />
         </shape>
     </item>

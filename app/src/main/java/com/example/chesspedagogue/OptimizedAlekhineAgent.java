@@ -78,16 +78,16 @@ public class OptimizedAlekhineAgent {
     }
     
     private OptimizedAlekhineAgent() {
-        // Get API key from existing OpenAI service
-        OpenAIService openAIService = OpenAIService.getInstance();
-        this.apiKey = openAIService.getApiKey();
+        // Get API key directly from ApiKeys class
+        this.apiKey = ApiKeys.OPENAI_API_KEY;
         this.executorService = Executors.newCachedThreadPool(runnable -> {
             Thread thread = new Thread(runnable, "OptimizedAlekhine-" + System.currentTimeMillis());
             thread.setDaemon(true);
             return thread;
         });
         
-        Log.d(TAG, "🧠 OptimizedAlekhineAgent initialized with fine-tuned model");
+        Log.d(TAG, "🧠 OptimizedAlekhineAgent initialized with API key from ApiKeys class (length: " + 
+              (apiKey != null ? apiKey.length() : "null") + ")");
     }
     
     public static synchronized OptimizedAlekhineAgent getInstance() {

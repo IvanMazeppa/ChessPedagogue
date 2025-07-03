@@ -1,35 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3 Expressive Color System - Android 15/16 Compatible -->
-    <color name="md_theme_light_primary">#6750A4</color>
+    <!-- Material 3 Blue-Teal Theme - Android 15/16 Compatible -->
+    <color name="md_theme_light_primary">#4080C0</color>
     <color name="md_theme_light_onPrimary">#FFFFFF</color>
-    <color name="md_theme_light_primaryContainer">#E9DDFF</color>
-    <color name="md_theme_light_onPrimaryContainer">#22005D</color>
-    <color name="md_theme_light_secondary">#625B71</color>
+    <color name="md_theme_light_primaryContainer">#B0D0F0</color>
+    <color name="md_theme_light_onPrimaryContainer">#002040</color>
+    <color name="md_theme_light_secondary">#60A0C0</color>
     <color name="md_theme_light_onSecondary">#FFFFFF</color>
-    <color name="md_theme_light_secondaryContainer">#E8DEF8</color>
-    <color name="md_theme_light_onSecondaryContainer">#1E192B</color>
-    <color name="md_theme_light_tertiary">#7E5260</color>
+    <color name="md_theme_light_secondaryContainer">#A0D0E0</color>
+    <color name="md_theme_light_onSecondaryContainer">#001020</color>
+    <color name="md_theme_light_tertiary">#5090A0</color>
     <color name="md_theme_light_onTertiary">#FFFFFF</color>
-    <color name="md_theme_light_tertiaryContainer">#FFD9E3</color>
-    <color name="md_theme_light_onTertiaryContainer">#31101D</color>
+    <color name="md_theme_light_tertiaryContainer">#90C0D0</color>
+    <color name="md_theme_light_onTertiaryContainer">#001520</color>
     <color name="md_theme_light_error">#BA1A1A</color>
     <color name="md_theme_light_errorContainer">#FFDAD6</color>
     <color name="md_theme_light_onError">#FFFFFF</color>
     <color name="md_theme_light_onErrorContainer">#410002</color>
-    <color name="md_theme_light_background">#FFFBFF</color>
+    <color name="md_theme_light_background">#F0F8FF</color>
     <color name="md_theme_light_onBackground">#1C1B1F</color>
-    <color name="md_theme_light_surface">#FFFBFF</color>
-    <color name="md_theme_light_onSurface">#1C1B1F</color>
-    <color name="md_theme_light_surfaceVariant">#E7E0EC</color>
-    <color name="md_theme_light_onSurfaceVariant">#49454F</color>
-    <color name="md_theme_light_outline">#7A757F</color>
+    <color name="md_theme_light_surface">#F8FCFF</color>
+    <color name="md_theme_light_onSurface">#E0F0FF</color>
+    <color name="md_theme_light_surfaceVariant">#D0E0F0</color>
+    <color name="md_theme_light_onSurfaceVariant">#C0D8F0</color>
+    <color name="md_theme_light_outline">#B0C8E0</color>
     <color name="md_theme_light_inverseOnSurface">#F4EFF4</color>
     <color name="md_theme_light_inverseSurface">#313033</color>
-    <color name="md_theme_light_inversePrimary">#D0BCFF</color>
+    <color name="md_theme_light_inversePrimary">#A0C8F0</color>
     <color name="md_theme_light_shadow">#000000</color>
-    <color name="md_theme_light_surfaceTint">#6750A4</color>
-    <color name="md_theme_light_outlineVariant">#CAC4D0</color>
+    <color name="md_theme_light_surfaceTint">#4080C0</color>
+    <color name="md_theme_light_outlineVariant">#90B8D0</color>
     <color name="md_theme_light_scrim">#000000</color>
 
     <!-- Material 3 Dark Theme for Glassmorphic Background -->
@@ -78,16 +78,16 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Glassmorphic UI Colors for Android 15 -->
-    <color name="glass_background">#80FFFFFF</color>
-    <color name="glass_background_dark">#40000000</color>
-    <color name="glass_surface">#60FFFFFF</color>
-    <color name="glass_surface_dark">#30FFFFFF</color>
-    <color name="glass_surface_variant">#50F5F5F5</color>
-    <color name="glass_outline">#40FFFFFF</color>
-    <color name="glass_outline_dark">#60000000</color>
-    <color name="glass_accent">#80D0BCFF</color>
-    <color name="glass_accent_dark">#60D0BCFF</color>
+    <!-- Glassmorphic UI Colors for Android 15 - Blue-Teal Theme -->
+    <color name="glass_background">#30506080</color>
+    <color name="glass_background_dark">#20304050</color>
+    <color name="glass_surface">#40708090</color>
+    <color name="glass_surface_dark">#20405060</color>
+    <color name="glass_surface_variant">#30609080</color>
+    <color name="glass_outline">#60A0C0E0</color>
+    <color name="glass_outline_dark">#40708090</color>
+    <color name="glass_accent">#8060A0E0</color>
+    <color name="glass_accent_dark">#6080B0D0</color>
 
     <!-- Enhanced Chess-themed Gradient Colors -->
     <color name="gradient_start">#1A237E</color>

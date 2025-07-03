@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Resource IDs for dynamic UI effects -->
+    <item name="thinking_animator" type="id" />
+    <item name="agsl_shader_effect" type="id" />
+    <item name="motion_transition" type="id" />
+</resources>

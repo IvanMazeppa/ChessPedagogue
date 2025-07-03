@@ -15,6 +15,14 @@ import android.widget.Button;
 import androidx.cardview.widget.CardView;
 import android.widget.SeekBar;
 import com.example.chesspedagogue.ui.GlassmorphismUtils;
+import com.example.chesspedagogue.ui.WorkingGlassEffects;
+import com.example.chesspedagogue.ui.AdvancedGlassEffects;
+import android.animation.ValueAnimator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
+import android.view.animation.OvershootInterpolator;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.ImageView;
 
 public class SplashActivity extends AppCompatActivity {
     private static final String TAG = "SplashActivity";
@@ -33,6 +41,7 @@ public class SplashActivity extends AppCompatActivity {
     private CardView colorSelectionCard;
     private CardView strengthCard;
     private View strengthContainer;
+    private ImageView splashCrownIcon;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,7 +58,10 @@ public class SplashActivity extends AppCompatActivity {
         initializeViews();
         
         // Apply glassmorphism effects for Samsung S23 Ultra (after layout is complete)
-        findViewById(android.R.id.content).post(() -> applyGlassmorphismEffects());
+        findViewById(android.R.id.content).post(() -> {
+            applyGlassmorphismEffects();
+            startEntranceAnimations();
+        });
         
         // Setup functionality
         setupColorSelection();
@@ -82,6 +94,7 @@ public class SplashActivity extends AppCompatActivity {
         colorSelectionCard = findViewById(R.id.colorSelectionCard);
         strengthCard = findViewById(R.id.strengthCard);
         strengthContainer = findViewById(R.id.strengthContainer);
+        splashCrownIcon = findViewById(R.id.splashCrownIcon);
         
         // Verify all views found
         boolean allViewsFound = 
@@ -163,24 +176,68 @@ public class SplashActivity extends AppCompatActivity {
         Log.d(TAG, "🎨 Updating Material 3 card visuals for: " + selectedName);
         
         if (selectedColorId == R.id.radioWhite) {
-            // Highlight white card with elevation
-            whiteSelectionCard.setCardElevation(12f);
+            // Highlight white card with enhanced glass effect
+            whiteSelectionCard.setCardElevation(16f);
+            
+            // Enhanced glass effect for selected card - Blue-teal theme
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                WorkingGlassEffects.applyWorkingGlass(whiteSelectionCard, 15f, 0.9f, new float[]{0.8f, 0.9f, 1.0f});
+            }
             
             // Reset black card
-            blackSelectionCard.setCardElevation(4f);
+            blackSelectionCard.setCardElevation(8f);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                WorkingGlassEffects.applyWorkingGlass(blackSelectionCard, 10f, 0.75f, new float[]{0.3f, 0.4f, 0.6f});
+            }
             
-            Log.d(TAG, "🎨 Material Components visual feedback: WHITE card highlighted");
+            // Add selection animation
+            animateCardSelection(whiteSelectionCard, true);
+            animateCardSelection(blackSelectionCard, false);
+            
+            Log.d(TAG, "🎨 Enhanced glass feedback: WHITE card highlighted with shimmer");
         } else if (selectedColorId == R.id.radioBlack) {
-            // Highlight black card with elevation
-            blackSelectionCard.setCardElevation(12f);
+            // Highlight black card with enhanced glass effect
+            blackSelectionCard.setCardElevation(16f);
+            
+            // Enhanced glass effect for selected card - Blue-teal theme
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                WorkingGlassEffects.applyWorkingGlass(blackSelectionCard, 15f, 0.9f, new float[]{0.2f, 0.3f, 0.5f});
+            }
             
             // Reset white card
-            whiteSelectionCard.setCardElevation(4f);
+            whiteSelectionCard.setCardElevation(8f);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                WorkingGlassEffects.applyWorkingGlass(whiteSelectionCard, 10f, 0.75f, new float[]{0.8f, 0.9f, 1.0f});
+            }
             
-            Log.d(TAG, "🎨 Material Components visual feedback: BLACK card highlighted");
+            // Add selection animation
+            animateCardSelection(blackSelectionCard, true);
+            animateCardSelection(whiteSelectionCard, false);
+            
+            Log.d(TAG, "🎨 Enhanced glass feedback: BLACK card highlighted with shimmer");
         } else {
             Log.w(TAG, "⚠️ No valid selection found - keeping current state");
         }
+    }
+    
+    /**
+     * Animate card selection with smooth scale and alpha effects
+     */
+    private void animateCardSelection(CardView card, boolean selected) {
+        if (card == null) return;
+        
+        float targetScale = selected ? 1.05f : 1.0f;
+        float targetAlpha = selected ? 1.0f : 0.85f;
+        
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(card, "scaleX", card.getScaleX(), targetScale);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(card, "scaleY", card.getScaleY(), targetScale);
+        ObjectAnimator alpha = ObjectAnimator.ofFloat(card, "alpha", card.getAlpha(), targetAlpha);
+        
+        AnimatorSet animatorSet = new AnimatorSet();
+        animatorSet.playTogether(scaleX, scaleY, alpha);
+        animatorSet.setDuration(300);
+        animatorSet.setInterpolator(new DecelerateInterpolator());
+        animatorSet.start();
     }
 
     private void setupStrengthSlider() {
@@ -287,22 +344,163 @@ public class SplashActivity extends AppCompatActivity {
     }
     
     /**
-     * Apply glassmorphism effects for Android 15 - Fixed Implementation
-     * Pure translucent backgrounds without RenderEffect blur for crisp content
+     * Apply glassmorphism effects for Android 15 - Enhanced Implementation
+     * Advanced visual effects optimized for Samsung S23 Ultra
      */
     private void applyGlassmorphismEffects() {
-        Log.d(TAG, "✨ Applying proper glassmorphism - translucent panels with sharp content...");
+        Log.d(TAG, "✨ Applying enhanced glassmorphism with advanced effects...");
         
-        // The glassmorphism effect is achieved purely through:
-        // 1. Translucent glass_surface backgrounds (already applied in XML)
-        // 2. Rich gradient background showing through panels  
-        // 3. NO RenderEffect blur on content (keeps text/icons sharp)
+        try {
+            // Apply working glass effects to all cards for enhanced visual appeal
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                Log.d(TAG, "🔮 Applying advanced glass effects to cards...");
+                
+                // Hero card with blue-teal glow
+                WorkingGlassEffects.applyWorkingGlass(heroCard, 15f, 0.85f, new float[]{0.6f, 0.8f, 1.0f});
+                
+                // Color selection cards with blue-teal glass
+                WorkingGlassEffects.applyWorkingGlass(colorSelectionCard, 12f, 0.8f, new float[]{0.7f, 0.85f, 0.95f});
+                WorkingGlassEffects.applyWorkingGlass(whiteSelectionCard, 10f, 0.75f, new float[]{0.8f, 0.9f, 1.0f});
+                WorkingGlassEffects.applyWorkingGlass(blackSelectionCard, 10f, 0.75f, new float[]{0.3f, 0.4f, 0.6f});
+                
+                // Strength card with blue-teal glass
+                WorkingGlassEffects.applyWorkingGlass(strengthCard, 12f, 0.8f, new float[]{0.7f, 0.85f, 0.95f});
+                
+                // Enhanced crown icon with blue-teal entrance
+                if (splashCrownIcon != null) {
+                    WorkingGlassEffects.animateGlassEntrance(splashCrownIcon, 0.3f, new float[]{0.8f, 0.9f, 1.0f});
+                }
+                
+                Log.d(TAG, "✅ Advanced glass effects applied successfully");
+            } else {
+                Log.d(TAG, "ℹ️ Glass effects not available on this Android version");
+            }
+            
+            // Apply enhanced button effects
+            applyButtonGlassEffects();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error applying glassmorphism effects", e);
+        }
         
-        Log.d(TAG, "✅ Glassmorphism achieved via translucent backgrounds:");
-        Log.d(TAG, "   🔹 Glass panels: translucent with sharp content");
-        Log.d(TAG, "   🔹 Background gradient: rich colors showing through");
-        Log.d(TAG, "   🔹 Material 3 elevation: subtle shadows for depth");
-        Log.d(TAG, "   🔹 Samsung S23 Ultra optimized: smooth performance");
+        Log.d(TAG, "✅ Enhanced glassmorphism system initialized:");
+        Log.d(TAG, "   🔹 Advanced glass panels with dynamic tinting");
+        Log.d(TAG, "   🔹 Shimmer effects on crown icon");
+        Log.d(TAG, "   🔹 Interactive glass response to touches");
+        Log.d(TAG, "   🔹 Samsung S23 Ultra 120Hz optimized");
+    }
+    
+    /**
+     * Apply special glass effects to action buttons
+     */
+    private void applyButtonGlassEffects() {
+        Log.d(TAG, "⚡ Applying button glass effects...");
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // Enhanced start button with blue-teal glass
+            WorkingGlassEffects.applyWorkingGlass(startButton, 18f, 0.9f, new float[]{0.4f, 0.7f, 1.0f});
+            
+            // Modern competitive mode button with teal accent
+            WorkingGlassEffects.applyWorkingGlass(modernCompetitiveModeButton, 15f, 0.85f, new float[]{0.3f, 0.6f, 0.9f});
+            
+            Log.d(TAG, "✅ Button glass effects applied");
+        }
+    }
+    
+    /**
+     * Start smooth entrance animations for all UI elements
+     */
+    private void startEntranceAnimations() {
+        Log.d(TAG, "🎭 Starting entrance animations...");
+        
+        // Set initial state for animations (invisible)
+        heroCard.setAlpha(0f);
+        heroCard.setTranslationY(-100f);
+        heroCard.setScaleX(0.8f);
+        heroCard.setScaleY(0.8f);
+        
+        colorSelectionCard.setAlpha(0f);
+        colorSelectionCard.setTranslationX(-50f);
+        
+        strengthCard.setAlpha(0f);
+        strengthCard.setTranslationX(50f);
+        
+        startButton.setAlpha(0f);
+        startButton.setTranslationY(100f);
+        
+        modernCompetitiveModeButton.setAlpha(0f);
+        modernCompetitiveModeButton.setTranslationY(100f);
+        
+        if (splashCrownIcon != null) {
+            splashCrownIcon.setRotation(-15f);
+            splashCrownIcon.setScaleX(0.5f);
+            splashCrownIcon.setScaleY(0.5f);
+        }
+        
+        // Create staggered entrance animations
+        AnimatorSet masterAnimatorSet = new AnimatorSet();
+        
+        // Hero card entrance (first)
+        ObjectAnimator heroAlpha = ObjectAnimator.ofFloat(heroCard, "alpha", 0f, 1f);
+        ObjectAnimator heroTransY = ObjectAnimator.ofFloat(heroCard, "translationY", -100f, 0f);
+        ObjectAnimator heroScaleX = ObjectAnimator.ofFloat(heroCard, "scaleX", 0.8f, 1f);
+        ObjectAnimator heroScaleY = ObjectAnimator.ofFloat(heroCard, "scaleY", 0.8f, 1f);
+        
+        AnimatorSet heroSet = new AnimatorSet();
+        heroSet.playTogether(heroAlpha, heroTransY, heroScaleX, heroScaleY);
+        heroSet.setDuration(800);
+        heroSet.setInterpolator(new OvershootInterpolator(1.2f));
+        
+        // Crown icon entrance (with hero)
+        AnimatorSet crownSet = new AnimatorSet();
+        if (splashCrownIcon != null) {
+            ObjectAnimator crownRotation = ObjectAnimator.ofFloat(splashCrownIcon, "rotation", -15f, 0f);
+            ObjectAnimator crownScaleX = ObjectAnimator.ofFloat(splashCrownIcon, "scaleX", 0.5f, 1f);
+            ObjectAnimator crownScaleY = ObjectAnimator.ofFloat(splashCrownIcon, "scaleY", 0.5f, 1f);
+            
+            crownSet.playTogether(crownRotation, crownScaleX, crownScaleY);
+            crownSet.setDuration(1000);
+            crownSet.setInterpolator(new OvershootInterpolator(1.5f));
+        }
+        
+        // Color selection card (second)
+        ObjectAnimator colorAlpha = ObjectAnimator.ofFloat(colorSelectionCard, "alpha", 0f, 1f);
+        ObjectAnimator colorTransX = ObjectAnimator.ofFloat(colorSelectionCard, "translationX", -50f, 0f);
+        
+        AnimatorSet colorSet = new AnimatorSet();
+        colorSet.playTogether(colorAlpha, colorTransX);
+        colorSet.setDuration(600);
+        colorSet.setInterpolator(new DecelerateInterpolator());
+        colorSet.setStartDelay(200);
+        
+        // Strength card (third)
+        ObjectAnimator strengthAlpha = ObjectAnimator.ofFloat(strengthCard, "alpha", 0f, 1f);
+        ObjectAnimator strengthTransX = ObjectAnimator.ofFloat(strengthCard, "translationX", 50f, 0f);
+        
+        AnimatorSet strengthSet = new AnimatorSet();
+        strengthSet.playTogether(strengthAlpha, strengthTransX);
+        strengthSet.setDuration(600);
+        strengthSet.setInterpolator(new DecelerateInterpolator());
+        strengthSet.setStartDelay(400);
+        
+        // Buttons (last)
+        ObjectAnimator startAlpha = ObjectAnimator.ofFloat(startButton, "alpha", 0f, 1f);
+        ObjectAnimator startTransY = ObjectAnimator.ofFloat(startButton, "translationY", 100f, 0f);
+        
+        ObjectAnimator modernAlpha = ObjectAnimator.ofFloat(modernCompetitiveModeButton, "alpha", 0f, 1f);
+        ObjectAnimator modernTransY = ObjectAnimator.ofFloat(modernCompetitiveModeButton, "translationY", 100f, 0f);
+        
+        AnimatorSet buttonsSet = new AnimatorSet();
+        buttonsSet.playTogether(startAlpha, startTransY, modernAlpha, modernTransY);
+        buttonsSet.setDuration(800);
+        buttonsSet.setInterpolator(new OvershootInterpolator(1.1f));
+        buttonsSet.setStartDelay(600);
+        
+        // Play all animations
+        masterAnimatorSet.playTogether(heroSet, crownSet, colorSet, strengthSet, buttonsSet);
+        masterAnimatorSet.start();
+        
+        Log.d(TAG, "✅ Entrance animations started - duration: 1.4s total");
     }
 
     private void startGame() {

@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_gradient"
+    android:background="@drawable/splash_gradient_bg"
     tools:context=".SplashActivity">
 
     <!-- Status Bar Spacing -->
@@ -26,6 +26,9 @@
         android:layout_marginStart="24dp"
         android:layout_marginTop="48dp"
         android:layout_marginEnd="24dp"
+        android:elevation="12dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="24dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/statusBarSpacer">
@@ -37,12 +40,14 @@
             android:orientation="vertical"
             android:padding="32dp">
 
-            <!-- Chess Crown Icon -->
+            <!-- Chess Crown Icon with glow effect -->
             <ImageView
-                android:layout_width="72dp"
-                android:layout_height="72dp"
+                android:id="@+id/splashCrownIcon"
+                android:layout_width="84dp"
+                android:layout_height="84dp"
                 android:layout_marginBottom="16dp"
                 android:contentDescription="Chess Crown"
+                android:elevation="4dp"
                 android:src="@drawable/ic_white_king" />
 
             <!-- App Title -->
@@ -78,6 +83,9 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="24dp"
         android:layout_marginEnd="20dp"
+        android:elevation="10dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/heroCard">
@@ -110,14 +118,15 @@
                 <androidx.cardview.widget.CardView
                     android:id="@+id/whiteSelectionCard"
                     android:layout_width="0dp"
-                    android:layout_height="120dp"
+                    android:layout_height="130dp"
                     android:layout_marginEnd="12dp"
                     android:layout_weight="1"
                     android:clickable="true"
                     android:focusable="true"
+                    android:foreground="@drawable/glass_panel_bg"
                     app:cardBackgroundColor="@color/glass_surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp">
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="8dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -149,14 +158,15 @@
                 <androidx.cardview.widget.CardView
                     android:id="@+id/blackSelectionCard"
                     android:layout_width="0dp"
-                    android:layout_height="120dp"
+                    android:layout_height="130dp"
                     android:layout_marginStart="12dp"
                     android:layout_weight="1"
                     android:clickable="true"
                     android:focusable="true"
+                    android:foreground="@drawable/glass_panel_bg"
                     app:cardBackgroundColor="@color/glass_surface"
-                    app:cardCornerRadius="16dp"
-                    app:cardElevation="4dp">
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="8dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -195,6 +205,9 @@
         android:layout_marginStart="20dp"
         android:layout_marginTop="20dp"
         android:layout_marginEnd="20dp"
+        android:elevation="10dp"
+        app:cardBackgroundColor="@color/glass_surface"
+        app:cardCornerRadius="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/colorSelectionCard">
@@ -280,50 +293,39 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Action Buttons -->
-    <LinearLayout
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="32dp"
-        android:layout_marginEnd="32dp"
-        android:layout_marginBottom="32dp"
-        android:orientation="vertical"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Start Game Button -->
-        <Button
-            android:id="@+id/startButton"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_marginBottom="12dp"
-            android:background="@drawable/glass_button_bg"
-            android:drawableStart="@android:drawable/ic_media_play"
-            android:drawablePadding="12dp"
-            android:elevation="8dp"
-            android:fontFamily="serif"
-            android:text="Begin Challenge"
-            android:textColor="@color/md_theme_light_onPrimary"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:transitionName="start_button" />
+    <Button
+        android:id="@+id/startButton"
+        android:layout_width="416dp"
+        android:layout_height="68dp"
+        android:background="@drawable/glass_button_bg"
+        android:drawableStart="@android:drawable/ic_media_play"
+        android:drawablePadding="16dp"
+        android:elevation="10dp"
+        android:fontFamily="serif"
+        android:text="⚡ Begin Challenge"
+        android:textColor="@color/md_theme_light_onPrimary"
+        android:textSize="19sp"
+        android:textStyle="bold"
+        android:transitionName="start_button"
+        tools:layout_editor_absoluteX="32dp"
+        tools:layout_editor_absoluteY="798dp" />
 
-        <!-- Modern Competitive Mode Button (Android 15) -->
-        <Button
-            android:id="@+id/modernCompetitiveModeButton"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:background="@drawable/glass_button_bg"
-            android:drawableStart="@android:drawable/ic_menu_compass"
-            android:drawablePadding="12dp"
-            android:elevation="6dp"
-            android:fontFamily="serif"
-            android:text="✨ Modern Mode (Android 15)"
-            android:textColor="@color/md_theme_light_onPrimary"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:alpha="0.9" />
-
-    </LinearLayout>
+    <Button
+        android:id="@+id/modernCompetitiveModeButton"
+        android:layout_width="416dp"
+        android:layout_height="60dp"
+        android:alpha="0.95"
+        android:background="@drawable/glass_button_bg"
+        android:drawableStart="@android:drawable/ic_menu_compass"
+        android:drawablePadding="16dp"
+        android:elevation="10dp"
+        android:fontFamily="serif"
+        android:text="🚀 Modern Mode (Android 15)"
+        android:textColor="@color/md_theme_light_onPrimary"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        tools:layout_editor_absoluteX="32dp"
+        tools:layout_editor_absoluteY="885dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

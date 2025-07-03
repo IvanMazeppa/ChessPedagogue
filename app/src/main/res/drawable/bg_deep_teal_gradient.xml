@@ -1,13 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Teal indigo sweep from bottom-left to top-right -->
-    <gradient
-        android:startColor="@color/teal"
-        android:endColor="@color/indigo_navy"
-        android:angle="315"
-    />
-
-        <!-- Optional: round the outer corners a touch
-         (looks nice on large screens / tablets) -->
-    <corners android:radius="0dp" />
-</shape>
+<!-- Modern blue-teal gradient for competitive mode -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Base blue-teal gradient -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="135"
+                android:startColor="#1a1a3a"
+                android:centerColor="#2a4f84"
+                android:endColor="#1e3a5f"
+                android:type="linear" />
+            <corners android:radius="0dp" />
+        </shape>
+    </item>
+    
+    <!-- Blue highlight overlay -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:angle="45"
+                android:startColor="#2080C0F0"
+                android:centerColor="#00000000"
+                android:endColor="#10306080"
+                android:type="linear" />
+        </shape>
+    </item>
+</layer-list>
