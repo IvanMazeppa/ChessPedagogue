@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import androidx.core.content.ContextCompat;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,20 +133,13 @@ public class CapturedPiecesManager {
         LinearLayout targetContainer = isWhitePiece ? whiteCapturedContainer : blackCapturedContainer;
         List<CapturedPiece> targetList = isWhitePiece ? whiteCapturedPieces : blackCapturedPieces;
         
-        // Add to list and sort by piece value (pawns first, then by value)
+        // Add to list and update compact display
         targetList.add(capturedPiece);
-        sortCapturedPieces(targetList);
         
-        // Clear container and re-add in proper order
-        targetContainer.removeAllViews();
-        for (CapturedPiece piece : targetList) {
-            targetContainer.addView(piece.imageView);
-        }
+        // Use compact display with multipliers instead of individual pieces
+        updateCompactCapturedDisplay();
         
-        // Animate the captured piece entrance
-        animateCapturedPieceEntrance(capturedPieceView);
-        
-        Log.d(TAG, "✅ Added captured " + pieceType + " to edge display in sorted order");
+        Log.d(TAG, "✅ Added captured " + pieceType + " to compact display with multipliers");
     }
 
     /**
@@ -426,6 +420,101 @@ public class CapturedPiecesManager {
         addCapturedPiece("rook", false);
         
         Log.d(TAG, "✅ Test captured pieces added");
+    }
+    
+    /**
+     * Create compact captured piece view with multiplier (e.g., "5x" for 5 pawns)
+     */
+    private LinearLayout createCompactCapturedPieceView(String pieceType, boolean isWhite, int count) {
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.HORIZONTAL);
+        container.setGravity(android.view.Gravity.CENTER_VERTICAL);
+        
+        // Piece icon (smaller for compact display)
+        ImageView pieceIcon = new ImageView(context);
+        int iconSize = (int) (16 * context.getResources().getDisplayMetrics().density); // 16dp
+        LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(iconSize, iconSize);
+        iconParams.setMargins(2, 2, 4, 2);
+        pieceIcon.setLayoutParams(iconParams);
+        
+        int resourceId = getPieceResourceId(pieceType, isWhite);
+        if (resourceId != 0) {
+            pieceIcon.setImageResource(resourceId);
+        }
+        pieceIcon.setAlpha(0.9f);
+        
+        container.addView(pieceIcon);
+        
+        // Count multiplier (only show if count > 1)
+        if (count > 1) {
+            TextView countText = new TextView(context);
+            countText.setText(count + "x");
+            countText.setTextColor(0xFFE0F0FF); // Light blue-white
+            countText.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 10);
+            countText.setTypeface(null, android.graphics.Typeface.BOLD);
+            countText.setShadowLayer(2f, 1f, 1f, 0x80000000); // Text shadow for visibility
+            
+            LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            );
+            textParams.setMargins(0, 0, 4, 0);
+            countText.setLayoutParams(textParams);
+            
+            container.addView(countText);
+        }
+        
+        return container;
+    }
+    
+    /**
+     * Update captured pieces display with compact multiplier format
+     */
+    public void updateCompactCapturedDisplay() {
+        Log.d(TAG, "🎯 Updating compact captured pieces display with multipliers");
+        
+        // Update white captured pieces
+        updateCompactContainer(whiteCapturedContainer, whiteCapturedPieces);
+        
+        // Update black captured pieces  
+        updateCompactContainer(blackCapturedContainer, blackCapturedPieces);
+    }
+    
+    /**
+     * Update a specific container with compact piece count display
+     */
+    private void updateCompactContainer(LinearLayout container, List<CapturedPiece> pieces) {
+        container.removeAllViews();
+        
+        // Count pieces by type
+        java.util.Map<String, Integer> pieceCounts = new java.util.HashMap<>();
+        boolean isWhite = pieces.isEmpty() ? true : pieces.get(0).isWhite;
+        
+        for (CapturedPiece piece : pieces) {
+            pieceCounts.put(piece.pieceType, pieceCounts.getOrDefault(piece.pieceType, 0) + 1);
+        }
+        
+        // Create compact views in chess order
+        String[] pieceOrder = {"pawn", "knight", "bishop", "rook", "queen", "king"};
+        for (String pieceType : pieceOrder) {
+            int count = pieceCounts.getOrDefault(pieceType, 0);
+            if (count > 0) {
+                LinearLayout compactView = createCompactCapturedPieceView(pieceType, isWhite, count);
+                container.addView(compactView);
+                
+                // Add space between different piece types
+                if (!pieceType.equals("king")) { // Don't add space after last possible piece
+                    View spacer = new View(context);
+                    LinearLayout.LayoutParams spacerParams = new LinearLayout.LayoutParams(
+                        (int) (2 * context.getResources().getDisplayMetrics().density), 1);
+                    spacer.setLayoutParams(spacerParams);
+                    container.addView(spacer);
+                }
+            }
+        }
+        
+        Log.d(TAG, "✅ Updated compact display - " + pieces.size() + " pieces, " + 
+                   pieceCounts.size() + " different types");
     }
     
     /**

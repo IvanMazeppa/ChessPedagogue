@@ -1273,7 +1273,7 @@ public class PersonalityEngine {
             case "anand":
                 return "anand_full_positions.json";
             case "kramnik":
-                return "kramnik_full_positions.json";
+                return "SecondaryModelDBs/kramnik_full_positions.json";
             case "carlsen":
                 return "carlsen_full_positions.json";
             case "fischer":
@@ -1293,13 +1293,13 @@ public class PersonalityEngine {
             // NEW: Add the unmapped masters that have files
             case "dommaraju":
             case "gukesh":
-                return "dommaraju_full_positions.json";
+                return "SecondaryModelDBs/dommaraju_full_positions.json";
             case "nakamura":
             case "hikaru":
-                return "nakamura_full_positions.json";
+                return "SecondaryModelDBs/nakamura_full_positions.json";
             case "short":
             case "nigel":
-                return "short_full_positions.json";
+                return "SecondaryModelDBs/short_full_positions.json";
             default:
                 // Fallback to old naming convention
                 return masterName.toLowerCase() + "_positions.json";

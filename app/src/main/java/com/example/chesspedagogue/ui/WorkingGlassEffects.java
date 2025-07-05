@@ -118,7 +118,7 @@ public class WorkingGlassEffects {
      * Apply working frosted glass effect optimized for S23 Ultra
      */
     public static void applyWorkingGlass(View view, float blurIntensity, float opacity, float[] tintColor) {
-        if (!isAGSLSupported() || view == null) {
+        if (!AGSLManager.getInstance().isSupported() || view == null) {
             Log.w(TAG, "AGSL not supported or view is null, using fallback");
             applyFallbackGlass(view, opacity);
             return;
@@ -150,7 +150,7 @@ public class WorkingGlassEffects {
      */
     public static void applyMoveHighlight(View view, float centerX, float centerY, 
                                         float intensity, float[] highlightColor) {
-        if (!isAGSLSupported() || view == null) {
+        if (!AGSLManager.getInstance().isSupported() || view == null) {
             Log.w(TAG, "AGSL not supported, skipping move highlight");
             return;
         }
@@ -241,7 +241,7 @@ public class WorkingGlassEffects {
      * Apply capture flash effect
      */
     public static void applyCaptureFlash(View view, float centerX, float centerY, float[] flashColor) {
-        if (!isAGSLSupported() || view == null) {
+        if (!AGSLManager.getInstance().isSupported() || view == null) {
             Log.w(TAG, "AGSL not supported, skipping capture flash");
             return;
         }
@@ -347,7 +347,7 @@ public class WorkingGlassEffects {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             try {
                 RenderEffect blurEffect = RenderEffect.createBlurEffect(
-                    12.0f, 12.0f, 
+                    20.0f, 20.0f,  // 20px blur as specified in design document
                     android.graphics.Shader.TileMode.CLAMP
                 );
                 view.setRenderEffect(blurEffect);
@@ -359,32 +359,6 @@ public class WorkingGlassEffects {
         }
     }
     
-    /**
-     * Check AGSL support
-     */
-    public static boolean isAGSLSupported() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return false;
-        }
-        
-        // Additional device-specific safety checks
-        try {
-            // Test basic AGSL functionality with a simple shader
-            String testShader = "half4 main(float2 coord) { return half4(1.0); }";
-            RuntimeShader test = new RuntimeShader(testShader);
-            Log.d(TAG, "✅ AGSL basic functionality test passed");
-            
-            // Log detailed test results
-            VisualEffectsDebugger.logAGSLTest(true, null);
-            return true;
-        } catch (Exception e) {
-            Log.w(TAG, "⚠️ AGSL test failed, using fallback effects: " + e.getMessage());
-            
-            // Log test failure
-            VisualEffectsDebugger.logAGSLTest(false, e.getMessage());
-            return false;
-        }
-    }
     
     /**
      * Clear all effects

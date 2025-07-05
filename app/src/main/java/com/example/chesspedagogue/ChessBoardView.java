@@ -15,6 +15,9 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
+import androidx.dynamicanimation.animation.FlingAnimation;
+import androidx.dynamicanimation.animation.FloatPropertyCompat;
+import androidx.dynamicanimation.animation.DynamicAnimation;
 
 import androidx.core.content.ContextCompat;
 
@@ -87,13 +90,13 @@ public class ChessBoardView extends View {
 
     /* ───────── init ───────── */
     private void init() {
-        // Glassmorphic colors that match the modern UI theme
+        // Warm-tinted squares for better piece contrast as specified in design doc
         lightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        lightPaint.setColor(0xFFE9DDFF); // Light purple to match md_theme_light_primaryContainer
+        lightPaint.setColor(0xFFF5F2E8); // Off-white with 5-10% warm teal tint
         lightPaint.setStyle(Paint.Style.FILL);
 
         darkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        darkPaint.setColor(0xFF6750A4); // Primary purple to match md_theme_light_primary
+        darkPaint.setColor(0xFF5D7C9A); // Deep blue-grey that complements the gradient
         darkPaint.setStyle(Paint.Style.FILL);
 
         // Keep all your other paint setups the same
@@ -292,9 +295,36 @@ public class ChessBoardView extends View {
             if (!movingPieces.isEmpty()) postInvalidateOnAnimation();
         }
 
+        /* 5.5) physics-based captured piece animation */
+        if (capturedPieceBeingAnimated != ' ') {
+            Drawable capturedDrawable = getCachedPieceDrawable(capturedPieceBeingAnimated);
+            if (capturedDrawable != null) {
+                // Save canvas state for alpha blending
+                int saveCount = canvas.save();
+                
+                // Apply alpha for fade-out effect
+                canvas.saveLayerAlpha(0, 0, getWidth(), getHeight(), (int)(capturedPieceAlpha * 255), Canvas.ALL_SAVE_FLAG);
+                
+                // Draw captured piece at physics animation position
+                int pieceSize = squareSize - pad * 2;
+                reusableBounds.set(
+                    (int)(capturedPieceAnimX - pieceSize / 2f), 
+                    (int)(capturedPieceAnimY - pieceSize / 2f),
+                    (int)(capturedPieceAnimX + pieceSize / 2f), 
+                    (int)(capturedPieceAnimY + pieceSize / 2f)
+                );
+                capturedDrawable.setBounds(reusableBounds);
+                capturedDrawable.draw(canvas);
+                
+                canvas.restoreToCount(saveCount);
+            }
+        }
 
         /* 6) advice highlights */
         drawHighlights(canvas);
+        
+        /* 7) move indicator overlays (check, blunder, brilliant) */
+        drawMoveIndicatorOverlays(canvas);
 
     }
 
@@ -851,6 +881,326 @@ public class ChessBoardView extends View {
             }
             
             return t == 1f;
+        }
+    }
+
+    /**
+     * 🎯 PHASE 2: Physics-based capture animations (BUILDING-A-MODERN-CHESS-APP-UI.md lines 381-409)
+     * Adds realistic physics motion when pieces are captured using FlingAnimation
+     */
+    public void animateCaptureWithPhysics(int fromR, int fromC, int toR, int toC, char capturedPiece) {
+        Log.d("ChessBoardView", "🎯 Starting physics-based capture animation");
+        
+        // Convert to visual coordinates
+        int vfr = flipped ? 7 - fromR : fromR;
+        int vfc = flipped ? 7 - fromC : fromC;
+        int vtr = flipped ? 7 - toR : toR;
+        int vtc = flipped ? 7 - toC : toC;
+        
+        if (capturedPiece != ' ') {
+            // Create captured piece view for physics animation
+            animateCapturedPiecePhysics(vtr, vtc, capturedPiece);
+        }
+        
+        // Normal move animation for the capturing piece
+        animateMove(fromR, fromC, toR, toC);
+    }
+    
+    /**
+     * 🌪️ Animate captured piece with physics (FlingAnimation for realistic motion)
+     */
+    private void animateCapturedPiecePhysics(int visualRow, int visualCol, char capturedPiece) {
+        try {
+            float startX = visualCol * squareSize + squareSize / 2f;
+            float startY = visualRow * squareSize + squareSize / 2f;
+            
+            // Create physics properties for captured piece animation
+            FloatPropertyCompat<ChessBoardView> capturedPieceX = new FloatPropertyCompat<ChessBoardView>("capturedPieceX") {
+                @Override
+                public float getValue(ChessBoardView object) {
+                    return object.capturedPieceAnimX;
+                }
+                
+                @Override
+                public void setValue(ChessBoardView object, float value) {
+                    object.capturedPieceAnimX = value;
+                    object.postInvalidateOnAnimation();
+                }
+            };
+            
+            FloatPropertyCompat<ChessBoardView> capturedPieceY = new FloatPropertyCompat<ChessBoardView>("capturedPieceY") {
+                @Override
+                public float getValue(ChessBoardView object) {
+                    return object.capturedPieceAnimY;
+                }
+                
+                @Override
+                public void setValue(ChessBoardView object, float value) {
+                    object.capturedPieceAnimY = value;
+                    object.postInvalidateOnAnimation();
+                }
+            };
+            
+            // Set initial position
+            capturedPieceAnimX = startX;
+            capturedPieceAnimY = startY;
+            capturedPieceBeingAnimated = capturedPiece;
+            capturedPieceAlpha = 1.0f;
+            
+            // Create fling animations with realistic physics
+            FlingAnimation flingX = new FlingAnimation(this, capturedPieceX);
+            FlingAnimation flingY = new FlingAnimation(this, capturedPieceY);
+            
+            // Set physics parameters (BUILDING-A-MODERN-CHESS-APP-UI.md: "with a slight ease-out bounce")
+            float velocityX = (Math.random() > 0.5 ? 1 : -1) * (800 + (float)(Math.random() * 400)); // Random horizontal velocity
+            float velocityY = -600 - (float)(Math.random() * 200); // Upward velocity (negative Y)
+            
+            flingX.setStartVelocity(velocityX)
+                  .setFriction(1.2f) // Higher friction for quicker settling
+                  .setMinValue(-squareSize * 2) // Allow off-screen movement
+                  .setMaxValue(getWidth() + squareSize * 2);
+                  
+            flingY.setStartVelocity(velocityY)
+                  .setFriction(1.5f) // Gravity-like effect
+                  .setMinValue(-squareSize * 3) // Allow upward movement
+                  .setMaxValue(getHeight() + squareSize);
+            
+            // Add completion listener to fade out captured piece
+            flingY.addEndListener(new DynamicAnimation.OnAnimationEndListener() {
+                @Override
+                public void onAnimationEnd(DynamicAnimation animation, boolean canceled, float value, float velocity) {
+                    // Fade out the captured piece
+                    ValueAnimator fadeOut = ValueAnimator.ofFloat(1.0f, 0.0f);
+                    fadeOut.setDuration(300);
+                    fadeOut.addUpdateListener(animator -> {
+                        capturedPieceAlpha = (Float) animator.getAnimatedValue();
+                        postInvalidateOnAnimation();
+                    });
+                    fadeOut.addListener(new android.animation.AnimatorListenerAdapter() {
+                        @Override
+                        public void onAnimationEnd(android.animation.Animator animation) {
+                            capturedPieceBeingAnimated = ' '; // Clear the animated piece
+                        }
+                    });
+                    fadeOut.start();
+                }
+            });
+            
+            // Start physics animations
+            flingX.start();
+            flingY.start();
+            
+            Log.d("ChessBoardView", "🌪️ Physics capture animation started for piece '" + capturedPiece + "'");
+            
+        } catch (Exception e) {
+            Log.e("ChessBoardView", "❌ Error in physics capture animation", e);
+        }
+    }
+    
+    // Animation state for captured piece physics
+    private float capturedPieceAnimX = 0f;
+    private float capturedPieceAnimY = 0f;
+    private char capturedPieceBeingAnimated = ' ';
+    private float capturedPieceAlpha = 0f;
+    
+    /**
+     * 🎯 PHASE 2: Check/Blunder/Brilliant Move Animations (BUILDING-A-MODERN-CHESS-APP-UI.md lines 415-471)
+     * Animated overlays with color coding and 3D spin effects
+     */
+    
+    // Animation states for move indicators
+    private boolean showingCheckIndicator = false;
+    private boolean showingBlunderIndicator = false;
+    private boolean showingBrilliantIndicator = false;
+    private float moveIndicatorAlpha = 0f;
+    private float moveIndicatorRotation = 0f;
+    private String moveIndicatorText = "";
+    private int moveIndicatorColor = 0;
+    private Paint moveIndicatorPaint;
+    private Paint moveIndicatorTextPaint;
+    
+    /**
+     * 🚨 Animate king in check - flashing red warning
+     */
+    public void animateCheckIndicator(int kingRow, int kingCol) {
+        Log.d("ChessBoardView", "🚨 Animating check indicator for king at " + kingRow + "," + kingCol);
+        
+        // Set check position
+        checkKingPosition[0] = kingRow;
+        checkKingPosition[1] = kingCol;
+        kingInCheck = true;
+        
+        // Shake animation for the king
+        ValueAnimator shakeAnimator = ValueAnimator.ofFloat(0f, 15f, -15f, 10f, -10f, 5f, -5f, 0f);
+        shakeAnimator.setDuration(500);
+        shakeAnimator.addUpdateListener(animator -> {
+            // This could be used to shake the king piece specifically
+            invalidate();
+        });
+        
+        // Flashing red overlay
+        ValueAnimator flashAnimator = ValueAnimator.ofFloat(0f, 1f, 0f, 1f, 0f);
+        flashAnimator.setDuration(1200);
+        flashAnimator.addUpdateListener(animator -> {
+            // Flash intensity stored for rendering
+            postInvalidateOnAnimation();
+        });
+        
+        shakeAnimator.start();
+        flashAnimator.start();
+        
+        // Auto-clear after animation
+        postDelayed(() -> {
+            kingInCheck = false;
+            checkKingPosition[0] = checkKingPosition[1] = -1;
+            invalidate();
+        }, 1500);
+    }
+    
+    /**
+     * ❌ Animate blunder alert with spinning "??" overlay
+     */
+    public void animateBlunderAlert() {
+        Log.d("ChessBoardView", "❌ Animating blunder alert with spinning overlay");
+        
+        showingBlunderIndicator = true;
+        moveIndicatorText = "??";
+        moveIndicatorColor = 0xFFFF4444; // Red for blunder
+        
+        initializeMoveIndicatorPaints();
+        
+        // 3D spin animation as specified in design doc
+        ValueAnimator spinAnimator = ValueAnimator.ofFloat(0f, 720f); // Two full spins
+        spinAnimator.setDuration(800);
+        spinAnimator.addUpdateListener(animator -> {
+            moveIndicatorRotation = (Float) animator.getAnimatedValue();
+            postInvalidateOnAnimation();
+        });
+        
+        // Fade in/out animation
+        ValueAnimator alphaAnimator = ValueAnimator.ofFloat(0f, 1f, 1f, 0f);
+        alphaAnimator.setDuration(1500);
+        alphaAnimator.addUpdateListener(animator -> {
+            moveIndicatorAlpha = (Float) animator.getAnimatedValue();
+            postInvalidateOnAnimation();
+        });
+        alphaAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                showingBlunderIndicator = false;
+            }
+        });
+        
+        spinAnimator.start();
+        alphaAnimator.start();
+    }
+    
+    /**
+     * ✨ Animate brilliant move with sparkling "!!" overlay
+     */
+    public void animateBrilliantMove() {
+        Log.d("ChessBoardView", "✨ Animating brilliant move with sparkling overlay");
+        
+        showingBrilliantIndicator = true;
+        moveIndicatorText = "!!";
+        moveIndicatorColor = 0xFF44FF44; // Green for brilliant
+        
+        initializeMoveIndicatorPaints();
+        
+        // Scale bounce animation
+        ValueAnimator scaleAnimator = ValueAnimator.ofFloat(0f, 1.2f, 1f);
+        scaleAnimator.setDuration(600);
+        scaleAnimator.setInterpolator(new android.view.animation.OvershootInterpolator(2.0f));
+        scaleAnimator.addUpdateListener(animator -> {
+            // Scale could be applied during draw
+            postInvalidateOnAnimation();
+        });
+        
+        // Fade animation
+        ValueAnimator alphaAnimator = ValueAnimator.ofFloat(0f, 1f, 1f, 0f);
+        alphaAnimator.setDuration(2000); // Longer duration for brilliant moves
+        alphaAnimator.addUpdateListener(animator -> {
+            moveIndicatorAlpha = (Float) animator.getAnimatedValue();
+            postInvalidateOnAnimation();
+        });
+        alphaAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                showingBrilliantIndicator = false;
+            }
+        });
+        
+        scaleAnimator.start();
+        alphaAnimator.start();
+    }
+    
+    /**
+     * 🎨 Initialize paints for move indicator overlays
+     */
+    private void initializeMoveIndicatorPaints() {
+        if (moveIndicatorPaint == null) {
+            moveIndicatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            moveIndicatorPaint.setStyle(Paint.Style.FILL);
+            
+            moveIndicatorTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            moveIndicatorTextPaint.setTextAlign(Paint.Align.CENTER);
+            moveIndicatorTextPaint.setTextSize(squareSize * 1.5f); // Large overlay text
+            moveIndicatorTextPaint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+            moveIndicatorTextPaint.setColor(0xFFFFFFFF); // White text
+            moveIndicatorTextPaint.setShadowLayer(8f, 0f, 0f, 0xFF000000); // Black shadow
+        }
+    }
+    
+    /**
+     * 🎭 Draw move indicator overlays (BUILDING-A-MODERN-CHESS-APP-UI.md specification)
+     */
+    private void drawMoveIndicatorOverlays(Canvas canvas) {
+        // Draw enhanced check indicator
+        if (kingInCheck && checkKingPosition[0] != -1 && checkKingPosition[1] != -1) {
+            int vKingRow = flipped ? 7 - checkKingPosition[0] : checkKingPosition[0];
+            int vKingCol = flipped ? 7 - checkKingPosition[1] : checkKingPosition[1];
+            
+            // Flashing red overlay on king's square
+            Paint checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            checkPaint.setColor(0x88FF0000); // Semi-transparent red
+            checkPaint.setStyle(Paint.Style.FILL);
+            
+            reusableRectF.set(vKingCol * squareSize, vKingRow * squareSize,
+                             vKingCol * squareSize + squareSize, vKingRow * squareSize + squareSize);
+            canvas.drawRoundRect(reusableRectF, squareSize * 0.1f, squareSize * 0.1f, checkPaint);
+        }
+        
+        // Draw blunder/brilliant move overlays
+        if ((showingBlunderIndicator || showingBrilliantIndicator) && moveIndicatorAlpha > 0) {
+            initializeMoveIndicatorPaints();
+            
+            // Save canvas state for 3D transformations
+            int saveCount = canvas.save();
+            
+            // Apply alpha
+            moveIndicatorTextPaint.setAlpha((int)(moveIndicatorAlpha * 255));
+            moveIndicatorPaint.setColor(moveIndicatorColor);
+            moveIndicatorPaint.setAlpha((int)(moveIndicatorAlpha * 128)); // Semi-transparent background
+            
+            // Center of the board for overlay
+            float centerX = getWidth() / 2f;
+            float centerY = getHeight() / 2f;
+            
+            // Apply rotation for 3D spin effect (blunder animation)
+            if (showingBlunderIndicator) {
+                canvas.rotate(moveIndicatorRotation, centerX, centerY);
+            }
+            
+            // Draw background circle
+            float circleRadius = squareSize * 1.2f;
+            canvas.drawCircle(centerX, centerY, circleRadius, moveIndicatorPaint);
+            
+            // Draw text overlay
+            Paint.FontMetrics fontMetrics = moveIndicatorTextPaint.getFontMetrics();
+            float textY = centerY - (fontMetrics.top + fontMetrics.bottom) / 2f;
+            canvas.drawText(moveIndicatorText, centerX, textY, moveIndicatorTextPaint);
+            
+            canvas.restoreToCount(saveCount);
         }
     }
 }

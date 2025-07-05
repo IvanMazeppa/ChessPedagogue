@@ -4,4 +4,12 @@
     <item name="thinking_animator" type="id" />
     <item name="agsl_shader_effect" type="id" />
     <item name="motion_transition" type="id" />
+    
+    <!-- Modern Competitive Mode Layout IDs -->
+    <item name="bottomControlsPanel" type="id" />
+    <item name="masterNameText" type="id" />
+    <item name="masterRatingText" type="id" />
+    <item name="battleProgressPanel" type="id" />
+    <item name="gameContainer" type="id" />
+    <item name="belowBoardContainer" type="id" />
 </resources>

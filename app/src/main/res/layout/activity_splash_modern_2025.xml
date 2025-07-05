@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 Expressive Splash Screen - June 2025 Modern Design -->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_material3_expressive_gradient"
+    android:fitsSystemWindows="true"
+    tools:context=".SplashActivity">
+
+    <!-- Background Blur Layer for Glassmorphism -->
+    <View
+        android:id="@+id/backgroundBlurLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/material3_dynamic_background" />
+
+    <!-- Main Content Container with Glassmorphism -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/mainContentContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="24dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/glass_main_container"
+        android:elevation="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <!-- Hero Section with Material 3 Expressive Typography -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/heroCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:layout_marginTop="48dp"
+            android:layout_marginEnd="24dp"
+            android:background="@drawable/glass_hero_card"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="32dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/material3_glass_border_color"
+            app:strokeWidth="1dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="40dp">
+
+                <!-- App Icon with Glow Effect -->
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/appIconGlow"
+                    android:layout_width="96dp"
+                    android:layout_height="96dp"
+                    android:layout_marginBottom="24dp"
+                    android:background="@drawable/icon_glow_background"
+                    android:contentDescription="ChessPedagogue Icon"
+                    android:elevation="12dp"
+                    android:src="@drawable/ic_chess_crown"
+                    app:shapeAppearanceOverlay="@style/RoundedCorner24dp" />
+
+                <!-- App Title - Material 3 Expressive -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/appTitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:text="ChessPedagogue"
+                    android:textAppearance="@style/TextAppearance.Material3.DisplayMedium"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="32sp"
+                    android:textStyle="bold" />
+
+                <!-- Subtitle with Animation -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/appSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.9"
+                    android:fontFamily="sans-serif"
+                    android:text="Master Chess with AI • Android 15"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="18sp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Game Configuration Panel -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/configurationPanel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="20dp"
+            android:background="@drawable/glass_config_panel"
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/material3_glass_border_color"
+            app:strokeWidth="1dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/heroCard">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="28dp">
+
+                <!-- Color Selection Header -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="24dp"
+                    android:text="Choose Your Side"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <!-- Color Selection Grid -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="32dp"
+                    android:orientation="horizontal">
+
+                    <!-- White Piece Selection -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/whiteSelectionCard"
+                        android:layout_width="0dp"
+                        android:layout_height="140dp"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/glass_selection_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorPrimary"
+                        app:strokeWidth="2dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="20dp">
+
+                            <ImageView
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:layout_marginBottom="12dp"
+                                android:contentDescription="White King"
+                                android:src="@drawable/ic_white_king"
+                                android:elevation="4dp" />
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radioWhite"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:checked="true"
+                                android:text="White"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Black Piece Selection -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/blackSelectionCard"
+                        android:layout_width="0dp"
+                        android:layout_height="140dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/glass_selection_card"
+                        android:clickable="true"
+                        android:focusable="true"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="20dp">
+
+                            <ImageView
+                                android:layout_width="64dp"
+                                android:layout_height="64dp"
+                                android:layout_marginBottom="12dp"
+                                android:contentDescription="Black King"
+                                android:src="@drawable/ic_black_king"
+                                android:elevation="4dp" />
+
+                            <com.google.android.material.radiobutton.MaterialRadioButton
+                                android:id="@+id/radioBlack"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Black"
+                                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                                android:textColor="?attr/colorOnSurface" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+
+                <!-- AI Strength Section -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="16dp"
+                    android:text="AI Opponent Strength"
+                    android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textStyle="bold" />
+
+                <!-- Strength Value Display -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/strengthValueDisplay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="20dp"
+                    android:text="Master Level • ~2200 ELO"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorPrimary"
+                    android:textStyle="bold" />
+
+                <!-- Modern Material 3 Slider -->
+                <com.google.android.material.slider.Slider
+                    android:id="@+id/aiStrengthSlider"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:value="12"
+                    android:valueFrom="0"
+                    android:valueTo="24"
+                    app:labelBehavior="gone"
+                    app:thumbColor="?attr/colorPrimary"
+                    app:trackColorActive="?attr/colorPrimary"
+                    app:trackColorInactive="?attr/colorOutline" />
+
+                <!-- Strength Labels -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Beginner"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Master"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="Grandmaster"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="32dp"
+            android:orientation="vertical"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <!-- Primary Action Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/startGameButton"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginBottom="12dp"
+                android:background="@drawable/glass_primary_button"
+                android:text="⚡ Begin Challenge"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="?attr/colorOnPrimary"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                app:backgroundTint="?attr/colorPrimary"
+                app:cornerRadius="28dp"
+                app:elevation="8dp"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="start"
+                app:iconPadding="12dp" />
+
+            <!-- Secondary Action Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/competitiveModeButton"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:background="@drawable/glass_secondary_button"
+                android:text="🚀 Competitive Mode"
+                android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                android:textColor="?attr/colorPrimary"
+                android:textSize="16sp"
+                app:backgroundTint="@android:color/transparent"
+                app:cornerRadius="26dp"
+                app:icon="@drawable/ic_competition"
+                app:iconGravity="start"
+                app:iconPadding="12dp"
+                app:strokeColor="?attr/colorPrimary"
+                app:strokeWidth="2dp" />
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Floating Action Elements -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/settingsFab"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="24dp"
+        android:contentDescription="Settings"
+        android:src="@drawable/ic_settings"
+        app:backgroundTint="?attr/colorSecondaryContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="?attr/colorOnSecondaryContainer" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

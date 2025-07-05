@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 Expressive Glow Background for App Icon -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:type="radial"
+        android:gradientRadius="50dp"
+        android:startColor="#40FFD700"
+        android:centerColor="#20FFD700"
+        android:endColor="#00FFD700" />
+</shape>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deep Blue-Purple Gradient with Specular Highlights matching reference -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Base gradient layer -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#1a1b3a"
+                android:centerColor="#2d1b69"
+                android:endColor="#0f3460"
+                android:angle="135"
+                android:type="linear" />
+        </shape>
+    </item>
+    
+    <!-- Radial highlight overlay for depth -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#30506090"
+                android:centerColor="#00000000"
+                android:endColor="#00000000"
+                android:type="radial"
+                android:gradientRadius="800dp"
+                android:centerX="0.3"
+                android:centerY="0.2" />
+        </shape>
+    </item>
+    
+    <!-- Specular highlight -->
+    <item android:top="0dp" android:bottom="400dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#20a0c0ff"
+                android:endColor="#00000000"
+                android:angle="90"
+                android:type="linear" />
+        </shape>
+    </item>
+    
+</layer-list>

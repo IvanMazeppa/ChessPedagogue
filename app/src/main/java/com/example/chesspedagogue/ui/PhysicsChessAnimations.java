@@ -96,12 +96,13 @@ public class PhysicsChessAnimations {
         // Add dramatic scale and rotation during fling
         SpringAnimation scaleXAnim = new SpringAnimation(capturedPiece, DynamicAnimation.SCALE_X, 0.3f);
         SpringAnimation scaleYAnim = new SpringAnimation(capturedPiece, DynamicAnimation.SCALE_Y, 0.3f);
-        SpringAnimation rotationAnim = new SpringAnimation(capturedPiece, DynamicAnimation.ROTATION, 360f * 2);
+        // DISABLED: Rotation causing board spinning bug
+        // SpringAnimation rotationAnim = new SpringAnimation(capturedPiece, DynamicAnimation.ROTATION, 360f * 2);
         
         // Configure spring physics
         configureSpring(scaleXAnim, SPRING_STIFFNESS, SPRING_DAMPENING);
         configureSpring(scaleYAnim, SPRING_STIFFNESS, SPRING_DAMPENING);
-        configureSpring(rotationAnim, SPRING_STIFFNESS * 0.5f, SPRING_DAMPENING);
+        // configureSpring(rotationAnim, SPRING_STIFFNESS * 0.5f, SPRING_DAMPENING);
         
         // Fling animation for realistic physics
         FlingAnimation flingX = new FlingAnimation(capturedPiece, DynamicAnimation.X)
@@ -131,10 +132,10 @@ public class PhysicsChessAnimations {
             }
         });
         
-        // Start all animations simultaneously
+        // Start all animations simultaneously (rotation disabled to fix board spinning)
         scaleXAnim.start();
         scaleYAnim.start();
-        rotationAnim.start();
+        // rotationAnim.start(); // DISABLED
         flingX.start();
         flingY.start();
         

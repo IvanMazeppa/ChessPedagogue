@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 Expressive Colors (June 2025) -->
+<resources>
+    
+    <!-- Glassmorphism Colors -->
+    <color name="material3_glass_border_color">#1AFFFFFF</color>
+    <color name="material3_glass_background_light">#14FFFFFF</color>
+    <color name="material3_glass_background_subtle">#0AFFFFFF</color>
+    <color name="material3_glass_shadow">#40000000</color>
+    
+    <!-- Material 3 Expressive Dynamic Colors -->
+    <color name="material3_expressive_primary">#6750A4</color>
+    <color name="material3_expressive_on_primary">#FFFFFF</color>
+    <color name="material3_expressive_primary_container">#EADDFF</color>
+    <color name="material3_expressive_on_primary_container">#21005D</color>
+    
+    <color name="material3_expressive_secondary">#625B71</color>
+    <color name="material3_expressive_on_secondary">#FFFFFF</color>
+    <color name="material3_expressive_secondary_container">#E8DEF8</color>
+    <color name="material3_expressive_on_secondary_container">#1D192B</color>
+    
+    <color name="material3_expressive_surface">#FEF7FF</color>
+    <color name="material3_expressive_on_surface">#1C1B1F</color>
+    <color name="material3_expressive_surface_variant">#E7E0EC</color>
+    <color name="material3_expressive_on_surface_variant">#49454F</color>
+    
+    <color name="material3_expressive_outline">#79747E</color>
+    <color name="material3_expressive_outline_variant">#CAC4D0</color>
+    
+    <!-- Chess-specific Colors (Material 3 Enhanced) -->
+    <color name="material3_chess_light_square">#F0D9B5</color>
+    <color name="material3_chess_dark_square">#B58863</color>
+    <color name="material3_chess_highlight_move">#FFE082</color>
+    <color name="material3_chess_highlight_check">#FF5252</color>
+    <color name="material3_chess_highlight_capture">#FF7043</color>
+    
+    <!-- Animation Colors -->
+    <color name="animation_glow_blue">#4FC3F7</color>
+    <color name="animation_glow_purple">#AB47BC</color>
+    <color name="animation_success_green">#66BB6A</color>
+    <color name="animation_warning_orange">#FF7043</color>
+    
+</resources>

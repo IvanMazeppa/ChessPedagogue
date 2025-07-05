@@ -99,7 +99,7 @@ public class PersonalityEngineDiagnostic {
             case "fischer": return "fischer_full_positions.json";
             case "kasparov": return "kasparov_full_positions.json";
             case "alekhine": return "alekhine_full_positions.json";
-            case "kramnik": return "kramnik_full_positions.json";
+            case "kramnik": return "SecondaryModelDBs/kramnik_full_positions.json";
             case "karpov": return "karpov_full_positions.json";
             case "capablanca": return "capablanca_full_positions.json";
             case "anand": return "anand_full_positions.json";

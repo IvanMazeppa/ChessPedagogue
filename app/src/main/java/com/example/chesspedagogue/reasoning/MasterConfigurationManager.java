@@ -115,7 +115,7 @@ public class MasterConfigurationManager {
         MasterConfiguration tal = new MasterConfiguration.Builder("tal")
             .reasoningModel("o4-mini")
             .systemInstructions(getTalInstructions())
-            .vectorStoreId("vs_tal_games") // TODO: Add actual vector store ID
+            .vectorStoreId("vs_682f419a57288191aa3cd922b27acb5f") // TODO: Add actual vector store ID
             .personalityTraits(new PersonalityTraits()
                 .aggression(0.95f)
                 .calculationDepth(0.9f)

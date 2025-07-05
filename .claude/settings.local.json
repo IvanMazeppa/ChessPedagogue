@@ -71,8 +71,22 @@
       "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell screencap -p /sdcard/chess_app_screenshot.png)",
       "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" pull /sdcard/chess_app_screenshot.png ./chess_app_screenshot.png)",
       "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" shell screencap -p /sdcard/chess_app_screenshot_clean.png)",
-      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" pull /sdcard/chess_app_screenshot_clean.png ./chess_app_screenshot_clean.png)"
+      "Bash(\"/mnt/c/Users/dilli/AppData/Local/Android/Sdk/platform-tools/adb.exe\" pull /sdcard/chess_app_screenshot_clean.png ./chess_app_screenshot_clean.png)",
+      "Bash(echo $SHELL)",
+      "Bash(nano:*)",
+      "Bash(source ~/.bashrc)",
+      "Bash(pip3 install:*)",
+      "Bash(kotlin:*)",
+      "Bash(./test_optimization.sh:*)",
+      "Bash(bash:*)",
+      "Bash(mkdir:*)",
+      "Bash(pkill:*)",
+      "Bash(ADB_SERVER_SOCKET=tcp:127.0.0.1:5037 adb devices)",
+      "Bash(ANDROID_ADB_SERVER_PORT=5037 ./gradlew installDebug --console=plain)",
+      "Bash(nc:*)",
+      "Bash(unset:*)"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": false
 }

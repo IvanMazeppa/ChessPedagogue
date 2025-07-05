@@ -78,21 +78,38 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Glassmorphic UI Colors for Android 15 - Blue-Teal Theme -->
+    <!-- PREMIUM GLASSMORPHIC UI COLORS - API 35 Optimized -->
     <color name="glass_background">#30506080</color>
     <color name="glass_background_dark">#20304050</color>
-    <color name="glass_surface">#40708090</color>
+    <color name="glass_surface">#40708090</color>               <!-- 25% opacity - perfect ratio -->
     <color name="glass_surface_dark">#20405060</color>
     <color name="glass_surface_variant">#30609080</color>
+    <color name="glass_surface_premium">#2EFFFFFF</color>       <!-- 18% white glass as specified -->
+    <color name="glass_surface_moves_enhanced">#2EFFFFFF</color> <!-- 18% move list -->
+    <color name="glass_surface_captured">#2EFFFFFF</color>      <!-- 18% captured pieces -->
+    <color name="glass_surface_controls">#2EFFFFFF</color>      <!-- 18% control buttons -->
+    <color name="glass_overlay_thinking">#55000000</color>      <!-- AI thinking overlay -->
+    <color name="glass_overlay_speech_enhanced">#48FFFFFF</color> <!-- Speech transcription -->
     <color name="glass_outline">#60A0C0E0</color>
     <color name="glass_outline_dark">#40708090</color>
-    <color name="glass_accent">#8060A0E0</color>
+    <color name="glass_accent">#8060A0E0</color>               <!-- Graduated teal accent -->
     <color name="glass_accent_dark">#6080B0D0</color>
+    <color name="glass_button_surface">#35FFFFFF</color>       <!-- Glass buttons -->
+    <color name="glass_panel_glow">#22FFFFFF</color>           <!-- Subtle panel glow -->
+    <color name="glass_text_secondary">#E6FFFFFF</color>       <!-- High contrast text -->
+    <color name="glass_text_tertiary">#B3FFFFFF</color>        <!-- Secondary text -->
+    <color name="glass_shadow">#80000000</color>               <!-- Dramatic shadows -->
 
-    <!-- Enhanced Chess-themed Gradient Colors -->
-    <color name="gradient_start">#1A237E</color>
-    <color name="gradient_middle">#3949AB</color>
-    <color name="gradient_end">#4A148C</color>
+    <!-- Enhanced Chess-themed Gradient Colors - MATCHES REFERENCE SCREENSHOTS -->
+    <color name="gradient_start">#0A1A2A</color>         <!-- Deep dark blue -->
+    <color name="gradient_middle">#1E3A5F</color>        <!-- Mid blue-teal -->
+    <color name="gradient_end">#2D1B5F</color>           <!-- Deep purple -->
+    
+    <!-- Alternative gradient for dynamic effects -->
+    <color name="gradient_dynamic_start">#152238</color>  <!-- Darker blue -->
+    <color name="gradient_dynamic_middle">#2A4A6B</color> <!-- Teal-blue -->
+    <color name="gradient_dynamic_end">#4A1B6B</color>    <!-- Purple -->
+    
     <color name="gradient_chess_start">#2E1810</color>
     <color name="gradient_chess_middle">#5D4037</color>
     <color name="gradient_chess_end">#8B4513</color>
@@ -105,6 +122,12 @@
     <color name="brown_wood">#A0825A</color>
     <color name="brown_warm">#B8936A</color>
 
+    <!-- WARM-TINTED CHESS SQUARES - As specified in BUILDING-A-MODERN-CHESS-APP-UI.md -->
+    <color name="chess_square_light">#FFF5F2E8</color>    <!-- Off-white with 5-10% teal as specified -->
+    <color name="chess_square_dark">#FF5D7C9A</color>     <!-- Deep blue-grey complementing gradient -->
+    <color name="chess_square_selected">#4060A0E0</color> <!-- Selection highlight with teal -->
+    <color name="chess_square_last_move">#3050C0D0</color> <!-- Last move with warm tint -->
+    
     <!-- Premium Accent Colors -->
     <color name="gold">#FFD700</color>
     <color name="gold_dark">#DAA520</color>
@@ -183,4 +206,15 @@
     <color name="primary_text_color">#2E1810</color>
     <color name="secondary_text_color">#6D4C41</color>
     <color name="accent_color">#FFD700</color>
+
+    <!-- REMOVED: Duplicate Premium Tournament Glassmorphism Colors -->
+    <!-- Using the optimized API 35 colors defined above instead -->
+    <color name="glass_button_voice">#6600BFFF</color>
+    <color name="glass_button_ai">#66FF6B35</color>
+    
+    <!-- Missing colors needed by drawable files -->
+    <color name="glass_button_primary">#66456789</color>
+    <color name="glass_surface_moves">#60345678</color>
+
+    <!-- CLEANED: All duplicate colors removed - using optimized API 35 definitions above -->
 </resources>

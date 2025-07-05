@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Material 3 Expressive Styles (June 2025) -->
+<resources>
+    
+    <!-- Shape Appearances -->
+    <style name="RoundedCorner8dp">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">8dp</item>
+    </style>
+    
+    <style name="RoundedCorner12dp">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">12dp</item>
+    </style>
+    
+    <style name="RoundedCorner16dp">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+    
+    <style name="RoundedCorner24dp">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">24dp</item>
+    </style>
+    
+    <style name="RoundedCorner32dp">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">32dp</item>
+    </style>
+    
+    <!-- Glassmorphism Card Styles -->
+    <style name="GlassmorphismCard" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@android:color/transparent</item>
+        <item name="cardElevation">0dp</item>
+        <item name="strokeColor">@color/material3_glass_border_color</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+    
+    <style name="GlassmorphismCard.Hero">
+        <item name="cardCornerRadius">32dp</item>
+        <item name="strokeWidth">2dp</item>
+    </style>
+    
+    <style name="GlassmorphismCard.Panel">
+        <item name="cardCornerRadius">24dp</item>
+    </style>
+    
+    <style name="GlassmorphismCard.Button">
+        <item name="cardCornerRadius">12dp</item>
+    </style>
+    
+    <!-- Material 3 Button Styles -->
+    <style name="Material3ExpressiveButton" parent="Widget.Material3.Button">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Material3.LabelLarge</item>
+        <item name="iconGravity">start</item>
+        <item name="iconPadding">8dp</item>
+    </style>
+    
+    <style name="Material3ExpressiveButton.Tonal" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">12dp</item>
+        <item name="android:textAppearance">@style/TextAppearance.Material3.LabelMedium</item>
+    </style>
+    
+    <style name="Material3ExpressiveButton.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="strokeWidth">2dp</item>
+    </style>
+    
+    <!-- Chess UI Styles -->
+    <style name="ChessCoordinateLabel">
+        <item name="android:textAppearance">@style/TextAppearance.Material3.LabelMedium</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:gravity">center</item>
+        <item name="android:background">#80000000</item>
+    </style>
+    
+    <!-- Animation Styles -->
+    <style name="SpringAnimation">
+        <item name="android:duration">300</item>
+        <item name="android:interpolator">@android:interpolator/fast_out_slow_in</item>
+    </style>
+    
+    <style name="SpringAnimation.Bounce">
+        <item name="android:duration">500</item>
+        <item name="android:interpolator">@android:interpolator/bounce</item>
+    </style>
+    
+    <style name="SpringAnimation.Overshoot">
+        <item name="android:duration">400</item>
+        <item name="android:interpolator">@android:interpolator/overshoot</item>
+    </style>
+    
+</resources>

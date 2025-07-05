@@ -122,8 +122,8 @@ public class EnhancedCaptureEffects {
         // Get piece-specific colors
         float[] pieceColor = getPieceExplosionColor(capturedPieceType, isWhitePiece);
         
-        // Check AGSL support
-        boolean agslSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && isAGSLSupported();
+        // Check AGSL support using unified manager
+        boolean agslSupported = AGSLManager.getInstance().isSupported();
         
         // Log detailed capture information for debugging
         VisualEffectsDebugger.logCaptureEffect(capturedPieceType, isWhitePiece, centerX, centerY, agslSupported);
@@ -133,13 +133,16 @@ public class EnhancedCaptureEffects {
             createAGSLCaptureExplosion(boardContainer, centerX, centerY, pieceColor);
         }
         
+        // 🚀 TEMPORARY DISABLE: Flying piece causing board spinning bug  
+        // createDramaticFlyingPiece(boardContainer, centerX, centerY, capturedPieceType, isWhitePiece);
+        
         // Always create particle burst animation (works on all Android versions)
         createParticleExplosion(boardContainer, centerX, centerY, pieceColor, capturedPieceType);
         
         // Add shockwave ring effect
         createShockwaveRing(boardContainer, centerX, centerY, pieceColor);
         
-        Log.d(TAG, "✨ Capture explosion effects initiated");
+        Log.d(TAG, "✨ DRAMATIC capture explosion effects initiated with flying piece!");
     }
     
     /**
@@ -480,16 +483,133 @@ public class EnhancedCaptureEffects {
     }
     
     /**
-     * Check if AGSL shaders are supported and safe to use
+     * 🚀 DRAMATIC FLYING PIECE - The spectacular physics effect you want to see!
+     * Creates a realistic piece that flies off the board with physics simulation
      */
-    private static boolean isAGSLSupported() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return false;
+    private static void createDramaticFlyingPiece(ViewGroup boardContainer, float centerX, float centerY, 
+                                                String capturedPieceType, boolean isWhitePiece) {
+        Log.d(TAG, "🚀💥 Creating DRAMATIC flying " + capturedPieceType + " off the board!");
+        
+        // Create a realistic piece ImageView that will fly off
+        ImageView flyingPiece = new ImageView(boardContainer.getContext());
+        
+        // Set the actual piece image based on type and color
+        int pieceResourceId = getPieceImageResource(capturedPieceType, isWhitePiece);
+        if (pieceResourceId != 0) {
+            flyingPiece.setImageResource(pieceResourceId);
         }
         
-        // Additional safety checks could be added here
-        // For example, checking device capabilities or known problematic devices
+        // Size the flying piece (make it board-square sized for realism)
+        int pieceSize = (int) (64 * boardContainer.getContext().getResources().getDisplayMetrics().density); // 64dp
+        ViewGroup.LayoutParams params = new ViewGroup.LayoutParams(pieceSize, pieceSize);
+        flyingPiece.setLayoutParams(params);
         
-        return true;
+        // Position at capture location
+        flyingPiece.setX(centerX - pieceSize / 2f);
+        flyingPiece.setY(centerY - pieceSize / 2f);
+        flyingPiece.setElevation(20f); // High elevation so it flies over everything
+        
+        boardContainer.addView(flyingPiece);
+        
+        // 🎯 PHYSICS SIMULATION: Calculate dramatic trajectory off the screen
+        Random random = new Random();
+        
+        // Random direction but always off the screen dramatically
+        float angle = random.nextFloat() * 360f; // Random direction
+        float force = 800f + random.nextFloat() * 400f; // 800-1200px flight distance
+        
+        // Calculate target position WAY off screen for dramatic effect
+        float targetX = centerX + (float) Math.cos(Math.toRadians(angle)) * force;
+        float targetY = centerY + (float) Math.sin(Math.toRadians(angle)) * force;
+        
+        // Add gravity effect (pieces fall down as they fly)
+        targetY += 200f + random.nextFloat() * 300f; // Gravity pulls down
+        
+        // 🎬 DRAMATIC ANIMATION: Multiple physics effects combined
+        AnimatorSet dramaticFlight = new AnimatorSet();
+        
+        // Main trajectory
+        ObjectAnimator moveX = ObjectAnimator.ofFloat(flyingPiece, "x", flyingPiece.getX(), targetX);
+        ObjectAnimator moveY = ObjectAnimator.ofFloat(flyingPiece, "y", flyingPiece.getY(), targetY);
+        
+        // Tumbling rotation (pieces tumble realistically)
+        ObjectAnimator tumbleX = ObjectAnimator.ofFloat(flyingPiece, "rotationX", 0f, 360f * (2 + random.nextFloat()));
+        ObjectAnimator tumbleY = ObjectAnimator.ofFloat(flyingPiece, "rotationY", 0f, 360f * (2 + random.nextFloat()));
+        ObjectAnimator spin = ObjectAnimator.ofFloat(flyingPiece, "rotation", 0f, 720f + random.nextFloat() * 720f);
+        
+        // Scale changes during flight (piece gets smaller as it "flies away")
+        ObjectAnimator scaleOut = ObjectAnimator.ofFloat(flyingPiece, "scaleX", 1.0f, 0.2f);
+        ObjectAnimator scaleOutY = ObjectAnimator.ofFloat(flyingPiece, "scaleY", 1.0f, 0.2f);
+        
+        // Fade out as it flies away
+        ObjectAnimator fadeOut = ObjectAnimator.ofFloat(flyingPiece, "alpha", 1.0f, 0.0f);
+        
+        // Combine all animations for spectacular effect
+        dramaticFlight.playTogether(moveX, moveY, tumbleX, tumbleY, spin, scaleOut, scaleOutY, fadeOut);
+        dramaticFlight.setDuration(1500 + random.nextInt(500)); // 1.5-2 seconds of dramatic flight
+        dramaticFlight.setInterpolator(new AccelerateDecelerateInterpolator()); // Natural physics curve
+        
+        // Add physics-based bounce effect at the start (piece "pops" off board)
+        flyingPiece.setScaleX(0.8f);
+        flyingPiece.setScaleY(0.8f);
+        
+        ObjectAnimator bounceOut = ObjectAnimator.ofFloat(flyingPiece, "scaleX", 0.8f, 1.2f, 1.0f);
+        ObjectAnimator bounceOutY = ObjectAnimator.ofFloat(flyingPiece, "scaleY", 0.8f, 1.2f, 1.0f);
+        AnimatorSet bounceEffect = new AnimatorSet();
+        bounceEffect.playTogether(bounceOut, bounceOutY);
+        bounceEffect.setDuration(200); // Quick bounce
+        bounceEffect.setInterpolator(new OvershootInterpolator(2.0f));
+        
+        // Clean up when animation completes
+        dramaticFlight.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                boardContainer.removeView(flyingPiece);
+                Log.d(TAG, "🎯 Dramatic flying piece completed and cleaned up");
+            }
+        });
+        
+        // 🚀 LAUNCH SEQUENCE: Bounce then dramatic flight
+        bounceEffect.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                dramaticFlight.start(); // Launch dramatic flight after bounce
+            }
+        });
+        
+        bounceEffect.start(); // Start with bounce effect
+        
+        Log.d(TAG, "🚀 DRAMATIC flying piece launched! Flying " + capturedPieceType + 
+                   " to (" + targetX + ", " + targetY + ") with full physics simulation!");
     }
+    
+    /**
+     * Get piece image resource for flying piece effect
+     */
+    private static int getPieceImageResource(String pieceType, boolean isWhite) {
+        if (pieceType == null) return 0;
+        
+        String prefix = isWhite ? "ic_white_" : "ic_black_";
+        String resourceName = prefix + pieceType.toLowerCase();
+        
+        // Map to actual drawable resources
+        switch (resourceName) {
+            case "ic_white_pawn": return com.example.chesspedagogue.R.drawable.ic_white_pawn;
+            case "ic_white_rook": return com.example.chesspedagogue.R.drawable.ic_white_rook;
+            case "ic_white_knight": return com.example.chesspedagogue.R.drawable.ic_white_knight;
+            case "ic_white_bishop": return com.example.chesspedagogue.R.drawable.ic_white_bishop;
+            case "ic_white_queen": return com.example.chesspedagogue.R.drawable.ic_white_queen;
+            case "ic_white_king": return com.example.chesspedagogue.R.drawable.ic_white_king;
+            case "ic_black_pawn": return com.example.chesspedagogue.R.drawable.ic_black_pawn;
+            case "ic_black_rook": return com.example.chesspedagogue.R.drawable.ic_black_rook;
+            case "ic_black_knight": return com.example.chesspedagogue.R.drawable.ic_black_knight;
+            case "ic_black_bishop": return com.example.chesspedagogue.R.drawable.ic_black_bishop;
+            case "ic_black_queen": return com.example.chesspedagogue.R.drawable.ic_black_queen;
+            case "ic_black_king": return com.example.chesspedagogue.R.drawable.ic_black_king;
+            default:
+                Log.w(TAG, "Unknown piece type for flying effect: " + resourceName);
+                return com.example.chesspedagogue.R.drawable.ic_white_pawn; // Default fallback
+        }
+    }
+    
 }

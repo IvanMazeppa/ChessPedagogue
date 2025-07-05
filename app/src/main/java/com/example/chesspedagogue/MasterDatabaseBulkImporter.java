@@ -116,7 +116,7 @@ public class MasterDatabaseBulkImporter {
             case "anand":
                 return "anand_full_positions.json";
             case "kramnik":
-                return "kramnik_full_positions.json";
+                return "SecondaryModelDBs/kramnik_full_positions.json";
             case "carlsen":
                 return "carlsen_full_positions.json";
             case "fischer":
@@ -135,13 +135,13 @@ public class MasterDatabaseBulkImporter {
                 return "botvinnik_full_positions.json";
             case "dommaraju":
             case "gukesh":
-                return "dommaraju_full_positions.json";
+                return "SecondaryModelDBs/dommaraju_full_positions.json";
             case "nakamura":
             case "hikaru":
-                return "nakamura_full_positions.json";
+                return "SecondaryModelDBs/nakamura_full_positions.json";
             case "short":
             case "nigel":
-                return "short_full_positions.json";
+                return "SecondaryModelDBs/short_full_positions.json";
             default:
                 return masterName.toLowerCase() + "_positions.json";
         }

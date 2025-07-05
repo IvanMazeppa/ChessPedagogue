@@ -66,25 +66,12 @@ public class VisualEffectsDebugger {
     }
     
     /**
-     * Log AGSL shader test results
+     * Log AGSL shader test results (DEPRECATED - Use AGSLManager instead)
      */
+    @Deprecated
     public static void logAGSLTest(boolean supported, String errorMessage) {
-        Log.i(TAG, "🧪🧪🧪 AGSL SHADER TEST 🧪🧪🧪");
-        Log.i(TAG, "📱 Device: " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ", API " + Build.VERSION.SDK_INT + ")");
-        Log.i(TAG, "🎨 AGSL Support: " + (supported ? "✅ SUPPORTED" : "❌ NOT SUPPORTED"));
-        
-        if (!supported && errorMessage != null) {
-            Log.i(TAG, "⚠️ Error: " + errorMessage);
-        }
-        
-        if (supported) {
-            Log.i(TAG, "🚀 Ready for spectacular shader effects!");
-        } else {
-            Log.i(TAG, "🔄 Using fallback particle effects");
-        }
-        
-        Log.i(TAG, "🧪🧪🧪 END AGSL TEST 🧪🧪🧪");
-        Log.i(TAG, " ");
+        // This method is deprecated. AGSLManager now handles all AGSL testing and logging
+        Log.d(TAG, "⚠️ Deprecated AGSL test called - Use AGSLManager.getInstance().isSupported() instead");
     }
     
     /**

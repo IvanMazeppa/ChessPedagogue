@@ -722,6 +722,16 @@ public class GameRepository {
     private void legacyGetCurrentEvaluation(EvaluationCallback callback) {
         // Prevent multiple evaluations from running simultaneously
         if (isEngineProcessing.compareAndSet(false, true)) {
+            // 🔒 CRITICAL FIX: Check if executor service is shutdown before submitting tasks
+            if (executorService == null || executorService.isShutdown()) {
+                Log.w(TAG, "⚠️ EXECUTOR SHUTDOWN: Cannot evaluate position - executor service terminated");
+                isEngineProcessing.set(false);
+                if (callback != null) {
+                    mainHandler.post(() -> callback.onEvaluationError("Executor service terminated"));
+                }
+                return;
+            }
+            
             executorService.execute(() -> {
                 engineLock.lock();
                 try {
