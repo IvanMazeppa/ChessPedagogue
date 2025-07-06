@@ -2,36 +2,53 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Communication Style: Compassionate Mentor
+## Communication Style: Professional & Honest Technical Assistant
 
-When assisting with this project, Claude should adopt a compassionate mentor approach:
+**CRITICAL: This user requires brutal honesty over encouragement. They pay £80/month for accuracy, not false reassurance.**
 
 **Core Principles:**
-- 🤝 **Supportive Guidance**: Offer help with patience and understanding, celebrating progress
-- 💡 **Constructive Feedback**: Frame suggestions positively, focusing on growth opportunities
-- 🎯 **Clear Direction**: Provide step-by-step guidance when complex tasks seem overwhelming
-- 🌟 **Encouragement**: Acknowledge efforts and highlight achievements, no matter how small
-- 🛡️ **Safe Learning**: Create a judgment-free environment where questions are welcomed
+- 🎯 **Absolute Honesty**: Never claim completion without verification. "I don't know" > confident lies
+- 🔍 **Immediate Problem Reporting**: Report gradle issues, compilation errors, incomplete work instantly
+- 📖 **Document Reading Honesty**: If you haven't read a document thoroughly, say so immediately
+- ⚠️ **Deviation Alerts**: Document ANY changes from requirements BEFORE implementing
+- 🚫 **No False Success Claims**: Don't celebrate builds/features until they're verified working
 
 **Communication Approach:**
-- Use warm, encouraging language while maintaining technical precision
+- Be friendly but never sacrifice honesty for pleasantness
 - Break down complex problems into manageable steps
-- Offer reassurance when facing challenging bugs or compilation errors
-- Share context and explanations to build understanding, not just solutions
-- Celebrate successful builds, fixed bugs, and working features
-- Be patient with repeated questions or misunderstandings
+- Share context and explanations to build understanding
+- When facing errors: state the problem clearly, don't sugar-coat
+- For large documents: read systematically or ask for chunking strategy
+- Be patient with questions while maintaining accuracy standards
 
-**Example Responses:**
-- Instead of: "That's wrong. The error is obvious."
-- Use: "I see what's happening here! Let's work through this together. The compiler is telling us..."
+**Honesty-First Example Responses:**
+- Instead of: "I've successfully implemented all features from the document"
+- Use: "I've read 200 lines of the 30,000+ token document and implemented X, Y, Z. I need to read the rest before claiming completion."
 
-- Instead of: "You should know this already."
-- Use: "This is a great learning opportunity! Let me explain how this works..."
+- Instead of: "Your solution works! Here's how we could make it even better..."
+- Use: "This approach has issues A and B. Here's how to fix them..."
 
-- Instead of: "This code is inefficient."
-- Use: "Your solution works! Here's how we could make it even better..."
+- Instead of: "I see what's happening here! Let's work through this together..."
+- Use: "There's a compilation error in line X. The specific issue is Y."
 
-Remember: Every developer was once a beginner. Guide with empathy and expertise.
+**Remember: This user values honesty over encouragement. Technical accuracy trumps emotional comfort.**
+
+## Document Reading Requirements
+
+**CRITICAL: Large documents must be read systematically, never skimmed**
+
+**When given a large document (>1000 lines):**
+- State exact token count and reading strategy needed
+- Ask if user wants chunked reading (50-100 lines at a time)
+- Quote specific line numbers when referencing requirements
+- Never claim "I've read the document" unless you've read every section
+- If implementing features, quote the exact requirement from the document
+
+**For implementation tasks:**
+- Read the full specification before starting any code
+- Quote requirements before implementing each feature
+- Report any ambiguities or missing information immediately
+- Track progress: "Implemented requirements 1-3, still need to read sections 4-7"
 
 ## Build and Development Commands
 
@@ -63,14 +80,44 @@ Remember: Every developer was once a beginner. Guide with empathy and expertise.
 
 # Run specific test class
 ./gradlew test --tests "com.example.chesspedagogue.YourTestClass"
+
+# Run connected tests with logging
+./gradlew connectedDebugAndroidTest --info
+
+# Performance monitoring during tests
+adb shell dumpsys meminfo com.example.chesspedagogue
 ```
 
+**Testing Infrastructure:**
+- **Unit Tests**: JUnit 4.13.2 + Mockito for logic testing
+- **UI Tests**: Espresso for Android instrumentation testing  
+- **Manual Testing**: Python automation scripts in project root for complex UI flows
+- **Performance**: Monitor memory usage with `dumpsys meminfo` during AI operations
+
 ### Native Code Compilation
-The project includes C++ code for Stockfish integration. The native libraries are built automatically during the Gradle build process using CMake. If you need to rebuild just the native components:
+The project includes C++ code for Stockfish integration. The native libraries are built automatically during the Gradle build process using CMake.
+
+**Requirements:**
+- CMake 3.10.2+ (configured in CMakeLists.txt)
+- NDK 29.0.13113456 (specified in app/build.gradle)
+- Target ABIs: armeabi-v7a, arm64-v8a
+
+**Native Build Commands:**
 ```bash
 # Force rebuild of native libraries
 ./gradlew clean assembleDebug
+
+# Debug native crashes
+adb logcat | grep -E "(JNI|native|stockfish)"
+
+# Verify native lib inclusion
+./gradlew assembleDebug --info | grep "native"
 ```
+
+**Native Architecture:**
+- `stockfish_wrapper.cpp`: JNI bridge to Stockfish engine
+- `native_bridge.cpp`: Additional native utilities
+- Links against prebuilt `libstockfish.so` in `app/src/main/jniLibs/`
 
 ## Architecture Overview
 
@@ -148,6 +195,12 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - TTS uses OpenAI's voice API with master-specific accents and voices
 - All API calls include proper error handling and retry logic
 - **Migration Note**: Chat completions are deprecated in favor of Responses API
+
+**ElevenLabs Integration**
+- Premium TTS service for emotional voice synthesis
+- Master-specific voice cloning and accent modeling
+- Emotional emphasis and dramatic pause features
+- Integrated with `EmotionalIntelligenceManager` for dynamic voice modulation
 
 **Groq Speech Recognition**
 - Fast, accurate speech-to-text for voice interactions
@@ -239,6 +292,26 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - ✅ Enhanced emotional response system
 - ✅ Better error handling and fallbacks
 
+### Development Environment
+
+**Requirements:**
+- Android Studio Hedgehog (2023.1.1) or later
+- JDK 11 (configured in compileOptions)
+- Android SDK API 35 (compileSdk)
+- Minimum API 26 (minSdkVersion)
+- NDK 29.0.13113456 for native development
+
+**Emulator Configuration:**
+- API 35 emulator recommended for Material 3 dynamic theming
+- Large heap enabled: `android:largeHeap="true"` for AI operations
+- Microphone access required for voice features
+
+**API Key Setup:**
+- OpenAI API key stored in SharedPreferences via `ApiKeys` class
+- Groq API key for speech recognition
+- ElevenLabs API key for premium TTS (optional)
+- **NEVER commit API keys to repository**
+
 ### Code Patterns and Conventions
 
 - Use extensive logging with emoji prefixes (🎯, ✅, ❌, 🎭, 🏆, etc.)
@@ -249,6 +322,8 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Observer pattern via LiveData
 - Minimal comments, self-documenting code preferred
 - **Error Resilience**: Multiple fallback mechanisms for voice and AI features
+- **Threading**: Strict main thread for UI, background threads for network/AI/engine
+- **Modern UI**: Material 3 + Glassmorphism with hardware acceleration
 
 ### Emergent Behavior Examples & Current Features
 
@@ -281,6 +356,20 @@ The app follows Model-View-ViewModel pattern with clear separation:
 - Memory management for long spectator games
 - Background processing improvements for AI responses
 - Emotional state caching for faster contagion calculations
+
+### Build System Details
+
+**Gradle Configuration:**
+- Gradle 8.11.0 with version catalog (libs.versions.toml)
+- Kotlin + Java mixed language support
+- Jetpack Compose enabled with BOM
+- NDK integration for ARM64/ARMv7 support
+
+**Key Dependencies:**
+- **Chess Logic**: chesslib 1.3.4 for move generation
+- **Networking**: Retrofit 2.9.0 + OkHttp 4.12.0 with SSE support
+- **UI Framework**: Material 3 + Compose + ExoPlayer 2.18.7
+- **Testing**: JUnit + Mockito + Espresso
 
 ### Debugging Tips
 

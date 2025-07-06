@@ -1356,6 +1356,10 @@ public class GameViewModel extends AndroidViewModel {
             String newFen = gameRepository.getCurrentFEN();
             currentFEN.setValue(newFen);
 
+            // CRITICAL FIX: Trigger AI move capture detection by parsing move coordinates
+            // AI moves need capture detection since they don't trigger animation observer
+            triggerAIMoveCapture(move);
+
             // Create a defensive copy to trigger LiveData
             List<String> updatedHistory = new ArrayList<>(history);
             moveHistory.setValue(updatedHistory);
@@ -1412,6 +1416,58 @@ public class GameViewModel extends AndroidViewModel {
             // Handle error - fall back to standard engine
             Log.e(TAG, "❌ Failed to apply move, using standard engine");
             requestStandardEngineMove();
+        }
+    }
+
+    /**
+     * 🎯 Trigger capture detection for AI moves (since they don't use animation observer)
+     * Parses algebraic notation moves and triggers capture events if needed
+     */
+    private void triggerAIMoveCapture(String move) {
+        try {
+            // Parse move to get coordinates
+            if (move != null && move.length() >= 4) {
+                Log.d(TAG, "🤖 AI move capture check: " + move);
+                
+                // Trigger animation event for capture detection in Activity
+                // Use same format as player moves: [fromRow, fromCol, toRow, toCol]
+                int[] moveCoords = parseAlgebraicMove(move);
+                if (moveCoords != null) {
+                    _animateMoveEvent.setValue(moveCoords);
+                    Log.d(TAG, "🤖 AI move animation event triggered for capture detection");
+                } else {
+                    Log.w(TAG, "⚠️ Could not parse AI move coordinates for: " + move);
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error triggering AI move capture detection for: " + move, e);
+        }
+    }
+
+    /**
+     * 🎯 Parse algebraic notation move to coordinates array
+     */
+    private int[] parseAlgebraicMove(String move) {
+        try {
+            if (move.length() < 4) return null;
+            
+            // Extract source and destination squares
+            String fromSquare = move.substring(0, 2);
+            String toSquare = move.substring(move.length() - 2);
+            
+            // Convert to coordinates (a1 = 7,0, h8 = 0,7)
+            int fromCol = fromSquare.charAt(0) - 'a';
+            int fromRow = 8 - (fromSquare.charAt(1) - '0');
+            int toCol = toSquare.charAt(0) - 'a';
+            int toRow = 8 - (toSquare.charAt(1) - '0');
+            
+            Log.d(TAG, "🤖 Parsed move " + move + ": " + fromRow + "," + fromCol + " → " + toRow + "," + toCol);
+            
+            return new int[]{fromRow, fromCol, toRow, toCol};
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error parsing move: " + move, e);
+            return null;
         }
     }
 

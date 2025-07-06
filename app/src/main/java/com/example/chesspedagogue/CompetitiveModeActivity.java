@@ -1,5 +1,6 @@
 package com.example.chesspedagogue;
 
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -40,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.List;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.example.chesspedagogue.repository.GameRepository;
+import com.example.chesspedagogue.ui.CapturedPiecesManager;
 
 /**
  * 🏆 COMPETITIVE MODE - Face legendary chess masters with full emotional intelligence!
@@ -97,6 +99,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     
     // 🧠 PHASE 3: ADAPTIVE EMOTIONAL LEARNING INTEGRATION
     private AdaptiveConversationStrategyManager adaptiveManager;
+    
+    // 📦 CAPTURED PIECES MANAGEMENT
+    private CapturedPiecesManager capturedPiecesManager;
     private String currentConversationId;
     
     // 🎲 PERSONALITY ENGINE & GAME INTELLIGENCE
@@ -615,10 +620,12 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Initialize voice status indicator
             initializeVoiceStatusIndicator();
             
-            // Apply TRUE glassmorphism effects per BUILDING-A-MODERN-CHESS-APP-UI.md
-            applyTrueGlassmorphismEffects();
+            // Initialize captured pieces manager
+            initializeCapturedPiecesManager();
+            
+            // Note: Glassmorphism effects applied later after all systems initialized
 
-            Log.d(TAG, "✅ Views initialized with glassmorphism effects");
+            Log.d(TAG, "✅ Views initialized (glassmorphism effects applied after system init)");
             return true;
             
         } catch (Exception e) {
@@ -685,6 +692,32 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
+     * 📦 Initialize captured pieces manager for tracking captured pieces
+     */
+    private void initializeCapturedPiecesManager() {
+        try {
+            Log.d(TAG, "📦 Initializing captured pieces manager...");
+            
+            // Initialize with the captured pieces tray container
+            View capturedPiecesTray = findViewById(R.id.capturedPiecesTrayBottom);
+            if (capturedPiecesTray != null) {
+                capturedPiecesManager = new CapturedPiecesManager(this, (android.view.ViewGroup) capturedPiecesTray);
+            } else {
+                // Fallback to main content view
+                capturedPiecesManager = new CapturedPiecesManager(this, findViewById(android.R.id.content));
+                Log.w(TAG, "⚠️ capturedPiecesTrayBottom not found, using fallback container");
+            }
+            
+            // Captured pieces will be added dynamically as game progresses
+            // capturedPiecesManager.addTestCapturedPieces(); // Disabled - pieces added on capture
+            
+            Log.d(TAG, "✅ Captured pieces manager initialized");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize captured pieces manager", e);
+        }
+    }
+    
+    /**
      * 🎨 Apply Modern 2025 Glassmorphism Effects - CLEAN IMPLEMENTATION
      * Based on latest Android 15 best practices and BUILDING-A-MODERN-CHESS-APP-UI.md
      * Uses 18% opacity, 20px blur as specified
@@ -700,14 +733,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Get all major UI panels
             View headerPanel = findViewById(R.id.playerHeaderPanel);
             View moveListPanel = findViewById(R.id.moveListPanel);
-            View capturedPiecesPanel = findViewById(R.id.capturedPiecesTrayTop);
+            // capturedPiecesTrayTop removed - now using capturedPiecesTrayBottom
             View capturedBottomPanel = findViewById(R.id.capturedPiecesTrayBottom);
             View controlButtonsContainer = findViewById(R.id.controlButtonsPanel);
             
             Log.d(TAG, "🔍 Found panels: header=" + (headerPanel != null) + 
                       ", moveList=" + (moveListPanel != null) + 
                       ", controls=" + (controlButtonsContainer != null) + 
-                      ", captured=" + (capturedPiecesPanel != null));
+                      ", captured=" + (capturedBottomPanel != null));
             
             // Apply ADVANCED glassmorphism with backdrop blur + radial glow
             if (headerPanel != null) {
@@ -720,10 +753,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 addRadialGlowEffect(moveListPanel, "Move List Panel", 0.25f);
             }
             
-            if (capturedPiecesPanel != null) {
-                applySplashStyleGlassmorphism(capturedPiecesPanel, "Captured Top");
-                addRadialGlowEffect(capturedPiecesPanel, "Captured Top", 0.2f);
-            }
+            // capturedPiecesTrayTop removed - effects now applied to bottom panel only
             
             if (capturedBottomPanel != null) {
                 applySplashStyleGlassmorphism(capturedBottomPanel, "Captured Bottom");
@@ -741,7 +771,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Apply spring-based animations (API 35 features)
             applySpringBasedAnimations();
             
-            Log.d(TAG, "✅ ADVANCED GLASSMORPHISM: Backdrop blur + radial glow + spring animations applied");
+            // 🚀 FUTURISTIC FEATURE: AI Device Reconfiguration Animation
+            startAIDeviceReconfigurationSequence();
+            
+            Log.d(TAG, "✅ ADVANCED GLASSMORPHISM: Backdrop blur + radial glow + spring animations + AI reconfiguration applied");
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to apply o4-mini glassmorphism fix", e);
@@ -788,15 +821,55 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
-     * 🌊 Apply backdrop blur effect (BUILDING-A-MODERN-CHESS-APP-UI.md: 20px RenderEffect blur)
-     * TEMPORARILY DISABLED to fix extremely blurry board issue
+     * 🌊 Apply backdrop blur effect with performance optimization (BUILDING-A-MODERN-CHESS-APP-UI.md)
+     * Smart blur implementation that only applies to static backgrounds, not game content
      */
     private void applyBackdropBlurEffect(View panel, String panelName) {
-        // TEMPORARILY DISABLED: Backdrop blur causing board to be extremely blurry
-        Log.d(TAG, "⚠️ " + panelName + ": Backdrop blur temporarily disabled to fix board clarity");
-        
-        // TODO: Re-implement backdrop blur correctly - should only blur static background, not game board
-        // The issue is that blur is being applied to chess board container, making pieces unreadable
+        try {
+            // Performance check: Only apply blur on high-end devices (API 31+ with sufficient RAM)
+            if (!shouldEnableBlurEffects()) {
+                Log.d(TAG, "⚠️ " + panelName + ": Blur effects disabled for performance on this device");
+                return;
+            }
+            
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                // FIXED: Apply blur to window background only, not chess board
+                try {
+                    getWindow().setBackgroundBlurRadius(15); // Reduced radius for performance
+                    Log.d(TAG, "🌊 " + panelName + ": Applied optimized window background blur");
+                } catch (Exception e) {
+                    Log.w(TAG, "⚠️ " + panelName + ": Window blur not supported on this device");
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error applying backdrop blur for " + panelName + ": " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 📱 Performance check: Determine if device can handle blur effects
+     */
+    private boolean shouldEnableBlurEffects() {
+        try {
+            // Check device capabilities
+            ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+            ActivityManager.MemoryInfo memInfo = new ActivityManager.MemoryInfo();
+            activityManager.getMemoryInfo(memInfo);
+            
+            long totalMemoryMB = memInfo.totalMem / (1024 * 1024);
+            
+            // Enable blur effects on devices with 6GB+ RAM and API 31+
+            boolean hasEnoughRAM = totalMemoryMB >= 6144; // 6GB
+            boolean hasBlurSupport = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S;
+            
+            Log.d(TAG, "📱 Device performance check - RAM: " + totalMemoryMB + "MB, Blur support: " + hasBlurSupport);
+            
+            return hasEnoughRAM && hasBlurSupport;
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error checking device performance", e);
+            return false; // Conservative fallback
+        }
     }
     
     /**
@@ -896,7 +969,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             View[] panels = {
                 findViewById(R.id.playerHeaderPanel),
                 findViewById(R.id.moveListPanel),
-                findViewById(R.id.capturedPiecesTrayTop),
+                // capturedPiecesTrayTop removed
                 findViewById(R.id.capturedPiecesTrayBottom),
                 findViewById(R.id.controlButtonsPanel)
             };
@@ -1051,25 +1124,353 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
-     * 🎯 Detect captured piece by checking board state before animation
+     * 🚀 FUTURISTIC FEATURE: AI Device Reconfiguration Animation Sequence
+     * Panels slide in from different directions at different elevations with precise timing
+     * Creates the effect of a futuristic device assembling itself into a chess interface
+     */
+    private void startAIDeviceReconfigurationSequence() {
+        try {
+            Log.d(TAG, "🚀 Starting AI Device Reconfiguration Sequence...");
+            
+            // Get all panels for animation
+            View headerPanel = findViewById(R.id.playerHeaderPanel);
+            View moveListPanel = findViewById(R.id.moveListPanel);
+            View capturedBottomPanel = findViewById(R.id.capturedPiecesTrayBottom);
+            View controlButtonsContainer = findViewById(R.id.controlButtonsPanel);
+            View chessBoardContainer = findViewById(R.id.chessBoardContainer);
+            
+            // Create chessboard glass overlay for reveal effect
+            createChessboardGlassOverlay();
+            
+            // Position panels off-screen initially
+            setupInitialPanelPositions(headerPanel, moveListPanel, capturedBottomPanel, controlButtonsContainer, chessBoardContainer);
+            
+            // Execute staggered slide-in sequence with precise timing
+            executeDeviceReconfigurationSequence(headerPanel, moveListPanel, capturedBottomPanel, controlButtonsContainer, chessBoardContainer);
+            
+            Log.d(TAG, "✅ AI Device Reconfiguration Sequence initiated");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in AI Device Reconfiguration Sequence", e);
+        }
+    }
+    
+    /**
+     * 🎨 Create opaque blue glass overlay for chessboard reveal effect
+     */
+    private void createChessboardGlassOverlay() {
+        try {
+            View chessBoardContainer = findViewById(R.id.chessBoardContainer);
+            if (chessBoardContainer != null && chessBoardContainer instanceof android.view.ViewGroup) {
+                android.view.ViewGroup container = (android.view.ViewGroup) chessBoardContainer;
+                
+                // Check if glass overlay already exists to prevent duplicates
+                View existingOverlay = container.findViewWithTag("glass_overlay");
+                if (existingOverlay != null) {
+                    Log.d(TAG, "🎨 Glass overlay already exists, skipping creation");
+                    return;
+                }
+                
+                // Create glass overlay view
+                View glassOverlay = new View(this);
+                glassOverlay.setId(View.generateViewId());
+                
+                // Set opaque blue glass appearance (matching your blue-teal theme)
+                android.graphics.drawable.GradientDrawable glassBackground = new android.graphics.drawable.GradientDrawable();
+                glassBackground.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
+                glassBackground.setCornerRadius(24f); // Match document specs
+                glassBackground.setColor(0xFF1565C0); // Deep blue, 100% opacity initially
+                glassOverlay.setBackground(glassBackground);
+                
+                // Position to cover the actual ChessBoardView with matching margins
+                // Layout margins from activity_competitive_mode_modern.xml: start=14dp, top=12dp, end=10dp, bottom=0dp
+                androidx.constraintlayout.widget.ConstraintLayout.LayoutParams params = 
+                    new androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT,
+                        androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
+                    );
+                
+                // Match the exact ChessBoardView positioning constraints
+                params.topToTop = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+                params.bottomToBottom = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+                params.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+                params.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID;
+                
+                // Apply same margins as ChessBoardView to ensure perfect coverage
+                params.setMarginStart((int)(14 * getResources().getDisplayMetrics().density)); // 14dp
+                params.topMargin = (int)(12 * getResources().getDisplayMetrics().density);     // 12dp
+                params.setMarginEnd((int)(10 * getResources().getDisplayMetrics().density));   // 10dp
+                params.bottomMargin = 0; // 0dp
+                glassOverlay.setLayoutParams(params);
+                glassOverlay.setElevation(25f); // Higher elevation to ensure coverage
+                
+                // Add to container
+                container.addView(glassOverlay);
+                
+                // Store reference for later fade animation
+                glassOverlay.setTag("glass_overlay");
+                
+                Log.d(TAG, "🎨 Chessboard glass overlay created with margins (14dp, 12dp, 10dp, 0dp) to match ChessBoardView exactly");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error creating chessboard glass overlay", e);
+        }
+    }
+    
+    /**
+     * 📍 Position all panels off-screen for 3-phase assembly animation
+     * Each panel starts at its slide position (left/right/bottom) ready for assembly
+     */
+    private void setupInitialPanelPositions(View headerPanel, View moveListPanel, View capturedBottomPanel, View controlButtonsContainer, View chessBoardContainer) {
+        
+        Log.d(TAG, "📍 Setting up initial positions for 3-phase assembly...");
+        
+        // Header panel: starts LEFT off-screen (will slide right, hover, drop)
+        if (headerPanel != null) {
+            headerPanel.setTranslationX(-400f);  // Off-screen left
+            headerPanel.setTranslationY(-100f);  // Starting above final position  
+            headerPanel.setElevation(24f);       // Highest elevation
+        }
+        
+        // Captured pieces: starts RIGHT off-screen (alternating direction)
+        if (capturedBottomPanel != null) {
+            capturedBottomPanel.setTranslationX(400f);   // Off-screen right
+            capturedBottomPanel.setTranslationY(-80f);   // Starting above final position
+            capturedBottomPanel.setElevation(20f);       // High elevation
+        }
+        
+        // Move list: starts LEFT off-screen (different from header position)
+        if (moveListPanel != null) {
+            moveListPanel.setTranslationX(-350f);  // Off-screen left (different distance)
+            moveListPanel.setTranslationY(-60f);   // Starting above final position
+            moveListPanel.setElevation(16f);       // Medium elevation
+        }
+        
+        // Control buttons: starts RIGHT off-screen (alternating)
+        if (controlButtonsContainer != null) {
+            controlButtonsContainer.setTranslationX(450f);   // Off-screen right
+            controlButtonsContainer.setTranslationY(-120f);  // Starting above final position
+            controlButtonsContainer.setElevation(12f);       // Lower elevation
+        }
+        
+        // Chessboard: starts BOTTOM (foundation, special case - no drop animation)
+        if (chessBoardContainer != null) {
+            chessBoardContainer.setTranslationX(0f);      // No horizontal offset
+            chessBoardContainer.setTranslationY(300f);    // Slide up from bottom
+            chessBoardContainer.setElevation(8f);         // Foundation elevation
+        }
+        
+        Log.d(TAG, "📍 Assembly positions set: LEFT→RIGHT alternating pattern with hover heights");
+    }
+    
+    /**
+     * ⚡ Execute the precise staggered animation sequence - ENHANCED VERSION
+     * Each panel: slides horizontally → hovers above position → drops into place
+     */
+    private void executeDeviceReconfigurationSequence(View headerPanel, View moveListPanel, View capturedBottomPanel, View controlButtonsContainer, View chessBoardContainer) {
+        // Enhanced sequence timing (in milliseconds) - MUCH SLOWER for visibility
+        int CHESSBOARD_DELAY = 0;      // Foundation first
+        int HEADER_DELAY = 300;        // Command interface (was 50ms)
+        int CAPTURED_DELAY = 600;      // Game state tracking (was 100ms)
+        int MOVELIST_DELAY = 900;      // Analysis panel (was 150ms)
+        int CONTROLS_DELAY = 1200;     // Action interfaces (was 200ms)
+        int GLASS_FADE_DELAY = 2000;   // Board reveal after all panels (was 800ms)
+        
+        // 1. Chessboard (foundation) - Enhanced slide + drop assembly
+        if (chessBoardContainer != null) {
+            executeAssemblyAnimation(chessBoardContainer, CHESSBOARD_DELAY, "CHESSBOARD", 
+                0f, 300f, 0f);  // slides from bottom, drops into place
+        }
+        
+        // 2. Header panel - Slide from LEFT + drop (clearer direction)
+        if (headerPanel != null) {
+            executeAssemblyAnimation(headerPanel, HEADER_DELAY, "HEADER", 
+                -400f, -100f, 0f);  // slides from left, hovers above, drops down
+        }
+        
+        // 3. Captured pieces - Slide from RIGHT + drop (opposite direction)
+        if (capturedBottomPanel != null) {
+            executeAssemblyAnimation(capturedBottomPanel, CAPTURED_DELAY, "CAPTURED", 
+                400f, -80f, 0f);  // slides from right, hovers above, drops down
+        }
+        
+        // 4. Move list - Slide from LEFT + drop (different from header)
+        if (moveListPanel != null) {
+            executeAssemblyAnimation(moveListPanel, MOVELIST_DELAY, "MOVELIST", 
+                -350f, -60f, 0f);  // slides from left, hovers above, drops down
+        }
+        
+        // 5. Control buttons - Slide from RIGHT + drop (opposite direction)
+        if (controlButtonsContainer != null) {
+            executeAssemblyAnimation(controlButtonsContainer, CONTROLS_DELAY, "CONTROLS", 
+                450f, -120f, 0f);  // slides from right, hovers above, drops down
+        }
+        
+        // 6. Chessboard glass overlay fade reveal (after all panels assembled)
+        mainHandler.postDelayed(() -> {
+            startChessboardGlassReveal();
+        }, GLASS_FADE_DELAY);
+        
+        Log.d(TAG, "⚡ Device reconfiguration sequence executing with precision timing");
+    }
+    
+    /**
+     * 🏗️ Execute 3-phase assembly animation: slide → hover → drop into place
+     * Phase 1: Slide horizontally to general area (above final position)
+     * Phase 2: Brief hover pause (mechanical precision)  
+     * Phase 3: Drop down slowly into final position (assembly placement)
+     */
+    private void executeAssemblyAnimation(View panel, int startDelay, String panelName, 
+                                        float slideStartX, float hoverY, float finalY) {
+        
+        if (panel == null) return;
+        
+        // PHASE 1: Slide horizontally to general area (with Y offset for hover)
+        mainHandler.postDelayed(() -> {
+            Log.d(TAG, "🏗️ " + panelName + " Phase 1: Sliding to assembly position");
+            
+            panel.animate()
+                .translationX(0f)           // Slide to horizontal position  
+                .translationY(hoverY)       // Move to hover height above final position
+                .setDuration(800)           // Slower slide for visibility
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(1.5f))
+                .withEndAction(() -> {
+                    
+                    // PHASE 2: Brief hover pause (mechanical precision)
+                    mainHandler.postDelayed(() -> {
+                        Log.d(TAG, "🏗️ " + panelName + " Phase 2: Hovering above target position");
+                        
+                        // PHASE 3: Drop down slowly into final position
+                        mainHandler.postDelayed(() -> {
+                            Log.d(TAG, "🏗️ " + panelName + " Phase 3: Dropping into final position");
+                            
+                            panel.animate()
+                                .translationY(finalY)      // Drop to final position
+                                .setDuration(600)          // Slow, precise drop
+                                .setInterpolator(new android.view.animation.DecelerateInterpolator(2.0f))
+                                .withEndAction(() -> {
+                                    Log.d(TAG, "✅ " + panelName + " assembly complete!");
+                                })
+                                .start();
+                                
+                        }, 200);  // Brief pause before drop
+                        
+                    }, 150);  // Hover duration
+                    
+                })
+                .start();
+                
+        }, startDelay);
+    }
+    
+    /**
+     * 🎭 Fade the glass overlay to reveal the chessboard underneath
+     */
+    private void startChessboardGlassReveal() {
+        try {
+            View chessBoardContainer = findViewById(R.id.chessBoardContainer);
+            if (chessBoardContainer instanceof android.view.ViewGroup) {
+                android.view.ViewGroup container = (android.view.ViewGroup) chessBoardContainer;
+                
+                // Find the glass overlay
+                View glassOverlay = container.findViewWithTag("glass_overlay");
+                if (glassOverlay != null) {
+                    // Check if already revealing to prevent duplicate animations
+                    if (glassOverlay.getAlpha() < 1.0f) {
+                        Log.d(TAG, "🎭 Glass overlay already revealing, skipping duplicate");
+                        return;
+                    }
+                    
+                    Log.d(TAG, "🎭 Starting chessboard glass reveal sequence");
+                    
+                    // Fade opacity: 100% → 70% → 40% → 10% → 0%
+                    glassOverlay.animate()
+                        .alpha(0f)
+                        .setDuration(1000)
+                        .setInterpolator(new android.view.animation.DecelerateInterpolator(1.5f))
+                        .withEndAction(() -> {
+                            // Remove overlay after fade completes
+                            container.removeView(glassOverlay);
+                            Log.d(TAG, "✅ Chessboard revealed - AI device reconfiguration complete!");
+                        })
+                        .start();
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error in chessboard glass reveal", e);
+        }
+    }
+    
+    /**
+     * 🎯 Store the previous board state to detect captures properly
+     */
+    private String previousBoardFEN = null;
+    private String lastKnownFEN = null;
+    
+    /**
+     * 🎯 Detect captured piece by comparing board states before and after move
      */
     private char detectCapturedPiece(int toRow, int toCol) {
         try {
-            if (chessBoardView != null) {
-                // Get the piece at the destination square (this will be the captured piece)
-                char pieceAtDestination = chessBoardView.getPieceAt(toRow, toCol);
+            if (chessBoardView != null && previousBoardFEN != null) {
+                Log.d(TAG, "🔍 Capture detection: Checking destination " + toRow + "," + toCol + " (chess: " + (char)('a'+toCol) + (8-toRow) + ")");
+                Log.d(TAG, "🔍 Previous FEN: " + previousBoardFEN.substring(0, Math.min(50, previousBoardFEN.length())) + "...");
                 
-                // If there's a piece there, it will be captured
-                if (pieceAtDestination != ' ') {
-                    Log.d(TAG, "🎯 Capture detection: Found piece '" + pieceAtDestination + "' at " + toRow + "," + toCol);
-                    return pieceAtDestination;
+                // Parse the previous FEN to get piece at destination square
+                char capturedPiece = getPieceFromFEN(previousBoardFEN, toRow, toCol);
+                
+                if (capturedPiece != ' ') {
+                    Log.d(TAG, "🎯 Capture detection: Found piece '" + capturedPiece + "' at " + toRow + "," + toCol + " in previous position");
+                    return capturedPiece;
+                } else {
+                    Log.d(TAG, "🔍 Capture detection: No piece found at destination - this is a normal move");
                 }
+            } else {
+                Log.d(TAG, "🔍 Capture detection: No previous FEN available (first move?)");
             }
             return ' '; // No capture
         } catch (Exception e) {
             Log.e(TAG, "❌ Error detecting captured piece", e);
             return ' ';
         }
+    }
+    
+    /**
+     * 🎯 Extract piece at specific position from FEN string
+     * Note: FEN ranks go from 8 (top) to 1 (bottom), but our array indices are 0-7
+     */
+    private char getPieceFromFEN(String fen, int row, int col) {
+        try {
+            String boardPart = fen.split(" ")[0]; // Get just the board part
+            String[] ranks = boardPart.split("/");
+            
+            if (row >= 0 && row < 8 && col >= 0 && col < 8) {
+                // Convert board row (0-7) to FEN rank index (0=rank8, 7=rank1)
+                String rank = ranks[row];
+                int fileIndex = 0;
+                
+                for (char c : rank.toCharArray()) {
+                    if (Character.isDigit(c)) {
+                        int emptySquares = Character.getNumericValue(c);
+                        if (col >= fileIndex && col < fileIndex + emptySquares) {
+                            return ' '; // Empty square
+                        }
+                        fileIndex += emptySquares;
+                    } else {
+                        if (fileIndex == col) {
+                            Log.d(TAG, "🔍 FEN parser: Found piece '" + c + "' at row=" + row + " col=" + col + " (rank=" + (8-row) + " file=" + (char)('a'+col) + ")");
+                            return c; // Found the piece
+                        }
+                        fileIndex++;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error parsing FEN for capture detection", e);
+        }
+        
+        Log.d(TAG, "🔍 FEN parser: No piece found at row=" + row + " col=" + col);
+        return ' '; // Empty or error
     }
     
     // Store previous evaluation for move quality detection
@@ -1173,7 +1574,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             View[] panels = {
                 findViewById(R.id.playerHeaderPanel),
                 findViewById(R.id.moveListPanel),
-                findViewById(R.id.capturedPiecesTrayTop),
+                // capturedPiecesTrayTop removed
                 findViewById(R.id.controlButtonsPanel)
             };
             
@@ -1505,11 +1906,21 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             Log.d(TAG, "👀 Setting up observers...");
             
-            // Chess board observers (EXACT PATTERN FROM MAIN GAME)
-            gameViewModel.getCurrentFEN().observe(this, fen -> {
-                if (fen != null && chessBoardView != null) {
-                    chessBoardView.updateBoardFromFen(fen);
-                    Log.d(TAG, "🎯 Board updated with FEN: " + fen);
+            // Chess board observers (CRITICAL FIX: Use direct FEN tracking instead of chessBoardView.getCurrentFEN())
+            gameViewModel.getCurrentFEN().observe(this, newFen -> {
+                if (newFen != null && chessBoardView != null) {
+                    // CRITICAL FIX: Store the last known FEN as previous before updating
+                    if (lastKnownFEN != null && !lastKnownFEN.equals(newFen)) {
+                        previousBoardFEN = lastKnownFEN;
+                        Log.d(TAG, "🔍 Stored previous FEN: " + previousBoardFEN.substring(0, Math.min(50, previousBoardFEN.length())) + "...");
+                    } else if (lastKnownFEN == null) {
+                        Log.d(TAG, "🔍 First FEN received - no previous FEN to store");
+                    }
+                    
+                    // Update the board and track this FEN as the new "last known"
+                    chessBoardView.updateBoardFromFen(newFen);
+                    lastKnownFEN = newFen;
+                    Log.d(TAG, "🎯 Board updated with FEN: " + newFen.substring(0, Math.min(50, newFen.length())) + "...");
                 }
             });
 
@@ -1521,11 +1932,28 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                     int toRow = moveCoords[2];
                     int toCol = moveCoords[3];
                     
+                    Log.d(TAG, "🎬 Animation observer: Move from " + fromRow + "," + fromCol + " to " + toRow + "," + toCol + 
+                          " (chess: " + (char)('a'+fromCol) + (8-fromRow) + " to " + (char)('a'+toCol) + (8-toRow) + ")");
+                    
                     // CAPTURE DETECTION: Check if there was a piece at destination before the move
                     char capturedPiece = detectCapturedPiece(toRow, toCol);
                     
                     if (capturedPiece != ' ') {
                         Log.d(TAG, "🎯 CAPTURE DETECTED! Piece '" + capturedPiece + "' captured at " + toRow + "," + toCol);
+                        
+                        // Add captured piece to the captured pieces manager
+                        if (capturedPiecesManager != null) {
+                            String pieceType = getPieceTypeFromChar(capturedPiece);
+                            boolean isWhitePiece = Character.isUpperCase(capturedPiece);
+                            // FIXED: Corrected container assignment - white pieces go LEFT, black pieces go RIGHT
+                            String containerSide = isWhitePiece ? "LEFT (blackCaptured)" : "RIGHT (whiteCaptured)";
+                            Log.d(TAG, "📦 Adding " + pieceType + " (white: " + isWhitePiece + ") to " + containerSide + " container");
+                            capturedPiecesManager.addCapturedPiece(pieceType, isWhitePiece);
+                            Log.d(TAG, "✅ Captured piece added successfully");
+                        } else {
+                            Log.w(TAG, "⚠️ CapturedPiecesManager is null - cannot add captured piece");
+                        }
+                        
                         chessBoardView.animateCaptureWithPhysics(fromRow, fromCol, toRow, toCol, capturedPiece);
                     } else {
                         // Regular move animation
@@ -2794,9 +3222,17 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      */
     private void speakMasterDialogue(String dialogue) {
         try {
-            // Check if TTS is enabled
+            // Check if TTS is enabled (FORCE ENABLED for testing)
             SharedPreferences prefs = getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE);
             boolean ttsEnabled = prefs.getBoolean("tts_enabled", true);
+            
+            // FORCE ENABLE TTS FOR TESTING
+            if (!ttsEnabled) {
+                Log.d(TAG, "🔧 FORCE ENABLING TTS for testing - was disabled");
+                prefs.edit().putBoolean("tts_enabled", true).apply();
+                ttsEnabled = true;
+                updateTTSButtonState();
+            }
             
             if (!ttsEnabled) {
                 Log.d(TAG, "🔇 TTS disabled - skipping speech: " + dialogue);
@@ -2805,27 +3241,55 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             
             Log.d(TAG, "🗣️ Speaking master dialogue: " + dialogue);
             
+            // Enhanced debugging for TTS system
+            Log.d(TAG, "🔍 TTS DEBUG - Selected master: " + selectedMaster);
+            Log.d(TAG, "🔍 TTS DEBUG - Dialogue length: " + dialogue.length() + " chars");
+            
             // Use the proper TTS pattern from main game
             OpenAITTSService tts = TTSServiceManager.getOpenAITTSService(this);
+            Log.d(TAG, "🔍 TTS DEBUG - Service available: " + (tts != null));
+            
+            // CRITICAL FIX: Ensure ElevenLabs is enabled and API key is set
+            try {
+                // Force enable ElevenLabs TTS
+                TTSServiceManager.setUseElevenLabs(this, true);
+                Log.d(TAG, "🎤 Forced ElevenLabs TTS enabled");
+                
+                ElevenLabsTTSService elevenLabsService = TTSServiceManager.getElevenLabsTTSService(this);
+                if (elevenLabsService != null && !elevenLabsService.hasApiKey()) {
+                    Log.d(TAG, "🔧 Setting ElevenLabs API key from ApiKeys.java");
+                    elevenLabsService.setApiKey(ApiKeys.ELEVENLABS_API_KEY);
+                    Log.d(TAG, "✅ ElevenLabs API key configured successfully");
+                } else if (elevenLabsService != null) {
+                    Log.d(TAG, "✅ ElevenLabs API key already configured");
+                } else {
+                    Log.e(TAG, "❌ Could not initialize ElevenLabs service");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Error setting ElevenLabs API key", e);
+            }
+            
             if (tts != null) {
                 // Set master-specific voice settings
                 TTSServiceManager.setUsageContext(this, "competitive_mode");
+                Log.d(TAG, "🔍 TTS DEBUG - Context set to competitive_mode");
                 
                 // Set the current master for voice selection
                 FineTunedModelManager.getInstance(this).setSelectedChessMaster(selectedMaster);
+                Log.d(TAG, "🔍 TTS DEBUG - Master set in FineTunedModelManager");
                 
                 // Speak with master-specific voice
                 TTSServiceManager.speakWithSpecificMaster(this, selectedMaster, dialogue, 
                     new OpenAITTSService.OnSpeechCompletedListener() {
                         @Override
                         public void onSpeechCompleted() {
-                            Log.d(TAG, "🗣️ Master dialogue speech completed");
+                            Log.d(TAG, "🗣️ Master dialogue speech completed successfully");
                         }
                     });
                     
                 Log.d(TAG, "✅ TTS request sent for master: " + selectedMaster);
             } else {
-                Log.w(TAG, "⚠️ TTS service not available");
+                Log.e(TAG, "❌ TTS service not available - check ElevenLabs API key and TTSServiceManager initialization");
             }
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to speak master dialogue", e);
@@ -3201,7 +3665,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 
                 if (ttsEnabled) {
                     ttsToggleButton.setText("🔊 TTS");
-                    ttsToggleButton.setBackgroundTintList(getColorStateList(android.R.color.holo_green_dark));
+                    // 🟡 YELLOW: Signifies TTS is fixed and working with ElevenLabs
+                    ttsToggleButton.setBackgroundTintList(getColorStateList(android.R.color.holo_orange_light));
                 } else {
                     ttsToggleButton.setText("🔇 TTS");
                     ttsToggleButton.setBackgroundTintList(getColorStateList(android.R.color.holo_red_dark));
@@ -3839,7 +4304,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Apply to all glass panels with perfect opacity ratios (15-25%)
             CardView playerHeaderPanel = findViewById(R.id.playerHeaderPanel);
             CardView moveListPanel = findViewById(R.id.moveListPanel);
-            CardView capturedPiecesTrayTop = findViewById(R.id.capturedPiecesTrayTop);
+            // CardView capturedPiecesTrayTop removed
             CardView capturedPiecesTrayBottom = findViewById(R.id.capturedPiecesTrayBottom);
             CardView controlButtonsPanel = findViewById(R.id.controlButtonsPanel);
             CardView masterDialogueCard = findViewById(R.id.masterDialogueCard);
@@ -3861,12 +4326,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 Log.d(TAG, "✨ Applied blur to move list panel with hardware acceleration");
             }
             
-            if (capturedPiecesTrayTop != null) {
-                capturedPiecesTrayTop.setRenderEffect(blurEffect);
-                capturedPiecesTrayTop.setAlpha(0.85f);
-                capturedPiecesTrayTop.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-                addGlowingEdgeEffect(capturedPiecesTrayTop);
-            }
+            // capturedPiecesTrayTop removed - effects now applied to bottom panel only
             if (capturedPiecesTrayBottom != null) {
                 capturedPiecesTrayBottom.setRenderEffect(blurEffect);
                 capturedPiecesTrayBottom.setAlpha(0.85f);
@@ -4033,9 +4493,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 Log.d(TAG, "🎨 Material 3 colors: primary=" + Integer.toHexString(primaryColor) + 
                           ", surface=" + Integer.toHexString(surfaceColor));
                 
-                // Apply to window for system UI
+                // Apply to window for system UI - TRANSPARENT NAVIGATION BAR
                 getWindow().setStatusBarColor(surfaceColor);
-                getWindow().setNavigationBarColor(surfaceColor);
+                getWindow().setNavigationBarColor(android.graphics.Color.TRANSPARENT);
             }
             
             Log.d(TAG, "✅ Material 3 + Material You dynamic theming applied");
@@ -4195,10 +4655,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         Log.d(TAG, "💥 Triggering spectacular capture effect from " + fromRow + "," + fromCol + " to captured pieces panel...");
         
         try {
-            // Get captured pieces panel location as target
-            View capturedPiecesTrayTop = findViewById(R.id.capturedPiecesTrayTop);
+            // Get captured pieces panel location as target (now using bottom panel only)
             View capturedPiecesTrayBottom = findViewById(R.id.capturedPiecesTrayBottom);
-            if (capturedPiecesTrayTop == null && capturedPiecesTrayBottom == null) {
+            if (capturedPiecesTrayBottom == null) {
                 Log.w(TAG, "⚠️ Captured pieces panel not found, using random trajectory");
                 triggerSpectacularCaptureEffectFallback(pieceView);
                 return;
@@ -4206,14 +4665,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             
             // Calculate target location (captured pieces panel)
             int[] capturedPanelLocation = new int[2];
-            // Use top tray for animation reference
-            capturedPiecesTrayTop.getLocationOnScreen(capturedPanelLocation);
+            // Use bottom tray for animation reference
+            capturedPiecesTrayBottom.getLocationOnScreen(capturedPanelLocation);
             
             int[] pieceLocation = new int[2];
             pieceView.getLocationOnScreen(pieceLocation);
             
-            float targetX = capturedPanelLocation[0] - pieceLocation[0] + capturedPiecesTrayTop.getWidth() / 2f;
-            float targetY = capturedPanelLocation[1] - pieceLocation[1] + capturedPiecesTrayTop.getHeight() / 2f;
+            float targetX = capturedPanelLocation[0] - pieceLocation[0] + capturedPiecesTrayBottom.getWidth() / 2f;
+            float targetY = capturedPanelLocation[1] - pieceLocation[1] + capturedPiecesTrayBottom.getHeight() / 2f;
             
             Log.d(TAG, "🎯 Animating piece to captured pieces panel: targetX=" + targetX + ", targetY=" + targetY);
             
@@ -4313,10 +4772,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     /*
     private void flashCapturedPiecesPanel() {
         try {
-            View capturedPiecesTrayTop = findViewById(R.id.capturedPiecesTrayTop);
+            // Use bottom captured pieces panel only (top panel removed)
             View capturedPiecesTrayBottom = findViewById(R.id.capturedPiecesTrayBottom);
-            if (capturedPiecesTrayTop != null) {
-                ObjectAnimator flashAnimator = ObjectAnimator.ofFloat(capturedPiecesTrayTop, "alpha", 1f, 0.5f, 1f);
+            if (capturedPiecesTrayBottom != null) {
+                ObjectAnimator flashAnimator = ObjectAnimator.ofFloat(capturedPiecesTrayBottom, "alpha", 1f, 0.5f, 1f);
                 flashAnimator.setDuration(300);
                 flashAnimator.start();
                 Log.d(TAG, "✨ Captured pieces panel flashed");
@@ -4508,8 +4967,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private void enhanceCapturedPieceTrays(int accent) {
         try {
             // Find captured piece containers and add accent highlights
-            View whiteCaptured = findViewById(R.id.whiteCapturedContainer);
-            View blackCaptured = findViewById(R.id.blackCapturedContainer);
+            View whiteCaptured = findViewById(R.id.whiteCapturedCompactContainer);
+            View blackCaptured = findViewById(R.id.blackCapturedCompactContainer);
             
             if (whiteCaptured != null) {
                 addSubtleAccentBorder(whiteCaptured, accent);
@@ -4610,6 +5069,24 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             Log.d(TAG, "👆 Gesture interactions framework added");
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to add gesture interactions", e);
+        }
+    }
+    
+    /**
+     * 📦 Convert piece character to piece type string for captured pieces manager
+     */
+    private String getPieceTypeFromChar(char pieceChar) {
+        char piece = Character.toLowerCase(pieceChar);
+        switch (piece) {
+            case 'p': return "pawn";
+            case 'r': return "rook";
+            case 'n': return "knight";
+            case 'b': return "bishop";
+            case 'q': return "queen";
+            case 'k': return "king";
+            default:
+                Log.w(TAG, "⚠️ Unknown piece character: " + pieceChar);
+                return "pawn"; // Default fallback
         }
     }
 }

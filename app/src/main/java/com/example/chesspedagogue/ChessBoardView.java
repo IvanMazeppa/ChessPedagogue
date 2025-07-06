@@ -911,6 +911,12 @@ public class ChessBoardView extends View {
      */
     private void animateCapturedPiecePhysics(int visualRow, int visualCol, char capturedPiece) {
         try {
+            // 🐛 FIX: Prevent multiple capture animations running simultaneously
+            if (capturedPieceBeingAnimated != ' ') {
+                Log.d("ChessBoardView", "⚠️ Capture animation already running, skipping duplicate for piece '" + capturedPiece + "'");
+                return;
+            }
+            
             float startX = visualCol * squareSize + squareSize / 2f;
             float startY = visualRow * squareSize + squareSize / 2f;
             

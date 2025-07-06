@@ -34,10 +34,10 @@ public class EvaluationBarView extends View {
     private Paint blackPaint;
     private Paint borderPaint;
 
-    // Elegant colors that blend with your wood theme
+    // Elegant colors that blend with your modern blue/purple/teal theme
     private static final int WHITE_COLOR = Color.parseColor("#F5F5DC"); // Cream
-    private static final int BLACK_COLOR = Color.parseColor("#2F2F2F");  // Dark charcoal
-    private static final int BORDER_COLOR = Color.parseColor("#8B4513"); // Saddle brown
+    private static final int BLACK_COLOR = Color.parseColor("#2E4A6B");  // Deep blue-teal to match theme
+    private static final int BORDER_COLOR = Color.parseColor("#506080"); // Teal-blue border
 
     public EvaluationBarView(Context context) {
         super(context);
@@ -141,7 +141,7 @@ public class EvaluationBarView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         // Lock in the width - never changes, prevents layout shifts
-        int width = (int) (18 * getResources().getDisplayMetrics().density); // Fixed 18dp
+        int width = (int) (9 * getResources().getDisplayMetrics().density); // Fixed 9dp (half width)
 
         // Use the height exactly as provided by ConstraintLayout - no modifications
         int height = MeasureSpec.getSize(heightMeasureSpec);

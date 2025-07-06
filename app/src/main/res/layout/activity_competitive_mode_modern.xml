@@ -6,20 +6,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_deep_blue_purple_gradient"
-    android:fitsSystemWindows="true"
-    tools:context=".ModernCompetitiveModeActivity">
+    android:fitsSystemWindows="false"
+    android:clipToPadding="false"
+    tools:context=".CompetitiveModeActivity">
 
-    <!-- Enhanced Player Header with Country Info -->
+    <!-- Enhanced Player Header with Country Info - Raised to cover status bar -->
     <androidx.cardview.widget.CardView
         android:id="@+id/playerHeaderPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp"
+        android:layout_marginEnd="0dp"
+        android:paddingTop="24dp"
         android:background="@drawable/glass_panel_glow"
         app:cardBackgroundColor="@android:color/transparent"
-        app:cardCornerRadius="16dp"
+        app:cardCornerRadius="0dp"
         app:cardElevation="20dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -198,40 +200,15 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Captured Pieces Tray - TOP (White captured pieces) -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/capturedPiecesTrayTop"
-        android:layout_width="0dp"
-        android:layout_height="36dp"
-        android:layout_marginStart="0dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="2dp"
-        app:cardBackgroundColor="#1A506080"
-        app:cardCornerRadius="0dp"
-        app:cardElevation="0dp"
-        android:background="@drawable/glass_panel_adaptive_glow"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playerHeaderPanel">
 
-        <LinearLayout
-            android:id="@+id/whiteCapturedContainer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="8dp" />
-
-    </androidx.cardview.widget.CardView>
-
-    <!-- Captured Pieces Tray - BOTTOM (Black captured pieces) -->
+    <!-- Captured Pieces Tray - BOTTOM (Full width with equal split) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/capturedPiecesTrayBottom"
         android:layout_width="0dp"
         android:layout_height="36dp"
-        android:layout_marginStart="0dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginBottom="2dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="1dp"
         app:cardBackgroundColor="#1A506080"
         app:cardCornerRadius="0dp"
         app:cardElevation="0dp"
@@ -240,68 +217,118 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
+        <!-- Captured Pieces Display: Compact format p(5) N B(2) R Q K for each side -->
         <LinearLayout
-            android:id="@+id/blackCapturedContainer"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:padding="8dp" />
+            android:padding="4dp">
+
+            <!-- Black Captured Pieces (Left Side) -->
+
+            <!-- Center Divider -->
+            <LinearLayout
+                android:id="@+id/blackCapturedCompactContainer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="start|center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="4dp">
+
+                <!-- Black pieces will be added dynamically: ♟(5) ♞ ♝(2) ♜ ♛ ♚ -->
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/whiteCapturedCompactContainer"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="end|center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="8dp">
+
+                <!-- White pieces will be added dynamically: ♙(5) ♘ ♗(2) ♖ ♕ ♔ -->
+
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="20dp"
+                android:background="#33FFFFFF"
+                android:alpha="0.6" />
+
+            <!-- White Captured Pieces (Right Side) -->
+
+        </LinearLayout>
 
     </androidx.cardview.widget.CardView>
 
-    <!-- EVAL BAR - Integrated into board edge for maximum space -->
+    <!-- EVAL BAR - Precisely aligned with board height -->
     <com.example.chesspedagogue.EvaluationBarView
         android:id="@+id/competitiveEvaluationBarView"
-        android:layout_width="4dp"
+        android:layout_width="2dp"
         android:layout_height="0dp"
         android:layout_marginStart="0dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="12dp"
         android:elevation="14dp"
         android:alpha="0.8"
-        app:layout_constraintBottom_toBottomOf="@+id/chessBoardContainer"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/chessBoardContainer" />
-
-    <!-- Chess Board Container - ABSOLUTE EDGE-TO-EDGE -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/chessBoardContainer"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_marginStart="0dp"
-        android:layout_marginTop="2dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginBottom="2dp"
         app:layout_constraintBottom_toTopOf="@+id/capturedPiecesTrayBottom"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/capturedPiecesTrayTop">
+        app:layout_constraintTop_toBottomOf="@+id/playerHeaderPanel" />
 
-        <!-- Chess Board - ABSOLUTE MAXIMUM SIZE (edge-to-edge width) -->
+    <!-- Chess Board Container - SEPARATE from evaluation bar -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/chessBoardContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginBottom="1dp"
+        app:layout_constraintBottom_toTopOf="@+id/capturedPiecesTrayBottom"
+        app:layout_constraintDimensionRatio="1:1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/playerHeaderPanel">
+
+        <!-- Chess Board - MAXIMIZED SIZE to cover background and align with bars -->
         <com.example.chesspedagogue.ChessBoardView
             android:id="@+id/competitiveChessBoardView"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_margin="0dp"
+            android:layout_marginStart="14dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="10dp"
+            android:layout_marginBottom="0dp"
             android:elevation="12dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Coordinate overlays on the board edges for maximum space efficiency -->
+        <!-- Coordinate overlays positioned to align with adjusted board -->
 
-        <!-- File Labels (a-h) - VISIBLE on top edge of chess board -->
+        <!-- File Labels (a-h) - PRECISELY ALIGNED with board -->
         <LinearLayout
             android:layout_width="0dp"
-            android:layout_height="24dp"
+            android:layout_height="12dp"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="10dp"
             android:orientation="horizontal"
-            android:background="#CC000000"
-            android:alpha="1.0"
+            android:background="#99000000"
+            android:alpha="0.9"
             android:elevation="20dp"
-            app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView"
-            app:layout_constraintEnd_toEndOf="@+id/competitiveChessBoardView"
-            app:layout_constraintStart_toStartOf="@+id/competitiveChessBoardView">
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
 
             <TextView
                 android:layout_width="0dp"
@@ -310,7 +337,7 @@
                 android:gravity="center"
                 android:text="a"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -320,7 +347,7 @@
                 android:gravity="center"
                 android:text="b"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -330,7 +357,7 @@
                 android:gravity="center"
                 android:text="c"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -340,7 +367,7 @@
                 android:gravity="center"
                 android:text="d"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -350,7 +377,7 @@
                 android:gravity="center"
                 android:text="e"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -360,7 +387,7 @@
                 android:gravity="center"
                 android:text="f"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -370,7 +397,7 @@
                 android:gravity="center"
                 android:text="g"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -380,22 +407,24 @@
                 android:gravity="center"
                 android:text="h"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
-        <!-- Rank Labels (1-8) - VISIBLE on right edge of chess board -->
+        <!-- Rank Labels (1-8) - FURTHER REDUCED WIDTH for better board visibility -->
         <LinearLayout
-            android:layout_width="28dp"
+            android:layout_width="10dp"
             android:layout_height="0dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="0dp"
             android:orientation="vertical"
-            android:background="#CC000000"
-            android:alpha="1.0"
+            android:background="#99000000"
+            android:alpha="0.9"
             android:elevation="20dp"
-            app:layout_constraintBottom_toBottomOf="@+id/competitiveChessBoardView"
-            app:layout_constraintEnd_toEndOf="@+id/competitiveChessBoardView"
-            app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView">
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
                 android:layout_width="match_parent"
@@ -404,7 +433,7 @@
                 android:gravity="center"
                 android:text="8"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -414,7 +443,7 @@
                 android:gravity="center"
                 android:text="7"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -424,7 +453,7 @@
                 android:gravity="center"
                 android:text="6"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -434,7 +463,7 @@
                 android:gravity="center"
                 android:text="5"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -444,7 +473,7 @@
                 android:gravity="center"
                 android:text="4"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -454,7 +483,7 @@
                 android:gravity="center"
                 android:text="3"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -464,7 +493,7 @@
                 android:gravity="center"
                 android:text="2"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -474,7 +503,7 @@
                 android:gravity="center"
                 android:text="1"
                 android:textColor="#FFFFFF"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold" />
 
         </LinearLayout>
@@ -525,14 +554,14 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Perfect 50/50 Bottom Section Container -->
+    <!-- Perfect 50/50 Bottom Section Container - MOVED UP to avoid Android OS controls -->
     <LinearLayout
         android:id="@+id/bottomSectionContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="60dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -543,127 +572,257 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="1dp"
             android:orientation="vertical">
 
             <!-- 2x4 Control Buttons Panel (8 Total Buttons) -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/controlButtonsPanel"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="200dp"
                 android:background="@drawable/glass_panel_exact"
                 app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="8dp">
 
-                <GridLayout
+                <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:padding="8dp"
-                    android:rowCount="4">
+                    android:layout_height="match_parent"
+                    android:orientation="vertical"
+                    android:padding="4dp">
 
                     <!-- Row 1: Pause & TTS -->
-                    <Button
-                        android:id="@+id/pauseButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Pause"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="3dp">
 
-                    <Button
-                        android:id="@+id/ttsToggleButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="TTS"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/pauseButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="PAUSE"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/ttsToggleButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="🎵 TTS"
+                                android:textColor="@android:color/holo_orange_light"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
 
                     <!-- Row 2: AI & Voice -->
-                    <Button
-                        android:id="@+id/difficultyToggleButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="AI"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="3dp">
 
-                    <Button
-                        android:id="@+id/voiceCommentButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="A/V"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/difficultyToggleButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="A.I."
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/voiceCommentButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="A/V"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
 
                     <!-- Row 3: Norm & Design -->
-                    <Button
-                        android:id="@+id/personalityToggleButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Norm"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="3dp">
 
-                    <Button
-                        android:id="@+id/voiceSettingsButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Design"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/personalityToggleButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="NORM"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/voiceSettingsButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="DESIGN"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
 
                     <!-- Row 4: More & Surrender -->
-                    <Button
-                        android:id="@+id/competitiveValidateButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="More"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:orientation="horizontal">
 
-                    <Button
-                        android:id="@+id/surrenderButton"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_columnWeight="1"
-                        android:layout_margin="3dp"
-                        android:background="@drawable/glass_button_exact"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="Surrender"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp" />
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
 
-                </GridLayout>
+                            <Button
+                                android:id="@+id/competitiveValidateButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="MORE"
+                                android:textColor="@android:color/white"
+                                android:textSize="11sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                        <androidx.cardview.widget.CardView
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:layout_marginStart="2dp"
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="8dp"
+                            app:cardBackgroundColor="@android:color/transparent"
+                            android:background="@drawable/glass_button_exact">
+
+                            <Button
+                                android:id="@+id/surrenderButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@android:color/transparent"
+                                android:gravity="center"
+                                android:fontFamily="sans-serif-medium"
+                                android:text="SURRENDER"
+                                android:textColor="@android:color/white"
+                                android:textSize="9sp"
+                                android:textStyle="bold" />
+
+                        </androidx.cardview.widget.CardView>
+
+                    </LinearLayout>
+
+                </LinearLayout>
 
             </androidx.cardview.widget.CardView>
 
@@ -673,10 +832,9 @@
         <androidx.cardview.widget.CardView
             android:id="@+id/moveListPanel"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="200dp"
+            android:layout_marginStart="1dp"
             android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:minHeight="200dp"
             android:background="@drawable/glass_panel_exact"
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
@@ -702,6 +860,7 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
 
+
                 <!-- Move List Content with MAXIMUM AVAILABLE SPACE -->
                 <ScrollView
                     android:id="@+id/moveListScrollView"
@@ -717,10 +876,10 @@
                         android:layout_marginBottom="3dp"
                         android:alpha="0.9"
                         android:fontFamily="sans-serif"
+                        android:padding="8dp"
                         android:text="Game will begin..."
                         android:textColor="@color/glass_text_secondary"
-                        android:textSize="14sp"
-                        android:padding="8dp" />
+                        android:textSize="10sp" />
 
                 </ScrollView>
 
@@ -775,7 +934,7 @@
                     android:fontFamily="sans-serif-black"
                     android:text="AI Speech Recognition"
                     android:textColor="@android:color/white"
-                    android:textSize="14sp"
+                    android:textSize="10sp"
                     android:textStyle="bold" />
 
                 <ImageView
@@ -902,7 +1061,7 @@
                 android:minHeight="60dp"
                 android:text="Master dialogue appears here..."
                 android:textColor="@color/glass_text_secondary"
-                android:textSize="14sp" />
+                android:textSize="10sp" />
 
             <!-- Game Result Text -->
             <TextView
@@ -913,7 +1072,7 @@
                 android:fontFamily="sans-serif-medium"
                 android:text=""
                 android:textColor="@color/glass_accent"
-                android:textSize="14sp"
+                android:textSize="10sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
 

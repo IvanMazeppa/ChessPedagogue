@@ -1299,7 +1299,7 @@ public class PersonalityEngine {
                 return "SecondaryModelDBs/nakamura_full_positions.json";
             case "short":
             case "nigel":
-                return "SecondaryModelDBs/short_full_positions.json";
+                return "short_full_positions.json";
             default:
                 // Fallback to old naming convention
                 return masterName.toLowerCase() + "_positions.json";

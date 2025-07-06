@@ -390,46 +390,122 @@ public class Modern2025SplashActivity extends AppCompatActivity {
      * Start entrance animations
      */
     private void startEntranceAnimations() {
-        // Staggered entrance animations
-        animateViewEntrance(heroCard, 0);
-        animateViewEntrance(configurationPanel, 150);
-        animateViewEntrance(startGameButton, 300);
-        animateViewEntrance(competitiveModeButton, 400);
+        // EXAGGERATED entrance animations from different angles
+        animateViewEntranceFromTop(heroCard, 0);
+        animateViewEntranceFromLeft(configurationPanel, 200);
+        animateViewEntranceFromRight(startGameButton, 400);
+        animateViewEntranceFromBottom(competitiveModeButton, 600);
         
         // Icon glow animation
         if (appIconGlow != null) {
             startIconGlowAnimation();
         }
+        
+        Log.d(TAG, "🎬 Exaggerated entrance animations started with different angles");
     }
     
     /**
-     * Animate view entrance with spring physics
+     * 🎬 EXAGGERATED: Animate view entrance from TOP with dramatic effect
      */
-    private void animateViewEntrance(View view, long delay) {
+    private void animateViewEntranceFromTop(View view, long delay) {
         if (view == null) return;
         
-        // Start from scaled down and transparent
-        view.setScaleX(0.8f);
-        view.setScaleY(0.8f);
+        // Start FAR above screen, scaled down and transparent
+        view.setTranslationY(-800f);
+        view.setScaleX(0.3f);
+        view.setScaleY(0.3f);
         view.setAlpha(0f);
+        view.setRotation(-15f);
         
         animationHandler.postDelayed(() -> {
-            // Spring to normal size and full opacity
-            SpringAnimation scaleXAnim = new SpringAnimation(view, SpringAnimation.SCALE_X, 1.0f);
-            SpringAnimation scaleYAnim = new SpringAnimation(view, SpringAnimation.SCALE_Y, 1.0f);
-            
-            scaleXAnim.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM)
-                     .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
-            scaleYAnim.getSpring().setStiffness(SpringForce.STIFFNESS_MEDIUM)
-                     .setDampingRatio(SpringForce.DAMPING_RATIO_LOW_BOUNCY);
-            
-            // Fade in
-            view.animate().alpha(1f).setDuration(500)
-                .setInterpolator(new AccelerateDecelerateInterpolator()).start();
-            
-            scaleXAnim.start();
-            scaleYAnim.start();
-            
+            // Quick motion then STRONG deceleration
+            view.animate()
+                .translationY(0f)
+                .scaleX(1.0f)
+                .scaleY(1.0f)
+                .alpha(1f)
+                .rotation(0f)
+                .setDuration(800)
+                .setInterpolator(new OvershootInterpolator(2.0f))
+                .start();
+        }, delay);
+    }
+    
+    /**
+     * 🎬 EXAGGERATED: Animate view entrance from LEFT with dramatic effect  
+     */
+    private void animateViewEntranceFromLeft(View view, long delay) {
+        if (view == null) return;
+        
+        // Start FAR left, scaled and rotated
+        view.setTranslationX(-1200f);
+        view.setScaleX(0.2f);
+        view.setScaleY(0.2f);
+        view.setAlpha(0f);
+        view.setRotation(45f);
+        
+        animationHandler.postDelayed(() -> {
+            view.animate()
+                .translationX(0f)
+                .scaleX(1.0f)
+                .scaleY(1.0f)
+                .alpha(1f)
+                .rotation(0f)
+                .setDuration(900)
+                .setInterpolator(new OvershootInterpolator(1.8f))
+                .start();
+        }, delay);
+    }
+    
+    /**
+     * 🎬 EXAGGERATED: Animate view entrance from RIGHT with dramatic effect
+     */
+    private void animateViewEntranceFromRight(View view, long delay) {
+        if (view == null) return;
+        
+        // Start FAR right, scaled and rotated
+        view.setTranslationX(1200f);
+        view.setScaleX(0.2f);
+        view.setScaleY(0.2f);
+        view.setAlpha(0f);
+        view.setRotation(-45f);
+        
+        animationHandler.postDelayed(() -> {
+            view.animate()
+                .translationX(0f)
+                .scaleX(1.0f)
+                .scaleY(1.0f)
+                .alpha(1f)
+                .rotation(0f)
+                .setDuration(850)
+                .setInterpolator(new OvershootInterpolator(1.9f))
+                .start();
+        }, delay);
+    }
+    
+    /**
+     * 🎬 EXAGGERATED: Animate view entrance from BOTTOM with dramatic effect
+     */
+    private void animateViewEntranceFromBottom(View view, long delay) {
+        if (view == null) return;
+        
+        // Start FAR below screen, scaled and rotated
+        view.setTranslationY(1000f);
+        view.setScaleX(0.1f);
+        view.setScaleY(0.1f);
+        view.setAlpha(0f);
+        view.setRotation(30f);
+        
+        animationHandler.postDelayed(() -> {
+            view.animate()
+                .translationY(0f)
+                .scaleX(1.0f)
+                .scaleY(1.0f)
+                .alpha(1f)
+                .rotation(0f)
+                .setDuration(750)
+                .setInterpolator(new OvershootInterpolator(2.2f))
+                .start();
         }, delay);
     }
     

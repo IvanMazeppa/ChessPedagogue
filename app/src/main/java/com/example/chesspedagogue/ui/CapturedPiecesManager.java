@@ -20,7 +20,7 @@ public class CapturedPiecesManager {
     private static final String TAG = "CapturedPiecesManager";
     
     // Display constants optimized for S23 Ultra screen
-    private static final int CAPTURED_PIECE_SIZE_DP = 24; // Smaller than board pieces
+    private static final int CAPTURED_PIECE_SIZE_DP = 34; // Slightly bigger for better visibility (was 24dp)
     private static final int PIECE_SPACING_DP = 4;
     private static final float CAPTURED_PIECE_ALPHA = 0.8f;
     
@@ -74,8 +74,8 @@ public class CapturedPiecesManager {
         Log.d(TAG, "🏗️ Finding captured pieces containers from layout");
         
         // Find existing containers from layout
-        whiteCapturedContainer = parentContainer.findViewById(com.example.chesspedagogue.R.id.whiteCapturedContainer);
-        blackCapturedContainer = parentContainer.findViewById(com.example.chesspedagogue.R.id.blackCapturedContainer);
+        whiteCapturedContainer = parentContainer.findViewById(com.example.chesspedagogue.R.id.whiteCapturedCompactContainer);
+        blackCapturedContainer = parentContainer.findViewById(com.example.chesspedagogue.R.id.blackCapturedCompactContainer);
         
         if (whiteCapturedContainer == null || blackCapturedContainer == null) {
             Log.w(TAG, "⚠️ Layout containers not found, creating fallback containers");
@@ -130,7 +130,10 @@ public class CapturedPiecesManager {
         CapturedPiece capturedPiece = new CapturedPiece(pieceType, isWhitePiece, capturedPieceView);
         
         // Add to appropriate container and list
-        LinearLayout targetContainer = isWhitePiece ? whiteCapturedContainer : blackCapturedContainer;
+        // FIXED: Correct container assignment per Phase II document
+        // LEFT container (blackCapturedContainer) → Shows WHITE pieces captured BY black player
+        // RIGHT container (whiteCapturedContainer) → Shows BLACK pieces captured BY white player
+        LinearLayout targetContainer = isWhitePiece ? blackCapturedContainer : whiteCapturedContainer;
         List<CapturedPiece> targetList = isWhitePiece ? whiteCapturedPieces : blackCapturedPieces;
         
         // Add to list and update compact display
@@ -163,7 +166,10 @@ public class CapturedPiecesManager {
         CapturedPiece capturedPiece = new CapturedPiece(pieceType, isWhitePiece, capturedPieceView);
         
         // Add to appropriate container and list
-        LinearLayout targetContainer = isWhitePiece ? whiteCapturedContainer : blackCapturedContainer;
+        // FIXED: Correct container assignment per Phase II document
+        // LEFT container (blackCapturedContainer) → Shows WHITE pieces captured BY black player
+        // RIGHT container (whiteCapturedContainer) → Shows BLACK pieces captured BY white player
+        LinearLayout targetContainer = isWhitePiece ? blackCapturedContainer : whiteCapturedContainer;
         List<CapturedPiece> targetList = isWhitePiece ? whiteCapturedPieces : blackCapturedPieces;
         
         // Add with entrance animation
@@ -406,20 +412,25 @@ public class CapturedPiecesManager {
      * Add test captured pieces for demonstration
      */
     public void addTestCapturedPieces() {
-        Log.d(TAG, "🧪 Adding test captured pieces for demonstration");
+        Log.d(TAG, "🧪 Adding test captured pieces for demonstration - showing FULL FORMAT");
         
-        // Add some white pieces captured by black
-        addCapturedPiece("pawn", true);
-        addCapturedPiece("knight", true);
-        addCapturedPiece("pawn", true);
+        // Add complete set of white pieces to show proper format: p(8) N(2) B(2) R(2) Q K
+        for (int i = 0; i < 8; i++) addCapturedPiece("pawn", true);       // 8 pawns
+        for (int i = 0; i < 2; i++) addCapturedPiece("knight", true);     // 2 knights  
+        for (int i = 0; i < 2; i++) addCapturedPiece("bishop", true);     // 2 bishops
+        for (int i = 0; i < 2; i++) addCapturedPiece("rook", true);       // 2 rooks
+        addCapturedPiece("queen", true);                                   // 1 queen
+        addCapturedPiece("king", true);                                    // 1 king
         
-        // Add some black pieces captured by white  
-        addCapturedPiece("pawn", false);
-        addCapturedPiece("bishop", false);
-        addCapturedPiece("pawn", false);
-        addCapturedPiece("rook", false);
+        // Add complete set of black pieces to show proper format: p(8) N(2) B(2) R(2) Q K
+        for (int i = 0; i < 8; i++) addCapturedPiece("pawn", false);      // 8 pawns
+        for (int i = 0; i < 2; i++) addCapturedPiece("knight", false);    // 2 knights
+        for (int i = 0; i < 2; i++) addCapturedPiece("bishop", false);    // 2 bishops  
+        for (int i = 0; i < 2; i++) addCapturedPiece("rook", false);      // 2 rooks
+        addCapturedPiece("queen", false);                                  // 1 queen
+        addCapturedPiece("king", false);                                   // 1 king
         
-        Log.d(TAG, "✅ Test captured pieces added");
+        Log.d(TAG, "✅ Complete piece sets added - format: p(8) N(2) B(2) R(2) Q K for each side");
     }
     
     /**
@@ -445,7 +456,7 @@ public class CapturedPiecesManager {
         
         container.addView(pieceIcon);
         
-        // Count multiplier (only show if count > 1)
+        // Count multiplier (only show if count > 1) - format: "2x K"
         if (count > 1) {
             TextView countText = new TextView(context);
             countText.setText(count + "x");
@@ -458,10 +469,13 @@ public class CapturedPiecesManager {
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             );
-            textParams.setMargins(0, 0, 4, 0);
+            textParams.setMargins(2, 0, 4, 0); // Small margin before the piece icon
             countText.setLayoutParams(textParams);
             
+            // Add count BEFORE the piece icon for "2x K" format
+            container.removeView(pieceIcon);
             container.addView(countText);
+            container.addView(pieceIcon);
         }
         
         return container;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Material Components Theme with Material 3 Colors for Android 15/16 -->
+    <!-- Material 3 Theme with Dynamic Color (Material You) for Android 15/16 -->
     <style name="Theme.ChessPedagogue" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Material 3 Primary Colors -->
         <item name="colorPrimary">@color/md_theme_light_primary</item>
