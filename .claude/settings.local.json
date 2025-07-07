@@ -86,7 +86,8 @@
       "Bash(nc:*)",
       "Bash(unset:*)",
       "Bash(./apache-maven-3.9.5/bin/mvn compile)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(true)"
     ],
     "deny": []
   },

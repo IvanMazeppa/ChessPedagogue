@@ -11,6 +11,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioGroup;
+import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,6 +34,11 @@ public class SettingsActivity extends AppCompatActivity {
 
         // Get references to UI components
         Switch premiumVoiceSwitch = findViewById(R.id.switch_premium_voice);
+        Switch neonChessboardSwitch = findViewById(R.id.switch_neon_chessboard);
+        Switch neonPulsingSwitch = findViewById(R.id.switch_neon_pulsing);
+        Spinner neonThemeSpinner = findViewById(R.id.spinner_neon_theme);
+        SeekBar neonIntensitySeekBar = findViewById(R.id.seekbar_neon_intensity);
+        TextView intensityValueText = findViewById(R.id.text_intensity_value);
         RadioGroup voiceGroup = findViewById(R.id.radio_group_voice);
         RadioGroup modelGroup = findViewById(R.id.radio_group_model);
         // Load saved preferences
@@ -40,6 +47,29 @@ public class SettingsActivity extends AppCompatActivity {
         // Set initial state from preferences
         //boolean usePremiumVoice = prefs.getBoolean("use_premium_voice", true);
         //premiumVoiceSwitch.setChecked(usePremiumVoice);
+
+        // Set up neon chessboard switch
+        boolean neonModeEnabled = prefs.getBoolean("neon_mode_enabled", false);
+        neonChessboardSwitch.setChecked(neonModeEnabled);
+
+        // Set up neon pulsing switch  
+        boolean neonPulsingEnabled = prefs.getBoolean("neon_pulsing_enabled", false);
+        neonPulsingSwitch.setChecked(neonPulsingEnabled);
+
+        // Set up neon intensity slider
+        int neonIntensity = prefs.getInt("neon_glow_intensity", 80);
+        neonIntensitySeekBar.setProgress(neonIntensity);
+        intensityValueText.setText("Intensity: " + neonIntensity + "%");
+
+        // Set up neon theme spinner
+        String currentTheme = prefs.getString("neon_color_theme", "electric_blue_green");
+        String[] themeValues = getResources().getStringArray(R.array.neon_theme_values);
+        for (int i = 0; i < themeValues.length; i++) {
+            if (themeValues[i].equals(currentTheme)) {
+                neonThemeSpinner.setSelection(i);
+                break;
+            }
+        }
 
         // Set up voice selection
         String voicePersona = prefs.getString("voice_persona", OpenAITTSService.VOICE_GRANDMASTER);
@@ -119,6 +149,60 @@ public class SettingsActivity extends AppCompatActivity {
             }
 
             Toast.makeText(this, "Voice set to: " + selectedVoice, Toast.LENGTH_SHORT).show();
+        });
+
+        // Neon chessboard switch listener
+        neonChessboardSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            // Save the setting using NeonSettingsManager
+            com.example.chesspedagogue.ui.rendering.NeonSettingsManager.setNeonModeEnabled(this, isChecked);
+
+            // Provide feedback to user
+            String message = isChecked ? "Neon chessboard enabled" : "Neon chessboard disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+
+        // Neon pulsing switch listener
+        neonPulsingSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            com.example.chesspedagogue.ui.rendering.NeonSettingsManager.setPulsingEnabled(this, isChecked);
+            String message = isChecked ? "Pulsing animation enabled" : "Pulsing animation disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+
+        // Neon intensity slider listener
+        neonIntensitySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    intensityValueText.setText("Intensity: " + progress + "%");
+                    // Save to preferences
+                    float intensity = progress / 100.0f;
+                    com.example.chesspedagogue.ui.rendering.NeonSettingsManager.setNeonIntensity(SettingsActivity.this, intensity);
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Toast.makeText(SettingsActivity.this, "Glow intensity updated", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Neon theme spinner listener
+        neonThemeSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String[] themeValues = getResources().getStringArray(R.array.neon_theme_values);
+                String selectedTheme = themeValues[position];
+                com.example.chesspedagogue.ui.rendering.NeonSettingsManager.setColorTheme(SettingsActivity.this, selectedTheme);
+                
+                String[] themeNames = getResources().getStringArray(R.array.neon_theme_entries);
+                Toast.makeText(SettingsActivity.this, "Theme: " + themeNames[position], Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
         });
 
         // Premium voice switch listener

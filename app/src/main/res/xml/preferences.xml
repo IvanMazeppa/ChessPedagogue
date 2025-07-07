@@ -31,4 +31,36 @@
             android:summary="Enable voice output for the coach"
             android:defaultValue="true"/>
     </PreferenceCategory>
+
+    <PreferenceCategory android:title="Visual Effects">
+        <SwitchPreference
+            android:key="neon_mode_enabled"
+            android:title="Neon Chessboard"
+            android:summary="Enable futuristic neon glow effects on the chessboard"
+            android:defaultValue="false"/>
+
+        <SeekBarPreference
+            android:key="neon_glow_intensity"
+            android:title="Neon Glow Intensity"
+            android:summary="Adjust the brightness of neon effects"
+            android:dependency="neon_mode_enabled"
+            android:defaultValue="80"
+            android:max="100"/>
+
+        <SwitchPreference
+            android:key="neon_pulsing_enabled"
+            android:title="Neon Pulsing"
+            android:summary="Enable rhythmic pulsing of neon effects"
+            android:dependency="neon_mode_enabled"
+            android:defaultValue="false"/>
+
+        <ListPreference
+            android:key="neon_color_theme"
+            android:title="Neon Color Theme"
+            android:summary="Choose color scheme for neon effects"
+            android:dependency="neon_mode_enabled"
+            android:entries="@array/neon_theme_entries"
+            android:entryValues="@array/neon_theme_values"
+            android:defaultValue="electric_blue_green"/>
+    </PreferenceCategory>
 </PreferenceScreen>

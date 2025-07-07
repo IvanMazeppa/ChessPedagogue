@@ -28,4 +28,29 @@
         <item>gpt-3.5-turbo</item>
         <item>gpt-4</item>
     </string-array>
+
+    <!-- Neon color themes for visual effects -->
+    <string-array name="neon_theme_entries">
+        <item>Electric Blue &amp; Green (Default)</item>
+        <item>Cyberpunk Pink &amp; Purple</item>
+        <item>Arctic Blue &amp; White</item>
+        <item>Fire Orange &amp; Red</item>
+        <item>Matrix Green &amp; Lime</item>
+        <item>Royal Purple &amp; Gold</item>
+        <item>Teal &amp; Silver</item>
+        <item>Sunset Amber</item>
+        <item>Neon Rainbow</item>
+    </string-array>
+
+    <string-array name="neon_theme_values">
+        <item>electric_blue_green</item>
+        <item>cyberpunk_pink_purple</item>
+        <item>arctic_blue_white</item>
+        <item>fire_orange_red</item>
+        <item>matrix_green_lime</item>
+        <item>purple_gold</item>
+        <item>teal_silver</item>
+        <item>sunset_amber</item>
+        <item>neon_rainbow</item>
+    </string-array>
 </resources>

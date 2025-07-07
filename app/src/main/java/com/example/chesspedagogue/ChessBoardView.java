@@ -21,6 +21,9 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 
 import androidx.core.content.ContextCompat;
 
+import com.example.chesspedagogue.ui.rendering.NeonChessboardRenderer;
+import com.example.chesspedagogue.ui.rendering.NeonSettingsManager;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -76,6 +79,9 @@ public class ChessBoardView extends View {
     private boolean sizeInitialized = false;
     private int lastMeasuredWidth = -1;
     private int lastMeasuredHeight = -1;
+    
+    // 🌈 NEON RENDERING: Modular neon effects renderer
+    private NeonChessboardRenderer neonRenderer;
 
     /* ───── ctor ───── */
     public ChessBoardView(Context c) {
@@ -99,6 +105,9 @@ public class ChessBoardView extends View {
         darkPaint.setColor(0xFF5D7C9A); // Deep blue-grey that complements the gradient
         darkPaint.setStyle(Paint.Style.FILL);
 
+        // 🌈 Initialize neon renderer
+        neonRenderer = new NeonChessboardRenderer();
+        
         // Keep all your other paint setups the same
         float dp = getResources().getDisplayMetrics().density;
         selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -211,11 +220,11 @@ public class ChessBoardView extends View {
         
         int pad = squareSize / 16;
 
-        /* 1) squares - Using pre-allocated RectF */
+        /* 1) squares - Enhanced with neon effects */
         for (int r = 0; r < 8; r++) {
             for (int c = 0; c < 8; c++) {
                 int br = flipped ? 7 - r : r, bc = flipped ? 7 - c : c;
-                Paint p = ((br + bc) & 1) == 0 ? lightPaint : darkPaint;
+                boolean isLightSquare = ((br + bc) & 1) == 0;
                 
                 // Apply sliding puzzle offsets if in puzzle mode
                 float offsetX = 0f, offsetY = 0f;
@@ -224,15 +233,27 @@ public class ChessBoardView extends View {
                     offsetY = squareOffsets[br][bc][1];
                 }
                 
-                // Reuse RectF instead of creating new bounds
-                reusableRectF.set(
-                    c * squareSize + offsetX - 0.5f, 
-                    r * squareSize + offsetY - 0.5f,
-                    c * squareSize + squareSize + offsetX + 0.5f, 
-                    r * squareSize + squareSize + offsetY + 0.5f
-                );
-                canvas.drawRect(reusableRectF, p);
+                // Calculate square bounds
+                float left = c * squareSize + offsetX - 0.5f;
+                float top = r * squareSize + offsetY - 0.5f;
+                float right = c * squareSize + squareSize + offsetX + 0.5f;
+                float bottom = r * squareSize + squareSize + offsetY + 0.5f;
+                
+                // Draw neon square if enabled, otherwise use traditional rendering
+                if (neonRenderer.isNeonModeEnabled()) {
+                    neonRenderer.drawNeonSquare(canvas, left, top, right, bottom, isLightSquare);
+                } else {
+                    // Traditional square rendering
+                    Paint p = isLightSquare ? lightPaint : darkPaint;
+                    reusableRectF.set(left, top, right, bottom);
+                    canvas.drawRect(reusableRectF, p);
+                }
             }
+        }
+        
+        // 🌈 Draw neon grid lines if enabled
+        if (neonRenderer.isNeonModeEnabled()) {
+            neonRenderer.drawNeonGridLines(canvas, 8, squareSize, 0, 0);
         }
 
         /* 1a) last move highlights - Using pre-allocated RectF */
@@ -1373,6 +1394,86 @@ public class ChessBoardView extends View {
      */
     private boolean isInSlidingPuzzleMode() {
         return slidingPuzzleMode;
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════════════
+    // 🌈 NEON EFFECTS API - Modular control for futuristic board rendering
+    // ═══════════════════════════════════════════════════════════════════════════════════
+    
+    /**
+     * Enable or disable neon glow effects on the chessboard.
+     * When enabled, squares will render with electric blue/green glow effects.
+     */
+    public void setNeonModeEnabled(boolean enabled) {
+        if (neonRenderer != null) {
+            neonRenderer.setNeonModeEnabled(enabled);
+            invalidate(); // Trigger redraw
+            Log.d("ChessBoardView", "🌈 Neon mode " + (enabled ? "enabled" : "disabled"));
+        }
+    }
+    
+    /**
+     * Check if neon mode is currently enabled.
+     */
+    public boolean isNeonModeEnabled() {
+        return neonRenderer != null && neonRenderer.isNeonModeEnabled();
+    }
+    
+    /**
+     * Set the intensity of the neon glow effects (0.0 - 1.0).
+     * Higher values create more intense glows.
+     */
+    public void setNeonGlowIntensity(float intensity) {
+        if (neonRenderer != null) {
+            neonRenderer.setGlowIntensity(intensity);
+            if (neonRenderer.isNeonModeEnabled()) {
+                invalidate(); // Only redraw if neon mode is active
+            }
+        }
+    }
+    
+    /**
+     * Enable or disable pulsing animation for neon effects.
+     * When enabled, the glow will pulse rhythmically.
+     */
+    public void setNeonPulsingEnabled(boolean enabled) {
+        if (neonRenderer != null) {
+            neonRenderer.setPulsingEnabled(enabled);
+            if (neonRenderer.isNeonModeEnabled()) {
+                invalidate(); // Trigger redraw
+            }
+        }
+    }
+    
+    /**
+     * Update neon colors for custom theming.
+     * @param lightSquareColor Color for light squares (default: electric blue)
+     * @param darkSquareColor Color for dark squares (default: neon green)  
+     * @param gridColor Color for grid lines (default: soft cyan)
+     */
+    public void setNeonColors(int lightSquareColor, int darkSquareColor, int gridColor) {
+        if (neonRenderer != null) {
+            neonRenderer.updateNeonColors(lightSquareColor, darkSquareColor, gridColor);
+            if (neonRenderer.isNeonModeEnabled()) {
+                invalidate(); // Redraw with new colors
+            }
+        }
+    }
+    
+    /**
+     * Get access to the neon renderer for advanced configuration.
+     * Use with caution - prefer the public API methods above.
+     */
+    public NeonChessboardRenderer getNeonRenderer() {
+        return neonRenderer;
+    }
+    
+    /**
+     * Apply neon settings from SharedPreferences.
+     * Call this method when the view is created or when settings change.
+     */
+    public void applyNeonSettingsFromPreferences() {
+        NeonSettingsManager.applyNeonSettings(getContext(), this);
     }
     
 }

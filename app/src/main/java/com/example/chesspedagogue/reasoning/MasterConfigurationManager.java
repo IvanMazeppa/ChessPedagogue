@@ -136,7 +136,7 @@ public class MasterConfigurationManager {
         MasterConfiguration fischer = new MasterConfiguration.Builder("fischer")
             .reasoningModel("o4-mini")
             .systemInstructions(getFischerInstructions())
-            .vectorStoreId("vs_fischer_games") // TODO: Add actual vector store ID
+            .vectorStoreId("vs_6834a715ef788191bd9ef4caa5676436") // TODO: Add actual vector store ID
             .personalityTraits(new PersonalityTraits()
                 .aggression(0.7f)
                 .calculationDepth(0.95f)
@@ -178,7 +178,7 @@ public class MasterConfigurationManager {
         MasterConfiguration kasparov = new MasterConfiguration.Builder("kasparov")
             .reasoningModel("o4-mini")
             .systemInstructions(getKasparovInstructions())
-            .vectorStoreId("vs_kasparov_games") // TODO: Add actual vector store ID
+            .vectorStoreId("vs_684f1232c8008191977caa8b9fd4e7fe") // TODO: Add actual vector store ID
             .personalityTraits(new PersonalityTraits()
                 .aggression(0.85f)
                 .calculationDepth(0.9f)
@@ -199,7 +199,7 @@ public class MasterConfigurationManager {
         MasterConfiguration karpov = new MasterConfiguration.Builder("karpov")
             .reasoningModel("o4-mini")
             .systemInstructions(getKarpovInstructions())
-            .vectorStoreId("vs_karpov_games") // TODO: Add actual vector store ID
+            .vectorStoreId("vs_6851b7017db88191a2b617ba8b9b49f5") // TODO: Add actual vector store ID
             .personalityTraits(new PersonalityTraits()
                 .aggression(0.4f)
                 .calculationDepth(0.85f)

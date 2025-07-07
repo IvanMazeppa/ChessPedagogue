@@ -598,6 +598,12 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             Log.d(TAG, "🎨 Initializing views...");
             
             chessBoardView = findViewById(R.id.competitiveChessBoardView);
+            
+            // 🌈 Apply neon settings from preferences after finding ChessBoardView
+            if (chessBoardView != null) {
+                chessBoardView.applyNeonSettingsFromPreferences();
+            }
+            
             evaluationBarView = findViewById(R.id.competitiveEvaluationBarView);
             moveHistoryTextView = findViewById(R.id.competitiveMoveHistoryTextView);
             masterDialogueTextView = findViewById(R.id.masterDialogueTextView);
@@ -5310,6 +5316,32 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to open analysis activity", e);
             Toast.makeText(this, "Analysis not available", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════════════════
+    // 🌈 NEON SETTINGS LIFECYCLE MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════════════════
+    
+    @Override
+    protected void onResume() {
+        super.onResume();
+        
+        // Reapply neon settings when returning from settings activity
+        if (chessBoardView != null) {
+            chessBoardView.applyNeonSettingsFromPreferences();
+            Log.d(TAG, "🌈 Reapplied neon settings on resume");
+        }
+    }
+    
+    /**
+     * Method to refresh neon settings when preferences change.
+     * This can be called from settings callbacks or preference change listeners.
+     */
+    public void refreshNeonSettings() {
+        if (chessBoardView != null) {
+            chessBoardView.applyNeonSettingsFromPreferences();
+            Log.d(TAG, "🌈 Refreshed neon settings on demand");
         }
     }
 }

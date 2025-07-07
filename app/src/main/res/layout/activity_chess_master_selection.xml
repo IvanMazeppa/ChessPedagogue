@@ -11,6 +11,8 @@
         style="@style/WoodToolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:background="@color/animation_glow_purple"
+        android:backgroundTint="#4D009688"
         app:title="Choose Your Chess Master"
         app:titleTextColor="@color/cream" />
 
