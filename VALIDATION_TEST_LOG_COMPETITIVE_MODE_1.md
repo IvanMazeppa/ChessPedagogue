@@ -1,955 +1,632 @@
-meRepository instance = NOT NULL
-20:21:48.655                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:21:48.655                                                             🔧 gameRepository class: GameRepository
-20:21:48.655                                                             🔧 Current thread: main
-20:21:48.655 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:21:49.967 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.32 (move=7, alternating=ON, FEN=rnbqkb1r/pp2pppp/2p2)
-20:21:49.968                                                             🔄 ALTERNATING: move=7, flip=true, -0.32→0.32 (diff=0.03)
-20:21:49.968 GameViewModel                                               ✅ Evaluation received: 0.32
-20:21:50.069 CompetitiveModeActivity                                     📊 Evaluation updated: 0.32
-20:21:50.069                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.32, emotionalManager: INITIALIZED
-20:21:50.069                                                             🎯 First emotional evaluation: 0.32 (threshold: 1.5)
-20:21:50.069                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620110s/25s)
-20:21:50.069                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:21:50.735 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:21:50.736 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #6)
-20:21:50.736                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:21:50.736                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): rnbqkb1r/pp2pppp/2p2n2/3p4/2PP4/2N2N2/PP2PPPP...
-20:21:50.736                                                             🎲 Candidate moves for AI analysis: [g7g6]
-20:21:50.736 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:21:50.736                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:21:50.972                                                             📋 Response ID: resp_685857cec0a0819ca0eaa19eed18f3aa0c575b22ef520be4
-20:21:52.440                                                             🏁 Response completed
-20:21:52.441 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+           "g7g6": {"score": 0.0, "reason": "A passive, defensive move—entirely foreig...
+01:47:34.209                                                             🔧 JSON needs fixing: Expected literal value at character 343 of {
                                                                            "move_scores": {
-                                                                             "g7g6": {"score": 0.0, "reason": "Passive and symmetrical. Avoids tension a...
-20:21:52.442                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.95
-20:21:52.442                                                             🎭 AI preferred moves: []
-20:21:52.442                                                             💭 AI reasoning: I seek to unbalance the game from the start, forcing my opponent into unfamiliar territory.
-20:21:52.492 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: g7g6
-20:21:52.848 CompetitiveModeActivity                                     🎯 Board updated with FEN: rnbqkb1r/pp2pp1p/2p2np1/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R w KQkq - 0 5
-20:21:52.852                                                             📜 Move history updated: 8 moves
-20:21:52.852 GameHistoryManager                                          Move added: g7g6
-20:21:52.852 GameViewModel                                               🔍 Requesting position evaluation...
-20:21:52.853                                                             🎭 Updating personality context for move: g7g6
-20:21:52.853                                                             ✨ Personality context updated for move g7g6 - This is revolutionary!
-20:21:52.853                                                             🔍 Checking game end conditions...
-20:21:52.956                                                             ✅ Game continues - no end condition detected
-20:21:53.813 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.57 (move=8, alternating=ON, FEN=rnbqkb1r/pp2pp1p/2p2)
-20:21:53.813                                                             🔄 ALTERNATING: move=8, flip=false, 0.57→0.57 (diff=0.25)
-20:21:53.818 GameViewModel                                               ✅ Evaluation received: 0.57
-20:21:53.921 CompetitiveModeActivity                                     📊 Evaluation updated: 0.57
-20:21:53.921                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.57, emotionalManager: INITIALIZED
-20:21:53.921                                                             🎯 First emotional evaluation: 0.57 (threshold: 1.5)
-20:21:53.921                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620113s/25s)
-20:21:53.921                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:02.178                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=7, col=2
-20:22:02.178                                                             🎯 SQUARE TAPPED: row=7, col=2
-20:22:02.178                                                             📝 Player color: white
-20:22:02.178                                                             🔍 Selected row/col: -1/-1
-20:22:02.535                                                             🎯 Selected piece: B at 7, 2
-20:22:02.868                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=4, col=5
-20:22:02.868                                                             🎯 SQUARE TAPPED: row=4, col=5
-20:22:02.868                                                             📝 Player color: white
-20:22:02.868                                                             🔍 Selected row/col: 7/2
-20:22:02.868                                                             🎯 ATTEMPTING MOVE: c1f4
-20:22:02.868                                                             📝 Player color: white
-20:22:02.868                                                             🔄 Is player's turn: true
-20:22:02.868                                                             🔄 Is white's turn: true
-20:22:02.868                                                             ✅ Turn validation passed, making move: c1f4
-20:22:02.868 GameViewModel                                               🎯 makePlayerMove called with: c1f4
-20:22:02.919                                                             🔍 Validating move: c1f4 (attempt 1)
-20:22:03.021                                                             📋 Current position: rnbqkb1r/pp2pp1p/2p2np1/3p4/2PP4/2N2N2/PP2PPPP/R1BQKB1R w KQkq - 0 5
-20:22:03.072                                                             ⚖️ Move c1f4 legality check: LEGAL
-20:22:03.072                                                             ✅ Executing validated move: c1f4
-20:22:03.274                                                             📍 New position after move: rnbqkb1r/pp2pp1p/2p2np1/3p4/2PP1B2/2N2N2/PP2PPPP/R2QKB1R b KQkq - 1 5
-20:22:03.277 CompetitiveModeActivity                                     🎯 Board updated with FEN: rnbqkb1r/pp2pp1p/2p2np1/3p4/2PP1B2/2N2N2/PP2PPPP/R2QKB1R b KQkq - 1 5
-20:22:03.280                                                             📜 Move history updated: 9 moves
-20:22:03.281 GameHistoryManager                                          Move added: c1f4
-20:22:03.375 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:03.376                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:22:03.376                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:22:03.376                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:22:03.376                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:22:03.376                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:22:03.376                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:22:03.376                                                             🔧 gameRepository class: GameRepository
-20:22:03.376                                                             🔧 Current thread: main
-20:22:03.376 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:22:05.042 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.42 (move=9, alternating=ON, FEN=rnbqkb1r/pp2pp1p/2p2)
-20:22:05.043                                                             🔄 ALTERNATING: move=9, flip=true, -0.42→0.42 (diff=0.15)
-20:22:05.043 GameViewModel                                               ✅ Evaluation received: 0.42
-20:22:05.144 CompetitiveModeActivity                                     📊 Evaluation updated: 0.42
-20:22:05.144                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.42, emotionalManager: INITIALIZED
-20:22:05.144                                                             🎯 First emotional evaluation: 0.42 (threshold: 1.5)
-20:22:05.144                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620125s/25s)
-20:22:05.144                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:05.702 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:22:05.703 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #7)
-20:22:05.703                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:05.703                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): rnbqkb1r/pp2pp1p/2p2np1/3p4/2PP1B2/2N2N2/PP2P...
-20:22:05.703                                                             🎲 Candidate moves for AI analysis: [b8d7]
-20:22:05.703 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:05.703                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:22:05.881                                                             📋 Response ID: resp_685857ddb4e0819fb0b19b63bd0047200ead21fd14099736
-20:22:07.529                                                             🏁 Response completed
-20:22:07.530 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "g7g6": {"score": 0.0, "reason": "A passive, defensive move—entirely foreign to my temperament."},
+                                                                             "d8c7": {"score": 0.0, "reason": "Unambitious and dull, it avoids confrontation and complexity."},
+                                                                             "a7a6": {"score": 0.0, "reason": "A waiting move, lacking imagination or purpose."},
+                                                                             "d7d5": {"score": 0.9, \"reason\": \"Strikes at the center and invites complications—very much in line with my desire for dynamic play.\"},
+                                                                             "d7d6": {"score": 0.4, \"reason\": \"Solid but uninspiring; it limits my own possibilities.\"},
+                                                                             "e7e6": {"score": 0.5, \"reason\": \"A respectable choice, but too symmetrical and quiet for my liking.\"},
+                                                                             "c6d4": {"score": 0.8, \"reason\": \"Exchanges that open the position appeal to me, but I prefer to dictate the terms.\"},
+                                                                             "c5d4": {"score": 0.7, \"reason\": \"Accepting complications, though I would rather initiate them.\"}
+                                                                           },
+                                                                           "top_choice": "d7d5",
+                                                                           "style_reasoning": "I seek to unsettle my opponents from the first moves. d5 challenges the center and invites complex battles—perfect for a player who loves to create and solve puzzles at every turn.",
+                                                                           "confidence": 0.9
+                                                                         }
+01:47:34.211                                                             🔧 Applying quote mismatch fixes
+01:47:34.212                                                             🛠️ JSON fix applied - original length: 1160, fixed length: 1140
+01:47:34.212                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "b8d7": {"score": 0.0, "reason": "Passive development, avoids tension—antit...
-20:22:07.531                                                             🎭 Parsed style evaluation: 0 moves, confidence=1.0
-20:22:07.531                                                             🎭 AI preferred moves: []
-20:22:07.531                                                             💭 AI reasoning: I seek to create chaos and challenge my opponent’s nerves at every turn.
-20:22:07.582 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: b8d7
-20:22:07.943 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/2p2np1/3p4/2PP1B2/2N2N2/PP2PPPP/R2QKB1R w KQkq - 2 6
-20:22:07.948                                                             📜 Move history updated: 10 moves
-20:22:07.948 GameHistoryManager                                          Move added: b8d7
-20:22:07.948 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:07.949                                                             🎭 Updating personality context for move: b8d7
-20:22:07.949                                                             ✨ Personality context updated for move b8d7 - This is revolutionary!
-20:22:07.949                                                             🔍 Checking game end conditions...
-20:22:08.051                                                             ✅ Game continues - no end condition detected
-20:22:08.918 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.78 (move=10, alternating=ON, FEN=r1bqkb1r/pp1npp1p/2p)
-20:22:08.918                                                             🔄 ALTERNATING: move=10, flip=false, 0.78→0.78 (diff=0.36)
-20:22:08.919 GameViewModel                                               ✅ Evaluation received: 0.78
-20:22:09.022 CompetitiveModeActivity                                     📊 Evaluation updated: 0.78
-20:22:09.022                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.78, emotionalManager: INITIALIZED
-20:22:09.022                                                             🎯 First emotional evaluation: 0.78 (threshold: 1.5)
-20:22:09.022                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620129s/25s)
-20:22:09.022                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:41.914                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=4, col=2
-20:22:41.914                                                             🎯 SQUARE TAPPED: row=4, col=2
-20:22:41.914                                                             📝 Player color: white
-20:22:41.914                                                             🔍 Selected row/col: -1/-1
-20:22:42.272                                                             🎯 Selected piece: P at 4, 2
-20:22:42.414                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=3, col=3
-20:22:42.414                                                             🎯 SQUARE TAPPED: row=3, col=3
-20:22:42.414                                                             📝 Player color: white
-20:22:42.414                                                             🔍 Selected row/col: 4/2
-20:22:42.414                                                             ♟️ Promotion check: piece=P, fromRow=4, toRow=3, reaches=false
-20:22:42.414                                                             🎯 ATTEMPTING MOVE: c4d5
-20:22:42.414                                                             📝 Player color: white
-20:22:42.414                                                             🔄 Is player's turn: true
-20:22:42.415                                                             🔄 Is white's turn: true
-20:22:42.415                                                             ✅ Turn validation passed, making move: c4d5
-20:22:42.415 GameViewModel                                               🎯 makePlayerMove called with: c4d5
-20:22:42.416                                                             🔍 Validating move: c4d5 (attempt 1)
-20:22:42.517                                                             📋 Current position: r1bqkb1r/pp1npp1p/2p2np1/3p4/2PP1B2/2N2N2/PP2PPPP/R2QKB1R w KQkq - 2 6
-20:22:42.569                                                             ⚖️ Move c4d5 legality check: LEGAL
-20:22:42.569                                                             ✅ Executing validated move: c4d5
-20:22:42.773                                                             📍 New position after move: r1bqkb1r/pp1npp1p/2p2np1/3P4/3P1B2/2N2N2/PP2PPPP/R2QKB1R b KQkq - 0 6
-20:22:42.776 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/2p2np1/3P4/3P1B2/2N2N2/PP2PPPP/R2QKB1R b KQkq - 0 6
-20:22:42.780                                                             📜 Move history updated: 11 moves
-20:22:42.780 GameHistoryManager                                          Move added: c4d5
-20:22:42.781 Choreographer                                               Skipped 44 frames!  The application may be doing too much work on its main thread.
-20:22:42.875 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:42.875                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:22:42.875                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:22:42.875                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:22:42.875                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:22:42.875                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:22:42.875                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:22:42.875                                                             🔧 gameRepository class: GameRepository
-20:22:42.875                                                             🔧 Current thread: main
-20:22:42.875 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:22:43.784 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.75 (move=11, alternating=ON, FEN=r1bqkb1r/pp1npp1p/2p)
-20:22:43.784                                                             🔄 ALTERNATING: move=11, flip=true, -0.75→0.75 (diff=0.03)
-20:22:43.785 GameViewModel                                               ✅ Evaluation received: 0.75
-20:22:43.886 CompetitiveModeActivity                                     📊 Evaluation updated: 0.75
-20:22:43.886                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.75, emotionalManager: INITIALIZED
-20:22:43.886                                                             🎯 First emotional evaluation: 0.75 (threshold: 1.5)
-20:22:43.886                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620163s/25s)
-20:22:43.886                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:44.646 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:22:44.647 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #8)
-20:22:44.648                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:44.648                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
+                                                                             "g7g6": {"score": 0.0, "reason": "A passive, defensive move—entirely foreig...
+01:47:34.212                                                             🎭 Parsed: 3 moves, conf=0.9
+01:47:34.213                                                             🎭 AI moves: [d7d5, c6d4, c5d4]
+01:47:34.267 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: d7d5
+01:47:34.632 GameHistoryManager                                          Move added: d7d5
+01:47:34.632 GameViewModel                                               🔍 Requesting position evaluation...
+01:47:34.633                                                             🎭 Updating personality context for move: d7d5
+01:47:34.633                                                             ✨ Personality context updated for move d7d5 - This is revolutionary!
+01:47:34.633                                                             🔍 Checking game end conditions...
+01:47:34.736                                                             ✅ Game continues - no end condition detected
+01:47:35.551 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.38 (move=6, alternating=ON, FEN=r1bqkbnr/pp2pppp/2n5)
+01:47:35.551                                                             🔄 ALTERNATING: move=6, flip=false, -0.38→-0.38 (diff=2.30)
+01:47:35.551 GameViewModel                                               ✅ Evaluation received: -0.38
+01:47:45.128                                                             🎯 makePlayerMove called with: e4d5
+01:47:45.178                                                             🔍 Validating move: e4d5 (attempt 1)
+01:47:45.279                                                             📋 Current position: r1bqkbnr/pp2pppp/2n5/2pp4/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4
+01:47:45.331                                                             ⚖️ Move e4d5 legality check: LEGAL
+01:47:45.331                                                             ✅ Executing validated move: e4d5
+01:47:45.533                                                             📍 New position after move: r1bqkbnr/pp2pppp/2n5/2pP4/3P4/5N2/PPP2PPP/RNBQKB1R b KQkq - 0 4
+01:47:45.538 GameHistoryManager                                          Move added: e4d5
+01:47:45.633 GameViewModel                                               🔍 Requesting position evaluation...
+01:47:45.634                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:47:45.634                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:47:45.634                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:47:45.639 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:47:45.640                                                             show: isDexDualMode = false
+01:47:45.640                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:47:45.648 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:47:45.648                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:47:45.648                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:47:45.648                                                             🔧 gameRepository class: GameRepository
+01:47:45.648                                                             🔧 Current thread: main
+01:47:46.398 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -5.37 (move=7, alternating=ON, FEN=r1bqkbnr/pp2pppp/2n5)
+01:47:46.398                                                             🔄 ALTERNATING: move=7, flip=true, -5.37→5.37 (diff=5.75)
+01:47:47.083 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #6)
+01:47:47.083                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:47:47.083                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         Position (FEN): r1bqkb1r/pp1npp1p/2p2np1/3P4/3P1B2/2N2N2/PP2P...
-20:22:44.648                                                             🎲 Candidate moves for AI analysis: [f6d5]
-20:22:44.648 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:44.648                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:22:44.834                                                             📋 Response ID: resp_68585804a648819f998513649eadf4a609cac9fafb1d8f42
-20:22:47.497                                                             🏁 Response completed
-20:22:47.498 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                         Position (FEN): r1bqkbnr/pp2pppp/2n5/2pP4/3P4/5N2/PPP2PPP/RNB...
+01:47:47.083                                                             🎲 Candidate moves for AI analysis: [g7g6, c6b8, d8c7, d8a5, c6b4, c6a5, d8d5, c6d4]
+01:47:47.083 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:47:47.083                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:47:47.085 GameViewModel                                               ✅ Evaluation received: 5.37
+01:47:47.318 ResponsesAPI                                                📋 Response ID: resp_685b4732f81c8191b3ae552a55fe38100cfcc90e14d33465
+01:47:50.455                                                             🏁 Response completed
+01:47:50.456 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
                                                                            "move_scores": {
-                                                                             "f6d5": {"score": 0.0, "reason": "Exchanging in the center so early leads t...
-20:22:47.499                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.9
-20:22:47.499                                                             🎭 AI preferred moves: []
-20:22:47.499                                                             💭 AI reasoning: I seek to create and maintain tension. Moves that simplify too early are anathema to my approach. Chess is a fight, not a negotiation.
-20:22:47.552 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: f6d5
-20:22:47.911 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/2p3p1/3n4/3P1B2/2N2N2/PP2PPPP/R2QKB1R w KQkq - 0 7
-20:22:47.917                                                             📜 Move history updated: 12 moves
-20:22:47.917 GameHistoryManager                                          Move added: f6d5
-20:22:47.917 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:47.917                                                             🎭 Updating personality context for move: f6d5
-20:22:47.917                                                             ✨ Personality context updated for move f6d5 - This is revolutionary!
-20:22:47.918                                                             🔍 Checking game end conditions...
-20:22:48.018                                                             ✅ Game continues - no end condition detected
-20:22:48.886 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.81 (move=12, alternating=ON, FEN=r1bqkb1r/pp1npp1p/2p)
-20:22:48.886                                                             🔄 ALTERNATING: move=12, flip=false, 0.81→0.81 (diff=0.06)
-20:22:48.887 GameViewModel                                               ✅ Evaluation received: 0.81
-20:22:48.990 CompetitiveModeActivity                                     📊 Evaluation updated: 0.81
-20:22:48.990                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.81, emotionalManager: INITIALIZED
-20:22:48.990                                                             🎯 First emotional evaluation: 0.81 (threshold: 1.5)
-20:22:48.991                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620168s/25s)
-20:22:48.991                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:54.299                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=5, col=2
-20:22:54.299                                                             🎯 SQUARE TAPPED: row=5, col=2
-20:22:54.299                                                             📝 Player color: white
-20:22:54.299                                                             🔍 Selected row/col: -1/-1
-20:22:54.657                                                             🎯 Selected piece: N at 5, 2
-20:22:54.905                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=3, col=3
-20:22:54.905                                                             🎯 SQUARE TAPPED: row=3, col=3
-20:22:54.905                                                             📝 Player color: white
-20:22:54.905                                                             🔍 Selected row/col: 5/2
-20:22:54.905                                                             🎯 ATTEMPTING MOVE: c3d5
-20:22:54.905                                                             📝 Player color: white
-20:22:54.905                                                             🔄 Is player's turn: true
-20:22:54.905                                                             🔄 Is white's turn: true
-20:22:54.905                                                             ✅ Turn validation passed, making move: c3d5
-20:22:54.905 GameViewModel                                               🎯 makePlayerMove called with: c3d5
-20:22:54.956                                                             🔍 Validating move: c3d5 (attempt 1)
-20:22:55.057                                                             📋 Current position: r1bqkb1r/pp1npp1p/2p3p1/3n4/3P1B2/2N2N2/PP2PPPP/R2QKB1R w KQkq - 0 7
-20:22:55.108                                                             ⚖️ Move c3d5 legality check: LEGAL
-20:22:55.108                                                             ✅ Executing validated move: c3d5
-20:22:55.310                                                             📍 New position after move: r1bqkb1r/pp1npp1p/2p3p1/3N4/3P1B2/5N2/PP2PPPP/R2QKB1R b KQkq - 0 7
-20:22:55.312 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/2p3p1/3N4/3P1B2/5N2/PP2PPPP/R2QKB1R b KQkq - 0 7
-20:22:55.316                                                             📜 Move history updated: 13 moves
-20:22:55.316 GameHistoryManager                                          Move added: c3d5
-20:22:55.412 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:55.412                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:22:55.412                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:22:55.412                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:22:55.412                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:22:55.412                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:22:55.412                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:22:55.412                                                             🔧 gameRepository class: GameRepository
-20:22:55.412                                                             🔧 Current thread: main
-20:22:55.412 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:22:56.069 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.58 (move=13, alternating=ON, FEN=r1bqkb1r/pp1npp1p/2p)
-20:22:56.069                                                             🔄 ALTERNATING: move=13, flip=true, -0.58→0.58 (diff=0.23)
-20:22:56.078 GameViewModel                                               ✅ Evaluation received: 0.58
-20:22:56.178 CompetitiveModeActivity                                     📊 Evaluation updated: 0.58
-20:22:56.178                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.58, emotionalManager: INITIALIZED
-20:22:56.178                                                             🎯 First emotional evaluation: 0.58 (threshold: 1.5)
-20:22:56.178                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620176s/25s)
-20:22:56.178                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:22:56.906 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:22:56.907 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #9)
-20:22:56.907                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:56.907                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqkb1r/pp1npp1p/2p3p1/3N4/3P1B2/5N2/PP2PPPP...
-20:22:56.907                                                             🎲 Candidate moves for AI analysis: [c6d5]
-20:22:56.907 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:22:56.907                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:22:57.121                                                             📋 Response ID: resp_68585810ecdc81a2959a5add1b1d9d980812be19ec07fbc1
-20:22:57.608 SQLiteConnectionPool                                        A SQLiteConnection object for database '/data/user/0/com.example.chesspedagogue/databases/chess_games.db' was leaked!  Please fix your application to end transactions in progress properly and to close the database when it is no longer needed.
-20:22:59.306 ResponsesAPI                                                🏁 Response completed
-20:22:59.307 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "g7g6": {"score": 0.0, "reason": "Passive and weakening—does not create ten...
+01:47:50.456                                                             🔧 JSON needs fixing: Expected literal value at character 343 of {
                                                                            "move_scores": {
-                                                                             "c6d5": {"score": 0.0, "reason": "Simple exchange, leads to symmetry and cl...
-20:22:59.308                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.9
-20:22:59.308                                                             🎭 AI preferred moves: []
-20:22:59.308                                                             💭 AI reasoning: I seek to unsettle and complicate from the first moves. Quiet positions are wasted opportunities.
-20:22:59.347 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: c6d5
-20:22:59.708 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/6p1/3p4/3P1B2/5N2/PP2PPPP/R2QKB1R w KQkq - 0 8
-20:22:59.714                                                             📜 Move history updated: 14 moves
-20:22:59.714 GameHistoryManager                                          Move added: c6d5
-20:22:59.714 GameViewModel                                               🔍 Requesting position evaluation...
-20:22:59.715                                                             🎭 Updating personality context for move: c6d5
-20:22:59.715                                                             ✨ Personality context updated for move c6d5 - This is revolutionary!
-20:22:59.715                                                             🔍 Checking game end conditions...
-20:22:59.817                                                             ✅ Game continues - no end condition detected
-20:23:00.935 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.65 (move=14, alternating=ON, FEN=r1bqkb1r/pp1npp1p/6p)
-20:23:00.935                                                             🔄 ALTERNATING: move=14, flip=false, 0.65→0.65 (diff=0.07)
-20:23:00.936 GameViewModel                                               ✅ Evaluation received: 0.65
-20:23:01.039 CompetitiveModeActivity                                     📊 Evaluation updated: 0.65
-20:23:01.039                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.65, emotionalManager: INITIALIZED
-20:23:01.039                                                             🎯 First emotional evaluation: 0.65 (threshold: 1.5)
-20:23:01.040                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620181s/25s)
-20:23:01.040                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:07.977                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=7, col=3
-20:23:07.977                                                             🎯 SQUARE TAPPED: row=7, col=3
-20:23:07.977                                                             📝 Player color: white
-20:23:07.977                                                             🔍 Selected row/col: -1/-1
-20:23:08.333                                                             🎯 Selected piece: Q at 7, 3
-20:23:08.476                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=6, col=2
-20:23:08.476                                                             🎯 SQUARE TAPPED: row=6, col=2
-20:23:08.476                                                             📝 Player color: white
-20:23:08.476                                                             🔍 Selected row/col: 7/3
-20:23:08.476                                                             🎯 ATTEMPTING MOVE: d1c2
-20:23:08.476                                                             📝 Player color: white
-20:23:08.476                                                             🔄 Is player's turn: true
-20:23:08.476                                                             🔄 Is white's turn: true
-20:23:08.476                                                             ✅ Turn validation passed, making move: d1c2
-20:23:08.476 GameViewModel                                               🎯 makePlayerMove called with: d1c2
-20:23:08.527                                                             🔍 Validating move: d1c2 (attempt 1)
-20:23:08.628                                                             📋 Current position: r1bqkb1r/pp1npp1p/6p1/3p4/3P1B2/5N2/PP2PPPP/R2QKB1R w KQkq - 0 8
-20:23:08.679                                                             ⚖️ Move d1c2 legality check: LEGAL
-20:23:08.679                                                             ✅ Executing validated move: d1c2
-20:23:08.883                                                             📍 New position after move: r1bqkb1r/pp1npp1p/6p1/3p4/3P1B2/5N2/PPQ1PPPP/R3KB1R b KQkq - 1 8
-20:23:08.885 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/6p1/3p4/3P1B2/5N2/PPQ1PPPP/R3KB1R b KQkq - 1 8
-20:23:08.889                                                             📜 Move history updated: 15 moves
-20:23:08.889 GameHistoryManager                                          Move added: d1c2
-20:23:08.891 Choreographer                                               Skipped 49 frames!  The application may be doing too much work on its main thread.
-20:23:08.988 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:08.989                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:23:08.989                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:23:08.989                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:23:08.989                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:23:08.989                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:23:08.989                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:23:08.989                                                             🔧 gameRepository class: GameRepository
-20:23:08.990                                                             🔧 Current thread: main
-20:23:08.990 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:23:10.403 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.44 (move=15, alternating=ON, FEN=r1bqkb1r/pp1npp1p/6p)
-20:23:10.403                                                             🔄 ALTERNATING: move=15, flip=true, -0.44→0.44 (diff=0.21)
-20:23:10.403 GameViewModel                                               ✅ Evaluation received: 0.44
-20:23:10.504 CompetitiveModeActivity                                     📊 Evaluation updated: 0.44
-20:23:10.504                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.44, emotionalManager: INITIALIZED
-20:23:10.504                                                             🎯 First emotional evaluation: 0.44 (threshold: 1.5)
-20:23:10.504                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620190s/25s)
-20:23:10.504                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:11.132 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:23:11.133 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #10)
-20:23:11.133                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:11.133                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqkb1r/pp1npp1p/6p1/3p4/3P1B2/5N2/PPQ1PPPP/...
-20:23:11.133                                                             🎲 Candidate moves for AI analysis: [d8a5]
-20:23:11.134 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:11.134                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:23:11.337                                                             📋 Response ID: resp_6858581f24e8819c9041ed027a8857a00b3c89e37e871920
-20:23:13.793                                                             🏁 Response completed
-20:23:13.794 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "g7g6": {"score": 0.0, "reason": "Passive and weakening—does not create tension or complexity."},
+                                                                             "c6b8": {"score": 0.0, "reason": "Retreating pieces is contrary to my fighting spirit."},
+                                                                             "d8c7": {"score": 0.0, "reason": "Safe but uninspired; lacks the bite I seek in the center."},
+                                                                             "d8a5": {"score": 0.7, \"reason\": \"Active queen play on the flank—creates imbalance, but risks overextension.\"},
+                                                                             "c6b4": {"score": 0.9, \"reason\": \"Provokes complications and targets the center—very much in line with my approach.\"},
+                                                                             "c6a5": {"score": 0.8, \"reason\": \"Less direct, but still seeks to unsettle the opponent.\"},
+                                                                             "d8d5": {"score": 0.6, \"reason\": \"Centralizes the queen, but invites simplification.\"},
+                                                                             "c6d4": {"score": 1.0, \"reason\": \"Strikes at the heart of the position, opening lines and creating chaos—this is Alekhine’s style.\"}
+                                                                           },
+                                                                           "top_choice": "c6d4",
+                                                                           "style_reasoning": "I seek to unsettle, to complicate, and to force my opponent into unfamiliar territory. The sharpest, most complex paths are always preferred.",
+                                                                           "confidence": 0.9
+                                                                         }
+01:47:50.458                                                             🔧 Applying quote mismatch fixes
+01:47:50.459                                                             🛠️ JSON fix applied - original length: 1116, fixed length: 1096
+01:47:50.459                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "d8a5": {"score": 0.0, "reason": "A passive retreat; avoids complexity and ...
-20:23:13.795                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.95
-20:23:13.795                                                             🎭 AI preferred moves: []
-20:23:13.795                                                             💭 AI reasoning: Alekhine seeks to unsettle his opponents from the first move. He craves the fight and the beautiful, tangled battles that follow.
-20:23:13.829 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: d8a5
-20:23:14.190 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1b1kb1r/pp1npp1p/6p1/q2p4/3P1B2/5N2/PPQ1PPPP/R3KB1R w KQkq - 2 9
-20:23:14.196                                                             📜 Move history updated: 16 moves
-20:23:14.196 GameHistoryManager                                          Move added: d8a5
-20:23:14.196 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:14.196                                                             🎭 Updating personality context for move: d8a5
-20:23:14.196                                                             ✨ Personality context updated for move d8a5 - This is revolutionary!
-20:23:14.197                                                             🔍 Checking game end conditions...
-20:23:14.298                                                             ✅ Game continues - no end condition detected
-20:23:15.112 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.56 (move=16, alternating=ON, FEN=r1b1kb1r/pp1npp1p/6p)
-20:23:15.112                                                             🔄 ALTERNATING: move=16, flip=false, 0.56→0.56 (diff=0.12)
-20:23:15.114 GameViewModel                                               ✅ Evaluation received: 0.56
-20:23:15.217 CompetitiveModeActivity                                     📊 Evaluation updated: 0.56
-20:23:15.217                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.56, emotionalManager: INITIALIZED
-20:23:15.217                                                             🎯 First emotional evaluation: 0.56 (threshold: 1.5)
-20:23:15.217                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620195s/25s)
-20:23:15.217                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:22.784                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=4, col=5
-20:23:22.784                                                             🎯 SQUARE TAPPED: row=4, col=5
-20:23:22.784                                                             📝 Player color: white
-20:23:22.784                                                             🔍 Selected row/col: -1/-1
-20:23:23.139                                                             🎯 Selected piece: B at 4, 5
-20:23:23.432                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=6, col=3
-20:23:23.432                                                             🎯 SQUARE TAPPED: row=6, col=3
-20:23:23.432                                                             📝 Player color: white
-20:23:23.432                                                             🔍 Selected row/col: 4/5
-20:23:23.432                                                             🎯 ATTEMPTING MOVE: f4d2
-20:23:23.432                                                             📝 Player color: white
-20:23:23.432                                                             🔄 Is player's turn: true
-20:23:23.432                                                             🔄 Is white's turn: true
-20:23:23.432                                                             ✅ Turn validation passed, making move: f4d2
-20:23:23.432 GameViewModel                                               🎯 makePlayerMove called with: f4d2
-20:23:23.483                                                             🔍 Validating move: f4d2 (attempt 1)
-20:23:23.584                                                             📋 Current position: r1b1kb1r/pp1npp1p/6p1/q2p4/3P1B2/5N2/PPQ1PPPP/R3KB1R w KQkq - 2 9
-20:23:23.636                                                             ⚖️ Move f4d2 legality check: LEGAL
-20:23:23.636                                                             ✅ Executing validated move: f4d2
-20:23:23.839                                                             📍 New position after move: r1b1kb1r/pp1npp1p/6p1/q2p4/3P4/5N2/PPQBPPPP/R3KB1R b KQkq - 3 9
-20:23:23.841 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1b1kb1r/pp1npp1p/6p1/q2p4/3P4/5N2/PPQBPPPP/R3KB1R b KQkq - 3 9
-20:23:23.846                                                             📜 Move history updated: 17 moves
-20:23:23.846 GameHistoryManager                                          Move added: f4d2
-20:23:23.940 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:23.940                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:23:23.940                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:23:23.940                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:23:23.940                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:23:23.941                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:23:23.941                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:23:23.941                                                             🔧 gameRepository class: GameRepository
-20:23:23.941                                                             🔧 Current thread: main
-20:23:23.941 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:23:25.151 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.53 (move=17, alternating=ON, FEN=r1b1kb1r/pp1npp1p/6p)
-20:23:25.151                                                             🔄 ALTERNATING: move=17, flip=true, -0.53→0.53 (diff=0.03)
-20:23:25.152 GameViewModel                                               ✅ Evaluation received: 0.53
-20:23:25.253 CompetitiveModeActivity                                     📊 Evaluation updated: 0.53
-20:23:25.253                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.53, emotionalManager: INITIALIZED
-20:23:25.253                                                             🎯 First emotional evaluation: 0.53 (threshold: 1.5)
-20:23:25.253                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620205s/25s)
-20:23:25.253                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:25.838 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:23:25.839 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #11)
-20:23:25.839                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:25.839                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
+                                                                             "g7g6": {"score": 0.0, "reason": "Passive and weakening—does not create ten...
+01:47:50.460                                                             🎭 Parsed: 5 moves, conf=0.9
+01:47:50.460                                                             🎭 AI moves: [c6d4, c6b4, c6a5, d8a5, d8d5]
+01:47:50.520 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: c6d4
+01:47:50.887 GameHistoryManager                                          Move added: c6d4
+01:47:50.887 GameViewModel                                               🔍 Requesting position evaluation...
+01:47:50.888                                                             🎭 Updating personality context for move: c6d4
+01:47:50.888                                                             ✨ Personality context updated for move c6d4 - This is revolutionary!
+01:47:50.888                                                             🔍 Checking game end conditions...
+01:47:50.990                                                             ✅ Game continues - no end condition detected
+01:47:52.054 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.60 (move=8, alternating=ON, FEN=r1bqkbnr/pp2pppp/8/2)
+01:47:52.054                                                             🔄 ALTERNATING: move=8, flip=false, 0.60→0.60 (diff=4.77)
+01:47:52.054 GameViewModel                                               ✅ Evaluation received: 0.60
+01:48:15.998                                                             🎯 makePlayerMove called with: f3d4
+01:48:16.049                                                             🔍 Validating move: f3d4 (attempt 1)
+01:48:16.149                                                             📋 Current position: r1bqkbnr/pp2pppp/8/2pP4/3n4/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 5
+01:48:16.201                                                             ⚖️ Move f3d4 legality check: LEGAL
+01:48:16.201                                                             ✅ Executing validated move: f3d4
+01:48:16.404                                                             📍 New position after move: r1bqkbnr/pp2pppp/8/2pP4/3N4/8/PPP2PPP/RNBQKB1R b KQkq - 0 5
+01:48:16.410 GameHistoryManager                                          Move added: f3d4
+01:48:16.505 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:16.506                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:48:16.506                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:48:16.506                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:48:16.510 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:48:16.511                                                             show: isDexDualMode = false
+01:48:16.511                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:48:16.518 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:48:16.518                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:48:16.518                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:48:16.518                                                             🔧 gameRepository class: GameRepository
+01:48:16.518                                                             🔧 Current thread: main
+01:48:16.968 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -5.56 (move=9, alternating=ON, FEN=r1bqkbnr/pp2pppp/8/2)
+01:48:16.969                                                             🔄 ALTERNATING: move=9, flip=true, -5.56→5.56 (diff=4.96)
+01:48:17.410 GameViewModel                                               ✅ Evaluation received: 5.56
+01:48:17.481 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #7)
+01:48:17.481                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:17.481                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         Position (FEN): r1b1kb1r/pp1npp1p/6p1/q2p4/3P4/5N2/PPQBPPPP/R...
-20:23:25.839                                                             🎲 Candidate moves for AI analysis: [a5d8]
-20:23:25.839 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:25.839                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:23:26.004                                                             📋 Response ID: resp_6858582dd484819e9acfd8727937750a0f674c8248480f6d
-20:23:27.746                                                             🏁 Response completed
-20:23:27.747 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                         Position (FEN): r1bqkbnr/pp2pppp/8/2pP4/3N4/8/PPP2PPP/RNBQKB1...
+01:48:17.481                                                             🎲 Candidate moves for AI analysis: [c8d7, d8b6, d8a5, a7a6, d8d5, e7e5, e7e6, h7h6]
+01:48:17.481 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:17.481                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:48:17.704                                                             📋 Response ID: resp_685b47515ed881a3b825d28a819f4f45046d8acd80f9e33b
+01:48:21.050                                                             🏁 Response completed
+01:48:21.050 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
                                                                            "move_scores": {
-                                                                             "Qxa4": {"score": 0.6, "reason": "Grabs material but risks simplification—t...
-20:23:27.748                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.95
-20:23:27.748                                                             🎭 AI preferred moves: []
-20:23:27.748                                                             💭 AI reasoning: I seek the most complex and unbalanced path. Nc5 creates imbalances and keeps my opponent guessing.
-20:23:27.784 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: a5d8
-20:23:28.145 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/6p1/3p4/3P4/5N2/PPQBPPPP/R3KB1R w KQkq - 4 10
-20:23:28.150                                                             📜 Move history updated: 18 moves
-20:23:28.150 GameHistoryManager                                          Move added: a5d8
-20:23:28.150 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:28.151                                                             🎭 Updating personality context for move: a5d8
-20:23:28.151                                                             ✨ Personality context updated for move a5d8 - This is revolutionary!
-20:23:28.151                                                             🔍 Checking game end conditions...
-20:23:28.253                                                             ✅ Game continues - no end condition detected
-20:23:29.170 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.57 (move=18, alternating=ON, FEN=r1bqkb1r/pp1npp1p/6p)
-20:23:29.170                                                             🔄 ALTERNATING: move=18, flip=false, 0.57→0.57 (diff=0.04)
-20:23:29.170 GameViewModel                                               ✅ Evaluation received: 0.57
-20:23:29.272 CompetitiveModeActivity                                     📊 Evaluation updated: 0.57
-20:23:29.272                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.57, emotionalManager: INITIALIZED
-20:23:29.273                                                             🎯 First emotional evaluation: 0.57 (threshold: 1.5)
-20:23:29.273                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620209s/25s)
-20:23:29.273                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:41.785                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=6, col=2
-20:23:41.785                                                             🎯 SQUARE TAPPED: row=6, col=2
-20:23:41.785                                                             📝 Player color: white
-20:23:41.785                                                             🔍 Selected row/col: -1/-1
-20:23:42.143                                                             🎯 Selected piece: Q at 6, 2
-20:23:42.255                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=5, col=1
-20:23:42.255                                                             🎯 SQUARE TAPPED: row=5, col=1
-20:23:42.255                                                             📝 Player color: white
-20:23:42.255                                                             🔍 Selected row/col: 6/2
-20:23:42.255                                                             🎯 ATTEMPTING MOVE: c2b3
-20:23:42.255                                                             📝 Player color: white
-20:23:42.255                                                             🔄 Is player's turn: true
-20:23:42.255                                                             🔄 Is white's turn: true
-20:23:42.255                                                             ✅ Turn validation passed, making move: c2b3
-20:23:42.255 GameViewModel                                               🎯 makePlayerMove called with: c2b3
-20:23:42.306                                                             🔍 Validating move: c2b3 (attempt 1)
-20:23:42.408                                                             📋 Current position: r1bqkb1r/pp1npp1p/6p1/3p4/3P4/5N2/PPQBPPPP/R3KB1R w KQkq - 4 10
-20:23:42.460                                                             ⚖️ Move c2b3 legality check: LEGAL
-20:23:42.460                                                             ✅ Executing validated move: c2b3
-20:23:42.663                                                             📍 New position after move: r1bqkb1r/pp1npp1p/6p1/3p4/3P4/1Q3N2/PP1BPPPP/R3KB1R b KQkq - 5 10
-20:23:42.665 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1npp1p/6p1/3p4/3P4/1Q3N2/PP1BPPPP/R3KB1R b KQkq - 5 10
-20:23:42.670                                                             📜 Move history updated: 19 moves
-20:23:42.670 GameHistoryManager                                          Move added: c2b3
-20:23:42.671 Choreographer                                               Skipped 49 frames!  The application may be doing too much work on its main thread.
-20:23:42.766 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:42.766                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:23:42.766                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:23:42.766                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:23:42.766                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:23:42.766                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:23:42.766                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:23:42.766                                                             🔧 gameRepository class: GameRepository
-20:23:42.766                                                             🔧 Current thread: main
-20:23:42.767 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:23:43.928 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.37 (move=19, alternating=ON, FEN=r1bqkb1r/pp1npp1p/6p)
-20:23:43.928                                                             🔄 ALTERNATING: move=19, flip=true, -0.37→0.37 (diff=0.20)
-20:23:43.929 GameViewModel                                               ✅ Evaluation received: 0.37
-20:23:44.030 CompetitiveModeActivity                                     📊 Evaluation updated: 0.37
-20:23:44.030                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.37, emotionalManager: INITIALIZED
-20:23:44.030                                                             🎯 First emotional evaluation: 0.37 (threshold: 1.5)
-20:23:44.030                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620224s/25s)
-20:23:44.030                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:44.783 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:23:44.784 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #12)
-20:23:44.784                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:44.784                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqkb1r/pp1npp1p/6p1/3p4/3P4/1Q3N2/PP1BPPPP/...
-20:23:44.784                                                             🎲 Candidate moves for AI analysis: [e7e6]
-20:23:44.785 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:44.785                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:23:45.029                                                             📋 Response ID: resp_68585840c7f481a092513e8363189d060bae119baef0d368
-20:23:46.086                                                             🏁 Response completed
-20:23:46.087 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "c8d7": {"score": 0.0, "reason": "Retreats into passivity; no tension or co...
+01:48:21.051                                                             🔧 JSON needs fixing: Expected literal value at character 559 of {
                                                                            "move_scores": {
-                                                                             "e7e6": {"score": 0.0, "reason": "Too passive and symmetrical for my taste....
-20:23:46.088                                                             🎭 Parsed style evaluation: 1 moves, confidence=0.8
-20:23:46.088                                                             🎭 AI preferred moves: [e7e6]
-20:23:46.088                                                             💭 AI reasoning: In this position, e6 represents a missed opportunity for complexity. My style demands that I seek out the sharpest, most unbalanced paths—never the safe and simple ones.
-20:23:46.134 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: e7e6
-20:23:46.494 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1n1p1p/4p1p1/3p4/3P4/1Q3N2/PP1BPPPP/R3KB1R w KQkq - 0 11
-20:23:46.500                                                             📜 Move history updated: 20 moves
-20:23:46.501 GameHistoryManager                                          Move added: e7e6
-20:23:46.501 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:46.501                                                             🎭 Updating personality context for move: e7e6
-20:23:46.501                                                             ✨ Personality context updated for move e7e6 - This is revolutionary!
-20:23:46.501                                                             🔍 Checking game end conditions...
-20:23:46.602                                                             ✅ Game continues - no end condition detected
-20:23:47.617 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.45 (move=20, alternating=ON, FEN=r1bqkb1r/pp1n1p1p/4p)
-20:23:47.617                                                             🔄 ALTERNATING: move=20, flip=false, 0.45→0.45 (diff=0.08)
-20:23:47.618 GameViewModel                                               ✅ Evaluation received: 0.45
-20:23:47.722 CompetitiveModeActivity                                     📊 Evaluation updated: 0.45
-20:23:47.722                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.45, emotionalManager: INITIALIZED
-20:23:47.722                                                             🎯 First emotional evaluation: 0.45 (threshold: 1.5)
-20:23:47.722                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620227s/25s)
-20:23:47.722                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:55.795                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=6, col=4
-20:23:55.795                                                             🎯 SQUARE TAPPED: row=6, col=4
-20:23:55.795                                                             📝 Player color: white
-20:23:55.795                                                             🔍 Selected row/col: -1/-1
-20:23:56.153                                                             🎯 Selected piece: P at 6, 4
-20:23:56.442                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=5, col=4
-20:23:56.442                                                             🎯 SQUARE TAPPED: row=5, col=4
-20:23:56.442                                                             📝 Player color: white
-20:23:56.442                                                             🔍 Selected row/col: 6/4
-20:23:56.442                                                             ♟️ Promotion check: piece=P, fromRow=6, toRow=5, reaches=false
-20:23:56.443                                                             🎯 ATTEMPTING MOVE: e2e3
-20:23:56.443                                                             📝 Player color: white
-20:23:56.443                                                             🔄 Is player's turn: true
-20:23:56.443                                                             🔄 Is white's turn: true
-20:23:56.443                                                             ✅ Turn validation passed, making move: e2e3
-20:23:56.443 GameViewModel                                               🎯 makePlayerMove called with: e2e3
-20:23:56.494                                                             🔍 Validating move: e2e3 (attempt 1)
-20:23:56.594                                                             📋 Current position: r1bqkb1r/pp1n1p1p/4p1p1/3p4/3P4/1Q3N2/PP1BPPPP/R3KB1R w KQkq - 0 11
-20:23:56.647                                                             ⚖️ Move e2e3 legality check: LEGAL
-20:23:56.647                                                             ✅ Executing validated move: e2e3
-20:23:56.849                                                             📍 New position after move: r1bqkb1r/pp1n1p1p/4p1p1/3p4/3P4/1Q2PN2/PP1B1PPP/R3KB1R b KQkq - 0 11
-20:23:56.852 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqkb1r/pp1n1p1p/4p1p1/3p4/3P4/1Q2PN2/PP1B1PPP/R3KB1R b KQkq - 0 11
-20:23:56.857                                                             📜 Move history updated: 21 moves
-20:23:56.857 GameHistoryManager                                          Move added: e2e3
-20:23:56.950 GameViewModel                                               🔍 Requesting position evaluation...
-20:23:56.950                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:23:56.950                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:23:56.950                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:23:56.950                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:23:56.951                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:23:56.951                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:23:56.951                                                             🔧 gameRepository class: GameRepository
-20:23:56.951                                                             🔧 Current thread: main
-20:23:56.951 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:23:58.112 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.42 (move=21, alternating=ON, FEN=r1bqkb1r/pp1n1p1p/4p)
-20:23:58.112                                                             🔄 ALTERNATING: move=21, flip=true, -0.42→0.42 (diff=0.03)
-20:23:58.112 GameViewModel                                               ✅ Evaluation received: 0.42
-20:23:58.213 CompetitiveModeActivity                                     📊 Evaluation updated: 0.42
-20:23:58.213                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.42, emotionalManager: INITIALIZED
-20:23:58.213                                                             🎯 First emotional evaluation: 0.42 (threshold: 1.5)
-20:23:58.213                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620238s/25s)
-20:23:58.213                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:23:58.914 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 15 historical positions
-20:23:58.915 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #13)
-20:23:58.915                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:58.915                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqkb1r/pp1n1p1p/4p1p1/3p4/3P4/1Q2PN2/PP1B1P...
-20:23:58.915                                                             🎲 Candidate moves for AI analysis: [f8d6]
-20:23:58.916 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:23:58.916                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:23:59.280                                                             📋 Response ID: resp_6858584ef83081a3a2cd830b3493595804e156a43d3ee19c
-20:24:00.384                                                             🏁 Response completed
-20:24:00.385 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "c8d7": {"score": 0.0, "reason": "Retreats into passivity; no tension or complexity created."},
+                                                                             "d8b6": {"score": 0.0, "reason": "Misplaced queen; avoids confrontation but at the cost of activity."},
+                                                                             "d8a5": {"score": 0.0, "reason": "Flirts with the edge, but ultimately a sideline; lacks depth."},
+                                                                             "a7a6": {"score": 0.0, "reason": "Passive and slow; does not challenge the center or development."},
+                                                                             "d8d5": {"score": 0.0, "reason": "Overly simplifying; avoids the complications I crave."},
+                                                                             "e7e5": {"score": 1.0, \"reason\": \"Strikes at the center and invites chaos—exactly the kind of position I seek.\"},
+                                                                             "e7e6": {"score": 0.5, \"reason\": \"Solid, but too quiet for my taste; better than most, but not my ideal.\"},
+                                                                             "h7h6": {"score": 0.0, \"reason\": \"Wastes time and air; no bearing on the struggle.\"}
+                                                                           },
+                                                                           "top_choice": "e7e5",
+                                                                           "style_reasoning": "My style demands confrontation and complexity. e5 is a call to battle, e6 a truce. I choose the path of war, not peace.",
+                                                                           "confidence": 1.0
+                                                                         }
+01:48:21.052                                                             🔧 Applying quote mismatch fixes
+01:48:21.053                                                             🛠️ JSON fix applied - original length: 1057, fixed length: 1045
+01:48:21.053                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "f8d6": {"score": 0.0, "reason": "This move is passive and leads to symmetr...
-20:24:00.385                                                             🎭 Parsed style evaluation: 1 moves, confidence=0.8
-20:24:00.386                                                             🎭 AI preferred moves: [f8d6]
-20:24:00.386                                                             💭 AI reasoning: I would never choose a move that dulls the position. Chess for me is a fight, not a draw by default.
-20:24:00.427 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: f8d6
-20:24:00.788 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqk2r/pp1n1p1p/3bp1p1/3p4/3P4/1Q2PN2/PP1B1PPP/R3KB1R w KQkq - 1 12
-20:24:00.796                                                             📜 Move history updated: 22 moves
-20:24:00.796 GameHistoryManager                                          Move added: f8d6
-20:24:00.796 GameViewModel                                               🔍 Requesting position evaluation...
-20:24:00.796                                                             🎭 Updating personality context for move: f8d6
-20:24:00.797                                                             ✨ Personality context updated for move f8d6 - This is revolutionary!
-20:24:00.797                                                             🔍 Checking game end conditions...
-20:24:00.899                                                             ✅ Game continues - no end condition detected
-20:24:01.917 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.41 (move=22, alternating=ON, FEN=r1bqk2r/pp1n1p1p/3bp)
-20:24:01.917                                                             🔄 ALTERNATING: move=22, flip=false, 0.41→0.41 (diff=0.01)
-20:24:01.918 GameViewModel                                               ✅ Evaluation received: 0.41
-20:24:02.021 CompetitiveModeActivity                                     📊 Evaluation updated: 0.41
-20:24:02.022                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.41, emotionalManager: INITIALIZED
-20:24:02.022                                                             🎯 First emotional evaluation: 0.41 (threshold: 1.5)
-20:24:02.022                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620242s/25s)
-20:24:02.022                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:24:09.607                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=7, col=5
-20:24:09.607                                                             🎯 SQUARE TAPPED: row=7, col=5
-20:24:09.607                                                             📝 Player color: white
-20:24:09.607                                                             🔍 Selected row/col: -1/-1
-20:24:09.965                                                             🎯 Selected piece: B at 7, 5
-20:24:12.066                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=6, col=3
-20:24:12.066                                                             🎯 SQUARE TAPPED: row=6, col=3
-20:24:12.066                                                             📝 Player color: white
-20:24:12.066                                                             🔍 Selected row/col: 7/5
-20:24:12.792                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=4, col=1
-20:24:12.792                                                             🎯 SQUARE TAPPED: row=4, col=1
-20:24:12.792                                                             📝 Player color: white
-20:24:12.793                                                             🔍 Selected row/col: 6/3
-20:24:12.793                                                             🎯 ATTEMPTING MOVE: d2b4
-20:24:12.793                                                             📝 Player color: white
-20:24:12.793                                                             🔄 Is player's turn: true
-20:24:12.793                                                             🔄 Is white's turn: true
-20:24:12.793                                                             ✅ Turn validation passed, making move: d2b4
-20:24:12.793 GameViewModel                                               🎯 makePlayerMove called with: d2b4
-20:24:12.843                                                             🔍 Validating move: d2b4 (attempt 1)
-20:24:12.944                                                             📋 Current position: r1bqk2r/pp1n1p1p/3bp1p1/3p4/3P4/1Q2PN2/PP1B1PPP/R3KB1R w KQkq - 1 12
-20:24:12.996                                                             ⚖️ Move d2b4 legality check: LEGAL
-20:24:12.996                                                             ✅ Executing validated move: d2b4
-20:24:13.198                                                             📍 New position after move: r1bqk2r/pp1n1p1p/3bp1p1/3p4/1B1P4/1Q2PN2/PP3PPP/R3KB1R b KQkq - 2 12
-20:24:13.201 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqk2r/pp1n1p1p/3bp1p1/3p4/1B1P4/1Q2PN2/PP3PPP/R3KB1R b KQkq - 2 12
-20:24:13.206                                                             📜 Move history updated: 23 moves
-20:24:13.206 GameHistoryManager                                          Move added: d2b4
-20:24:13.303 GameViewModel                                               🔍 Requesting position evaluation...
-20:24:13.303                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:24:13.303                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:24:13.303                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:24:13.303                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:24:13.303                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:24:13.303                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:24:13.303                                                             🔧 gameRepository class: GameRepository
-20:24:13.303                                                             🔧 Current thread: main
-20:24:13.303 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:24:14.364 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.29 (move=23, alternating=ON, FEN=r1bqk2r/pp1n1p1p/3bp)
-20:24:14.364                                                             🔄 ALTERNATING: move=23, flip=true, -0.29→0.29 (diff=0.12)
-20:24:14.365 GameViewModel                                               ✅ Evaluation received: 0.29
-20:24:14.466 CompetitiveModeActivity                                     📊 Evaluation updated: 0.29
-20:24:14.466                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.29, emotionalManager: INITIALIZED
-20:24:14.466                                                             🎯 First emotional evaluation: 0.29 (threshold: 1.5)
-20:24:14.466                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620254s/25s)
-20:24:14.466                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:24:15.016 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 15 historical positions
-20:24:15.017 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #14)
-20:24:15.017                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:15.017                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
+                                                                             "c8d7": {"score": 0.0, "reason": "Retreats into passivity; no tension or co...
+01:48:21.053                                                             🎭 Parsed: 1 moves, conf=1.0
+01:48:21.054                                                             🎭 AI moves: [e7e5]
+01:48:21.112 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: e7e5
+01:48:21.467 GameHistoryManager                                          Move added: e7e5
+01:48:21.467 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:21.467                                                             🎭 Updating personality context for move: e7e5
+01:48:21.467                                                             ✨ Personality context updated for move e7e5 - This is revolutionary!
+01:48:21.467                                                             🔍 Checking game end conditions...
+01:48:21.568                                                             ✅ Game continues - no end condition detected
+01:48:22.329 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 1.47 (move=10, alternating=ON, FEN=r1bqkbnr/pp3ppp/8/2p)
+01:48:22.330                                                             🔄 ALTERNATING: move=10, flip=false, 1.47→1.47 (diff=4.09)
+01:48:22.330 GameViewModel                                               ✅ Evaluation received: 1.47
+01:48:39.028                                                             🎯 makePlayerMove called with: d4b3
+01:48:39.079                                                             🔍 Validating move: d4b3 (attempt 1)
+01:48:39.180                                                             📋 Current position: r1bqkbnr/pp3ppp/8/2pPp3/3N4/8/PPP2PPP/RNBQKB1R w KQkq e6 0 6
+01:48:39.232                                                             ⚖️ Move d4b3 legality check: LEGAL
+01:48:39.232                                                             ✅ Executing validated move: d4b3
+01:48:39.434                                                             📍 New position after move: r1bqkbnr/pp3ppp/8/2pPp3/8/1N6/PPP2PPP/RNBQKB1R b KQkq - 1 6
+01:48:39.440 GameHistoryManager                                          Move added: d4b3
+01:48:39.534 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:39.535                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:48:39.535                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:48:39.535                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:48:39.538 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:48:39.538                                                             show: isDexDualMode = false
+01:48:39.538                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:48:39.541 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:48:39.541                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:48:39.541                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:48:39.542                                                             🔧 gameRepository class: GameRepository
+01:48:39.542                                                             🔧 Current thread: main
+01:48:40.046 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -5.43 (move=11, alternating=ON, FEN=r1bqkbnr/pp3ppp/8/2p)
+01:48:40.047                                                             🔄 ALTERNATING: move=11, flip=true, -5.43→5.43 (diff=3.96)
+01:48:40.540 GameViewModel                                               ✅ Evaluation received: 5.43
+01:48:40.602 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #8)
+01:48:40.602                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:40.602                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         Position (FEN): r1bqk2r/pp1n1p1p/3bp1p1/3p4/1B1P4/1Q2PN2/PP3P...
-20:24:15.017                                                             🎲 Candidate moves for AI analysis: [d6e7]
-20:24:15.017 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:15.017                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:24:15.189                                                             📋 Response ID: resp_6858585f055c819faf5b1194feacef4b09de5af42dc4e719
-20:24:17.419                                                             🏁 Response completed
-20:24:17.420 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                         Position (FEN): r1bqkbnr/pp3ppp/8/2pPp3/8/1N6/PPP2PPP/RNBQKB1...
+01:48:40.602                                                             🎲 Candidate moves for AI analysis: [c8d7, b7b5, a7a5, a7a6, d8d6, f8d6, g8e7, h7h5]
+01:48:40.602 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:40.602                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:48:40.809                                                             📋 Response ID: resp_685b47687ba48192ba487357beef5e2f0c94cb7a457197fb
+01:48:44.709                                                             🏁 Response completed
+01:48:44.710 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
                                                                            "move_scores": {
-                                                                             "d6e7": {"score": 0.0, "reason": "Passive and simplifying—Alekhine shuns re...
-20:24:17.420                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.9
-20:24:17.420                                                             🎭 AI preferred moves: []
-20:24:17.421                                                             💭 AI reasoning: Alekhine’s play is defined by initiative and complexity. He would seize the moment to unsettle his opponent, not retreat.
-20:24:17.462 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: d6e7
-20:24:17.821 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqk2r/pp1nbp1p/4p1p1/3p4/1B1P4/1Q2PN2/PP3PPP/R3KB1R w KQkq - 3 13
-20:24:17.829                                                             📜 Move history updated: 24 moves
-20:24:17.829 GameHistoryManager                                          Move added: d6e7
-20:24:17.829 GameViewModel                                               🔍 Requesting position evaluation...
-20:24:17.829                                                             🎭 Updating personality context for move: d6e7
-20:24:17.829                                                             ✨ Personality context updated for move d6e7 - This is revolutionary!
-20:24:17.829                                                             🔍 Checking game end conditions...
-20:24:17.931                                                             ✅ Game continues - no end condition detected
-20:24:18.746 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.73 (move=24, alternating=ON, FEN=r1bqk2r/pp1nbp1p/4p1)
-20:24:18.746                                                             🔄 ALTERNATING: move=24, flip=false, 0.73→0.73 (diff=0.44)
-20:24:18.747 GameViewModel                                               ✅ Evaluation received: 0.73
-20:24:18.849 CompetitiveModeActivity                                     📊 Evaluation updated: 0.73
-20:24:18.849                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.73, emotionalManager: INITIALIZED
-20:24:18.849                                                             🎯 First emotional evaluation: 0.73 (threshold: 1.5)
-20:24:18.849                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620258s/25s)
-20:24:18.849                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:24:25.461                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=4, col=1
-20:24:25.461                                                             🎯 SQUARE TAPPED: row=4, col=1
-20:24:25.461                                                             📝 Player color: white
-20:24:25.461                                                             🔍 Selected row/col: -1/-1
-20:24:25.818                                                             🎯 Selected piece: B at 4, 1
-20:24:25.990                                                             🎯 COMPETITIVE MODE SQUARE TAPPED: row=1, col=4
-20:24:25.990                                                             🎯 SQUARE TAPPED: row=1, col=4
-20:24:25.990                                                             📝 Player color: white
-20:24:25.990                                                             🔍 Selected row/col: 4/1
-20:24:25.990                                                             🎯 ATTEMPTING MOVE: b4e7
-20:24:25.990                                                             📝 Player color: white
-20:24:25.990                                                             🔄 Is player's turn: true
-20:24:25.991                                                             🔄 Is white's turn: true
-20:24:25.991                                                             ✅ Turn validation passed, making move: b4e7
-20:24:25.991 GameViewModel                                               🎯 makePlayerMove called with: b4e7
-20:24:26.042                                                             🔍 Validating move: b4e7 (attempt 1)
-20:24:26.144                                                             📋 Current position: r1bqk2r/pp1nbp1p/4p1p1/3p4/1B1P4/1Q2PN2/PP3PPP/R3KB1R w KQkq - 3 13
-20:24:26.195                                                             ⚖️ Move b4e7 legality check: LEGAL
-20:24:26.195                                                             ✅ Executing validated move: b4e7
-20:24:26.397                                                             📍 New position after move: r1bqk2r/pp1nBp1p/4p1p1/3p4/3P4/1Q2PN2/PP3PPP/R3KB1R b KQkq - 0 13
-20:24:26.400 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1bqk2r/pp1nBp1p/4p1p1/3p4/3P4/1Q2PN2/PP3PPP/R3KB1R b KQkq - 0 13
-20:24:26.405                                                             📜 Move history updated: 25 moves
-20:24:26.405 GameHistoryManager                                          Move added: b4e7
-20:24:26.406 Choreographer                                               Skipped 49 frames!  The application may be doing too much work on its main thread.
-20:24:26.501 GameViewModel                                               🔍 Requesting position evaluation...
-20:24:26.501                                                             🎭 Using PERSONALITY ENGINE for move calculation!
-20:24:26.501                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
-20:24:26.501                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
-20:24:26.502                                                             🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
-20:24:26.502                                                             🔧 DEBUG: gameRepository instance = NOT NULL
-20:24:26.502                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
-20:24:26.502                                                             🔧 gameRepository class: GameRepository
-20:24:26.502                                                             🔧 Current thread: main
-20:24:26.502 System.out                                                  🚨🚨🚨 SYSTEM.OUT: calculatePersonalityMove() ENTRY! 🚨🚨🚨
-20:24:27.360 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -0.68 (move=25, alternating=ON, FEN=r1bqk2r/pp1nBp1p/4p1)
-20:24:27.360                                                             🔄 ALTERNATING: move=25, flip=true, -0.68→0.68 (diff=0.05)
-20:24:27.361 GameViewModel                                               ✅ Evaluation received: 0.68
-20:24:27.461 CompetitiveModeActivity                                     📊 Evaluation updated: 0.68
-20:24:27.462                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.68, emotionalManager: INITIALIZED
-20:24:27.462                                                             🎯 First emotional evaluation: 0.68 (threshold: 1.5)
-20:24:27.462                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620267s/25s)
-20:24:27.462                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:24:28.225 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 14 historical positions
-20:24:28.226 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #15)
-20:24:28.226                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:28.226                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqk2r/pp1nBp1p/4p1p1/3p4/3P4/1Q2PN2/PP3PPP/...
-20:24:28.226                                                             🎲 Candidate moves for AI analysis: [d8e7]
-20:24:28.227 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:28.227                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:24:28.383                                                             📋 Response ID: resp_6858586c38688191b2f08fdc79d65ad40081d9675f497942
-20:24:30.749                                                             🏁 Response completed
-20:24:30.750 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "c8d7": {"score": 0.0, "reason": "Passive and unambitious; avoids conflict ...
+01:48:44.711                                                             ✅ JSON is already valid - no fixes needed
+01:48:44.711                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "d8e7": {"score": 0.0, "reason": "This move surrenders the initiative and a...
-20:24:30.751                                                             🎭 Parsed style evaluation: 0 moves, confidence=1.0
-20:24:30.751                                                             🎭 AI preferred moves: []
-20:24:30.751                                                             💭 AI reasoning: I seek the battlefield, not the safe harbor. Moves that create imbalance and complexity are my true calling.
-20:24:30.795 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: d8e7
-20:24:31.154 CompetitiveModeActivity                                     🎯 Board updated with FEN: r1b1k2r/pp1nqp1p/4p1p1/3p4/3P4/1Q2PN2/PP3PPP/R3KB1R w KQkq - 0 14
-20:24:31.161                                                             📜 Move history updated: 26 moves
-20:24:31.162 GameHistoryManager                                          Move added: d8e7
-20:24:31.162 GameViewModel                                               🔍 Requesting position evaluation...
-20:24:31.162                                                             🎭 Updating personality context for move: d8e7
-20:24:31.162                                                             ✨ Personality context updated for move d8e7 - This is revolutionary!
-20:24:31.162                                                             🔍 Checking game end conditions...
-20:24:31.264                                                             ✅ Game continues - no end condition detected
-20:24:32.278 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 0.72 (move=26, alternating=ON, FEN=r1b1k2r/pp1nqp1p/4p1)
-20:24:32.278                                                             🔄 ALTERNATING: move=26, flip=false, 0.72→0.72 (diff=0.04)
-20:24:32.279 GameViewModel                                               ✅ Evaluation received: 0.72
-20:24:32.381 CompetitiveModeActivity                                     📊 Evaluation updated: 0.72
-20:24:32.381                                                             🎭 triggerEmotionalReactionToEvaluation called with evaluation: 0.72, emotionalManager: INITIALIZED
-20:24:32.382                                                             🎯 First emotional evaluation: 0.72 (threshold: 1.5)
-20:24:32.382                                                             🔍 Emotional reaction check - Change: false, Cooldown: true (time since last: 1750620272s/25s)
-20:24:32.382                                                             🚫 Emotional reaction blocked - Change: false, Cooldown: true
-20:24:58.090                                                             🧪 Starting Competitive Mode Style Validation...
-20:24:58.093 Toast                                                       show: caller = com.example.chesspedagogue.CompetitiveModeActivity.runCompetitiveValidation:2844 
-20:24:58.094                                                             show: isDexDualMode = false
-20:24:58.094                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
-20:24:58.100 AlekhineStyleValidator                                      🧪 Starting Quick Alekhine Style Validation Test...
-20:24:58.100                                                             🎯 Testing: World Championship Game 11 - Decisive attacking move
-20:24:59.467 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:24:59.468 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #16)
-20:24:59.468                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:59.468                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
+                                                                             "c8d7": {"score": 0.0, "reason": "Passive and unambitious; avoids conflict ...
+01:48:44.712                                                             🎭 Parsed: 2 moves, conf=0.9
+01:48:44.712                                                             🎭 AI moves: [b7b5, h7h5]
+01:48:44.772 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: b7b5
+01:48:45.138 GameHistoryManager                                          Move added: b7b5
+01:48:45.138 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:45.138                                                             🎭 Updating personality context for move: b7b5
+01:48:45.139                                                             ✨ Personality context updated for move b7b5 - This is revolutionary!
+01:48:45.139                                                             🔍 Checking game end conditions...
+01:48:45.240                                                             ✅ Game continues - no end condition detected
+01:48:45.952 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 4.33 (move=12, alternating=ON, FEN=r1bqkbnr/p4ppp/8/1pp)
+01:48:45.953                                                             🔄 ALTERNATING: move=12, flip=false, 4.33→4.33 (diff=1.10)
+01:48:45.953 GameViewModel                                               ✅ Evaluation received: 4.33
+01:48:54.674 SQLiteConnectionPool                                        A SQLiteConnection object for database '/data/user/0/com.example.chesspedagogue/databases/chess_games.db' was leaked!  Please fix your application to end transactions in progress properly and to close the database when it is no longer needed.
+01:48:55.154 GameViewModel                                               🎯 makePlayerMove called with: f1b5
+01:48:55.206                                                             🔍 Validating move: f1b5 (attempt 1)
+01:48:55.306                                                             📋 Current position: r1bqkbnr/p4ppp/8/1ppPp3/8/1N6/PPP2PPP/RNBQKB1R w KQkq - 0 7
+01:48:55.358                                                             ⚖️ Move f1b5 legality check: LEGAL
+01:48:55.358                                                             ✅ Executing validated move: f1b5
+01:48:55.560                                                             📍 New position after move: r1bqkbnr/p4ppp/8/1BpPp3/8/1N6/PPP2PPP/RNBQK2R b KQkq - 0 7
+01:48:55.567 GameHistoryManager                                          Move added: f1b5
+01:48:55.661 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:55.662                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:48:55.662                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:48:55.662                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:48:55.667 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:48:55.669                                                             show: isDexDualMode = false
+01:48:55.669                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:48:55.676 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:48:55.676                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:48:55.676                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:48:55.676                                                             🔧 gameRepository class: GameRepository
+01:48:55.676                                                             🔧 Current thread: main
+01:48:56.019 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -7.66 (move=13, alternating=ON, FEN=r1bqkbnr/p4ppp/8/1Bp)
+01:48:56.020                                                             🔄 ALTERNATING: move=13, flip=true, -7.66→7.66 (diff=3.33)
+01:48:56.420 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #9)
+01:48:56.420                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:56.420                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         Position (FEN): r1bq1rk1/pp2nppp/2n1p3/3pP3/2pP4/2N1BN2/PP2BP...
-20:24:59.468                                                             🎲 Candidate moves for AI analysis: [d1c1]
-20:24:59.468 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:24:59.468                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:24:59.663                                                             📋 Response ID: resp_6858588b811481918d3a913ab5455fad0f6ab9faef9de771
-20:25:01.725                                                             🏁 Response completed
-20:25:01.726 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                         Position (FEN): r1bqkbnr/p4ppp/8/1BpPp3/8/1N6/PPP2PPP/RNBQK2R...
+01:48:56.420                                                             🎲 Candidate moves for AI analysis: [c8d7, d8d7, e8e7]
+01:48:56.420 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:48:56.420                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:48:56.718 GameViewModel                                               ✅ Evaluation received: 7.66
+01:48:56.732 ResponsesAPI                                                📋 Response ID: resp_685b47785d208191b22d188be38df4ec03f1e93fc8d1a83d
+01:48:58.563                                                             🏁 Response completed
+01:48:58.564 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
                                                                            "move_scores": {
-                                                                             "d1c1": {"score": 0.0, "reason": "Passive and retreating; avoids complexity...
-20:25:01.727                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.95
-20:25:01.727                                                             🎭 AI preferred moves: []
-20:25:01.727                                                             💭 AI reasoning: d4d5 creates imbalance and complexity, perfect for a player who thrives in chaos and seeks to out-calculate his opponent.
-20:25:01.768 AlekhineStyleValidator                                        📊 AI Move: d1c1 | Historical: h2h4 | Match: ❌ | Style: 0.60
-20:25:01.768                                                             🎯 Testing: Brilliant pawn sacrifice leading to overwhelming attack
-20:25:03.596 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:03.597 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #17)
-20:25:03.597                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:03.597                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): rnbqk2r/pp2bppp/4pn2/3p4/2PP4/2N2N2/PP2BPPP/R...
-20:25:03.597                                                             🎲 Candidate moves for AI analysis: [c1f4]
-20:25:03.597 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:03.597                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:25:03.877                                                             📋 Response ID: resp_6858588f9e44819ebc0cac543afddebf0ab02dd1ce9a188e
-20:25:05.883                                                             🏁 Response completed
-20:25:05.884 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "c8d7": {"score": 0.8, "reason": "Develops with tension; invites complicati...
+01:48:58.564                                                             ✅ JSON is already valid - no fixes needed
+01:48:58.564                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "c1f4": {"score": 0.0, "reason": "This move is too passive and symmetrical ...
-20:25:05.885                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.9
-20:25:05.885                                                             🎭 AI preferred moves: []
-20:25:05.885                                                             💭 AI reasoning: My best play comes from creating and navigating chaos. I seek to unsettle my opponent from the first move.
-20:25:05.926 AlekhineStyleValidator                                        📊 AI Move: c1f4 | Historical: d4d5 | Match: ❌ | Style: 0.60
-20:25:05.926                                                             🎯 Testing: Space advantage in center with positional pressure
-20:25:07.706 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:07.707 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #18)
-20:25:07.707                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:07.707                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
+                                                                             "c8d7": {"score": 0.8, "reason": "Develops with tension; invites complicati...
+01:48:58.564                                                             🎭 Parsed: 1 moves, conf=0.8
+01:48:58.564                                                             🎭 AI moves: [c8d7]
+01:48:58.599 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: c8d7
+01:48:58.964 GameHistoryManager                                          Move added: c8d7
+01:48:58.964 GameViewModel                                               🔍 Requesting position evaluation...
+01:48:58.965                                                             🎭 Updating personality context for move: c8d7
+01:48:58.965                                                             ✨ Personality context updated for move c8d7 - This is revolutionary!
+01:48:58.965                                                             🔍 Checking game end conditions...
+01:48:59.067                                                             ✅ Game continues - no end condition detected
+01:48:59.628 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 4.62 (move=14, alternating=ON, FEN=r2qkbnr/p2b1ppp/8/1B)
+01:48:59.628                                                             🔄 ALTERNATING: move=14, flip=false, 4.62→4.62 (diff=3.04)
+01:48:59.629 GameViewModel                                               ✅ Evaluation received: 4.62
+01:49:16.446                                                             🎯 makePlayerMove called with: d1e2
+01:49:16.497                                                             🔍 Validating move: d1e2 (attempt 1)
+01:49:16.598                                                             📋 Current position: r2qkbnr/p2b1ppp/8/1BpPp3/8/1N6/PPP2PPP/RNBQK2R w KQkq - 1 8
+01:49:16.650                                                             ⚖️ Move d1e2 legality check: LEGAL
+01:49:16.650                                                             ✅ Executing validated move: d1e2
+01:49:16.852                                                             📍 New position after move: r2qkbnr/p2b1ppp/8/1BpPp3/8/1N6/PPP1QPPP/RNB1K2R b KQkq - 2 8
+01:49:16.859 GameHistoryManager                                          Move added: d1e2
+01:49:16.952 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:16.953                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:49:16.953                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:49:16.953                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:49:16.956 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:49:16.957                                                             show: isDexDualMode = false
+01:49:16.957                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:49:16.963 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:49:16.963                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:49:16.963                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:49:16.963                                                             🔧 gameRepository class: GameRepository
+01:49:16.963                                                             🔧 Current thread: main
+01:49:17.414 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -6.05 (move=15, alternating=ON, FEN=r2qkbnr/p2b1ppp/8/1B)
+01:49:17.414                                                             🔄 ALTERNATING: move=15, flip=true, -6.05→6.05 (diff=1.43)
+01:49:17.857 GameViewModel                                               ✅ Evaluation received: 6.05
+01:49:17.920 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #10)
+01:49:17.920                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:17.920                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         Position (FEN): r2qkb1r/1b1n1ppp/p2ppn2/1p6/3PP3/1QN2N2/PP1B1...
-20:25:07.707                                                             🎲 Candidate moves for AI analysis: [f1e2]
-20:25:07.708 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:07.708                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:25:07.893                                                             📋 Response ID: resp_68585893b53881a3b2e8e11d266541e90747addbcc4099b5
-20:25:08.916                                                             🏁 Response completed
-20:25:08.917 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                         Position (FEN): r2qkbnr/p2b1ppp/8/1BpPp3/8/1N6/PPP1QPPP/RNB1K...
+01:49:17.920                                                             🎲 Candidate moves for AI analysis: [a8c8, a7a6, d8c8, d7b5, f8d6, h7h5, c5c4, g8f6]
+01:49:17.920 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:17.920                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:49:18.164                                                             📋 Response ID: resp_685b478dd548819fb515c341a304e8370bfd0fc4a825c727
+01:49:21.406                                                             🏁 Response completed
+01:49:21.407 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
                                                                            "move_scores": {
-                                                                             "f1e2": {"score": 0.0, "reason": "Passive and defensive; avoids the fight. ...
-20:25:08.918                                                             🎭 Parsed style evaluation: 1 moves, confidence=0.8
-20:25:08.918                                                             🎭 AI preferred moves: [f1e2]
-20:25:08.918                                                             💭 AI reasoning: In this position, I would seek complications, not retreat. The fight must be taken to the enemy, not avoided.
-20:25:08.963 AlekhineStyleValidator                                        📊 AI Move: f1e2 | Historical: e4e5 | Match: ❌ | Style: 0.70
-20:25:08.963                                                             🎯 Testing: Aggressive piece development creating immediate threats
-20:25:10.742 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:10.743 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #19)
-20:25:10.743                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:10.743                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/3P1N2/PPP2P...
-20:25:10.743                                                             🎲 Candidate moves for AI analysis: [e1g1]
-20:25:10.744 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:10.744                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:25:10.900                                                             📋 Response ID: resp_68585896bd148191b9f6361d755dfea10e2b16f283eab2cc
-20:25:13.215                                                             🏁 Response completed
-20:25:13.216 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "a8c8": {"score": 0.0, "reason": "A passive retreat, abandoning central ten...
+01:49:21.408                                                             🔧 JSON needs fixing: Expected literal value at character 732 of {
                                                                            "move_scores": {
-                                                                             "e1g1": {"score": 0.0, "reason": "Castling early in a position ripe for att...
-20:25:13.217                                                             🎭 Parsed style evaluation: 0 moves, confidence=0.9
-20:25:13.217                                                             🎭 AI preferred moves: []
-20:25:13.217                                                             💭 AI reasoning: I seek to impose my will on the board, not submit to its symmetry. Every move is a brushstroke in the painting of the game.
-20:25:13.263 AlekhineStyleValidator                                        📊 AI Move: e1g1 | Historical: f3g5 | Match: ❌ | Style: 0.60
-20:25:13.263                                                             🎯 Testing: Classical pawn endgame technique demonstration
-20:25:13.572 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 3 historical positions
-20:25:13.573 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #20)
-20:25:13.574                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:13.574                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
-                                                                         
-                                                                         Position (FEN): 8/8/1p6/pP6/P7/8/4k3/4K3 w - - 0 50
-                                                                         You are p...
-20:25:13.574                                                             🎲 Candidate moves for AI analysis: [e1e2]
-20:25:13.574 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
-20:25:13.574                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
-20:25:13.744                                                             📋 Response ID: resp_6858589992f0819db4c7532d89368b750b74db7b00439f91
-20:25:14.879                                                             🏁 Response completed
-20:25:14.880 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                             "a8c8": {"score": 0.0, "reason": "A passive retreat, abandoning central tension. Not in keeping with my fighting spirit."},
+                                                                             "a7a6": {"score": 0.2, "reason": "A useful waiting move, but lacks ambition and fails to create complications."},
+                                                                             "d8c8": {"score": 0.0, "reason": "Unnecessary simplification. Avoided unless forced."},
+                                                                             "d7b5": {"score": 0.3, "reason": "An attempt to complicate, but misplaces the queen and wastes time."},
+                                                                             "f8d6": {"score": 0.6, "reason": "Develops with purpose, but the resulting position is too balanced for my taste."},
+                                                                             "h7h5": {"score": 0.7, "reason": "A provocative move, seeking to unsettle and create weaknesses on the flank."},
+                                                                             "c5c4": {"score": 1.0, \"reason\": \"Perfectly Alekhine: seizes space, unbalances the position, and opens lines for attack. The kind of move that leads to rich, complex battles.\"},
+                                                                             "g8f6": {"score": 0.5, \"reason\": \"Solid development, but misses an opportunity to fight for the initiative.\"}
+                                                                           },
+                                                                           "top_choice": "c5c4",
+                                                                           "style_reasoning": "I seek the fight in every position. Moves that simplify or retreat are not in my nature. I prefer those that open doors for creativity and complicate the path for my opponent.",
+                                                                           "confidence": 1.0
+                                                                         }
+01:49:21.410                                                             🔧 Applying quote mismatch fixes
+01:49:21.411                                                             🛠️ JSON fix applied - original length: 1259, fixed length: 1251
+01:49:21.411                                                             🔧 Fixed JSON: {
                                                                            "move_scores": {
-                                                                             "e1e2": {"score": 0.0, "reason": "Passive and symmetrical. No tension, no c...
-20:25:14.880                                                             🎭 Parsed style evaluation: 1 moves, confidence=0.9
-20:25:14.880                                                             🎭 AI preferred moves: [e1e2]
-20:25:14.880                                                             💭 AI reasoning: In this position, the only active path was to create imbalance. Retreating the king is a surrender to simplicity.
-20:25:14.934 AlekhineStyleValidator                                        📊 AI Move: e1e2 | Historical: b5b6 | Match: ❌ | Style: 0.50
-20:25:14.934                                                             🎯 Testing: Tactical shot preparing devastating attack on kingside
-20:25:16.761 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:16.762 AIStyleAdvisor                                              ⚠️ Rate limit reached - providing fallback advice
-20:25:16.800 AlekhineStyleValidator                                        📊 AI Move: b3c2 | Historical: f3h4 | Match: ❌ | Style: 0.60
-20:25:16.800                                                             🎯 Testing: Legendary bishop sacrifice leading to forced mate
-20:25:18.475 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:18.476 AIStyleAdvisor                                              ⚠️ Rate limit reached - providing fallback advice
-20:25:18.514 AlekhineStyleValidator                                        📊 AI Move: e1g1 | Historical: c4f7 | Match: ❌ | Style: 0.60
-20:25:18.514                                                             🎯 Testing: Positional pawn advance creating long-term advantages
-20:25:19.983 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 14 historical positions
-20:25:19.984 AIStyleAdvisor                                              ⚠️ Rate limit reached - providing fallback advice
-20:25:20.019 AlekhineStyleValidator                                        📊 AI Move: f1d3 | Historical: a2a4 | Match: ❌ | Style: 0.70
-20:25:20.019                                                             🎯 Testing: Central breakthrough against the former world champion
-20:25:21.900 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 1 historical positions
-20:25:21.900 AIStyleAdvisor                                              ⚠️ Rate limit reached - providing fallback advice
-20:25:21.933 AlekhineStyleValidator                                        📊 AI Move: d1c2 | Historical: d4d5 | Match: ❌ | Style: 0.60
-20:25:21.933                                                             🎯 Testing: Alekhine Defense demonstration - dynamic counterplay
-20:25:23.582 System.out                                                  📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions
-20:25:23.583 AIStyleAdvisor                                              ⚠️ Rate limit reached - providing fallback advice
-20:25:23.603 AlekhineStyleValidator                                        📊 AI Move: g1f3 | Historical: e2e4 | Match: ❌ | Style: 0.60
-20:25:23.603                                                             ✅ Quick validation test completed!
-20:25:23.604 CompetitiveModeActivity                                     🧪 COMPETITIVE VALIDATION RESULTS:
-                                                                         🎯 ALEKHINE COMPETITIVE MODE VALIDATION
+                                                                             "a8c8": {"score": 0.0, "reason": "A passive retreat, abandoning central ten...
+01:49:21.412                                                             🎭 Parsed: 3 moves, conf=1.0
+01:49:21.412                                                             🎭 AI moves: [c5c4, h7h5, f8d6]
+01:49:21.459 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: c5c4
+01:49:21.826 GameHistoryManager                                          Move added: c5c4
+01:49:21.826 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:21.827                                                             🎭 Updating personality context for move: c5c4
+01:49:21.827                                                             ✨ Personality context updated for move c5c4 - This is revolutionary!
+01:49:21.828                                                             🔍 Checking game end conditions...
+01:49:21.929                                                             ✅ Game continues - no end condition detected
+01:49:22.590 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 4.19 (move=16, alternating=ON, FEN=r2qkbnr/p2b1ppp/8/1B)
+01:49:22.590                                                             🔄 ALTERNATING: move=16, flip=false, 4.19→4.19 (diff=1.86)
+01:49:22.590 GameViewModel                                               ✅ Evaluation received: 4.19
+01:49:38.268                                                             🎯 makePlayerMove called with: e2e5
+01:49:38.318                                                             🔍 Validating move: e2e5 (attempt 1)
+01:49:38.419                                                             📋 Current position: r2qkbnr/p2b1ppp/8/1B1Pp3/2p5/1N6/PPP1QPPP/RNB1K2R w KQkq - 0 9
+01:49:38.470                                                             ⚖️ Move e2e5 legality check: LEGAL
+01:49:38.470                                                             ✅ Executing validated move: e2e5
+01:49:38.673                                                             📍 New position after move: r2qkbnr/p2b1ppp/8/1B1PQ3/2p5/1N6/PPP2PPP/RNB1K2R b KQkq - 0 9
+01:49:38.680 GameHistoryManager                                          Move added: e2e5
+01:49:38.773 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:38.774                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:49:38.774                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:49:38.774                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:49:38.778 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:49:38.779                                                             show: isDexDualMode = false
+01:49:38.779                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:49:38.786 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:49:38.786                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:49:38.786                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:49:38.786                                                             🔧 gameRepository class: GameRepository
+01:49:38.786                                                             🔧 Current thread: main
+01:49:39.080 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -5.90 (move=17, alternating=ON, FEN=r2qkbnr/p2b1ppp/8/1B)
+01:49:39.080                                                             🔄 ALTERNATING: move=17, flip=true, -5.90→5.90 (diff=1.71)
+01:49:39.474 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #11)
+01:49:39.474                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:39.474                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         🎯 ALEKHINE STYLE ACCURACY REPORT\n=======================================\nOverall Accuracy: 36.6/100\nHistorical Match Rate: 0.0%\nStyle Consistency: 61.0/100\nTactical Patterns: 75.0/100\nPositional Patterns: 70.0/100\nEndgame Patterns: 65.0/100\n\n🎖️ Performance Grade: NEEDS SIGNIFICANT IMPROVEMENT ⚠️\n
+                                                                         Position (FEN): r2qkbnr/p2b1ppp/8/1B1PQ3/2p5/1N6/PPP2PPP/RNB1...
+01:49:39.474                                                             🎲 Candidate moves for AI analysis: [d8e7, f8e7, g8e7]
+01:49:39.474 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:39.474                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:49:39.704                                                             📋 Response ID: resp_685b47a35c4481a1ae3045167293cafa07b9e85f37a30704
+01:49:39.828 GameViewModel                                               ✅ Evaluation received: 5.90
+01:49:41.338 ResponsesAPI                                                🏁 Response completed
+01:49:41.339 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                           "move_scores": {
+                                                                             "d8e7": {"score": 0.0, "reason": "A passive retreat from danger. Such simpl...
+01:49:41.339                                                             ✅ JSON is already valid - no fixes needed
+01:49:41.340                                                             🔧 Fixed JSON: {
+                                                                           "move_scores": {
+                                                                             "d8e7": {"score": 0.0, "reason": "A passive retreat from danger. Such simpl...
+01:49:41.340                                                             🎭 Parsed: 1 moves, conf=0.9
+01:49:41.340                                                             🎭 AI moves: [g8e7]
+01:49:41.382 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: g8e7
+01:49:41.750 GameHistoryManager                                          Move added: g8e7
+01:49:41.750 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:41.750                                                             🎭 Updating personality context for move: g8e7
+01:49:41.750                                                             ✨ Personality context updated for move g8e7 - This is revolutionary!
+01:49:41.751                                                             🔍 Checking game end conditions...
+01:49:41.853                                                             ✅ Game continues - no end condition detected
+01:49:42.363 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 4.84 (move=18, alternating=ON, FEN=r2qkb1r/p2bnppp/8/1B)
+01:49:42.363                                                             🔄 ALTERNATING: move=18, flip=false, 4.84→4.84 (diff=1.06)
+01:49:42.364 GameViewModel                                               ✅ Evaluation received: 4.84
+01:49:50.134                                                             🎯 makePlayerMove called with: b5c4
+01:49:50.185                                                             🔍 Validating move: b5c4 (attempt 1)
+01:49:50.287                                                             📋 Current position: r2qkb1r/p2bnppp/8/1B1PQ3/2p5/1N6/PPP2PPP/RNB1K2R w KQkq - 1 10
+01:49:50.338                                                             ⚖️ Move b5c4 legality check: LEGAL
+01:49:50.338                                                             ✅ Executing validated move: b5c4
+01:49:50.540                                                             📍 New position after move: r2qkb1r/p2bnppp/8/3PQ3/2B5/1N6/PPP2PPP/RNB1K2R b KQkq - 0 10
+01:49:50.547 GameHistoryManager                                          Move added: b5c4
+01:49:50.640 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:50.641                                                             🎭 Using PERSONALITY ENGINE for move calculation!
+01:49:50.641                                                             🚨 ENTERING requestPersonalityEngineMove() - personalityEngineEnabled=true
+01:49:50.641                                                             🎭 REQUESTING PERSONALITY ENGINE MOVE - Making history!
+01:49:50.645 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.lambda$setupPersonalityObservers$14$com-example-chesspedagogue-MainActivity:624 
+01:49:50.645                                                             show: isDexDualMode = false
+01:49:50.646                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:49:50.651 GameViewModel                                               🚨 ABOUT TO CALL gameRepository.calculatePersonalityMove()
+01:49:50.651                                                             🔧 DEBUG: gameRepository instance = NOT NULL
+01:49:50.651                                                             🎯 CALLING gameRepository.calculatePersonalityMove() NOW...
+01:49:50.651                                                             🔧 gameRepository class: GameRepository
+01:49:50.651                                                             🔧 Current thread: main
+01:49:51.052 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: -6.87 (move=19, alternating=ON, FEN=r2qkb1r/p2bnppp/8/3P)
+01:49:51.052                                                             🔄 ALTERNATING: move=19, flip=true, -6.87→6.87 (diff=2.03)
+01:49:51.593 AIStyleAdvisor                                              🧠 Requesting AI advice for alekhine (request #12)
+01:49:51.593                                                             🎯 Sending prompt to alekhine assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:51.593                                                             📝 Prompt preview: 🎯 STYLE EVALUATION TASK FOR ALEKHINE
                                                                          
-                                                                         🎮 Competitive Settings:
-                                                                         Master: alekhine
-                                                                         Player: white
-                                                                         Skill Level: 10
-20:25:23.605 Dialog                                                      mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
-20:25:23.611 DecorView                                                   setWindowBackground: isPopOver=false color=fff1f1f3 d=android.graphics.drawable.InsetDrawable@6bd93bf
-20:25:23.620 ScrollView                                                  initGoToTop
-20:25:23.628 WindowManager                                               WindowManagerGlobal#addView, ty=2, view=com.android.internal.policy.DecorView{ebb566 V.E...... R.....I. 0,0-0,0}[CompetitiveModeActivity], caller=android.view.WindowManagerImpl.addView:158 android.app.Dialog.show:511 androidx.appcompat.app.AlertDialog$Builder.show:1008 
-20:25:23.630 NativeCust...ncyManager                                     [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
-20:25:23.638 VRI[Compet...y]@88580a7                                     synced displayState. AttachInfo displayState=2
-20:25:23.639                                                             setView = com.android.internal.policy.DecorView@ebb566 IsHRR=false TM=true
-20:25:23.640 Toast                                                       show: caller = com.example.chesspedagogue.CompetitiveModeActivity.lambda$runCompetitiveValidation$45$com-example-chesspedagogue-CompetitiveModeActivity:2903 
-20:25:23.640                                                             show: isDexDualMode = false
-20:25:23.640                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
-20:25:23.643 HWUI                                                        HWUI - treat SMPTE_170M as sRGB
-20:25:23.657 BufferQueueProducer                                         [](id:4cde00000004,api:0,p:0,c:19678) setDequeueTimeout:2077252342
-20:25:23.657 libc                                                        Access denied finding property "vendor.display.enable_optimal_refresh_rate"
-20:25:23.657                                                             Access denied finding property "vendor.gpp.create_frc_extension"
-20:25:23.658 VRI[Compet...y]@88580a7                                     Relayout returned: old=(0,100,1440,2908) new=(36,707,1404,2301) relayoutAsync=false req=(1368,1594)0 dur=4 res=0x3 s={true 0xb400007196641000} ch=true seqId=0
-20:25:23.658                                                             performConfigurationChange setNightDimText nightDimLevel=0
-20:25:23.658                                                             mThreadedRenderer.initialize() mSurface={isValid=true 0xb400007196641000} hwInitialized=true
-20:25:23.661 ScrollView                                                   onsize change changed 
-20:25:23.661 VRI[Compet...y]@88580a7                                     reportNextDraw android.view.ViewRootImpl.performTraversals:5193 android.view.ViewRootImpl.doTraversal:3708 android.view.ViewRootImpl$TraversalRunnable.run:12542 android.view.Choreographer$CallbackRecord.run:1751 android.view.Choreographer$CallbackRecord.run:1760 
-20:25:23.662                                                             Setup new sync=wmsSync-VRI[CompetitiveModeActivity]@88580a7#8
-20:25:23.662                                                             Creating new active sync group VRI[CompetitiveModeActivity]@88580a7#9
-20:25:23.662                                                             registerCallbacksForSync syncBuffer=false
-20:25:23.667                                                             Received frameDrawingCallback syncResult=0 frameNum=1.
-20:25:23.668                                                             mWNT: t=0xb4000072306c1980 mBlastBufferQueue=0xb4000071ecffb780 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$11.onFrameDraw:15016 android.view.ThreadedRenderer$1.onFrameDraw:761 <bottom of call stack> 
-20:25:23.668                                                             Setting up sync and frameCommitCallback
-20:25:23.671 BLASTBufferQueue                                            [VRI[CompetitiveModeActivity]@88580a7#4](f:0,a:0,s:0) onFrameAvailable the first frame is available
-20:25:23.672 SurfaceComposerClient                                       apply transaction with the first frame. layerId: 53144, bufferData(ID: 84516366450707, frameNumber: 1)
-20:25:23.672 VRI[Compet...y]@88580a7                                     Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
-20:25:23.673 HWUI                                                        CFMS:: SetUp Pid : 19678    Tid : 19701
-20:25:23.673 VRI[Compet...y]@88580a7                                     reportDrawFinished seqId=0
-20:25:23.760                                                             onDisplayChanged oldDisplayState=2 newDisplayState=2
-20:25:23.766                                                             mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb400007196641000}
-20:25:28.507                                                             onDisplayChanged oldDisplayState=2 newDisplayState=2
-20:26:02.434                                                             ViewPostIme pointer 0
-20:26:02.436                                                             call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[CompetitiveModeActivity]@88580a7
-20:26:02.464                                                             onDisplayChanged oldDisplayState=2 newDisplayState=2
-20:26:02.498                                                             ViewPostIme pointer 1
-20:26:02.506 Dialog                                                      mIsDeviceDefault = false, mIsSamsungBasicInteraction = false, isMetaDataInActivity = false
-20:26:02.510 DecorView                                                   setWindowBackground: isPopOver=false color=fff1f1f3 d=android.graphics.drawable.InsetDrawable@b8c977f
-20:26:02.518 ScrollView                                                  initGoToTop
-20:26:02.524 WindowManager                                               WindowManagerGlobal#addView, ty=2, view=com.android.internal.policy.DecorView{c910650 V.E...... R.....I. 0,0-0,0}[CompetitiveModeActivity], caller=android.view.WindowManagerImpl.addView:158 android.app.Dialog.show:511 androidx.appcompat.app.AlertDialog$Builder.show:1008 
-20:26:02.526 NativeCust...ncyManager                                     [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
-20:26:02.531 VRI[Compet...y]@b8c4049                                     synced displayState. AttachInfo displayState=2
-20:26:02.533                                                             setView = com.android.internal.policy.DecorView@c910650 IsHRR=false TM=true
-20:26:02.533 WindowManager                                               WindowManagerGlobal#removeView, ty=2, view=com.android.internal.policy.DecorView{ebb566 V.E...... R....... 0,0-1368,1594}[CompetitiveModeActivity], caller=android.view.WindowManagerGlobal.removeView:626 android.view.WindowManagerImpl.removeViewImmediate:216 android.app.Dialog.dismissDialog:808 
-20:26:02.533 WindowOnBackDispatcher                                      sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda15@96dc1f2
-20:26:02.536 HWUI                                                        endAllActiveAnimators on 0xb40000719661cc00 (RippleDrawable) with handle 0xb40000719107f300
-20:26:02.537 VRI[Compet...y]@88580a7                                     dispatchDetachedFromWindow
-20:26:02.541 Accessibil...Controller                                     mViewRootImpl is invalid
-20:26:02.553 BufferQueueProducer                                         [](id:4cde00000005,api:0,p:-119009264,c:19678) setDequeueTimeout:2077252342
-20:26:02.553 libc                                                        Access denied finding property "vendor.display.enable_optimal_refresh_rate"
-20:26:02.553                                                             Access denied finding property "vendor.gpp.create_frc_extension"
-20:26:02.553 VRI[Compet...y]@b8c4049                                     Relayout returned: old=(0,100,1440,2908) new=(36,987,1404,2020) relayoutAsync=false req=(1368,1033)0 dur=5 res=0x3 s={true 0xb400007196641000} ch=true seqId=0
-20:26:02.554                                                             performConfigurationChange setNightDimText nightDimLevel=0
-20:26:02.554                                                             mThreadedRenderer.initialize() mSurface={isValid=true 0xb400007196641000} hwInitialized=true
-20:26:02.555 ScrollView                                                   onsize change changed 
-20:26:02.556 VRI[Compet...y]@b8c4049                                     reportNextDraw android.view.ViewRootImpl.performTraversals:5193 android.view.ViewRootImpl.doTraversal:3708 android.view.ViewRootImpl$TraversalRunnable.run:12542 android.view.Choreographer$CallbackRecord.run:1751 android.view.Choreographer$CallbackRecord.run:1760 
-20:26:02.556                                                             Setup new sync=wmsSync-VRI[CompetitiveModeActivity]@b8c4049#10
-20:26:02.556                                                             Creating new active sync group VRI[CompetitiveModeActivity]@b8c4049#11
-20:26:02.556                                                             registerCallbacksForSync syncBuffer=false
-20:26:02.558                                                             Received frameDrawingCallback syncResult=0 frameNum=1.
-20:26:02.558                                                             mWNT: t=0xb4000071ed1a4780 mBlastBufferQueue=0xb4000071f8df9280 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$11.onFrameDraw:15016 android.view.ThreadedRenderer$1.onFrameDraw:761 <bottom of call stack> 
-20:26:02.558                                                             Setting up sync and frameCommitCallback
-20:26:02.560 BLASTBufferQueue                                            [VRI[CompetitiveModeActivity]@b8c4049#5](f:0,a:0,s:0) onFrameAvailable the first frame is available
-20:26:02.560 SurfaceComposerClient                                       apply transaction with the first frame. layerId: 53155, bufferData(ID: 84516366450711, frameNumber: 1)
-20:26:02.560 VRI[Compet...y]@b8c4049                                     Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
-20:26:02.561 HWUI                                                        CFMS:: SetUp Pid : 19678    Tid : 19701
-20:26:02.561 VRI[Compet...y]@b8c4049                                     reportDrawFinished seqId=0
-20:26:02.561 HWUI                                                        HWUI - treat SMPTE_170M as sRGB
-20:26:02.563 VRI[Compet...y]@b8c4049                                     handleResized, frames=ClientWindowFrames{frame=[36,987][1404,2020] display=[0,100][1440,2908] parentFrame=[0,0][0,0]} displayId=0 dragResizing=false compatScale=1.0 frameChanged=false attachedFrameChanged=false configChanged=false displayChanged=false compatScaleChanged=false dragResizingChanged=false
-20:26:02.563                                                             handleResized mSyncSeqId = 0
-20:26:02.563                                                             reportNextDraw android.view.ViewRootImpl.handleResized:2864 android.view.ViewRootImpl.-$$Nest$mhandleResized:0 android.view.ViewRootImpl$W.resized:13691 android.app.servertransaction.WindowStateResizeItem.execute:64 android.app.servertransaction.WindowStateTransactionItem.execute:59 
-20:26:02.569                                                             Setup new sync=wmsSync-VRI[CompetitiveModeActivity]@b8c4049#12
-20:26:02.569                                                             Creating new active sync group VRI[CompetitiveModeActivity]@b8c4049#13
-20:26:02.569                                                             registerCallbacksForSync syncBuffer=false
-20:26:02.570                                                             Received frameDrawingCallback syncResult=0 frameNum=3.
-20:26:02.570                                                             Setting up sync and frameCommitCallback
-20:26:02.570                                                             Received frameCommittedCallback lastAttemptedDrawFrameNum=3 didProduceBuffer=false
-20:26:02.570                                                             reportDrawFinished seqId=0
-20:26:02.592                                                             mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb400007196641000}
-20:26:02.695 WindowManager           system_server                       win=Window{cd887ab u0 com.example.chesspedagogue/com.example.chesspedagogue.CompetitiveModeActivity EXITING} destroySurfaces: appStopped=false cleanupOnResume=false win.mWindowRemovalAllowed=true win.mRemoveOnExit=true win.mViewVisibility=0 caller=com.android.server.wm.WindowState.onExitAnimationDone:222 com.android.server.wm.WindowState.onAnimationFinished:161 com.android.server.wm.WindowContainer$$ExternalSyntheticLambda5.onAnimationFinished:26 com.android.server.wm.SurfaceAnimator$$ExternalSyntheticLambda1.run:28 com.android.server.wm.SurfaceAnimator$$ExternalSyntheticLambda0.onAnimationFinished:65 com.android.server.wm.LocalAnimationAdapter$$ExternalSyntheticLambda0.run:10 android.os.Handler.handleCallback:959 
-20:26:04.816 VRI[Compet...y]@b8c4049 com.example.chesspedagogue          ViewPostIme pointer 0
-20:26:04.816                                                             call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[CompetitiveModeActivity]@b8c4049
-20:26:04.885                                                             ViewPostIme pointer 1
-20:26:04.892 WindowManager                                               WindowManagerGlobal#removeView, ty=2, view=com.android.internal.policy.DecorView{c910650 V.E...... R....... 0,0-1368,1033}[CompetitiveModeActivity], caller=android.view.WindowManagerGlobal.removeView:626 android.view.WindowManagerImpl.removeViewImmediate:216 android.app.Dialog.dismissDialog:808 
-20:26:04.892 WindowOnBackDispatcher                                      sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda15@e4f9805
-20:26:04.895 HWUI                                                        endAllActiveAnimators on 0xb4000071f8febe00 (RippleDrawable) with handle 0xb40000722266e8c0
-20:26:04.895 VRI[Compet...y]@b8c4049                                     dispatchDetachedFromWindow
-20:26:04.921 InputMethodManagerUtils                                     startInputInner - Id : 0
-20:26:04.921 InputMethodManager                                          startInputInner - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
-20:26:05.048 WindowManager           system_server                       win=Window{22cad6 u0 com.example.chesspedagogue/com.example.chesspedagogue.Competiti
+                                                                         Position (FEN): r2qkb1r/p2bnppp/8/3PQ3/2B5/1N6/PPP2PPP/RNB1K2...
+01:49:51.593                                                             🎲 Candidate moves for AI analysis: [a8c8, a8b8, d8b8, d8b6, a7a5, d8c8, h7h5, f7f6]
+01:49:51.593 ResponsesAPI                                                🚀 Creating response with assistant: asst_wnshRkbnaca2vkRxYqYZDcLu
+01:49:51.593                                                             🔧 PERSPECTIVE FIX: Attempting fine-tuned model for alekhine
+01:49:51.595 GameViewModel                                               ✅ Evaluation received: 6.87
+01:49:51.778 ResponsesAPI                                                📋 Response ID: resp_685b47af798081a19747a2c766f6cc820896c5f27f58b14a
+01:49:55.117                                                             🏁 Response completed
+01:49:55.118 AIStyleAdvisor                                              ✅ Received AI response for alekhine: {
+                                                                           "move_scores": {
+                                                                             "a8c8": {"score": 0.0, "reason": "Passive and retreating; avoids confrontat...
+01:49:55.119                                                             ✅ JSON is already valid - no fixes needed
+01:49:55.119                                                             🔧 Fixed JSON: {
+                                                                           "move_scores": {
+                                                                             "a8c8": {"score": 0.0, "reason": "Passive and retreating; avoids confrontat...
+01:49:55.119                                                             🎭 Parsed: 3 moves, conf=1.0
+01:49:55.120                                                             🎭 AI moves: [f7f6, h7h5, d8b6]
+01:49:55.157 GameViewModel                                               🎯 PERSONALITY MOVE CALCULATED: f7f6
+01:49:55.524 GameHistoryManager                                          Move added: f7f6
+01:49:55.524 GameViewModel                                               🔍 Requesting position evaluation...
+01:49:55.524                                                             🎭 Updating personality context for move: f7f6
+01:49:55.525                                                             ✨ Personality context updated for move f7f6 - This is revolutionary!
+01:49:55.525                                                             🔍 Checking game end conditions...
+01:49:55.627                                                             ✅ Game continues - no end condition detected
+01:49:56.143 SignAgnosticEvalFix                                         🔍 RAW EVAL DIAGNOSTIC: 4.61 (move=20, alternating=ON, FEN=r2qkb1r/p2bn1pp/5p2/)
+01:49:56.143                                                             🔄 ALTERNATING: move=20, flip=false, 4.61→4.61 (diff=2.26)
+01:49:56.143 GameViewModel                                               ✅ Evaluation received: 4.61
+01:50:20.507 WindowManager                                               WindowManagerGlobal#addView, ty=1002, view=android.widget.PopupWindow$PopupDecorView{c16192 V.E...... R.....I. 0,0-0,0}, caller=android.view.WindowManagerImpl.addView:158 android.widget.PopupWindow.invokePopup:1712 android.widget.PopupWindow.showAsDropDown:1499 
+01:50:20.508 NativeCust...ncyManager                                     [NativeCFMS] BpCustomFrequencyManager::BpCustomFrequencyManager()
+01:50:20.514 VRI[PopupW...d]@6fd3763                                     synced displayState. AttachInfo displayState=2
+01:50:20.515                                                             setView = android.widget.PopupWindow$PopupDecorView@c16192 IsHRR=false TM=true
+01:50:20.534 BufferQueueProducer                                         [](id:451600000002,api:0,p:557780971,c:17686) setDequeueTimeout:2077252342
+01:50:20.535 libc                                                        Access denied finding property "vendor.display.enable_optimal_refresh_rate"
+01:50:20.535                                                             Access denied finding property "vendor.gpp.create_frc_extension"
+01:50:20.535 VRI[PopupW...d]@6fd3763                                     Relayout returned: old=(658,116,1425,116) new=(658,116,1425,2516) relayoutAsync=false req=(767,2400)0 dur=5 res=0x3 s={true 0xb4000070e7cdd800} ch=true seqId=0
+01:50:20.535                                                             performConfigurationChange setNightDimText nightDimLevel=0
+01:50:20.535                                                             mThreadedRenderer.initialize() mSurface={isValid=true 0xb4000070e7cdd800} hwInitialized=true
+01:50:20.558 AbsListView                                                  in onLayout changed 
+01:50:20.559 VRI[PopupW...d]@6fd3763                                     reportNextDraw android.view.ViewRootImpl.performTraversals:5193 android.view.ViewRootImpl.doTraversal:3708 android.view.ViewRootImpl$TraversalRunnable.run:12542 android.view.Choreographer$CallbackRecord.run:1751 android.view.Choreographer$CallbackRecord.run:1760 
+01:50:20.560                                                             Setup new sync=wmsSync-VRI[PopupWindow:bd62b1d]@6fd3763#4
+01:50:20.560                                                             Creating new active sync group VRI[PopupWindow:bd62b1d]@6fd3763#5
+01:50:20.560                                                             registerCallbacksForSync syncBuffer=false
+01:50:20.562                                                             Received frameDrawingCallback syncResult=0 frameNum=1.
+01:50:20.562                                                             mWNT: t=0xb4000070e779ae00 mBlastBufferQueue=0xb4000070e7760600 fn= 1 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$11.onFrameDraw:15016 android.view.ThreadedRenderer$1.onFrameDraw:761 <bottom of call stack> 
+01:50:20.562                                                             Setting up sync and frameCommitCallback
+01:50:20.568 BLASTBufferQueue                                            [VRI[PopupWindow:bd62b1d]@6fd3763#2](f:0,a:0,s:0) onFrameAvailable the first frame is available
+01:50:20.568 SurfaceComposerClient                                       apply transaction with the first frame. layerId: 64949, bufferData(ID: 75960791597067, frameNumber: 1)
+01:50:20.569 VRI[PopupW...d]@6fd3763                                     Received frameCommittedCallback lastAttemptedDrawFrameNum=1 didProduceBuffer=true
+01:50:20.569 HWUI                                                        CFMS:: SetUp Pid : 17686    Tid : 17713
+01:50:20.569 VRI[PopupW...d]@6fd3763                                     reportDrawFinished seqId=0
+01:50:20.570 HWUI                                                        HWUI - treat SMPTE_170M as sRGB
+01:50:20.571 VRI[PopupW...d]@6fd3763                                     handleResized, frames=ClientWindowFrames{frame=[658,116][1425,2516] display=[-100000,-100000][100000,100000] parentFrame=[0,0][0,0] attachedFrame=[0,0][1440,3088]} displayId=0 dragResizing=false compatScale=1.0 frameChanged=false attachedFrameChanged=false configChanged=false displayChanged=false compatScaleChanged=false dragResizingChanged=false
+01:50:20.571                                                             handleResized mSyncSeqId = 0
+01:50:20.571                                                             reportNextDraw android.view.ViewRootImpl.handleResized:2864 android.view.ViewRootImpl.-$$Nest$mhandleResized:0 android.view.ViewRootImpl$W.resized:13691 android.app.servertransaction.WindowStateResizeItem.execute:64 android.app.servertransaction.WindowStateTransactionItem.execute:59 
+01:50:20.577                                                             Setup new sync=wmsSync-VRI[PopupWindow:bd62b1d]@6fd3763#6
+01:50:20.577                                                             Creating new active sync group VRI[PopupWindow:bd62b1d]@6fd3763#7
+01:50:20.577                                                             registerCallbacksForSync syncBuffer=false
+01:50:20.577                                                             Received frameDrawingCallback syncResult=0 frameNum=2.
+01:50:20.577                                                             Setting up sync and frameCommitCallback
+01:50:20.578                                                             Received frameCommittedCallback lastAttemptedDrawFrameNum=2 didProduceBuffer=true
+01:50:20.579                                                             reportDrawFinished seqId=0
+01:50:20.593                                                             mThreadedRenderer.initializeIfNeeded()#2 mSurface={isValid=true 0xb4000070e7cdd800}
+01:50:22.058                                                             ViewPostIme pointer 0
+01:50:22.060                                                             call setFrameRateCategory for touch hint category=high hint, reason=touch, vri=VRI[PopupWindow:bd62b1d]@6fd3763
+01:50:22.209                                                             ViewPostIme pointer 1
+01:50:22.210 AbsListView                                                 onTouchUp() mTouchMode : 2
+01:50:22.214 Toast                                                       show: caller = com.example.chesspedagogue.MainActivity.runQuickStyleValidation:3554 
+01:50:22.214                                                             show: isDexDualMode = false
+01:50:22.215                                                             show: contextDispId = 0 mCustomDisplayId = -1 focusedDisplayId = 0 isActivityContext = true
+01:50:22.224 VRI[PopupW...d]@6fd3763                                     Relayout returned: old=(658,116,1425,2516) new=(658,116,1425,2516) relayoutAsync=true req=(767,2400)0 dur=0 res=0x0 s={true 0xb4000070e7cdd800} ch=false seqId=0
+01:50:22.224 LightweightValidator                                        🚀 Starting lightweight Alekhine validation...
+01:50:22.225 VRI[PopupW...d]@6fd3763                                     registerCallbackForPendingTransactions
+01:50:22.228                                                             mWNT: t=0xb4000070e779b280 mBlastBufferQueue=0xb4000070e7760600 fn= 39 HdrRenderState mRenderHdrSdrRatio=1.0 caller= android.view.ViewRootImpl$9.onFrameDraw:6276 android.view.ViewRootImpl$3.onFrameDraw:2440 android.view.ThreadedRenderer$1.onFrameDraw:761 
+01:50:22.243 LightweightValidator                                        📦 Loaded 20 test positions from Alekhine games
+01:50:22.243                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:22.243 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:22.244                                                             📤 Validation request body length: 2747
+01:50:22.248 InputMethodManagerUtils                                     startInputInner - Id : 0
+01:50:22.248 InputMethodManager                                          startInputInner - IInputMethodManagerGlobalInvoker.startInputOrWindowGainedFocus
+01:50:22.530 WindowManager                                               WindowManagerGlobal#removeView, ty=1002, view=android.widget.PopupWindow$PopupDecorView{c16192 V.E...... R.....ID 0,0-767,2400}, caller=android.view.WindowManagerGlobal.removeView:626 android.view.WindowManagerImpl.removeViewImmediate:216 android.widget.PopupWindow.dismissImmediate:2421 
+01:50:22.531 WindowOnBackDispatcher                                      sendCancelIfRunning: isInProgress=false callback=android.view.ViewRootImpl$$ExternalSyntheticLambda15@31390ea
+01:50:22.535 VRI[PopupW...d]@6fd3763                                     dispatchDetachedFromWindow
+01:50:28.189 OpenAIService                                               📥 Validation response received, length: 2554
+01:50:28.190                                                             ✅ Style validation response extracted successfully
+01:50:28.190 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:28.190                                                             📊 Position assessed: 0.34 confidence, identified as: Garry Kasparov
+01:50:28.190                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:28.190 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:28.191                                                             📤 Validation request body length: 2750
+01:50:33.111                                                             📥 Validation response received, length: 2220
+01:50:33.111                                                             ✅ Style validation response extracted successfully
+01:50:33.112 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:33.112                                                             📊 Position assessed: 0.4 confidence, identified as: José Capablanca
+01:50:33.112                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:33.112 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:33.113                                                             📤 Validation request body length: 2769
+01:50:37.838                                                             📥 Validation response received, length: 2186
+01:50:37.839                                                             ✅ Style validation response extracted successfully
+01:50:37.839 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:37.839                                                             📊 Position assessed: 0.4 confidence, identified as: Garry Kasparov
+01:50:37.840                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:37.840 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:37.841                                                             📤 Validation request body length: 2750
+01:50:44.377                                                             📥 Validation response received, length: 2719
+01:50:44.377                                                             ✅ Style validation response extracted successfully
+01:50:44.377 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:44.378                                                             📊 Position assessed: 0.32 confidence, identified as: Garry Kasparov
+01:50:44.378                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:44.378 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:44.379                                                             📤 Validation request body length: 2757
+01:50:50.168                                                             📥 Validation response received, length: 2128
+01:50:50.168                                                             ✅ Style validation response extracted successfully
+01:50:50.169 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:50.169                                                             📊 Position assessed: 0.38 confidence, identified as: José Capablanca
+01:50:50.169                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:50.169 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:50.170                                                             📤 Validation request body length: 2748
+01:50:55.975                                                             📥 Validation response received, length: 2143
+01:50:55.975                                                             ✅ Style validation response extracted successfully
+01:50:55.976 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:50:55.976                                                             📊 Position assessed: 0.82 confidence, identified as: José Capablanca
+01:50:55.977                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:50:55.977 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:50:55.979                                                             📤 Validation request body length: 2767
+01:51:03.152                                                             📥 Validation response received, length: 2016
+01:51:03.152                                                             ✅ Style validation response extracted successfully
+01:51:03.152 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:03.153                                                             📊 Position assessed: 0.82 confidence, identified as: José Capablanca
+01:51:03.153                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:03.153 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:03.154                                                             📤 Validation request body length: 2767
+01:51:07.561                                                             📥 Validation response received, length: 2133
+01:51:07.561                                                             ✅ Style validation response extracted successfully
+01:51:07.561 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:07.562                                                             📊 Position assessed: 0.82 confidence, identified as: José Capablanca
+01:51:07.562                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:07.562 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:07.563                                                             📤 Validation request body length: 2749
+01:51:15.309                                                             📥 Validation response received, length: 2215
+01:51:15.309                                                             ✅ Style validation response extracted successfully
+01:51:15.310 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:15.310                                                             📊 Position assessed: 0.82 confidence, identified as: José Capablanca
+01:51:15.310                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:15.311 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:15.312                                                             📤 Validation request body length: 2753
+01:51:20.427                                                             📥 Validation response received, length: 2037
+01:51:20.427                                                             ✅ Style validation response extracted successfully
+01:51:20.428 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:20.428                                                             📊 Position assessed: 0.78 confidence, identified as: José Capablanca
+01:51:20.429                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:20.429 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:20.431                                                             📤 Validation request body length: 2738
+01:51:24.693                                                             📥 Validation response received, length: 1993
+01:51:24.694                                                             ✅ Style validation response extracted successfully
+01:51:24.695 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:24.695                                                             📊 Position assessed: 0.82 confidence, identified as: José Capablanca
+01:51:24.696                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:24.696 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:24.698                                                             📤 Validation request body length: 2741
+01:51:28.686                                                             📥 Validation response received, length: 2068
+01:51:28.686                                                             ✅ Style validation response extracted successfully
+01:51:28.687 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:28.687                                                             📊 Position assessed: 0.78 confidence, identified as: José Capablanca
+01:51:28.688                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:28.688 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:28.690                                                             📤 Validation request body length: 2760
+01:51:34.357                                                             📥 Validation response received, length: 2184
+01:51:34.358                                                             ✅ Style validation response extracted successfully
+01:51:34.358 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:34.359                                                             📊 Position assessed: 0.8 confidence, identified as: Alexander Alekhine
+01:51:34.359                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:34.359 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:34.361                                                             📤 Validation request body length: 2738
+01:51:41.594                                                             📥 Validation response received, length: 2129
+01:51:41.595                                                             ✅ Style validation response extracted successfully
+01:51:41.596 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:41.596                                                             📊 Position assessed: 0.78 confidence, identified as: José Capablanca
+01:51:41.597                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:41.597 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:41.599                                                             📤 Validation request body length: 2760
+01:51:47.870                                                             📥 Validation response received, length: 2181
+01:51:47.870                                                             ✅ Style validation response extracted successfully
+01:51:47.871 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:47.872                                                             📊 Position assessed: 0.87 confidence, identified as: Alexander Alekhine
+01:51:47.872                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:47.872 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:47.875                                                             📤 Validation request body length: 2750
+01:51:52.871                                                             📥 Validation response received, length: 2406
+01:51:52.872                                                             ✅ Style validation response extracted successfully
+01:51:52.872 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:52.873                                                             📊 Position assessed: 0.32 confidence, identified as: Garry Kasparov
+01:51:52.873                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:52.874 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:52.876                                                             📤 Validation request body length: 2741
+01:51:56.578                                                             📥 Validation response received, length: 2060
+01:51:56.579                                                             ✅ Style validation response extracted successfully
+01:51:56.579 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:51:56.580                                                             📊 Position assessed: 0.83 confidence, identified as: José Capablanca
+01:51:56.580                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:51:56.580 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:51:56.582                                                             📤 Validation request body length: 2750
+01:52:00.948                                                             📥 Validation response received, length: 2300
+01:52:00.949                                                             ✅ Style validation response extracted successfully
+01:52:00.949 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:52:00.950                                                             📊 Position assessed: 0.72 confidence, identified as: José Capablanca
+01:52:00.950                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:52:00.950 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:52:00.952                                                             📤 Validation request body length: 2743
+01:52:05.581                                                             📥 Validation response received, length: 2093
+01:52:05.582                                                             ✅ Style validation response extracted successfully
+01:52:05.582 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:52:05.583                                                             📊 Position assessed: 0.78 confidence, identified as: Alexander Alekhine
+01:52:05.583                                                             🤖 Calling GPT-4.1-2025-04-14 for style validation...
+01:52:05.584 OpenAIService                                               🤖 Sending style validation request to gpt-4.1-2025-04-14
+01:52:05.586                                                             📤 Validation request body length: 2744
+01:52:11.725                                                             📥 Validation response received, length: 2194
+01:52:11.725                                                             ✅ Style validation response extracted successfully
+01:52:11.726 LightweightValidator                                        ✅ GPT-4.1 validation response received
+01:52:11.726                                                             📊 Position assessed: 0.78 confidence, identified as: Alexander Alekhine
+01:52:11.727                                                             ✅ Validation complete: 4/20 correct (20.0%)

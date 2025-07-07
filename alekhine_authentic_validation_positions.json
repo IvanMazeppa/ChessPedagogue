@@ -1,0 +1,1128 @@
+{
+  "metadata": {
+    "created_at": "2025-06-28T01:07:47.691921",
+    "source_file": "/mnt/d/Users/dilli/AndroidStudioProjects/ChessPedagogue/game_collections_full/Alekhine.pgn",
+    "total_games_analyzed": 25,
+    "total_positions_extracted": 50,
+    "format": "authentic_alekhine_validation",
+    "purpose": "AI personality validation with genuine historical data",
+    "description": "Positions extracted from authentic Alekhine PGN collection using simple parsing",
+    "validation_approach": "Historical game context + authentic move analysis",
+    "note": "Simplified extraction without chess engine - focuses on move patterns and context"
+  },
+  "positions": [
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Ba3 11.Bxb7 Bxf8 12.Bc6 Qxf5 13.Qc2 Rad1 14.Rb1 Rf3 15.Rc3",
+      "move_number": 15,
+      "alekhine_move_san": "bxc6",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Bxf8 12.Bc6 Qxf5 13.Qc2 Rad1 14.Rb1 Rf3 15.Rc3 bxc6 16.Qg2",
+      "move_number": 16,
+      "alekhine_move_san": "Qf1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "Qxf5 13.Qc2 Rad1 14.Rb1 Rf3 15.Rc3 bxc6 16.Qg2 Qf1 17.Qf3",
+      "move_number": 17,
+      "alekhine_move_san": "Rd1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "Rad1 14.Rb1 Rf3 15.Rc3 bxc6 16.Qg2 Qf1 17.Qf3 Rd1 18.Qxd1",
+      "move_number": 18,
+      "alekhine_move_san": "Qf3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 19"
+      },
+      "full_pgn_context": "Rf3 15.Rc3 bxc6 16.Qg2 Qf1 17.Qf3 Rd1 18.Qxd1 Qf3 19.Kg2",
+      "move_number": 19,
+      "alekhine_move_san": "Qd3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 19, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 20"
+      },
+      "full_pgn_context": "bxc6 16.Qg2 Qf1 17.Qf3 Rd1 18.Qxd1 Qf3 19.Kg2 Qd3 20.Kh3",
+      "move_number": 20,
+      "alekhine_move_san": "Qc4",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 20, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Savrov",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 22"
+      },
+      "full_pgn_context": "Rd1 18.Qxd1 Qf3 19.Kg2 Qd3 20.Kh3 Qc4 21.Rc1 Kg2 22.Qf1",
+      "move_number": 22,
+      "alekhine_move_san": "Qd1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 22, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Ljubimov, T.",
+        "alekhine_color": "white",
+        "opponent": "Ljubimov, T.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.Bd2 Ba4 11.Bb3 Qxd2 12.a3 Nf1 13.h4 Ne3 14.hxg5 Bxd5",
+      "move_number": 15,
+      "alekhine_move_san": "Nxd5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Ljubimov, T.",
+      "strategic_context": "Alekhine demonstrates tactical capture, knight maneuver in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "knight_maneuver"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Ljubimov, T.",
+        "alekhine_color": "white",
+        "opponent": "Ljubimov, T.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.Bb3 Qxd2 12.a3 Nf1 13.h4 Ne3 14.hxg5 Bxd5 15.Nxd5 Nxc7",
+      "move_number": 16,
+      "alekhine_move_san": "Re2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Ljubimov, T.",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Ljubimov, T.",
+        "alekhine_color": "white",
+        "opponent": "Ljubimov, T.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "12.a3 Nf1 13.h4 Ne3 14.hxg5 Bxd5 15.Nxd5 Nxc7 16.Re2 Ne6+",
+      "move_number": 17,
+      "alekhine_move_san": "bxc3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Ljubimov, T.",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Ljubimov, T.",
+        "alekhine_color": "white",
+        "opponent": "Ljubimov, T.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "13.h4 Ne3 14.hxg5 Bxd5 15.Nxd5 Nxc7 16.Re2 Ne6+ 17.bxc3 Rxe4+",
+      "move_number": 18,
+      "alekhine_move_san": "Re3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Ljubimov, T.",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Ljubimov, T.",
+        "alekhine_color": "white",
+        "opponent": "Ljubimov, T.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 19"
+      },
+      "full_pgn_context": "14.hxg5 Bxd5 15.Nxd5 Nxc7 16.Re2 Ne6+ 17.bxc3 Rxe4+ 18.Re3 Rae1",
+      "move_number": 19,
+      "alekhine_move_san": "Rxe3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Ljubimov, T.",
+      "strategic_context": "Alekhine demonstrates tactical capture, rook deployment in move 19, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Manko, V.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Manko, V.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Rh4 11.Qxc3 Bc4 12.Ng5 Bxe6 13.Nxh7 Rxh7+ 14.Qxc7+ Rd8 15.Qxd8",
+      "move_number": 15,
+      "alekhine_move_san": "Qf6+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Manko, V.",
+      "strategic_context": "Alekhine demonstrates forcing check, queen activity in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "check",
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Manko, V.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Manko, V.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Bc4 12.Ng5 Bxe6 13.Nxh7 Rxh7+ 14.Qxc7+ Rd8 15.Qxd8 Qf6+ 16.Qxg5",
+      "move_number": 16,
+      "alekhine_move_san": "Qe7+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Manko, V.",
+      "strategic_context": "Alekhine demonstrates forcing check, queen activity in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "check",
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Savrov",
+        "alekhine_color": "white",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.Rad1 Qxd1 11.a4 Re1 12.Qc2 Nb4 13.g3 Rc1 14.Rd1 Rd4",
+      "move_number": 15,
+      "alekhine_move_san": "Qd3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Savrov",
+        "alekhine_color": "white",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.a4 Re1 12.Qc2 Nb4 13.g3 Rc1 14.Rd1 Rd4 15.Qd3 Qd2",
+      "move_number": 16,
+      "alekhine_move_san": "Qe2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates queen activity in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Savrov",
+        "alekhine_color": "white",
+        "opponent": "Savrov",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "12.Qc2 Nb4 13.g3 Rc1 14.Rd1 Rd4 15.Qd3 Qd2 16.Qe2 Nc2",
+      "move_number": 17,
+      "alekhine_move_san": "Rd2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Savrov",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Zubakin, N.",
+        "alekhine_color": "white",
+        "opponent": "Zubakin, N.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.Bxe7 Rhe1 12.Nd6 exd6 13.Re5 dxe5 14.Qe3 Ke1 15.e6 exf7",
+      "move_number": 16,
+      "alekhine_move_san": "Rd1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Zubakin, N.",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Zubakin, N.",
+        "alekhine_color": "white",
+        "opponent": "Zubakin, N.",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "12.Nd6 exd6 13.Re5 dxe5 14.Qe3 Ke1 15.e6 exf7 16.Rd1 Kd2",
+      "move_number": 17,
+      "alekhine_move_san": "Kxe3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Zubakin, N.",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.gxf3 Ra3 11.Kh1 Be3 12.Bf5 Bg4 13.Bxh5 f4 14.Rxd1 Bxf4",
+      "move_number": 15,
+      "alekhine_move_san": "Rc1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.Kh1 Be3 12.Bf5 Bg4 13.Bxh5 f4 14.Rxd1 Bxf4 15.Rc1 e6",
+      "move_number": 16,
+      "alekhine_move_san": "Re1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "12.Bf5 Bg4 13.Bxh5 f4 14.Rxd1 Bxf4 15.Rc1 e6 16.Re1 Rg3",
+      "move_number": 17,
+      "alekhine_move_san": "Rh3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 19"
+      },
+      "full_pgn_context": "14.Rxd1 Bxf4 15.Rc1 e6 16.Re1 Rg3 17.Rh3 Rg3 18.Kg2 Rc3",
+      "move_number": 19,
+      "alekhine_move_san": "Ra1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 19, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 20"
+      },
+      "full_pgn_context": "15.Rc1 e6 16.Re1 Rg3 17.Rh3 Rg3 18.Kg2 Rc3 19.Ra1 Re3+",
+      "move_number": 20,
+      "alekhine_move_san": "Ra7",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 20, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Vjachirev",
+        "alekhine_color": "white",
+        "opponent": "Vjachirev",
+        "event": "Earl tourn",
+        "date": "1906.??.??",
+        "result": "1/2-1/2",
+        "significance": "Historical game - move 21"
+      },
+      "full_pgn_context": "16.Re1 Rg3 17.Rh3 Rg3 18.Kg2 Rc3 19.Ra1 Re3+ 20.Ra7 Ree7",
+      "move_number": 21,
+      "alekhine_move_san": "Rg7",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Vjachirev",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 21, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Viakhirev, Apollon",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Viakhirev, Apollon",
+        "event": "corr",
+        "date": "1907.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Bf2 11.a3 Be3 12.b4 Kg1 13.Kf2 b5 14.Rfc1 Kf1 15.Nxg3",
+      "move_number": 15,
+      "alekhine_move_san": "Bf2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Viakhirev, Apollon",
+      "strategic_context": "Alekhine demonstrates bishop coordination in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "bishop_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Viakhirev, Apollon",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Viakhirev, Apollon",
+        "event": "corr",
+        "date": "1907.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Be3 12.b4 Kg1 13.Kf2 b5 14.Rfc1 Kf1 15.Nxg3 Bf2 16.gxf3",
+      "move_number": 16,
+      "alekhine_move_san": "Rc2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Viakhirev, Apollon",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Viakhirev, Apollon",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Viakhirev, Apollon",
+        "event": "corr",
+        "date": "1907.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "Kg1 13.Kf2 b5 14.Rfc1 Kf1 15.Nxg3 Bf2 16.gxf3 Rc2 17.Be3",
+      "move_number": 17,
+      "alekhine_move_san": "Bg1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Viakhirev, Apollon",
+      "strategic_context": "Alekhine demonstrates bishop coordination in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "bishop_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Viakhirev, Apollon",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Viakhirev, Apollon",
+        "event": "corr",
+        "date": "1907.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "b5 14.Rfc1 Kf1 15.Nxg3 Bf2 16.gxf3 Rc2 17.Be3 Bg1 18.Rh2",
+      "move_number": 18,
+      "alekhine_move_san": "Rxg2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Viakhirev, Apollon",
+      "strategic_context": "Alekhine demonstrates tactical capture, rook deployment in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.f4 Bd4 11.Rde1 Qg5 12.Re6 Qxg6+ 13.Qxf5+ Qxg4 14.Re1 Qg5+",
+      "move_number": 15,
+      "alekhine_move_san": "Re3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.Rde1 Qg5 12.Re6 Qxg6+ 13.Qxf5+ Qxg4 14.Re1 Qg5+ 15.Re3 Na4",
+      "move_number": 16,
+      "alekhine_move_san": "Rb3+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates forcing check, rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "check",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "12.Re6 Qxg6+ 13.Qxf5+ Qxg4 14.Re1 Qg5+ 15.Re3 Na4 16.Rb3+ Qg3",
+      "move_number": 17,
+      "alekhine_move_san": "Qd3",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates queen activity in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "13.Qxf5+ Qxg4 14.Re1 Qg5+ 15.Re3 Na4 16.Rb3+ Qg3 17.Qd3 Be5",
+      "move_number": 18,
+      "alekhine_move_san": "Rb5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 19"
+      },
+      "full_pgn_context": "14.Re1 Qg5+ 15.Re3 Na4 16.Rb3+ Qg3 17.Qd3 Be5 18.Rb5 c4",
+      "move_number": 19,
+      "alekhine_move_san": "Nb6+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates forcing check, knight maneuver in move 19, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "check",
+        "knight_maneuver"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 20"
+      },
+      "full_pgn_context": "15.Re3 Na4 16.Rb3+ Qg3 17.Qd3 Be5 18.Rb5 c4 19.Nb6+ Rxb6",
+      "move_number": 20,
+      "alekhine_move_san": "Qg6",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates queen activity in move 20, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Rosanov, Lev I",
+        "alekhine_color": "white",
+        "opponent": "Rosanov, Lev I",
+        "event": "Moscow",
+        "date": "1907.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 21"
+      },
+      "full_pgn_context": "16.Rb3+ Qg3 17.Qd3 Be5 18.Rb5 c4 19.Nb6+ Rxb6 20.Qg6 Rb3",
+      "move_number": 21,
+      "alekhine_move_san": "Qf7+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Rosanov, Lev I",
+      "strategic_context": "Alekhine demonstrates forcing check, queen activity in move 21, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "check",
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Von Bardeleben, Curt",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Von Bardeleben, Curt",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Bc4 11.Nxe4 Bd5 12.Bxc6 Qh5 13.Rb2 Nf3 14.Rxe2 Qxe5 15.Qc5",
+      "move_number": 15,
+      "alekhine_move_san": "Bf4",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Von Bardeleben, Curt",
+      "strategic_context": "Alekhine demonstrates bishop coordination in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "bishop_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Von Bardeleben, Curt",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Von Bardeleben, Curt",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Bd5 12.Bxc6 Qh5 13.Rb2 Nf3 14.Rxe2 Qxe5 15.Qc5 Bf4 16.b7",
+      "move_number": 16,
+      "alekhine_move_san": "Kxf1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Von Bardeleben, Curt",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Neumann, Augustin",
+        "alekhine_color": "white",
+        "opponent": "Neumann, Augustin",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.Nc3 f3 11.Qf2 cxd3 12.Ne4 Qh2 13.Kxh2 Nf2 14.Bd2 g4",
+      "move_number": 15,
+      "alekhine_move_san": "Rxf2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Neumann, Augustin",
+      "strategic_context": "Alekhine demonstrates tactical capture, rook deployment in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Neumann, Augustin",
+        "alekhine_color": "white",
+        "opponent": "Neumann, Augustin",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "11.Qf2 cxd3 12.Ne4 Qh2 13.Kxh2 Nf2 14.Bd2 g4 15.Rxf2 Bc3",
+      "move_number": 16,
+      "alekhine_move_san": "Rf4",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Neumann, Augustin",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Neumann, Augustin",
+        "alekhine_color": "white",
+        "opponent": "Neumann, Augustin",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "13.Kxh2 Nf2 14.Bd2 g4 15.Rxf2 Bc3 16.Rf4 Rxa6 17.Kg1 Rf1",
+      "move_number": 18,
+      "alekhine_move_san": "Kxf1",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Neumann, Augustin",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Lasker, Edward",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Lasker, Edward",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "f3 11.Bd3 Bh4 12.Rc1 Be1 13.g4 Kf2 14.Rg1 Ke2 15.h3",
+      "move_number": 15,
+      "alekhine_move_san": "hxg4",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Lasker, Edward",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 15 against the legendary Lasker, Edward, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Lasker, Edward",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Lasker, Edward",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Bh4 12.Rc1 Be1 13.g4 Kf2 14.Rg1 Ke2 15.h3 hxg4 16.Rg2",
+      "move_number": 16,
+      "alekhine_move_san": "Rf2",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Lasker, Edward",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 16 against the legendary Lasker, Edward, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Alekhine, Alexander",
+        "black_player": "Kunze, O.",
+        "alekhine_color": "white",
+        "opponent": "Kunze, O.",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "10.Rg1 g5 11.fxg5 Rdf1 12.Bxg6 Qxe6+ 13.Qxg6 Qh5+ 14.Qf7+ g6",
+      "move_number": 15,
+      "alekhine_move_san": "Nd5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Kunze, O.",
+      "strategic_context": "Alekhine demonstrates knight maneuver in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "knight_maneuver"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Trcala, St",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Trcala, St",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Qh4 11.Rag1 Ne2 12.Qh5 Ng3 13.Ne2 Rh2 14.h4 Nd2 15.Nf1",
+      "move_number": 15,
+      "alekhine_move_san": "hxg5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Trcala, St",
+      "strategic_context": "Alekhine demonstrates tactical capture in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Trcala, St",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Trcala, St",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "0-1",
+        "significance": "Historical game - move 16"
+      },
+      "full_pgn_context": "Ne2 12.Qh5 Ng3 13.Ne2 Rh2 14.h4 Nd2 15.Nf1 hxg5 16.Neg3",
+      "move_number": 16,
+      "alekhine_move_san": "Nxh5+",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Trcala, St",
+      "strategic_context": "Alekhine demonstrates tactical capture, forcing check, knight maneuver in move 16, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "check",
+        "knight_maneuver"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Wiarda, A.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Wiarda, A.",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 15"
+      },
+      "full_pgn_context": "Nc3 11.Ne4 Qc2 12.Rad1 Bf2 13.Nxd6 Rfe1 14.Bg3 Re5 15.Rde1",
+      "move_number": 15,
+      "alekhine_move_san": "Rxg5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Wiarda, A.",
+      "strategic_context": "Alekhine demonstrates tactical capture, rook deployment in move 15, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Wiarda, A.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Wiarda, A.",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 17"
+      },
+      "full_pgn_context": "Bf2 13.Nxd6 Rfe1 14.Bg3 Re5 15.Rde1 Rxg5 16.Re5 a3 17.Qc4",
+      "move_number": 17,
+      "alekhine_move_san": "Rd5",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Wiarda, A.",
+      "strategic_context": "Alekhine demonstrates rook deployment in move 17, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Wiarda, A.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Wiarda, A.",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 18"
+      },
+      "full_pgn_context": "Rfe1 14.Bg3 Re5 15.Rde1 Rxg5 16.Re5 a3 17.Qc4 Rd5 18.Rd6",
+      "move_number": 18,
+      "alekhine_move_san": "Qf7",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Wiarda, A.",
+      "strategic_context": "Alekhine demonstrates queen activity in move 18, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "queen_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    },
+    {
+      "game_info": {
+        "white_player": "Wiarda, A.",
+        "black_player": "Alekhine, Alexander",
+        "alekhine_color": "black",
+        "opponent": "Wiarda, A.",
+        "event": "Duesseldorf",
+        "date": "1908.??.??",
+        "result": "1-0",
+        "significance": "Historical game - move 19"
+      },
+      "full_pgn_context": "Re5 15.Rde1 Rxg5 16.Re5 a3 17.Qc4 Rd5 18.Rd6 Qf7 19.Qe6",
+      "move_number": 19,
+      "alekhine_move_san": "Rxe6",
+      "alekhine_annotation": "Historical move by Alekhine in actual game against Wiarda, A.",
+      "strategic_context": "Alekhine demonstrates tactical capture, rook deployment in move 19, showcasing his dynamic playing style.",
+      "tactical_elements": [
+        "capture",
+        "rook_activity"
+      ],
+      "game_phase": "middlegame",
+      "validation_type": "authentic_historical_pgn_simple"
+    }
+  ]
+}

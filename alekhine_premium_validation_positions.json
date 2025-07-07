@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "created_at": "2025-06-28T01:15:36.424433",
+    "source_file": "game_collections_full/Alekhine.pgn",
+    "total_games_analyzed": 1661,
+    "total_positions_extracted": 0,
+    "format": "premium_alekhine_validation",
+    "purpose": "AI personality validation with premium historical analysis",
+    "description": "High-quality positions extracted from authentic Alekhine PGN collection with full chess engine validation",
+    "validation_approach": "Premium analysis: FEN validation + strategic analysis + tactical recognition + opponent prioritization",
+    "quality_features": [
+      "Full FEN position validation",
+      "Legal move verification",
+      "Strategic pattern analysis",
+      "Famous opponent prioritization",
+      "Tactical element recognition",
+      "Material and positional evaluation",
+      "Game phase classification"
+    ],
+    "famous_opponents_included": 0,
+    "average_position_score": 0
+  },
+  "positions": []
+}

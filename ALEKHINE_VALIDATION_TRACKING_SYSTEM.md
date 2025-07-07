@@ -224,6 +224,122 @@ The personality system has an optimal complexity threshold. Beyond that point, a
 
 ---
 
+### Test #8 - Enhanced Assistant with Strict Function Schema (FAILED - MAJOR REGRESSION)
+**Date:** June 23, 2025  
+**Mode:** Competitive Mode  
+**Configuration:**
+- Master: Alekhine (Enhanced with strict function calling)
+- ELO: ~1750 (Level 10)
+- Function: analyze_chess_position (SINGLE function approach)
+- Player Color: Black
+- Enhancement: Updated function schema with "strict": true
+
+**Results:**
+```
+Overall Accuracy: 36.6/100 (MAJOR REGRESSION -19.2 from Test #5!)
+Historical Match Rate: 0.0% (COMPLETE FAILURE - dropped from 30%!)
+Style Consistency: 61.0/100 (REGRESSION -12 from Test #5)
+Tactical Patterns: 75.0/100 (MAINTAINED)
+Positional Patterns: 70.0/100 (MAINTAINED)
+Endgame Patterns: 65.0/100 (MAINTAINED)
+Grade: NEEDS SIGNIFICANT IMPROVEMENT ⚠️
+```
+
+**🚨 CRITICAL ANALYSIS - MAJOR REGRESSION:**
+❌ **Complete Historical Match Failure**: 30% → 0% (Test #5 → Test #8)  
+❌ **Overall Accuracy Collapse**: 55.8 → 36.6 (19.2 point drop)  
+❌ **Style Consistency Regression**: 73.0 → 61.0 (12 point drop)  
+❌ **Function Calling Ineffective**: "strict": true had no positive impact  
+❌ **Single Function Strategy Failed**: Even with focused approach, no improvement  
+
+**ROOT CAUSE ANALYSIS:**
+The regression from Test #5 (30% success) to Test #8 (0% success) indicates:
+1. **Assistant Configuration Changes**: Modifications between tests may have broken functionality
+2. **Function Schema Issues**: "strict": true parameter may have disrupted function calls
+3. **System Instructions Overload**: Enhanced instructions may have confused decision process
+4. **Environmental Factors**: Different test conditions or opponent strength (Level 10 vs previous)
+
+**COMPARISON WITH SUCCESSFUL TESTS:**
+- **Test #5 (Success)**: 30% Historical Match, 55.8 Overall, basic function calling
+- **Test #8 (Failure)**: 0% Historical Match, 36.6 Overall, enhanced function calling
+- **Delta**: -30% Historical Match, -19.2 Overall Accuracy
+
+**IMMEDIATE HYPOTHESIS:**
+The enhanced function calling approach with "strict": true and complex system instructions **over-engineered** the solution, causing the assistant to lose the successful patterns from Test #5.
+
+**Status:** ❌ MAJOR REGRESSION DETECTED - Need to revert to Test #5 configuration
+
+---
+
+### Test #9 - System Architecture Issues Discovered (REBUILD SESSION v0.9.5-a7)
+**Date:** June 24, 2025  
+**Mode:** Competitive Mode  
+**Configuration:**
+- Master: Alekhine (Standard configuration)
+- ELO: 2690 (Peak Rating)
+- Player Color: White
+- Focus: Debugging MultiPV candidate generation
+
+**Results:**
+```
+Overall Accuracy: 37.6/100 (SLIGHT IMPROVEMENT +1.0 from Test #8)
+Historical Match Rate: 0.0% (NO CHANGE - still at 0%)
+Style Consistency: 62.7/100 (SLIGHT IMPROVEMENT +1.7 from Test #8)
+Tactical Patterns: 75.0/100 (MAINTAINED)
+Positional Patterns: 70.0/100 (MAINTAINED)
+Endgame Patterns: 65.0/100 (MAINTAINED)
+Grade: NEEDS SIGNIFICANT IMPROVEMENT ⚠️
+```
+
+**🔍 CRITICAL SYSTEM ANALYSIS - ROOT CAUSE IDENTIFIED:**
+✅ **PersonalityEngine Integration**: Working correctly (🎭 Using PERSONALITY ENGINE logs confirmed)  
+✅ **Database Queries**: Working correctly (📊 DATABASE QUERY RESULT: alekhine returned 12 historical positions)  
+✅ **Historical Move Extraction**: Working correctly (Historical moves found: "e4", "Qe7", "O-O")  
+✅ **JSON Parsing**: Working correctly (🎭 Parsed style evaluation without fallbacks)  
+❌ **CORE ISSUE**: Only 1 candidate move provided to AI instead of 8+ candidates  
+
+**EVIDENCE OF THE PROBLEM:**
+```
+Log Evidence: "🎲 Candidate moves for AI analysis: [b8c6]"  // Only 1 move!
+Expected: "🎲 Candidate moves for AI analysis: [b8c6, e7e6, g8f6, d7d6, e7e5, ...]"  // 8 moves
+```
+
+**MISSING CRITICAL LOGS:**
+❌ **`getEngineCandidates` method never executes** - logs missing: `🚨🚨🚨 CRITICAL: getEngineCandidates() METHOD ENTRY`  
+❌ **MultiPV configuration never applied** - logs missing: `🔧 MultiPV setOption result`  
+❌ **Stockfish analysis never expanded** - only single-move analysis occurs  
+
+**TECHNICAL FIXES APPLIED IN REBUILD SESSION:**
+✅ **FEN Reconstruction Fixed**: `getPositionBeforeMove()` now uses GameRepository for reliable position building  
+✅ **JSON Parsing Enhanced**: Fixed mixed quote patterns in AI responses (`"reason': '` → `"reason": "`)  
+✅ **Historical Move Extraction Improved**: Better pattern recognition extracts actual chess moves  
+✅ **MultiPV Debugging Added**: Comprehensive logging to identify where MultiPV configuration fails  
+
+**SESSION IMPROVEMENTS ACHIEVED:**
+- **Overall Accuracy**: 30.0% → 37.6% (+7.6 percentage points)
+- **Style Consistency**: 50.0% → 62.7% (+12.7 percentage points)  
+- **System Stability**: No crashes, consistent database access, reliable API calls
+- **Historical Data**: Successfully extracting moves like "e4", "Qe7", "O-O", "Ba6"
+
+**REMAINING CRITICAL ISSUE:**
+The `getEngineCandidates` method in PersonalityEngine.java is not being executed despite:
+- PersonalityEngine being called correctly
+- Database queries working
+- All prerequisite conditions met
+
+**LIKELY CAUSES:**
+1. **Build/Deployment Issue**: Enhanced debugging code not compiled into running APK
+2. **Exception Before Logging**: Method throws exception before critical entry log
+3. **Alternative Code Path**: Different method providing single candidates, bypassing enhanced logic
+4. **Thread/Timing Issue**: Method called but logs not captured in timing window
+
+**HYPOTHESIS FOR NEXT INVESTIGATION:**
+The system has an alternative candidate generation path that bypasses the enhanced `getEngineCandidates` method. This path only provides 1 move, forcing the AI to choose poorly-rated moves because no alternatives exist.
+
+**Status:** 🔧 SYSTEM ARCHITECTURE ISSUE IDENTIFIED - MultiPV candidate generation not executing
+
+---
+
 ## 🎯 **Optimal Testing Protocol**
 
 ### **Recommended Configuration:**

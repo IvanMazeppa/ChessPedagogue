@@ -65,3 +65,6 @@ ChessPedagogueConfigurator/
 /ENHANCEMENTS_COMPLETED_README.md
 /puzzle_database/
 /puzzle_database/
+puzzle_database/lichess_db_puzzle.csv
+*.csv
+ChessPersonalityValidator/
