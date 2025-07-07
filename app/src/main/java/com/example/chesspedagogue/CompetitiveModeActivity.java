@@ -1139,8 +1139,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             View controlButtonsContainer = findViewById(R.id.controlButtonsPanel);
             View chessBoardContainer = findViewById(R.id.chessBoardContainer);
             
-            // Create chessboard glass overlay for reveal effect
-            createChessboardGlassOverlay();
+            // Glass overlay DISABLED for cleaner chessboard appearance
+            Log.d(TAG, "🎭 Glass overlay creation DISABLED - chessboard shows clearly");
             
             // Position panels off-screen initially
             setupInitialPanelPositions(headerPanel, moveListPanel, capturedBottomPanel, controlButtonsContainer, chessBoardContainer);
@@ -1175,12 +1175,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 View glassOverlay = new View(this);
                 glassOverlay.setId(View.generateViewId());
                 
-                // Set opaque blue glass appearance (matching your blue-teal theme)
+                // Create transparent glass panel that fades from visible to invisible
                 android.graphics.drawable.GradientDrawable glassBackground = new android.graphics.drawable.GradientDrawable();
                 glassBackground.setShape(android.graphics.drawable.GradientDrawable.RECTANGLE);
-                glassBackground.setCornerRadius(24f); // Match document specs
-                glassBackground.setColor(0xFF1565C0); // Deep blue, 100% opacity initially
+                glassBackground.setCornerRadius(24f); // Rounded corners for elegance
+                
+                // COMPLETELY TRANSPARENT - no visual effect at all
+                glassBackground.setColor(0x00FFFFFF); // 0% opacity - completely transparent
                 glassOverlay.setBackground(glassBackground);
+                
+                // Set overlay to completely transparent
+                glassOverlay.setAlpha(0.0f);
+                
+                Log.d(TAG, "🎨 Created frosted glass panel (semi-transparent) - chessboard visible but obscured");
                 
                 // Position to cover the actual ChessBoardView with matching margins
                 // Layout margins from activity_competitive_mode_modern.xml: start=14dp, top=12dp, end=10dp, bottom=0dp
@@ -1202,7 +1209,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 params.setMarginEnd((int)(10 * getResources().getDisplayMetrics().density));   // 10dp
                 params.bottomMargin = 0; // 0dp
                 glassOverlay.setLayoutParams(params);
-                glassOverlay.setElevation(25f); // Higher elevation to ensure coverage
+                glassOverlay.setElevation(50f); // Much higher elevation to ensure coverage over ChessBoardView (12dp)
+                
+                // Ensure the overlay is initially at full opacity (100% opaque)
+                glassOverlay.setAlpha(1.0f);
                 
                 // Add to container
                 container.addView(glassOverlay);
@@ -1210,7 +1220,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 // Store reference for later fade animation
                 glassOverlay.setTag("glass_overlay");
                 
+                // Force layout and bring overlay to front after layout is complete
+                glassOverlay.post(() -> {
+                    glassOverlay.bringToFront();
+                    Log.d(TAG, "🎨 Glass overlay brought to front after layout complete");
+                });
+                
                 Log.d(TAG, "🎨 Chessboard glass overlay created with margins (14dp, 12dp, 10dp, 0dp) to match ChessBoardView exactly");
+                Log.d(TAG, "🎨 Frosted glass panel: elevation=50dp, alpha=1.0 (50% transparent white) - elegant fade reveal");
             }
         } catch (Exception e) {
             Log.e(TAG, "❌ Error creating chessboard glass overlay", e);
@@ -1253,14 +1270,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             controlButtonsContainer.setElevation(12f);       // Lower elevation
         }
         
-        // Chessboard: starts BOTTOM (foundation, special case - no drop animation)
+        // Chessboard: starts MUCH FURTHER OFF-SCREEN (robot arm starting position)
         if (chessBoardContainer != null) {
-            chessBoardContainer.setTranslationX(0f);      // No horizontal offset
-            chessBoardContainer.setTranslationY(300f);    // Slide up from bottom
+            chessBoardContainer.setTranslationX(1500f);   // MUCH FURTHER off-screen - no files visible
+            chessBoardContainer.setTranslationY(0f);      // No vertical offset
             chessBoardContainer.setElevation(8f);         // Foundation elevation
         }
         
-        Log.d(TAG, "📍 Assembly positions set: LEFT→RIGHT alternating pattern with hover heights");
+        Log.d(TAG, "📍 Assembly positions set: Chessboard slides from RIGHT, panels alternate LEFT→RIGHT");
     }
     
     /**
@@ -1268,48 +1285,45 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      * Each panel: slides horizontally → hovers above position → drops into place
      */
     private void executeDeviceReconfigurationSequence(View headerPanel, View moveListPanel, View capturedBottomPanel, View controlButtonsContainer, View chessBoardContainer) {
-        // Enhanced sequence timing (in milliseconds) - MUCH SLOWER for visibility
-        int CHESSBOARD_DELAY = 0;      // Foundation first
-        int HEADER_DELAY = 300;        // Command interface (was 50ms)
-        int CAPTURED_DELAY = 600;      // Game state tracking (was 100ms)
-        int MOVELIST_DELAY = 900;      // Analysis panel (was 150ms)
-        int CONTROLS_DELAY = 1200;     // Action interfaces (was 200ms)
-        int GLASS_FADE_DELAY = 2000;   // Board reveal after all panels (was 800ms)
+        // Enhanced sequence timing (in milliseconds) - CHESSBOARD COMES LAST
+        int HEADER_DELAY = 0;          // Command interface first
+        int CAPTURED_DELAY = 300;      // Game state tracking (was 100ms)
+        int MOVELIST_DELAY = 600;      // Analysis panel (was 150ms)  
+        int CONTROLS_DELAY = 900;      // Action interfaces (was 200ms)
+        int CHESSBOARD_DELAY = 1200;   // Board slides in LAST from much further out
+        int GLASS_FADE_DELAY = 2500;   // Board reveal after chessboard arrives (was 800ms)
         
-        // 1. Chessboard (foundation) - Enhanced slide + drop assembly
-        if (chessBoardContainer != null) {
-            executeAssemblyAnimation(chessBoardContainer, CHESSBOARD_DELAY, "CHESSBOARD", 
-                0f, 300f, 0f);  // slides from bottom, drops into place
-        }
-        
-        // 2. Header panel - Slide from LEFT + drop (clearer direction)
+        // 1. Header panel - Slide from LEFT + drop (first component)
         if (headerPanel != null) {
             executeAssemblyAnimation(headerPanel, HEADER_DELAY, "HEADER", 
                 -400f, -100f, 0f);  // slides from left, hovers above, drops down
         }
         
-        // 3. Captured pieces - Slide from RIGHT + drop (opposite direction)
+        // 2. Captured pieces - Slide from RIGHT + drop (opposite direction)
         if (capturedBottomPanel != null) {
             executeAssemblyAnimation(capturedBottomPanel, CAPTURED_DELAY, "CAPTURED", 
                 400f, -80f, 0f);  // slides from right, hovers above, drops down
         }
         
-        // 4. Move list - Slide from LEFT + drop (different from header)
+        // 3. Move list - Slide from LEFT + drop (different from header)
         if (moveListPanel != null) {
             executeAssemblyAnimation(moveListPanel, MOVELIST_DELAY, "MOVELIST", 
                 -350f, -60f, 0f);  // slides from left, hovers above, drops down
         }
         
-        // 5. Control buttons - Slide from RIGHT + drop (opposite direction)
+        // 4. Control buttons - Slide from RIGHT + drop (opposite direction)
         if (controlButtonsContainer != null) {
             executeAssemblyAnimation(controlButtonsContainer, CONTROLS_DELAY, "CONTROLS", 
                 450f, -120f, 0f);  // slides from right, hovers above, drops down
         }
         
-        // 6. Chessboard glass overlay fade reveal (after all panels assembled)
-        mainHandler.postDelayed(() -> {
-            startChessboardGlassReveal();
-        }, GLASS_FADE_DELAY);
+        // 5. Chessboard - FINAL ELEMENT with ROBOT ARM movement pattern
+        if (chessBoardContainer != null) {
+            executeRobotArmChessboardAnimation(chessBoardContainer, CHESSBOARD_DELAY);
+        }
+        
+        // 6. Glass overlay DISABLED - chessboard shows immediately without overlay
+        Log.d(TAG, "🎭 Glass overlay system DISABLED - chessboard visible immediately");
         
         Log.d(TAG, "⚡ Device reconfiguration sequence executing with precision timing");
     }
@@ -1364,6 +1378,57 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
+     * 🤖 Execute robot arm movement pattern for chessboard
+     * Phase 1: Fast movement (covers most distance quickly)
+     * Phase 2: Decelerate to stop before final position
+     * Phase 3: Slow, precise movement to final position
+     */
+    private void executeRobotArmChessboardAnimation(View chessBoardContainer, int startDelay) {
+        if (chessBoardContainer == null) return;
+        
+        // Robot arm movement parameters
+        float START_POSITION = 1500f;      // MUCH FURTHER off-screen (no files visible)
+        float INTERMEDIATE_POSITION = 80f;  // Close to final position
+        float FINAL_POSITION = 0f;         // Final position
+        
+        int FAST_MOVEMENT_DURATION = 800;   // Fast movement duration
+        int PAUSE_DURATION = 100;          // Brief pause for precision
+        int PRECISION_DURATION = 600;      // Slow precision movement
+        
+        // Set initial position even further out
+        chessBoardContainer.setTranslationX(START_POSITION);
+        
+        mainHandler.postDelayed(() -> {
+            Log.d(TAG, "🤖 CHESSBOARD Robot Arm Phase 1: Fast movement (" + START_POSITION + " → " + INTERMEDIATE_POSITION + ")");
+            
+            // Phase 1: Fast movement to intermediate position
+            chessBoardContainer.animate()
+                .translationX(INTERMEDIATE_POSITION)
+                .setDuration(FAST_MOVEMENT_DURATION)
+                .setInterpolator(new android.view.animation.DecelerateInterpolator(2.0f))
+                .withEndAction(() -> {
+                    Log.d(TAG, "🤖 CHESSBOARD Robot Arm Phase 2: Precision pause (preparing for final positioning)");
+                    
+                    // Phase 2: Brief pause, then precision movement
+                    mainHandler.postDelayed(() -> {
+                        Log.d(TAG, "🤖 CHESSBOARD Robot Arm Phase 3: Precision movement (" + INTERMEDIATE_POSITION + " → " + FINAL_POSITION + ")");
+                        
+                        // Phase 3: Slow, precise movement to final position
+                        chessBoardContainer.animate()
+                            .translationX(FINAL_POSITION)
+                            .setDuration(PRECISION_DURATION)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator(3.0f))
+                            .withEndAction(() -> {
+                                Log.d(TAG, "✅ CHESSBOARD Robot Arm Assembly Complete - Board + Eval Bar positioned precisely!");
+                            })
+                            .start();
+                    }, PAUSE_DURATION);
+                })
+                .start();
+        }, startDelay);
+    }
+    
+    /**
      * 🎭 Fade the glass overlay to reveal the chessboard underneath
      */
     private void startChessboardGlassReveal() {
@@ -1381,23 +1446,57 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                         return;
                     }
                     
-                    Log.d(TAG, "🎭 Starting chessboard glass reveal sequence");
-                    
-                    // Fade opacity: 100% → 70% → 40% → 10% → 0%
-                    glassOverlay.animate()
-                        .alpha(0f)
-                        .setDuration(1000)
-                        .setInterpolator(new android.view.animation.DecelerateInterpolator(1.5f))
-                        .withEndAction(() -> {
-                            // Remove overlay after fade completes
-                            container.removeView(glassOverlay);
-                            Log.d(TAG, "✅ Chessboard revealed - AI device reconfiguration complete!");
-                        })
-                        .start();
+                    Log.d(TAG, "🎭 Glass overlay remains at 100% opacity - no fade effect");
+                    Log.d(TAG, "🎭 Glass panel state: alpha=" + glassOverlay.getAlpha() + " (keeping at 1.0 = fully opaque)");
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "❌ Error in chessboard glass reveal", e);
+        }
+    }
+    
+    /**
+     * 🎯 Create "coming into focus" animation - blur reduces from 25px to 0px
+     * Creates the effect of the chessboard materializing from blurry to sharp
+     */
+    private void createFocusRevealAnimation(View glassOverlay, android.view.ViewGroup container) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            // Create custom ValueAnimator for blur radius - much stronger initial blur
+            android.animation.ValueAnimator blurAnimator = android.animation.ValueAnimator.ofFloat(50f, 0f);
+            blurAnimator.setDuration(3000); // 3 seconds for dramatic focus effect
+            blurAnimator.setInterpolator(new android.view.animation.DecelerateInterpolator(2.5f));
+            
+            blurAnimator.addUpdateListener(animation -> {
+                float blurRadius = (float) animation.getAnimatedValue();
+                
+                // Update blur effect only - no color tinting
+                android.graphics.RenderEffect blurEffect = android.graphics.RenderEffect.createBlurEffect(
+                    blurRadius, blurRadius, android.graphics.Shader.TileMode.CLAMP
+                );
+                glassOverlay.setRenderEffect(blurEffect);
+                
+                // Keep background completely transparent throughout animation
+                glassOverlay.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+                
+                // Log only key milestones to reduce spam
+                float progress = animation.getAnimatedFraction();
+                if (progress == 0f || progress >= 0.25f && progress < 0.26f || 
+                    progress >= 0.5f && progress < 0.51f || progress >= 0.75f && progress < 0.76f) {
+                    Log.d(TAG, "🎭 Focus animation: " + String.format("%.0f", progress * 100) + "% complete, blur=" + String.format("%.1f", blurRadius) + "px");
+                }
+            });
+            
+            blurAnimator.addListener(new android.animation.AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(android.animation.Animator animation) {
+                    // Remove overlay when focus is complete
+                    container.removeView(glassOverlay);
+                    Log.d(TAG, "✅ Chessboard focus complete - AI device reconfiguration complete!");
+                }
+            });
+            
+            blurAnimator.start();
+            Log.d(TAG, "🎭 Starting DRAMATIC blur-to-focus animation (50px → 0px over 3 seconds)");
         }
     }
     

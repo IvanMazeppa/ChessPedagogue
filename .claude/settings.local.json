@@ -84,7 +84,9 @@
       "Bash(ADB_SERVER_SOCKET=tcp:127.0.0.1:5037 adb devices)",
       "Bash(ANDROID_ADB_SERVER_PORT=5037 ./gradlew installDebug --console=plain)",
       "Bash(nc:*)",
-      "Bash(unset:*)"
+      "Bash(unset:*)",
+      "Bash(./apache-maven-3.9.5/bin/mvn compile)",
+      "Bash(cat:*)"
     ],
     "deny": []
   },

@@ -5,8 +5,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_deep_blue_purple_gradient"
+    android:background="@drawable/bg_material3_expressive_gradient"
     tools:context=".SplashActivity">
+
+    <!-- Background Blur Layer for blue-grey appearance (same as 2025 version) -->
+    <View
+        android:id="@+id/backgroundBlurLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/material3_dynamic_background" />
 
     <!-- Status Bar Spacing -->
     <Space
@@ -24,7 +31,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
-        android:layout_marginTop="48dp"
+        android:layout_marginTop="24dp"
         android:layout_marginEnd="24dp"
         android:elevation="0dp"
         app:cardBackgroundColor="#1A506080"
@@ -35,10 +42,10 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="32dp">
+            android:padding="20dp">
 
             <!-- Chess Crown Icon with glow effect -->
             <ImageView
@@ -82,7 +89,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
         android:elevation="0dp"
         app:cardBackgroundColor="#1A506080"
@@ -93,9 +100,9 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="16dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -204,7 +211,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="12dp"
         android:layout_marginEnd="20dp"
         android:elevation="0dp"
         app:cardBackgroundColor="#1A506080"
@@ -292,7 +299,7 @@
         android:id="@+id/navigationBarSpacer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="56dp"
+        android:layout_marginBottom="140dp"
         app:layout_constraintBottom_toTopOf="@id/startButton"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -300,7 +307,7 @@
 
     <Button
         android:id="@+id/startButton"
-        android:layout_width="394dp"
+        android:layout_width="0dp"
         android:layout_height="52dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
@@ -317,12 +324,11 @@
         android:transitionName="start_button"
         app:layout_constraintBottom_toTopOf="@id/modernCompetitiveModeButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/modernCompetitiveModeButton"
-        android:layout_width="395dp"
+        android:layout_width="0dp"
         android:layout_height="41dp"
         android:layout_marginStart="32dp"
         android:layout_marginEnd="32dp"
@@ -339,7 +345,6 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
