@@ -18,6 +18,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.RenderEffect;
+
+import com.example.chesspedagogue.ui.animations.SlidingChessPuzzleManager;
 import android.graphics.Shader;
 import android.graphics.RuntimeShader;
 import android.animation.ValueAnimator;
@@ -74,11 +76,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private Button surrenderButton;
     private Button pauseButton;
     private Button ttsToggleButton;
-    private Button voiceCommentButton;
+    private ImageView settingsButton;
     private Button difficultyToggleButton;
     private Button personalityToggleButton;
-    private Button voiceSettingsButton;
-    private Button competitiveValidateButton;  // 🧪 TEMPORARY: Style validation testing
+    private Button themeToggleButton;           // DESIGN button - chess set selector
+    private ImageView analysisButton;
+
+    // Connection line views for radial button animations
+    private View connectionLinePause;
+    private View connectionLineTTS;
+    private View connectionLineSurrender;
+    private View connectionLinePersona;
+    private View connectionLineDesign;
+    private View connectionLineNormal;
 
     // Game state
     private GameViewModel gameViewModel;
@@ -512,15 +522,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 @Override
                 public void onRecordingStarted() {
                     mainHandler.post(() -> {
-                        voiceCommentButton.setText("🎤 Listening...");
-                        voiceCommentButton.setEnabled(false);
+                        // Voice toggle button removed from UI
                     });
                 }
 
                 @Override
                 public void onRecordingStopped() {
                     mainHandler.post(() -> {
-                        voiceCommentButton.setText("🤔 Processing...");
+                        // Voice toggle button removed from UI
                     });
                 }
 
@@ -541,8 +550,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                     mainHandler.post(() -> {
                         displayMasterDialogue(response);
                         // DON'T speak here - the voice pipeline already handles TTS
-                        voiceCommentButton.setText("🎤 Comment");
-                        voiceCommentButton.setEnabled(true);
+                        // Voice toggle button removed from UI
                     });
                 }
 
@@ -604,11 +612,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             surrenderButton = findViewById(R.id.surrenderButton);
             pauseButton = findViewById(R.id.pauseButton);
             ttsToggleButton = findViewById(R.id.ttsToggleButton);
-            voiceCommentButton = findViewById(R.id.voiceCommentButton);
-            difficultyToggleButton = findViewById(R.id.difficultyToggleButton);
-            personalityToggleButton = findViewById(R.id.personalityToggleButton);
-            voiceSettingsButton = findViewById(R.id.voiceSettingsButton);
-            competitiveValidateButton = findViewById(R.id.competitiveValidateButton);  // 🧪 Validation testing
+            settingsButton = findViewById(R.id.settingsButton);
+            difficultyToggleButton = findViewById(R.id.difficultyToggleButton); // NORMAL button
+            personalityToggleButton = findViewById(R.id.personalityToggleButton); // PERSONA button
+            themeToggleButton = findViewById(R.id.themeToggleButton);           // DESIGN button 
+            analysisButton = findViewById(R.id.analysisButton);
+
+            // Initialize connection line views
+            connectionLinePause = findViewById(R.id.connectionLinePause);
+            connectionLineTTS = findViewById(R.id.connectionLineTTS);
+            connectionLineSurrender = findViewById(R.id.connectionLineSurrender);
+            connectionLinePersona = findViewById(R.id.connectionLinePersona);
+            connectionLineDesign = findViewById(R.id.connectionLineDesign);
+            connectionLineNormal = findViewById(R.id.connectionLineNormal);
 
             // Set master and player names dynamically
             masterNameTextView.setText(formatMasterName(selectedMaster));
@@ -1011,8 +1027,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             // Get all interactive buttons
             View[] interactiveViews = {
-                pauseButton, ttsToggleButton, voiceCommentButton,
-                difficultyToggleButton, personalityToggleButton, voiceSettingsButton,
+                pauseButton, ttsToggleButton,
+                difficultyToggleButton, personalityToggleButton, themeToggleButton,
                 surrenderButton, dismissDialogueButton
             };
             
@@ -1322,8 +1338,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             executeRobotArmChessboardAnimation(chessBoardContainer, CHESSBOARD_DELAY);
         }
         
-        // 6. Glass overlay DISABLED - chessboard shows immediately without overlay
-        Log.d(TAG, "🎭 Glass overlay system DISABLED - chessboard visible immediately");
+        // 6. Start glass overlay fade after chessboard arrives  
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(() -> {
+            startChessboardGlassFade(chessBoardContainer);
+        }, GLASS_FADE_DELAY);
         
         Log.d(TAG, "⚡ Device reconfiguration sequence executing with precision timing");
     }
@@ -1501,6 +1520,15 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
+     * 🌊 Start glass overlay fade effect on the chessboard
+     * Creates smooth transition as the board reveals itself
+     */
+    private void startChessboardGlassFade(View chessBoardContainer) {
+        // Glass overlay fade is disabled for clear chessboard visibility
+        Log.d(TAG, "🎭 Glass overlay creation DISABLED - chessboard shows clearly");
+    }
+    
+    /**
      * 🎯 Store the previous board state to detect captures properly
      */
     private String previousBoardFEN = null;
@@ -1613,8 +1641,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             // Find all buttons in the 2x4 grid and apply subtle glass effect
             Button[] buttons = {
-                surrenderButton, pauseButton, ttsToggleButton, voiceCommentButton,
-                difficultyToggleButton, personalityToggleButton, voiceSettingsButton
+                surrenderButton, pauseButton, ttsToggleButton,
+                difficultyToggleButton, personalityToggleButton, themeToggleButton
             };
             
             for (Button button : buttons) {
@@ -1644,8 +1672,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             
             // Apply spring animations to all major buttons
             Button[] buttons = {
-                surrenderButton, pauseButton, ttsToggleButton, voiceCommentButton,
-                difficultyToggleButton, personalityToggleButton, voiceSettingsButton
+                surrenderButton, pauseButton, ttsToggleButton,
+                difficultyToggleButton, personalityToggleButton, themeToggleButton
             };
             
             for (Button button : buttons) {
@@ -1810,8 +1838,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             // Apply Material 3 styling to all buttons
             Button[] buttons = {
-                surrenderButton, pauseButton, ttsToggleButton, voiceCommentButton,
-                difficultyToggleButton, personalityToggleButton, voiceSettingsButton
+                surrenderButton, pauseButton, ttsToggleButton,
+                difficultyToggleButton, personalityToggleButton, themeToggleButton
             };
             
             int primaryColor = getMaterialYouPrimaryColor();
@@ -1956,8 +1984,8 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             // Apply glow to all major buttons
             Button[] buttons = {
-                surrenderButton, pauseButton, ttsToggleButton, voiceCommentButton,
-                difficultyToggleButton, personalityToggleButton, voiceSettingsButton
+                surrenderButton, pauseButton, ttsToggleButton,
+                difficultyToggleButton, personalityToggleButton, themeToggleButton
             };
             
             for (Button button : buttons) {
@@ -2579,29 +2607,29 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             Log.d(TAG, "🎮 Setting up controls...");
             
-            // Surrender button
-            surrenderButton.setOnClickListener(v -> showSurrenderDialog());
+            // 🌟 RADIAL BUTTONS WITH CONNECTION LINE ANIMATIONS
             
-            // Pause button
-            pauseButton.setOnClickListener(v -> toggleGamePause());
+            // Surrender button with connection line
+            setupRadialButtonWithConnectionLine(surrenderButton, connectionLineSurrender, this::showSurrenderDialog);
             
-            // TTS toggle
-            ttsToggleButton.setOnClickListener(v -> toggleTTS());
+            // Pause button with connection line
+            setupRadialButtonWithConnectionLine(pauseButton, connectionLinePause, this::toggleGamePause);
             
-            // Voice comment button - start voice recording
-            voiceCommentButton.setOnClickListener(v -> startVoiceComment());
+            // TTS toggle with connection line
+            setupRadialButtonWithConnectionLine(ttsToggleButton, connectionLineTTS, this::toggleTTS);
             
-            // Difficulty toggle button - switch between normal and max difficulty
-            difficultyToggleButton.setOnClickListener(v -> toggleDifficulty());
+            // Difficulty toggle button (NORMAL) with connection line
+            setupRadialButtonWithConnectionLine(difficultyToggleButton, connectionLineNormal, this::toggleDifficulty);
             
-            // Personality toggle button - enable/disable personality engine
-            personalityToggleButton.setOnClickListener(v -> togglePersonality());
+            // Personality toggle button (PERSONA) with connection line
+            setupRadialButtonWithConnectionLine(personalityToggleButton, connectionLinePersona, this::togglePersonality);
             
-            // Voice settings button - configure voice options
-            voiceSettingsButton.setOnClickListener(v -> showVoiceSettings());
+            // Theme toggle button (DESIGN) with connection line
+            setupRadialButtonWithConnectionLine(themeToggleButton, connectionLineDesign, this::cycleChessSetDesign);
             
-            // 🧪 VALIDATION BUTTON - Style testing controls
-            competitiveValidateButton.setOnClickListener(v -> runCompetitiveValidation());
+            // Settings and Analysis buttons (not radial, keep standard click listeners)
+            settingsButton.setOnClickListener(v -> openSettingsActivity());
+            analysisButton.setOnClickListener(v -> openAnalysisActivity());
             
             // Dismiss dialogue button - hide master dialogue overlay
             dismissDialogueButton.setOnClickListener(v -> {
@@ -2697,6 +2725,24 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             Log.e(TAG, "❌ Failed to start competitive game", e);
             showErrorAndExit("Failed to start game: " + e.getMessage());
         }
+    }
+
+    /**
+     * 📱 Show placeholder message for unimplemented features
+     */
+    private void showPlaceholderMessage(String featureName) {
+        android.widget.Toast.makeText(this, featureName + " - P/H (Placeholder)", android.widget.Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "🔧 " + featureName + " button pressed - placeholder functionality");
+    }
+    
+    /**
+     * 🎨 Cycle through chess set designs (future: multiple themes)
+     */
+    private void cycleChessSetDesign() {
+        android.widget.Toast.makeText(this, "Chess Set Design Selector - Coming Soon", android.widget.Toast.LENGTH_SHORT).show();
+        Log.d(TAG, "🎨 Chess set design button pressed - will cycle through themes");
+        // TODO: Implement chess set design cycling when multiple themes are available
+        // For now, the high-tech glassmorphism theme is the primary design
     }
 
     /**
@@ -3405,8 +3451,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             try {
                 // Start voice recording through the service
                 recordService.startRecording();
-                voiceCommentButton.setText("🎤 Listening...");
-                voiceCommentButton.setEnabled(false);
+                // Voice toggle button removed from UI
                 
             } catch (Exception e) {
                 Log.e(TAG, "❌ Failed to start voice recording", e);
@@ -5026,10 +5071,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             if (pauseButton != null) applyGradientToButton(pauseButton, primaryAccent);
             if (surrenderButton != null) applyGradientToButton(surrenderButton, primaryAccent);
             if (ttsToggleButton != null) applyGradientToButton(ttsToggleButton, primaryAccent);
-            if (voiceCommentButton != null) applyGradientToButton(voiceCommentButton, primaryAccent);
+            // Voice toggle button removed from UI
             if (difficultyToggleButton != null) applyGradientToButton(difficultyToggleButton, primaryAccent);
             if (personalityToggleButton != null) applyGradientToButton(personalityToggleButton, primaryAccent);
-            if (voiceSettingsButton != null) applyGradientToButton(voiceSettingsButton, primaryAccent);
+            if (themeToggleButton != null) applyGradientToButton(themeToggleButton, primaryAccent);
             
             Log.d(TAG, "🎨 Accent gradients applied to all buttons");
         } catch (Exception e) {
@@ -5112,10 +5157,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             addSpringPressToView(pauseButton);
             addSpringPressToView(surrenderButton);
             addSpringPressToView(ttsToggleButton);
-            addSpringPressToView(voiceCommentButton);
+            // Voice toggle button removed from UI
             addSpringPressToView(difficultyToggleButton);
             addSpringPressToView(personalityToggleButton);
-            addSpringPressToView(voiceSettingsButton);
+            addSpringPressToView(themeToggleButton);
             
             Log.d(TAG, "🌊 Spring press animations added to all buttons");
         } catch (Exception e) {
@@ -5160,6 +5205,48 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
     
     /**
+     * 🌟 CONNECTION LINE ANIMATION - Shows orange line from center orb to pressed button
+     */
+    private void animateConnectionLine(View connectionLine, boolean show) {
+        if (connectionLine == null) return;
+        
+        try {
+            ObjectAnimator alphaAnimator = ObjectAnimator.ofFloat(connectionLine, "alpha", 
+                connectionLine.getAlpha(), show ? 1.0f : 0.0f);
+            alphaAnimator.setDuration(show ? 150 : 300);
+            alphaAnimator.start();
+            
+            Log.d(TAG, "🌟 Connection line animation: " + (show ? "SHOW" : "HIDE"));
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Connection line animation failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 🎯 RADIAL BUTTON TOUCH HANDLER - Combines click action with connection line animation
+     */
+    private void setupRadialButtonWithConnectionLine(Button button, View connectionLine, Runnable clickAction) {
+        button.setOnTouchListener((v, event) -> {
+            switch (event.getAction()) {
+                case android.view.MotionEvent.ACTION_DOWN:
+                    // Show connection line on press
+                    animateConnectionLine(connectionLine, true);
+                    break;
+                case android.view.MotionEvent.ACTION_UP:
+                case android.view.MotionEvent.ACTION_CANCEL:
+                    // Hide connection line on release
+                    animateConnectionLine(connectionLine, false);
+                    // Execute click action only on ACTION_UP
+                    if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                        clickAction.run();
+                    }
+                    break;
+            }
+            return true; // Consume the touch event
+        });
+    }
+    
+    /**
      * 👆 ADD gesture-based panel interactions
      */
     private void addGestureInteractions() {
@@ -5186,6 +5273,43 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             default:
                 Log.w(TAG, "⚠️ Unknown piece character: " + pieceChar);
                 return "pawn"; // Default fallback
+        }
+    }
+    
+    /**
+     * ⚙️ Open settings activity
+     */
+    private void openSettingsActivity() {
+        try {
+            Log.d(TAG, "⚙️ Opening settings activity");
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to open settings activity", e);
+            Toast.makeText(this, "Settings not available", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    /**
+     * 📊 Open game analysis activity
+     */
+    private void openAnalysisActivity() {
+        try {
+            Log.d(TAG, "📊 Opening game analysis activity");
+            Intent analysisIntent = new Intent(this, GameAnalysisActivity.class);
+            
+            // Pass current game state if available
+            if (gameViewModel != null && gameViewModel.getGameRepository() != null) {
+                String currentFEN = gameViewModel.getGameRepository().getCurrentFEN();
+                if (currentFEN != null) {
+                    analysisIntent.putExtra("current_fen", currentFEN);
+                }
+            }
+            
+            startActivity(analysisIntent);
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to open analysis activity", e);
+            Toast.makeText(this, "Analysis not available", Toast.LENGTH_SHORT).show();
         }
     }
 }

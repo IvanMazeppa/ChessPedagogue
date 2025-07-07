@@ -217,12 +217,19 @@ public class ChessBoardView extends View {
                 int br = flipped ? 7 - r : r, bc = flipped ? 7 - c : c;
                 Paint p = ((br + bc) & 1) == 0 ? lightPaint : darkPaint;
                 
+                // Apply sliding puzzle offsets if in puzzle mode
+                float offsetX = 0f, offsetY = 0f;
+                if (slidingPuzzleMode) {
+                    offsetX = squareOffsets[br][bc][0];
+                    offsetY = squareOffsets[br][bc][1];
+                }
+                
                 // Reuse RectF instead of creating new bounds
                 reusableRectF.set(
-                    c * squareSize - 0.5f, 
-                    r * squareSize - 0.5f,
-                    c * squareSize + squareSize + 0.5f, 
-                    r * squareSize + squareSize + 0.5f
+                    c * squareSize + offsetX - 0.5f, 
+                    r * squareSize + offsetY - 0.5f,
+                    c * squareSize + squareSize + offsetX + 0.5f, 
+                    r * squareSize + squareSize + offsetY + 0.5f
                 );
                 canvas.drawRect(reusableRectF, p);
             }
@@ -269,13 +276,20 @@ public class ChessBoardView extends View {
                 if (pc == ' ') continue;
                 int vr = flipped ? 7 - r : r, vc = flipped ? 7 - c : c;
                 
+                // Apply sliding puzzle offsets if in puzzle mode
+                float offsetX = 0f, offsetY = 0f;
+                if (slidingPuzzleMode) {
+                    offsetX = squareOffsets[r][c][0];
+                    offsetY = squareOffsets[r][c][1];
+                }
+                
                 // Use cached drawable to avoid repeated resource loading
                 Drawable d = getCachedPieceDrawable(pc);
                 if (d == null) continue;
                 
                 // Reuse bounds object
-                reusableBounds.set(vc * squareSize + pad, vr * squareSize + pad,
-                        vc * squareSize + squareSize - pad, vr * squareSize + squareSize - pad);
+                reusableBounds.set((int)(vc * squareSize + offsetX + pad), (int)(vr * squareSize + offsetY + pad),
+                        (int)(vc * squareSize + squareSize + offsetX - pad), (int)(vr * squareSize + squareSize + offsetY - pad));
                 d.setBounds(reusableBounds);
                 d.draw(canvas);
             }
@@ -1209,4 +1223,156 @@ public class ChessBoardView extends View {
             canvas.restoreToCount(saveCount);
         }
     }
+    
+    // ============================================================================
+    // 🧩 SLIDING PUZZLE ANIMATION SYSTEM
+    // ============================================================================
+    
+    /**
+     * Sliding puzzle animation state and methods
+     * Enables individual square animations for the sliding puzzle reveal effect
+     */
+    private boolean slidingPuzzleMode = false;
+    private final float[][][] squareOffsets = new float[8][8][2]; // [row][col][x,y] offsets
+    private final List<ValueAnimator> activeSquareAnimations = new ArrayList<>();
+    
+    /**
+     * Check if sliding puzzle capability is enabled
+     */
+    public boolean hasSlidingPuzzleCapability() {
+        return true; // ChessBoardView now supports sliding puzzle animations
+    }
+    
+    /**
+     * Enable sliding puzzle mode - allows individual square positioning
+     */
+    public void enableSlidingPuzzleMode() {
+        Log.d("ChessBoardView", "🧩 Enabling sliding puzzle mode");
+        slidingPuzzleMode = true;
+        
+        // Initialize all square offsets to zero (normal positions)
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                squareOffsets[row][col][0] = 0f; // x offset
+                squareOffsets[row][col][1] = 0f; // y offset
+            }
+        }
+    }
+    
+    /**
+     * Disable sliding puzzle mode and return to normal drawing
+     */
+    public void disableSlidingPuzzleMode() {
+        Log.d("ChessBoardView", "🧩 Disabling sliding puzzle mode");
+        slidingPuzzleMode = false;
+        
+        // Cancel any active animations
+        for (ValueAnimator animator : activeSquareAnimations) {
+            if (animator.isRunning()) {
+                animator.cancel();
+            }
+        }
+        activeSquareAnimations.clear();
+        
+        // Reset all offsets
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                squareOffsets[row][col][0] = 0f;
+                squareOffsets[row][col][1] = 0f;
+            }
+        }
+        
+        invalidate(); // Redraw in normal mode
+    }
+    
+    /**
+     * Set scrambled positions for sliding puzzle (called before animation starts)
+     */
+    public void setSquarePositions(java.util.List<Integer> scrambledOrder) {
+        Log.d("ChessBoardView", "🎲 Setting scrambled square positions");
+        
+        if (scrambledOrder.size() != 64) {
+            Log.e("ChessBoardView", "❌ Invalid position list size: " + scrambledOrder.size());
+            return;
+        }
+        
+        // Apply scrambled positions as offsets
+        for (int i = 0; i < 64; i++) {
+            int currentRow = i / 8;
+            int currentCol = i % 8;
+            
+            // Get scrambled target index and convert to row/col
+            int scrambledIndex = scrambledOrder.get(i);
+            int scrambledRow = scrambledIndex / 8;
+            int scrambledCol = scrambledIndex % 8;
+            
+            // Calculate offset from normal position to scrambled position
+            float offsetX = (scrambledCol - currentCol) * squareSize;
+            float offsetY = (scrambledRow - currentRow) * squareSize;
+            
+            squareOffsets[currentRow][currentCol][0] = offsetX;
+            squareOffsets[currentRow][currentCol][1] = offsetY;
+        }
+        
+        invalidate(); // Show scrambled board
+    }
+    
+    /**
+     * Create animation for a single square to slide to its target position
+     */
+    public ValueAnimator createSquareSlideAnimation(int squareIndex, int targetRow, int targetCol, long duration) {
+        int currentRow = squareIndex / 8;
+        int currentCol = squareIndex % 8;
+        
+        Log.d("ChessBoardView", "🎬 Creating slide animation for square (" + currentRow + "," + currentCol + 
+               ") -> (" + targetRow + "," + targetCol + ")");
+        
+        // Current offset values
+        float startOffsetX = squareOffsets[currentRow][currentCol][0];
+        float startOffsetY = squareOffsets[currentRow][currentCol][1];
+        
+        // Target is normal position (zero offset)
+        float endOffsetX = 0f;
+        float endOffsetY = 0f;
+        
+        // Create value animator
+        ValueAnimator animator = ValueAnimator.ofFloat(0f, 1f);
+        animator.setDuration(duration);
+        
+        animator.addUpdateListener(animation -> {
+            float progress = (float) animation.getAnimatedValue();
+            
+            // Interpolate between start and end offsets
+            float currentOffsetX = startOffsetX + (endOffsetX - startOffsetX) * progress;
+            float currentOffsetY = startOffsetY + (endOffsetY - startOffsetY) * progress;
+            
+            // Update square position
+            squareOffsets[currentRow][currentCol][0] = currentOffsetX;
+            squareOffsets[currentRow][currentCol][1] = currentOffsetY;
+            
+            // Trigger redraw
+            postInvalidateOnAnimation();
+        });
+        
+        // Track this animation
+        activeSquareAnimations.add(animator);
+        
+        // Clean up when done
+        animator.addListener(new android.animation.AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(android.animation.Animator animation) {
+                activeSquareAnimations.remove(animator);
+            }
+        });
+        
+        return animator;
+    }
+    
+    /**
+     * Check if we're in sliding puzzle mode during drawing
+     */
+    private boolean isInSlidingPuzzleMode() {
+        return slidingPuzzleMode;
+    }
+    
 }

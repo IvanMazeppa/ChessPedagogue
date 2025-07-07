@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Central glowing orb with neon orange glow effect -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Outer glow ring (largest) -->
+    <item>
+        <shape android:shape="oval">
+            <size android:width="80dp" android:height="80dp" />
+            <solid android:color="#20FF6600" />
+        </shape>
+    </item>
+    
+    <!-- Middle glow ring -->
+    <item android:top="8dp" android:bottom="8dp" android:start="8dp" android:end="8dp">
+        <shape android:shape="oval">
+            <solid android:color="#40FF6600" />
+        </shape>
+    </item>
+    
+    <!-- Inner glow ring -->
+    <item android:top="16dp" android:bottom="16dp" android:start="16dp" android:end="16dp">
+        <shape android:shape="oval">
+            <solid android:color="#60FF6600" />
+        </shape>
+    </item>
+    
+    <!-- Core orb -->
+    <item android:top="24dp" android:bottom="24dp" android:start="24dp" android:end="24dp">
+        <shape android:shape="oval">
+            <solid android:color="#80FF6600" />
+            <stroke android:width="2dp" android:color="#FFFF6600" />
+        </shape>
+    </item>
+    
+    <!-- Inner highlight -->
+    <item android:top="28dp" android:bottom="28dp" android:start="28dp" android:end="28dp">
+        <shape android:shape="oval">
+            <solid android:color="#CCFF6600" />
+        </shape>
+    </item>
+    
+</layer-list>

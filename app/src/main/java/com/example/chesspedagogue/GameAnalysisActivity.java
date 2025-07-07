@@ -1,5 +1,6 @@
 package com.example.chesspedagogue;
 
+
 import android.annotation.SuppressLint;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -656,6 +657,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
     private String getPersonalizedAnalysis(String prompt) throws IOException {
         Log.d(TAG, "💬 Starting personalized analysis request");
 
+
         // Get API key with clear error message if missing
         String apiKey = ApiKeyConfig.getApiKey(this);
         if (apiKey == null || apiKey.isEmpty()) {
@@ -666,6 +668,7 @@ public class GameAnalysisActivity extends AppCompatActivity {
         // Use your unified OpenAI service with detailed logging
         OpenAIService openAIService = OpenAIService.getInstance();
         openAIService.setApiKey(apiKey);
+        openAIService.init(this);
         Log.d(TAG, "💬 API key set, unified service ready");
 
         // Format the system prompt for the selected master

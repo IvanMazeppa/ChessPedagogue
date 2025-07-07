@@ -22,13 +22,13 @@
         android:id="@+id/playerHeaderPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="0dp"
-        android:layout_marginEnd="8dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="2dp"
         android:layout_marginBottom="0dp"
         android:background="@drawable/glass_panel_glow"
         android:paddingTop="24dp"
-        android:paddingBottom="8dp"
+        android:paddingBottom="40dp"
         app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="16dp"
         app:cardElevation="20dp"
@@ -215,9 +215,9 @@
         android:id="@+id/capturedPiecesTrayBottom"
         android:layout_width="0dp"
         android:layout_height="36dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="1dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="2dp"
         android:background="@drawable/glass_panel_adaptive_glow"
         app:cardBackgroundColor="#1A506080"
         app:cardCornerRadius="0dp"
@@ -240,7 +240,7 @@
             <LinearLayout
                 android:id="@+id/blackCapturedCompactContainer"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="25dp"
                 android:layout_weight="1"
                 android:gravity="start|center_vertical"
                 android:orientation="horizontal"
@@ -292,41 +292,44 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/playerHeaderPanel">
 
-        <!-- EVAL BAR - Now moves as one unit with chessboard -->
+        <!-- EVAL BAR - EDGE TO EDGE (no margin from screen edge) -->
         <com.example.chesspedagogue.EvaluationBarView
             android:id="@+id/competitiveEvaluationBarView"
-            android:layout_width="6dp"
+            android:layout_width="18dp"
             android:layout_height="0dp"
-            android:layout_marginStart="6dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="4dp"
             android:alpha="0.8"
             android:elevation="14dp"
             app:layout_constraintBottom_toBottomOf="@+id/competitiveChessBoardView"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView" />
 
-        <!-- Chess Board - MAXIMIZED SIZE to cover background and align with bars -->
+        <!-- Chess Board - EDGE TO EDGE ALIGNMENT -->
         <com.example.chesspedagogue.ChessBoardView
             android:id="@+id/competitiveChessBoardView"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="10dp"
+            android:layout_height="0dp"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp"
             android:elevation="12dp"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintEnd_toStartOf="@+id/rankLabels"
+            app:layout_constraintStart_toEndOf="@+id/competitiveEvaluationBarView"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintDimensionRatio="1:1" />
 
         <!-- Coordinate overlays positioned to align with adjusted board -->
 
-        <!-- File Labels (a-h) - PRECISELY ALIGNED with chessboard TOP -->
+        <!-- File Labels (a-h) - EDGE TO EDGE ALIGNED -->
         <LinearLayout
             android:id="@+id/fileLabels"
             android:layout_width="0dp"
             android:layout_height="12dp"
-            android:layout_marginStart="14dp"
+            android:layout_marginStart="0dp"
             android:layout_marginTop="-12dp"
-            android:layout_marginEnd="10dp"
+            android:layout_marginEnd="0dp"
             android:alpha="0.9"
             android:background="#99000000"
             android:elevation="20dp"
@@ -417,12 +420,13 @@
 
         </LinearLayout>
 
-        <!-- Rank Labels (1-8) - PERFECTLY ALIGNED with chessboard -->
+        <!-- Rank Labels (1-8) - RIGHT ALIGNED, HALF WIDTH -->
         <LinearLayout
-            android:layout_width="10dp"
+            android:id="@+id/rankLabels"
+            android:layout_width="9dp"
             android:layout_height="0dp"
             android:layout_marginTop="0dp"
-            android:layout_marginEnd="2dp"
+            android:layout_marginEnd="0dp"
             android:layout_marginBottom="0dp"
             android:alpha="0.9"
             android:background="#99000000"
@@ -560,14 +564,14 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Perfect 50/50 Bottom Section Container - MOVED UP to avoid Android OS controls -->
+    <!-- Perfect 50/50 Bottom Section Container - 1dp uniform gaps -->
     <LinearLayout
         android:id="@+id/bottomSectionContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="60dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginBottom="65dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -581,254 +585,299 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <!-- 2x4 Control Buttons Panel (8 Total Buttons) -->
+            <!-- Radial Control Panel with Central Glowing Orb - Neon Orange Design -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/controlButtonsPanel"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
-                android:background="@drawable/glass_panel_exact"
+                android:background="@drawable/radial_control_frame"
                 app:cardBackgroundColor="@android:color/transparent"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="8dp">
+                app:cardCornerRadius="28dp"
+                app:cardElevation="16dp">
 
-                <LinearLayout
+                <!-- Radial Button Layout with Central Orb -->
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:padding="4dp">
+                    android:padding="16dp">
 
-                    <!-- Row 1: Pause & TTS -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginBottom="3dp"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
+                    <!-- Central Glowing Orb -->
+                    <View
+                        android:id="@+id/centralGlowingOrb"
+                        android:layout_width="80dp"
+                        android:layout_height="80dp"
+                        android:background="@drawable/central_glowing_orb"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                    <!-- HEXAGON CONNECTION LINES (initially invisible) -->
+
+                    <!-- Line to PAUSE Button (12 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLinePause"
+                        android:layout_width="2dp"
+                        android:layout_height="45dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.9" />
+
+                    <!-- Line to TTS Button (2 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLineTTS"
+                        android:layout_width="35dp"
+                        android:layout_height="2dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.2"
+                        app:layout_constraintVertical_bias="0.4" />
+
+                    <!-- Line to SURRENDER Button (4 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLineSurrender"
+                        android:layout_width="35dp"
+                        android:layout_height="2dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.2"
+                        app:layout_constraintVertical_bias="0.6" />
+
+                    <!-- Line to PERSONA Button (6 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLinePersona"
+                        android:layout_width="2dp"
+                        android:layout_height="45dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintVertical_bias="0.1" />
+
+                    <!-- Line to DESIGN Button (8 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLineDesign"
+                        android:layout_width="35dp"
+                        android:layout_height="2dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.8"
+                        app:layout_constraintVertical_bias="0.6" />
+
+                    <!-- Line to NORMAL Button (10 o'clock) -->
+                    <View
+                        android:id="@+id/connectionLineNormal"
+                        android:layout_width="35dp"
+                        android:layout_height="2dp"
+                        android:alpha="0.0"
+                        android:background="@drawable/orange_connection_line"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.8"
+                        app:layout_constraintVertical_bias="0.4" />
+
+                    <!-- HEXAGON BUTTON ARRANGEMENT - Perfect spacing around central orb -->
+
+                    <!-- PAUSE Button (Top - 12 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="65dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintVertical_bias="0.8">
+
+                        <Button
+                            android:id="@+id/pauseButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginEnd="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="PAUSE"
+                            android:textColor="@android:color/white"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/pauseButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="PAUSE"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                    <!-- TTS Button (Top Right - 2 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="55dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.4"
+                        app:layout_constraintVertical_bias="0.3">
 
-                        </androidx.cardview.widget.CardView>
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/ttsToggleButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginStart="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="TTS"
+                            android:textColor="@android:color/white"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/ttsToggleButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="🎵 TTS"
-                                android:textColor="@android:color/holo_orange_light"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                    <!-- SURRENDER Button (Bottom Right - 4 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="70dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.4"
+                        app:layout_constraintVertical_bias="0.7">
 
-                        </androidx.cardview.widget.CardView>
-
-                    </LinearLayout>
-
-                    <!-- Row 2: AI & Voice -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginBottom="3dp"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/surrenderButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginEnd="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="SURRENDER"
+                            android:textColor="@android:color/white"
+                            android:textSize="8sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/difficultyToggleButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="A.I."
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                    <!-- PERSONA Button (Bottom - 6 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="65dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.2">
 
-                        </androidx.cardview.widget.CardView>
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/personalityToggleButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginStart="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="PERSONA"
+                            android:textColor="@android:color/white"
+                            android:textSize="9sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/voiceCommentButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="A/V"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                    <!-- DESIGN Button (Bottom Left - 8 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.6"
+                        app:layout_constraintVertical_bias="0.7">
 
-                        </androidx.cardview.widget.CardView>
-
-                    </LinearLayout>
-
-                    <!-- Row 3: Norm & Design -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_marginBottom="3dp"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/themeToggleButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginEnd="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="DESIGN"
+                            android:textColor="@android:color/white"
+                            android:textSize="9sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/personalityToggleButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="NORM"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                    <!-- NORMAL Button (Top Left - 10 o'clock) -->
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="60dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/neon_orange_button_selector"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.6"
+                        app:layout_constraintVertical_bias="0.3">
 
-                        </androidx.cardview.widget.CardView>
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
+                        <Button
+                            android:id="@+id/difficultyToggleButton"
+                            android:layout_width="match_parent"
                             android:layout_height="match_parent"
-                            android:layout_marginStart="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
+                            android:background="@android:color/transparent"
+                            android:elevation="0dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:gravity="center"
+                            android:stateListAnimator="@null"
+                            android:text="NORMAL"
+                            android:textColor="@android:color/white"
+                            android:textSize="9sp"
+                            android:textStyle="bold" />
+                    </androidx.cardview.widget.CardView>
 
-                            <Button
-                                android:id="@+id/voiceSettingsButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="DESIGN"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
-                        </androidx.cardview.widget.CardView>
-
-                    </LinearLayout>
-
-                    <!-- Row 4: More & Surrender -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="0dp"
-                        android:layout_weight="1"
-                        android:orientation="horizontal">
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_marginEnd="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
-
-                            <Button
-                                android:id="@+id/competitiveValidateButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="MORE"
-                                android:textColor="@android:color/white"
-                                android:textSize="11sp"
-                                android:textStyle="bold" />
-
-                        </androidx.cardview.widget.CardView>
-
-                        <androidx.cardview.widget.CardView
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_marginStart="2dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/glass_button_exact"
-                            app:cardBackgroundColor="@android:color/transparent"
-                            app:cardCornerRadius="8dp"
-                            app:cardElevation="8dp">
-
-                            <Button
-                                android:id="@+id/surrenderButton"
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:background="@android:color/transparent"
-                                android:fontFamily="sans-serif-medium"
-                                android:gravity="center"
-                                android:text="SURRENDER"
-                                android:textColor="@android:color/white"
-                                android:textSize="9sp"
-                                android:textStyle="bold" />
-
-                        </androidx.cardview.widget.CardView>
-
-                    </LinearLayout>
-
-                </LinearLayout>
 
             </androidx.cardview.widget.CardView>
 
@@ -844,7 +893,7 @@
             android:background="@drawable/glass_panel_exact"
             app:cardBackgroundColor="@android:color/transparent"
             app:cardCornerRadius="24dp"
-            app:cardElevation="10dp">
+            app:cardElevation="50dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -879,7 +928,7 @@
                         android:id="@+id/competitiveMoveHistoryTextView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="3dp"
+                        android:layout_marginBottom="6dp"
                         android:alpha="0.9"
                         android:fontFamily="sans-serif"
                         android:padding="8dp"
@@ -991,7 +1040,7 @@
                     android:fontFamily="sans-serif-medium"
                     android:text="Recording..."
                     android:textColor="@color/glass_accent"
-                    android:textSize="11sp" />
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
