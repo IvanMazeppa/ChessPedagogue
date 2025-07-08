@@ -14,10 +14,10 @@ public class LiveMonitorClient extends WebSocketListener {
     
     private static final String TAG = "🔗 LiveMonitorClient";
     private static final String DEFAULT_SERVER_IP = "192.168.0.237"; // Fallback IP
-    private static final int WEBSOCKET_PORT = 8080;
+    private static final int WEBSOCKET_PORT = 8082;
     private static final int RECONNECT_DELAY_MS = 10000; // Increased to 10 seconds to reduce spam
     private static final int MAX_RECONNECT_ATTEMPTS = 3; // Limit reconnection attempts
-    private static final boolean ENABLE_LIVE_MONITOR = true; // Set to false to disable WebSocket entirely
+    private static final boolean ENABLE_LIVE_MONITOR = false; // Set to false to disable WebSocket entirely
     
     private static LiveMonitorClient instance;
     private final Gson gson = new Gson();

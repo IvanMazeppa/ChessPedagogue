@@ -2,6 +2,7 @@ package com.example.chesspedagogue;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -23,6 +24,12 @@ import androidx.core.content.ContextCompat;
 
 import com.example.chesspedagogue.ui.rendering.NeonChessboardRenderer;
 import com.example.chesspedagogue.ui.rendering.NeonSettingsManager;
+import com.example.chesspedagogue.ui.effects.ElectricArcRenderer;
+import com.example.chesspedagogue.ui.effects.ElectricArcSettingsManager;
+import com.example.chesspedagogue.ui.effects.CircuitTraceRenderer;
+import com.example.chesspedagogue.ui.effects.CircuitTraceSettingsManager;
+import com.example.chesspedagogue.ui.effects.RoboticPieceAnimator;
+import com.example.chesspedagogue.ui.effects.RoboticAnimationSettingsManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -82,6 +89,18 @@ public class ChessBoardView extends View {
     
     // 🌈 NEON RENDERING: Modular neon effects renderer
     private NeonChessboardRenderer neonRenderer;
+    
+    // ⚡ ELECTRIC ARC RENDERING: Modular electric arc move trails
+    private ElectricArcRenderer electricArcRenderer;
+    private ElectricArcSettingsManager electricArcSettings;
+    
+    // 🔌 CIRCUIT TRACE RENDERING: Modular circuit board move highlights
+    private CircuitTraceRenderer circuitTraceRenderer;
+    private CircuitTraceSettingsManager circuitTraceSettings;
+    
+    // 🤖 ROBOTIC PIECE ANIMATION: Modular mechanical movement system
+    private RoboticPieceAnimator roboticAnimator;
+    private RoboticAnimationSettingsManager roboticAnimationSettings;
 
     /* ───── ctor ───── */
     public ChessBoardView(Context c) {
@@ -107,6 +126,18 @@ public class ChessBoardView extends View {
 
         // 🌈 Initialize neon renderer
         neonRenderer = new NeonChessboardRenderer();
+        
+        // ⚡ Initialize electric arc renderer and settings
+        electricArcRenderer = new ElectricArcRenderer();
+        electricArcSettings = new ElectricArcSettingsManager(getContext());
+        
+        // 🔌 Initialize circuit trace renderer and settings
+        circuitTraceRenderer = new CircuitTraceRenderer();
+        circuitTraceSettings = new CircuitTraceSettingsManager(getContext());
+        
+        // 🤖 Initialize robotic piece animator and settings
+        roboticAnimator = new RoboticPieceAnimator();
+        roboticAnimationSettings = new RoboticAnimationSettingsManager(getContext());
         
         // Keep all your other paint setups the same
         float dp = getResources().getDisplayMetrics().density;
@@ -273,12 +304,14 @@ public class ChessBoardView extends View {
             canvas.drawRect(reusableRectF, lastMovePaint);
         }
 
-        /* 2) legal‑move dots */
-        for (int[] s : highlightSquares) {
-            int dr = flipped ? 7 - s[0] : s[0], dc = flipped ? 7 - s[1] : s[1];
-            canvas.drawCircle(dc * squareSize + squareSize / 2f,
-                    dr * squareSize + squareSize / 2f,
-                    squareSize / 8f, legalMovePaint);
+        /* 2) legal‑move dots (traditional blue dots - always available as option) */
+        if (shouldShowTraditionalLegalMoveDots()) {
+            for (int[] s : highlightSquares) {
+                int dr = flipped ? 7 - s[0] : s[0], dc = flipped ? 7 - s[1] : s[1];
+                canvas.drawCircle(dc * squareSize + squareSize / 2f,
+                        dr * squareSize + squareSize / 2f,
+                        squareSize / 8f, legalMovePaint);
+            }
         }
 
         /* 3) static pieces (skip squares with active sprite) */
@@ -360,6 +393,16 @@ public class ChessBoardView extends View {
         
         /* 7) move indicator overlays (check, blunder, brilliant) */
         drawMoveIndicatorOverlays(canvas);
+        
+        /* 8) ⚡ Electric arc move trails */
+        if (electricArcRenderer != null && electricArcSettings.isElectricArcEnabled()) {
+            electricArcRenderer.drawArc(canvas);
+        }
+        
+        /* 9) 🔌 Circuit trace move highlights */
+        if (circuitTraceRenderer != null && circuitTraceSettings.isCircuitTraceEnabled()) {
+            circuitTraceRenderer.drawCircuits(canvas);
+        }
 
     }
 
@@ -491,6 +534,10 @@ public class ChessBoardView extends View {
             highlightSquares.clear();
             legalMovePaint.setAlpha(0);
             legalAlpha = 0;
+            
+            // 🔌 Clear circuit traces when legal moves are cleared
+            clearCircuitTraces();
+            
             postInvalidate(); // Use postInvalidate to avoid immediate layout calculations
         }
     }
@@ -536,12 +583,36 @@ public class ChessBoardView extends View {
 
         Log.d("ChessBoardView", "✅ Starting animation for piece '" + pc + "' from " + fromR + "," + fromC + " to " + toR + "," + toC);
 
-        // Add the moving piece to the list with completion callback
-        MovingPiece movingPiece = new MovingPiece(
-                d,
-                vfc * squareSize, vfr * squareSize,
-                vtc * squareSize, vtr * squareSize,
-                toR, toC, originalPiece); // Pass original piece for restoration
+        // 🤖 Check if robotic animation is enabled
+        RoboticAnimationSettingsManager.RoboticAnimationConfig roboticConfig = roboticAnimationSettings.getAnimationConfig();
+        boolean useRoboticAnimation = roboticConfig.enabled;
+        
+        MovingPiece movingPiece;
+        if (useRoboticAnimation) {
+            // Apply style-specific configuration
+            roboticAnimationSettings.applyStyleToConfig(roboticConfig);
+            
+            // Create robotic moving piece
+            movingPiece = new MovingPiece(
+                    d,
+                    vfc * squareSize, vfr * squareSize,
+                    vtc * squareSize, vtr * squareSize,
+                    toR, toC, originalPiece,
+                    true, roboticAnimator, roboticConfig);
+            
+            Log.d("ChessBoardView", String.format("🤖 Using robotic animation: style=%s, speed=%.1fx, effects=[overshoot=%s, jitter=%s, rotation=%s]",
+                                                roboticConfig.style, roboticConfig.speedMultiplier,
+                                                roboticConfig.overshootEnabled, roboticConfig.jitterEnabled, roboticConfig.rotationEnabled));
+        } else {
+            // Create traditional moving piece
+            movingPiece = new MovingPiece(
+                    d,
+                    vfc * squareSize, vfr * squareSize,
+                    vtc * squareSize, vtr * squareSize,
+                    toR, toC, originalPiece);
+            
+            Log.d("ChessBoardView", "🎬 Using traditional smooth animation");
+        }
         
         movingPieces.add(movingPiece);
 
@@ -769,7 +840,158 @@ public class ChessBoardView extends View {
         lastMoveFrom[1] = fromCol;
         lastMoveTo[0] = toRow;
         lastMoveTo[1] = toCol;
+        
+        // ⚡ Trigger electric arc effect for the move
+        createElectricArcForMove(fromRow, fromCol, toRow, toCol);
+        
+        // 🔌 Show last move circuit trace 
+        createLastMoveCircuitTrace(fromRow, fromCol, toRow, toCol);
+        
         invalidate(); // Request redraw
+    }
+    
+    /**
+     * ⚡ Create electric arc effect for piece movement
+     * Converts board coordinates to pixel coordinates and triggers arc animation
+     */
+    private void createElectricArcForMove(int fromRow, int fromCol, int toRow, int toCol) {
+        if (electricArcRenderer == null || electricArcSettings == null) {
+            return;
+        }
+        
+        if (!electricArcSettings.isElectricArcEnabled()) {
+            Log.d("ChessBoardView", "⚡ Electric arc disabled, skipping effect");
+            return;
+        }
+        
+        // Convert board coordinates to pixel coordinates
+        float fromX = (flipped ? 7 - fromCol : fromCol) * squareSize + squareSize / 2f;
+        float fromY = (flipped ? 7 - fromRow : fromRow) * squareSize + squareSize / 2f;
+        float toX = (flipped ? 7 - toCol : toCol) * squareSize + squareSize / 2f;
+        float toY = (flipped ? 7 - toRow : toRow) * squareSize + squareSize / 2f;
+        
+        // Determine if this is a knight move (L-shaped)
+        boolean isKnightMove = isKnightMovePattern(fromRow, fromCol, toRow, toCol);
+        
+        // Apply current theme settings to renderer
+        electricArcSettings.applySettingsToRenderer(electricArcRenderer);
+        
+        // Create arc effect with callback for view updates
+        electricArcRenderer.createMoveTrail(fromX, fromY, toX, toY, isKnightMove, 
+            new ElectricArcRenderer.ArcCallback() {
+                @Override
+                public void onInvalidate() {
+                    // Request view redraw for animation frame
+                    invalidate();
+                }
+                
+                @Override
+                public void onArcComplete() {
+                    Log.d("ChessBoardView", "⚡ Electric arc animation completed");
+                }
+            });
+        
+        Log.d("ChessBoardView", "⚡ Electric arc created from (" + fromRow + "," + fromCol + 
+              ") to (" + toRow + "," + toCol + ") knight=" + isKnightMove + 
+              " pixels=(" + fromX + "," + fromY + ")->(" + toX + "," + toY + ")");
+    }
+    
+    /**
+     * Determine if move follows knight movement pattern (L-shaped)
+     */
+    private boolean isKnightMovePattern(int fromRow, int fromCol, int toRow, int toCol) {
+        int rowDiff = Math.abs(toRow - fromRow);
+        int colDiff = Math.abs(toCol - fromCol);
+        
+        // Knight moves: 2 squares in one direction, 1 square perpendicular
+        return (rowDiff == 2 && colDiff == 1) || (rowDiff == 1 && colDiff == 2);
+    }
+    
+    /**
+     * 🔌 Create last move circuit trace
+     */
+    private void createLastMoveCircuitTrace(int fromRow, int fromCol, int toRow, int toCol) {
+        if (circuitTraceRenderer == null || circuitTraceSettings == null) {
+            return;
+        }
+        
+        if (!circuitTraceSettings.isCircuitTraceEnabled() || 
+            !circuitTraceSettings.isLastMoveTraceEnabled()) {
+            return;
+        }
+        
+        // Apply current theme settings
+        circuitTraceSettings.applySettingsToRenderer(circuitTraceRenderer);
+        
+        // Show last move trace
+        circuitTraceRenderer.showLastMoveTrace(fromRow, fromCol, toRow, toCol, 
+                                             squareSize, flipped);
+        
+        Log.d("ChessBoardView", "🔌 Created last move circuit trace from (" + fromRow + "," + fromCol + 
+              ") to (" + toRow + "," + toCol + ")");
+    }
+    
+    /**
+     * 🔌 Show circuit traces for legal moves
+     */
+    public void showCircuitTracesForLegalMoves(int pieceRow, int pieceCol, List<int[]> legalMoves) {
+        Log.d("ChessBoardView", String.format("🔌 showCircuitTracesForLegalMoves called: piece(%d,%d), %d legal moves, renderer=%s, settings=%s", 
+                                            pieceRow, pieceCol, legalMoves.size(), 
+                                            circuitTraceRenderer != null ? "OK" : "NULL", 
+                                            circuitTraceSettings != null ? "OK" : "NULL"));
+        
+        if (circuitTraceRenderer == null || circuitTraceSettings == null) {
+            Log.w("ChessBoardView", "🔌 Circuit trace renderer or settings is null, returning");
+            return;
+        }
+        
+        boolean enabled = circuitTraceSettings.isCircuitTraceEnabled();
+        Log.d("ChessBoardView", "🔌 Circuit traces enabled: " + enabled);
+        
+        if (!enabled) {
+            Log.d("ChessBoardView", "🔌 Circuit traces disabled, skipping legal moves");
+            return;
+        }
+        
+        // Apply current theme settings
+        circuitTraceSettings.applySettingsToRenderer(circuitTraceRenderer);
+        
+        // Show circuit traces with callback for view updates
+        Log.d("ChessBoardView", "🔌 Calling circuitTraceRenderer.showLegalMoves()");
+        circuitTraceRenderer.showLegalMoves(pieceRow, pieceCol, legalMoves, squareSize, flipped,
+            new CircuitTraceRenderer.CircuitCallback() {
+                @Override
+                public void onInvalidate() {
+                    // Request view redraw for animation frame
+                    invalidate();
+                }
+                
+                @Override
+                public void onAnimationComplete() {
+                    Log.d("ChessBoardView", "🔌 Circuit trace animation completed");
+                }
+            });
+        
+        Log.d("ChessBoardView", "🔌 Created circuit traces from (" + pieceRow + "," + pieceCol + 
+              ") to " + legalMoves.size() + " legal moves");
+    }
+    
+    /**
+     * 🔌 Clear all circuit traces
+     */
+    public void clearCircuitTraces() {
+        if (circuitTraceRenderer != null) {
+            circuitTraceRenderer.clearCircuits();
+        }
+    }
+    
+    /**
+     * 🔌 Clear last move circuit trace
+     */
+    public void clearLastMoveCircuitTrace() {
+        if (circuitTraceRenderer != null) {
+            circuitTraceRenderer.clearLastMoveTrace();
+        }
     }
 
     /**
@@ -793,6 +1015,104 @@ public class ChessBoardView extends View {
         pieceDrawableCache.clear();
         invalidate(); // Redraw with new pieces
         Log.d("ChessBoardView", "🎨 Piece cache cleared for new chess set");
+    }
+    
+    // ==================== 🤖 ROBOTIC ANIMATION PUBLIC API ====================
+    
+    /**
+     * 🤖 Enable or disable robotic piece movement animations
+     */
+    public void setRoboticAnimationEnabled(boolean enabled) {
+        if (roboticAnimationSettings != null) {
+            roboticAnimationSettings.setRoboticAnimationEnabled(enabled);
+            Log.d("ChessBoardView", "🤖 Robotic animation " + (enabled ? "enabled" : "disabled"));
+        }
+    }
+    
+    /**
+     * 🤖 Check if robotic animations are enabled
+     */
+    public boolean isRoboticAnimationEnabled() {
+        return roboticAnimationSettings != null && roboticAnimationSettings.isRoboticAnimationEnabled();
+    }
+    
+    /**
+     * 🤖 Set robotic animation style
+     */
+    public void setRoboticAnimationStyle(String style) {
+        if (roboticAnimationSettings != null) {
+            roboticAnimationSettings.setRoboticAnimationStyle(style);
+            Log.d("ChessBoardView", "🤖 Robotic animation style set to: " + style);
+        }
+    }
+    
+    /**
+     * 🤖 Set robotic animation speed (50-200%)
+     */
+    public void setRoboticAnimationSpeed(int speedPercent) {
+        if (roboticAnimationSettings != null) {
+            roboticAnimationSettings.setRoboticAnimationSpeed(speedPercent);
+            Log.d("ChessBoardView", "🤖 Robotic animation speed set to: " + speedPercent + "%");
+        }
+    }
+    
+    /**
+     * 🤖 Apply settings from preferences
+     */
+    public void applyRoboticAnimationSettingsFromPreferences() {
+        if (roboticAnimationSettings != null) {
+            roboticAnimationSettings.logCurrentSettings();
+            Log.d("ChessBoardView", "🤖 Applied robotic animation settings from preferences");
+        }
+    }
+    
+    /**
+     * 🤖 Get current robotic animation configuration for debugging
+     */
+    public String getRoboticAnimationStatus() {
+        if (roboticAnimationSettings == null) {
+            return "Robotic animation not initialized";
+        }
+        
+        RoboticAnimationSettingsManager.RoboticAnimationConfig config = roboticAnimationSettings.getAnimationConfig();
+        return String.format("Robotic Animation Status: enabled=%s, style=%s, speed=%.1fx, complexity=%d",
+                           config.enabled, config.style, config.speedMultiplier, 
+                           roboticAnimationSettings.getComplexityLevel());
+    }
+    
+    // ==================== 🎯 LEGAL MOVE DISPLAY OPTIONS ====================
+    
+    /**
+     * 🎯 Determine if traditional blue legal move dots should be shown
+     */
+    private boolean shouldShowTraditionalLegalMoveDots() {
+        // Check user preference for traditional legal move dots
+        SharedPreferences prefs = getContext().getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
+        return prefs.getBoolean("traditional_legal_move_dots_enabled", true); // Default enabled
+    }
+    
+    /**
+     * 🔌 Determine if circuit traces should be shown for legal moves
+     */
+    private boolean shouldShowCircuitTraces() {
+        return circuitTraceSettings != null && circuitTraceSettings.isCircuitTraceEnabled();
+    }
+    
+    /**
+     * 🎯 Set whether traditional blue legal move dots should be shown
+     */
+    public void setTraditionalLegalMoveDotsEnabled(boolean enabled) {
+        SharedPreferences prefs = getContext().getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
+        prefs.edit().putBoolean("traditional_legal_move_dots_enabled", enabled).apply();
+        invalidate(); // Redraw to reflect changes
+        Log.d("ChessBoardView", "🎯 Traditional legal move dots " + (enabled ? "enabled" : "disabled"));
+    }
+    
+    /**
+     * 🎯 Check if traditional blue legal move dots are enabled
+     */
+    public boolean isTraditionalLegalMoveDotsEnabled() {
+        return shouldShowTraditionalLegalMoveDots();
     }
 
     /**
@@ -873,10 +1193,29 @@ public class ChessBoardView extends View {
         final int toRow, toCol;
         final char originalPiece;
         final long startT;
-        final long dur = 250;   // ms - keep consistent with activity timing
+        final long dur; // Duration now depends on animation type
+        
+        // 🤖 ROBOTIC ANIMATION SUPPORT
+        private final boolean useRoboticAnimation;
+        private final RoboticPieceAnimator roboticAnimator;
+        private final RoboticAnimationSettingsManager.RoboticAnimationConfig roboticConfig;
+        
+        // Current robotic animation state
+        private float currentX, currentY;
+        private float currentRotation = 0f;
+        private boolean roboticAnimationStarted = false;
 
+        // Traditional animation constructor
         MovingPiece(Drawable d, float sx, float sy, float ex, float ey,
                     int toRow, int toCol, char originalPiece) {
+            this(d, sx, sy, ex, ey, toRow, toCol, originalPiece, false, null, null);
+        }
+        
+        // Enhanced constructor with robotic animation support
+        MovingPiece(Drawable d, float sx, float sy, float ex, float ey,
+                    int toRow, int toCol, char originalPiece, 
+                    boolean useRoboticAnimation, RoboticPieceAnimator roboticAnimator,
+                    RoboticAnimationSettingsManager.RoboticAnimationConfig roboticConfig) {
             this.d = d;
             this.sx = sx;
             this.sy = sy;
@@ -885,10 +1224,29 @@ public class ChessBoardView extends View {
             this.toRow = toRow;
             this.toCol = toCol;
             this.originalPiece = originalPiece;
+            this.useRoboticAnimation = useRoboticAnimation;
+            this.roboticAnimator = roboticAnimator;
+            this.roboticConfig = roboticConfig;
+            
+            // Set duration based on animation type
+            if (useRoboticAnimation && roboticConfig != null) {
+                int baseDuration = 600; // Robotic animations are longer
+                this.dur = Math.round(baseDuration / roboticConfig.speedMultiplier);
+            } else {
+                this.dur = 250; // Traditional animation duration
+            }
+            
+            // Initialize current position
+            this.currentX = sx;
+            this.currentY = sy;
+            
             startT = System.currentTimeMillis();
+            
+            Log.d("ChessBoardView", String.format("🎬 MovingPiece created: %s animation, piece='%c', duration=%dms", 
+                                                useRoboticAnimation ? "robotic" : "traditional", originalPiece, dur));
         }
 
-        // Add smooth easing for more natural movement
+        // Traditional smooth easing for non-robotic movement
         private float easeOutQuad(float t) {
             return 1 - (1 - t) * (1 - t);
         }
@@ -899,6 +1257,17 @@ public class ChessBoardView extends View {
         boolean draw(Canvas c, int sq, int pad, char[][] boardState) {
             float t = Math.min(1f, (System.currentTimeMillis() - startT) / (float) dur);
 
+            if (useRoboticAnimation && roboticAnimator != null && roboticConfig != null && roboticConfig.enabled) {
+                return drawRoboticAnimation(c, sq, pad, boardState, t);
+            } else {
+                return drawTraditionalAnimation(c, sq, pad, boardState, t);
+            }
+        }
+        
+        /**
+         * Draw traditional smooth animation
+         */
+        private boolean drawTraditionalAnimation(Canvas c, int sq, int pad, char[][] boardState, float t) {
             // Apply easing function for smoother motion
             float easedT = easeOutQuad(t);
 
@@ -912,10 +1281,88 @@ public class ChessBoardView extends View {
             // CRITICAL: Restore piece when animation completes
             if (t == 1f) {
                 boardState[toRow][toCol] = originalPiece;
-                Log.d("ChessBoardView", "🎬 Animation completed - restored piece '" + originalPiece + "' to " + toRow + "," + toCol);
+                Log.d("ChessBoardView", "🎬 Traditional animation completed - restored piece '" + originalPiece + "' to " + toRow + "," + toCol);
             }
             
             return t == 1f;
+        }
+        
+        /**
+         * Draw robotic mechanical animation
+         */
+        private boolean drawRoboticAnimation(Canvas c, int sq, int pad, char[][] boardState, float t) {
+            // Start robotic animation if not already started
+            if (!roboticAnimationStarted) {
+                roboticAnimationStarted = true;
+                
+                // Determine piece profile
+                RoboticPieceAnimator.PieceProfile profile = RoboticPieceAnimator.getPieceProfile(originalPiece);
+                if (!roboticConfig.pieceProfilesEnabled) {
+                    profile = RoboticPieceAnimator.PieceProfile.PAWN_MARCH; // Generic movement
+                }
+                
+                // Start robotic animation with callback
+                roboticAnimator.animateRoboticMove(sx, sy, ex, ey, profile, new RoboticPieceAnimator.RoboticAnimationCallback() {
+                    @Override
+                    public void onAnimationUpdate(float x, float y, float rotation, float alpha) {
+                        currentX = x;
+                        currentY = y;
+                        if (roboticConfig.rotationEnabled) {
+                            currentRotation = rotation;
+                        }
+                        // Note: We handle alpha in the drawing code below
+                    }
+                    
+                    @Override
+                    public void onAnimationComplete() {
+                        Log.d("ChessBoardView", "🤖 Robotic animation callback: completed");
+                    }
+                    
+                    @Override
+                    public void onAnimationStart() {
+                        Log.d("ChessBoardView", "🤖 Robotic animation callback: started");
+                    }
+                    
+                    @Override
+                    public void onMechanicalPause() {
+                        Log.d("ChessBoardView", "⏸️ Robotic animation callback: mechanical pause");
+                    }
+                    
+                    @Override
+                    public void onSettlingStart() {
+                        Log.d("ChessBoardView", "🔧 Robotic animation callback: settling started");
+                    }
+                });
+                
+                Log.d("ChessBoardView", String.format("🤖 Started robotic animation for piece '%c' with profile %s", 
+                                                    originalPiece, profile.name()));
+            }
+            
+            // Draw piece at current robotic animation position
+            c.save();
+            
+            // Apply rotation if enabled
+            if (roboticConfig.rotationEnabled && currentRotation != 0f) {
+                float centerX = currentX + sq / 2f;
+                float centerY = currentY + sq / 2f;
+                c.rotate(currentRotation, centerX, centerY);
+            }
+            
+            // Set piece bounds and draw
+            d.setBounds(Math.round(currentX) + pad, Math.round(currentY) + pad,
+                    Math.round(currentX) + sq - pad, Math.round(currentY) + sq - pad);
+            d.draw(c);
+            
+            c.restore();
+            
+            // CRITICAL: Restore piece when animation completes
+            if (t >= 1f) {
+                boardState[toRow][toCol] = originalPiece;
+                roboticAnimator.cancelAnimation(); // Clean up
+                Log.d("ChessBoardView", "🤖 Robotic animation completed - restored piece '" + originalPiece + "' to " + toRow + "," + toCol);
+            }
+            
+            return t >= 1f;
         }
     }
 
@@ -1474,6 +1921,146 @@ public class ChessBoardView extends View {
      */
     public void applyNeonSettingsFromPreferences() {
         NeonSettingsManager.applyNeonSettings(getContext(), this);
+    }
+    
+    // ⚡ ELECTRIC ARC PUBLIC API
+    
+    /**
+     * Enable or disable electric arc move trails
+     */
+    public void setElectricArcEnabled(boolean enabled) {
+        if (electricArcSettings != null) {
+            electricArcSettings.setElectricArcEnabled(enabled);
+        }
+    }
+    
+    /**
+     * Check if electric arc effects are enabled
+     */
+    public boolean isElectricArcEnabled() {
+        return electricArcSettings != null && electricArcSettings.isElectricArcEnabled();
+    }
+    
+    /**
+     * Set electric arc theme
+     * @param theme One of: electric_blue, lightning_white, neon_orange, matrix_green, cyber_purple
+     */
+    public void setElectricArcTheme(String theme) {
+        if (electricArcSettings != null) {
+            electricArcSettings.setElectricArcTheme(theme);
+        }
+    }
+    
+    /**
+     * Set electric arc intensity (0-100)
+     */
+    public void setElectricArcIntensity(int intensity) {
+        if (electricArcSettings != null) {
+            electricArcSettings.setElectricArcIntensity(intensity);
+        }
+    }
+    
+    /**
+     * Get access to the electric arc settings manager for advanced configuration
+     */
+    public ElectricArcSettingsManager getElectricArcSettings() {
+        return electricArcSettings;
+    }
+    
+    /**
+     * Get access to the electric arc renderer for advanced configuration
+     */
+    public ElectricArcRenderer getElectricArcRenderer() {
+        return electricArcRenderer;
+    }
+    
+    /**
+     * Apply electric arc settings from SharedPreferences
+     * Call this method when the view is created or when settings change
+     */
+    public void applyElectricArcSettingsFromPreferences() {
+        if (electricArcSettings != null && electricArcRenderer != null) {
+            electricArcSettings.applySettingsToRenderer(electricArcRenderer);
+            Log.d("ChessBoardView", "⚡ Applied electric arc settings from preferences");
+        }
+    }
+    
+    /**
+     * Manually trigger electric arc effect (for testing or special cases)
+     */
+    public void createElectricArc(int fromRow, int fromCol, int toRow, int toCol) {
+        createElectricArcForMove(fromRow, fromCol, toRow, toCol);
+    }
+    
+    // 🔌 CIRCUIT TRACE PUBLIC API
+    
+    /**
+     * Enable or disable circuit trace move highlights
+     */
+    public void setCircuitTraceEnabled(boolean enabled) {
+        if (circuitTraceSettings != null) {
+            circuitTraceSettings.setCircuitTraceEnabled(enabled);
+        }
+    }
+    
+    /**
+     * Check if circuit trace effects are enabled
+     */
+    public boolean isCircuitTraceEnabled() {
+        return circuitTraceSettings != null && circuitTraceSettings.isCircuitTraceEnabled();
+    }
+    
+    /**
+     * Set circuit trace theme
+     * @param theme One of: cyberpunk, matrix, neon, classic, stealth
+     */
+    public void setCircuitTraceTheme(String theme) {
+        if (circuitTraceSettings != null) {
+            circuitTraceSettings.setCircuitTraceTheme(theme);
+        }
+    }
+    
+    /**
+     * Set flow animation enabled/disabled
+     */
+    public void setCircuitFlowAnimationEnabled(boolean enabled) {
+        if (circuitTraceSettings != null) {
+            circuitTraceSettings.setFlowAnimationEnabled(enabled);
+        }
+    }
+    
+    /**
+     * Set glow effects enabled/disabled
+     */
+    public void setCircuitGlowEnabled(boolean enabled) {
+        if (circuitTraceSettings != null) {
+            circuitTraceSettings.setGlowEnabled(enabled);
+        }
+    }
+    
+    /**
+     * Get access to the circuit trace settings manager for advanced configuration
+     */
+    public CircuitTraceSettingsManager getCircuitTraceSettings() {
+        return circuitTraceSettings;
+    }
+    
+    /**
+     * Get access to the circuit trace renderer for advanced configuration
+     */
+    public CircuitTraceRenderer getCircuitTraceRenderer() {
+        return circuitTraceRenderer;
+    }
+    
+    /**
+     * Apply circuit trace settings from SharedPreferences
+     * Call this method when the view is created or when settings change
+     */
+    public void applyCircuitTraceSettingsFromPreferences() {
+        if (circuitTraceSettings != null && circuitTraceRenderer != null) {
+            circuitTraceSettings.applySettingsToRenderer(circuitTraceRenderer);
+            Log.d("ChessBoardView", "🔌 Applied circuit trace settings from preferences");
+        }
     }
     
 }

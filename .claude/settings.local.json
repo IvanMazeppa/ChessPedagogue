@@ -87,7 +87,14 @@
       "Bash(unset:*)",
       "Bash(./apache-maven-3.9.5/bin/mvn compile)",
       "Bash(cat:*)",
-      "Bash(true)"
+      "Bash(true)",
+      "Bash(git lfs:*)",
+      "Bash(where git-lfs)",
+      "Bash(\"/mnt/c/Program Files/Git/cmd/git-lfs.exe\" version)",
+      "Bash(echo $PATH)",
+      "Bash(alias git-lfs=\"/mnt/c/Program Files/Git/cmd/git-lfs.exe\")",
+      "Bash(ln:*)",
+      "Bash(sudo ln:*)"
     ],
     "deny": []
   },

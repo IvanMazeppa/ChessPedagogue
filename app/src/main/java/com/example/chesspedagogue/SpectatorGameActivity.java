@@ -77,6 +77,9 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
     // Voice status indicator
     private VoiceStatusIndicator voiceStatusIndicator;
     
+    // 📊 Live monitoring client
+    private LiveMonitorClient liveMonitorClient;
+    
     // 🎭 Phase 2: Multi-layered emotional complexity integration
     private Phase2EmotionalIntegrationBridge phase2Bridge;
     private MultiLayeredEmotionalManager multiLayeredManager;
@@ -119,6 +122,9 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                 
                 // 🎤 Initialize always-listening voice control manager
                 initializeVoiceControlManager();
+                
+                // 📊 Initialize live monitoring client
+                initializeLiveMonitorClient();
                 
                 // 🎭 Initialize Phase 2 emotional complexity system
                 initializePhase2EmotionalSystem();
@@ -336,6 +342,25 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                     // Store the FEN for delayed update if animation is in progress
                     pendingFenUpdate = fen;
                     
+                    // Send game state to live monitor
+                    if (liveMonitorClient != null) {
+                        Float evaluationFloat = viewModel.getCurrentEvaluation().getValue();
+                        double evaluation = evaluationFloat != null ? evaluationFloat.doubleValue() : 0.0;
+                        List<String> moveHistory = viewModel.getMoveHistory().getValue();
+                        String currentPlayer = viewModel.getCurrentPlayer().getValue();
+                        String lastMove = moveHistory != null && !moveHistory.isEmpty() ? moveHistory.get(moveHistory.size() - 1) : "Game start";
+                        
+                        liveMonitorClient.sendGameState(
+                            lastMove,
+                            fen, 
+                            evaluation,
+                            "Spectator Mode: " + whitePlayer + " vs " + blackPlayer,
+                            true,
+                            currentPlayer != null ? currentPlayer : "white",
+                            moveHistory != null ? moveHistory.size() : 0
+                        );
+                    }
+                    
                     // If no animation is in progress, update immediately
                     if (!isAnimationInProgress) {
                         chessBoardView.updateBoardFromFen(fen);
@@ -363,6 +388,21 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             viewModel.getAIDialogue().observe(this, dialogueData -> {
                 if (dialogueData != null && !dialogueData.trim().isEmpty()) {
                     displayAIDialogue(dialogueData);
+                    
+                    // Send conversation to live monitor
+                    if (liveMonitorClient != null) {
+                        // Extract speaker and message from dialogue data if possible
+                        String speaker = "AI";
+                        String message = dialogueData;
+                        if (dialogueData.contains(":")) {
+                            String[] parts = dialogueData.split(":", 2);
+                            if (parts.length == 2) {
+                                speaker = parts[0].trim();
+                                message = parts[1].trim();
+                            }
+                        }
+                        liveMonitorClient.sendConversation(speaker, message, "normal", "comment");
+                    }
                 }
             });
 
@@ -1242,6 +1282,11 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                                     Log.d(TAG, "🎭 Master " + speaker + " responded to user comment with enhanced AI");
                                     displayAIDialogue(dialogue);
 
+                                    // Send conversation to live monitor
+                                    if (liveMonitorClient != null) {
+                                        liveMonitorClient.sendConversation(speaker, dialogue, "neutral", "response");
+                                    }
+
                                     // Show special indicator that this is a response to user
                                     String userResponseIndicator = "👤➡️🎭 " +
                                             FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(speaker) +
@@ -1254,6 +1299,11 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
                             public void onEmotionalResponse(String speaker, String emotion, String dialogue) {
                                 runOnUiThread(() -> {
                                     Log.d(TAG, "😮 Emotional response from " + speaker + ": " + emotion);
+
+                                    // Send emotional conversation to live monitor
+                                    if (liveMonitorClient != null) {
+                                        liveMonitorClient.sendConversation(speaker, dialogue, emotion, "emotional");
+                                    }
                                     String emotionalIndicator = "💭 " + 
                                             FineTunedModelManager.getInstance(SpectatorGameActivity.this).getMasterDisplayName(speaker) +
                                             " (" + emotion + "): \"" + dialogue + "\"";
@@ -1832,6 +1882,92 @@ public class SpectatorGameActivity extends AppCompatActivity implements VoiceCon
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Error initializing voice control manager", e);
+        }
+    }
+
+    /**
+     * 📊 Initialize live monitoring client for desktop configurator
+     */
+    private void initializeLiveMonitorClient() {
+        try {
+            Log.d(TAG, "📊 Initializing live monitoring client for spectator mode");
+            
+            liveMonitorClient = LiveMonitorClient.getInstance(this);
+            
+            // Try to connect to the configurator
+            android.content.SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+            String serverIp = prefs.getString("live_monitor_server_ip", "192.168.0.237");
+            String serverUrl = "ws://" + serverIp + ":8081";
+            
+            liveMonitorClient.connect(serverUrl);
+            
+            Log.d(TAG, "🔗 Live monitoring client initialized and attempting connection to " + serverUrl);
+            
+            // Send initial system log
+            liveMonitorClient.sendSystemLog("Spectator mode initialized with masters: " + whitePlayer + " vs " + blackPlayer, "INFO");
+            
+            // Start periodic master activity monitoring
+            startMasterActivityMonitoring();
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error initializing live monitoring client", e);
+        }
+    }
+
+    /**
+     * 📊 Start periodic monitoring of master activity for live monitor
+     */
+    private void startMasterActivityMonitoring() {
+        mainHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (liveMonitorClient != null && gameStarted) {
+                    // Send master activity data
+                    String[] activeMasters = {whitePlayer, blackPlayer};
+                    String emotionalState = getEmotionalStateForMonitoring();
+                    double sophisticationLevel = getSophisticationLevelForMonitoring();
+                    
+                    liveMonitorClient.sendMasterActivity(
+                        activeMasters,
+                        whitePlayer, // primary master
+                        emotionalState,
+                        sophisticationLevel,
+                        !isPaused, // isThinking
+                        isPaused ? "Paused" : "Playing"
+                    );
+                }
+                
+                // Schedule next update in 5 seconds
+                if (gameStarted && !isFinishing()) {
+                    mainHandler.postDelayed(this, 5000);
+                }
+            }
+        }, 2000); // Start after 2 seconds
+    }
+
+    /**
+     * Get current emotional state for live monitoring
+     */
+    private String getEmotionalStateForMonitoring() {
+        try {
+            if (multiLayeredManager != null) {
+                return whitePlayer + ": Focused | " + blackPlayer + ": Analytical";
+            }
+            return whitePlayer + ": Active | " + blackPlayer + ": Active";
+        } catch (Exception e) {
+            return "Unknown emotional state";
+        }
+    }
+
+    /**
+     * Get current sophistication level for monitoring
+     */
+    private double getSophisticationLevelForMonitoring() {
+        try {
+            // Return a value between 0.0 and 1.0 representing conversation sophistication
+            return gameStarted ? 0.75 : 0.0;
+        } catch (Exception e) {
+            return 0.5;
         }
     }
 

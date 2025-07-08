@@ -1495,7 +1495,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             // Users can configure the IP address in settings
             SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
             String serverIp = prefs.getString("live_monitor_server_ip", "192.168.0.237"); // Default to your IP
-            String serverUrl = "ws://" + serverIp + ":8080";
+            String serverUrl = "ws://" + serverIp + ":8081";
             
             liveMonitorClient.connect(serverUrl);
             
@@ -1719,11 +1719,20 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                             // Show legal moves for newly selected piece
                             gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
                                     moves -> {
+                                        // Collect legal move coordinates for circuit traces
+                                        List<int[]> legalMoveCoords = new ArrayList<>();
+                                        
                                         for (String move : moves) {
                                             int destRow = 8 - Character.getNumericValue(move.charAt(3));
                                             int destCol = move.charAt(2) - 'a';
                                             chessBoardView.addHighlightedSquare(destRow, destCol);
+                                            legalMoveCoords.add(new int[]{destRow, destCol});
                                         }
+                                        
+                                        // 🔌 Show circuit traces for legal moves (if enabled)
+                                        Log.d("MainActivity", String.format("🔌 Calling showCircuitTracesForLegalMoves: piece at (%d,%d) with %d legal moves", 
+                                                                           row, col, legalMoveCoords.size()));
+                                        chessBoardView.showCircuitTracesForLegalMoves(row, col, legalMoveCoords);
                                     });
                             return;
                         }
@@ -1775,11 +1784,21 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                         gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col),
                                 moves -> {
                                     chessBoardView.clearHighlightedSquares();
+                                    
+                                    // Collect legal move coordinates for circuit traces
+                                    List<int[]> legalMoveCoords = new ArrayList<>();
+                                    
                                     for (String move : moves) {
                                         int destRow = 8 - Character.getNumericValue(move.charAt(3));
                                         int destCol = move.charAt(2) - 'a';
                                         chessBoardView.addHighlightedSquare(destRow, destCol);
+                                        legalMoveCoords.add(new int[]{destRow, destCol});
                                     }
+                                    
+                                    // 🔌 Show circuit traces for legal moves (if enabled)
+                                    Log.d("MainActivity", String.format("🔌 Calling showCircuitTracesForLegalMoves: piece at (%d,%d) with %d legal moves", 
+                                                                       row, col, legalMoveCoords.size()));
+                                    chessBoardView.showCircuitTracesForLegalMoves(row, col, legalMoveCoords);
                                 });
                     }
                 }

@@ -53,4 +53,55 @@
         <item>sunset_amber</item>
         <item>neon_rainbow</item>
     </string-array>
+
+    <!-- Electric Arc themes for move trails -->
+    <string-array name="electric_arc_theme_entries">
+        <item>Electric Blue (Default)</item>
+        <item>Lightning White</item>
+        <item>Neon Orange</item>
+        <item>Matrix Green</item>
+        <item>Cyber Purple</item>
+    </string-array>
+
+    <string-array name="electric_arc_theme_values">
+        <item>electric_blue</item>
+        <item>lightning_white</item>
+        <item>neon_orange</item>
+        <item>matrix_green</item>
+        <item>cyber_purple</item>
+    </string-array>
+
+    <!-- Circuit Trace themes for move highlights -->
+    <string-array name="circuit_trace_theme_entries">
+        <item>Cyberpunk Circuit (Default)</item>
+        <item>Matrix Grid</item>
+        <item>Neon Traces</item>
+        <item>Classic PCB</item>
+        <item>Stealth Mode</item>
+    </string-array>
+
+    <string-array name="circuit_trace_theme_values">
+        <item>cyberpunk</item>
+        <item>matrix</item>
+        <item>neon</item>
+        <item>classic</item>
+        <item>stealth</item>
+    </string-array>
+
+    <!-- Robotic Animation styles for piece movement -->
+    <string-array name="robotic_animation_style_entries">
+        <item>Mechanical Robot (Default)</item>
+        <item>Precision Servo</item>
+        <item>Industrial Machine</item>
+        <item>Laboratory Precise</item>
+        <item>Experimental AI</item>
+    </string-array>
+
+    <string-array name="robotic_animation_style_values">
+        <item>mechanical</item>
+        <item>servo</item>
+        <item>industrial</item>
+        <item>precise</item>
+        <item>experimental</item>
+    </string-array>
 </resources>

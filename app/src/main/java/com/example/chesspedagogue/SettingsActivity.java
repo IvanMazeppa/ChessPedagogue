@@ -19,6 +19,10 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.chesspedagogue.ui.effects.ElectricArcSettingsManager;
+import com.example.chesspedagogue.ui.effects.CircuitTraceSettingsManager;
+import com.example.chesspedagogue.ui.effects.RoboticAnimationSettingsManager;
+
 /**
  * Settings activity for ChessPedagogue app, allowing users to customize
  * the AI model, voice, and other preferences.
@@ -270,6 +274,233 @@ public class SettingsActivity extends AppCompatActivity {
         updateChessMasterDisplay();
         setupEnhancedVoiceSettings();
         setupLiveMonitorSettings();
+        
+        // 🎯 SETUP NEW VISUAL EFFECTS SETTINGS
+        setupNewVisualEffectsSettings();
+    }
+    
+    // 🎯 Setup new visual effects settings and listeners
+    private void setupNewVisualEffectsSettings() {
+        // Create settings managers
+        ElectricArcSettingsManager electricArcSettings = new ElectricArcSettingsManager(this);
+        CircuitTraceSettingsManager circuitTraceSettings = new CircuitTraceSettingsManager(this);
+        RoboticAnimationSettingsManager roboticAnimationSettings = new RoboticAnimationSettingsManager(this);
+        
+        // Get UI references
+        Switch traditionalLegalMoveDotsSwitch = findViewById(R.id.switch_traditional_legal_move_dots);
+        Switch electricArcSwitch = findViewById(R.id.switch_electric_arc);
+        Spinner electricArcThemeSpinner = findViewById(R.id.spinner_electric_arc_theme);
+        SeekBar electricArcIntensitySeekBar = findViewById(R.id.seekbar_electric_arc_intensity);
+        Switch circuitTraceSwitch = findViewById(R.id.switch_circuit_trace);
+        Spinner circuitTraceThemeSpinner = findViewById(R.id.spinner_circuit_trace_theme);
+        Switch circuitFlowSwitch = findViewById(R.id.switch_circuit_flow);
+        Switch circuitGlowSwitch = findViewById(R.id.switch_circuit_glow);
+        Switch roboticAnimationSwitch = findViewById(R.id.switch_robotic_animation);
+        Spinner roboticAnimationStyleSpinner = findViewById(R.id.spinner_robotic_animation_style);
+        SeekBar roboticAnimationSpeedSeekBar = findViewById(R.id.seekbar_robotic_animation_speed);
+        Switch roboticOvershootSwitch = findViewById(R.id.switch_robotic_overshoot);
+        Switch roboticJitterSwitch = findViewById(R.id.switch_robotic_jitter);
+        Switch roboticRotationSwitch = findViewById(R.id.switch_robotic_rotation);
+        Switch roboticPieceProfilesSwitch = findViewById(R.id.switch_robotic_piece_profiles);
+        
+        // Load current settings into UI
+        SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+        
+        // Traditional legal move dots
+        traditionalLegalMoveDotsSwitch.setChecked(prefs.getBoolean("traditional_legal_move_dots_enabled", true));
+        
+        // Electric arc settings
+        electricArcSwitch.setChecked(electricArcSettings.isElectricArcEnabled());
+        electricArcIntensitySeekBar.setProgress(electricArcSettings.getElectricArcIntensity());
+        setSpinnerByValue(electricArcThemeSpinner, R.array.electric_arc_theme_values, electricArcSettings.getElectricArcTheme());
+        
+        // Circuit trace settings  
+        circuitTraceSwitch.setChecked(circuitTraceSettings.isCircuitTraceEnabled());
+        circuitFlowSwitch.setChecked(circuitTraceSettings.isFlowAnimationEnabled());
+        circuitGlowSwitch.setChecked(circuitTraceSettings.isGlowEnabled());
+        setSpinnerByValue(circuitTraceThemeSpinner, R.array.circuit_trace_theme_values, circuitTraceSettings.getCircuitTraceTheme());
+        
+        // Robotic animation settings
+        roboticAnimationSwitch.setChecked(roboticAnimationSettings.isRoboticAnimationEnabled());
+        roboticAnimationSpeedSeekBar.setProgress(roboticAnimationSettings.getRoboticAnimationSpeed());
+        roboticOvershootSwitch.setChecked(roboticAnimationSettings.isOvershootEnabled());
+        roboticJitterSwitch.setChecked(roboticAnimationSettings.isJitterEnabled());
+        roboticRotationSwitch.setChecked(roboticAnimationSettings.isRotationEnabled());
+        roboticPieceProfilesSwitch.setChecked(roboticAnimationSettings.isPieceProfilesEnabled());
+        setSpinnerByValue(roboticAnimationStyleSpinner, R.array.robotic_animation_style_values, roboticAnimationSettings.getRoboticAnimationStyle());
+        
+        // Setup listeners
+        setupTraditionalLegalMoveDotsListener(traditionalLegalMoveDotsSwitch);
+        setupElectricArcListeners(electricArcSwitch, electricArcThemeSpinner, electricArcIntensitySeekBar, electricArcSettings);
+        setupCircuitTraceListeners(circuitTraceSwitch, circuitTraceThemeSpinner, circuitFlowSwitch, circuitGlowSwitch, circuitTraceSettings);
+        setupRoboticAnimationListeners(roboticAnimationSwitch, roboticAnimationStyleSpinner, roboticAnimationSpeedSeekBar,
+                                     roboticOvershootSwitch, roboticJitterSwitch, roboticRotationSwitch, roboticPieceProfilesSwitch, roboticAnimationSettings);
+    }
+    
+    // 🎯 Traditional legal move dots listener
+    private void setupTraditionalLegalMoveDotsListener(Switch traditionalLegalMoveDotsSwitch) {
+        traditionalLegalMoveDotsSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            SharedPreferences prefs = getSharedPreferences("ChessPedagoguePrefs", MODE_PRIVATE);
+            prefs.edit().putBoolean("traditional_legal_move_dots_enabled", isChecked).apply();
+            
+            String message = isChecked ? "Traditional blue dots enabled" : "Traditional blue dots disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+    }
+    
+    // ⚡ Electric arc listeners
+    private void setupElectricArcListeners(Switch electricArcSwitch, Spinner electricArcThemeSpinner, 
+                                         SeekBar electricArcIntensitySeekBar, ElectricArcSettingsManager electricArcSettings) {
+        
+        electricArcSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            electricArcSettings.setElectricArcEnabled(isChecked);
+            String message = isChecked ? "Electric arc trails enabled" : "Electric arc trails disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        electricArcThemeSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String[] themeValues = getResources().getStringArray(R.array.electric_arc_theme_values);
+                String selectedTheme = themeValues[position];
+                electricArcSettings.setElectricArcTheme(selectedTheme);
+                
+                String[] themeNames = getResources().getStringArray(R.array.electric_arc_theme_entries);
+                Toast.makeText(SettingsActivity.this, "Arc theme: " + themeNames[position], Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        
+        electricArcIntensitySeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    electricArcSettings.setElectricArcIntensity(progress);
+                }
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Toast.makeText(SettingsActivity.this, "Arc intensity updated", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+    
+    // 🔌 Circuit trace listeners
+    private void setupCircuitTraceListeners(Switch circuitTraceSwitch, Spinner circuitTraceThemeSpinner,
+                                          Switch circuitFlowSwitch, Switch circuitGlowSwitch, CircuitTraceSettingsManager circuitTraceSettings) {
+        
+        circuitTraceSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            circuitTraceSettings.setCircuitTraceEnabled(isChecked);
+            String message = isChecked ? "Circuit traces enabled" : "Circuit traces disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        circuitTraceThemeSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String[] themeValues = getResources().getStringArray(R.array.circuit_trace_theme_values);
+                String selectedTheme = themeValues[position];
+                circuitTraceSettings.setCircuitTraceTheme(selectedTheme);
+                
+                String[] themeNames = getResources().getStringArray(R.array.circuit_trace_theme_entries);
+                Toast.makeText(SettingsActivity.this, "Circuit theme: " + themeNames[position], Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        
+        circuitFlowSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            circuitTraceSettings.setFlowAnimationEnabled(isChecked);
+            String message = isChecked ? "Flow animation enabled" : "Flow animation disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        circuitGlowSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            circuitTraceSettings.setGlowEnabled(isChecked);
+            String message = isChecked ? "Glow effects enabled" : "Glow effects disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+    }
+    
+    // 🤖 Robotic animation listeners  
+    private void setupRoboticAnimationListeners(Switch roboticAnimationSwitch, Spinner roboticAnimationStyleSpinner, SeekBar roboticAnimationSpeedSeekBar,
+                                              Switch roboticOvershootSwitch, Switch roboticJitterSwitch, Switch roboticRotationSwitch, 
+                                              Switch roboticPieceProfilesSwitch, RoboticAnimationSettingsManager roboticAnimationSettings) {
+        
+        roboticAnimationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            roboticAnimationSettings.setRoboticAnimationEnabled(isChecked);
+            String message = isChecked ? "Robotic animations enabled" : "Robotic animations disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        roboticAnimationStyleSpinner.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                String[] themeValues = getResources().getStringArray(R.array.robotic_animation_style_values);
+                String selectedStyle = themeValues[position];
+                roboticAnimationSettings.setRoboticAnimationStyle(selectedStyle);
+                
+                String[] themeNames = getResources().getStringArray(R.array.robotic_animation_style_entries);
+                Toast.makeText(SettingsActivity.this, "Animation style: " + themeNames[position], Toast.LENGTH_SHORT).show();
+            }
+            @Override
+            public void onNothingSelected(android.widget.AdapterView<?> parent) {}
+        });
+        
+        roboticAnimationSpeedSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    // Convert 0-150 to 50-200 range
+                    int speedPercent = 50 + progress;
+                    roboticAnimationSettings.setRoboticAnimationSpeed(speedPercent);
+                }
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                Toast.makeText(SettingsActivity.this, "Animation speed updated", Toast.LENGTH_SHORT).show();
+            }
+        });
+        
+        roboticOvershootSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            roboticAnimationSettings.setOvershootEnabled(isChecked);
+            String message = isChecked ? "Overshoot effects enabled" : "Overshoot effects disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        roboticJitterSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            roboticAnimationSettings.setJitterEnabled(isChecked);
+            String message = isChecked ? "Settling jitter enabled" : "Settling jitter disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        roboticRotationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            roboticAnimationSettings.setRotationEnabled(isChecked);
+            String message = isChecked ? "Scanning rotation enabled" : "Scanning rotation disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+        
+        roboticPieceProfilesSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            roboticAnimationSettings.setPieceProfilesEnabled(isChecked);
+            String message = isChecked ? "Piece profiles enabled" : "Piece profiles disabled";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+        });
+    }
+    
+    // Utility method to set spinner selection by value
+    private void setSpinnerByValue(Spinner spinner, int valuesArrayId, String value) {
+        String[] values = getResources().getStringArray(valuesArrayId);
+        for (int i = 0; i < values.length; i++) {
+            if (values[i].equals(value)) {
+                spinner.setSelection(i);
+                break;
+            }
+        }
     }
 
     /**
