@@ -40,6 +40,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.ArrayList;
 import java.util.List;
 import com.example.chesspedagogue.viewmodel.GameViewModel;
 import com.example.chesspedagogue.repository.GameRepository;
@@ -2225,13 +2226,20 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
 
                     // Show legal moves for newly selected piece
                     gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col), moves -> {
+                        List<int[]> legalMoveCoords = new ArrayList<>();
                         for (String move : moves) {
                             if (move.length() >= 4) {
                                 int destRow = 8 - Character.getNumericValue(move.charAt(3));
                                 int destCol = move.charAt(2) - 'a';
                                 chessBoardView.addHighlightedSquare(destRow, destCol);
+                                legalMoveCoords.add(new int[]{destRow, destCol});
                             }
                         }
+                        
+                        // 🔌 Show circuit traces for legal moves (if enabled)
+                        Log.d(TAG, String.format("🔌 Calling showCircuitTracesForLegalMoves: piece at (%d,%d) with %d legal moves", 
+                                                 row, col, legalMoveCoords.size()));
+                        chessBoardView.showCircuitTracesForLegalMoves(row, col, legalMoveCoords);
                     });
                     return;
                 }
@@ -2283,13 +2291,20 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 chessBoardView.setSelectedSquare(row, col);
                 gameViewModel.getLegalMovesForSquare(algebraicNotation(row, col), moves -> {
                     chessBoardView.clearHighlightedSquares();
+                    List<int[]> legalMoveCoords = new ArrayList<>();
                     for (String move : moves) {
                         if (move.length() >= 4) {
                             int destRow = 8 - Character.getNumericValue(move.charAt(3));
                             int destCol = move.charAt(2) - 'a';
                             chessBoardView.addHighlightedSquare(destRow, destCol);
+                            legalMoveCoords.add(new int[]{destRow, destCol});
                         }
                     }
+                    
+                    // 🔌 Show circuit traces for legal moves (if enabled)
+                    Log.d(TAG, String.format("🔌 Calling showCircuitTracesForLegalMoves: piece at (%d,%d) with %d legal moves", 
+                                             row, col, legalMoveCoords.size()));
+                    chessBoardView.showCircuitTracesForLegalMoves(row, col, legalMoveCoords);
                 });
                 Log.d(TAG, "🎯 Selected piece: " + piece + " at " + row + ", " + col);
             } else {

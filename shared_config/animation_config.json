@@ -1,0 +1,182 @@
+{
+  "animation_config" : {
+    "version" : "1.0.0",
+    "last_modified" : "2025-07-08T20:55:00Z",
+    "description" : "ChessPedagogue Competitive Mode Animation Configuration",
+    "panel_animations" : {
+      "speed_multiplier" : 1.0,
+      "acceleration_factor" : 0.5,
+      "deceleration_factor" : 0.7,
+      "height_scale" : 1.0
+    },
+    "panel_positioning" : {
+      "start_position" : "LEFT",
+      "end_position" : "CUSTOM",
+      "custom_position" : {
+        "x" : 0.32074611896379523,
+        "y" : 0.6874431023497923
+      }
+    },
+    "advanced_settings" : {
+      "enable_spring_physics" : true,
+      "enable_panel_staggering" : true,
+      "stagger_delay_ms" : 300.0,
+      "easing_function" : "EASE_IN_OUT"
+    },
+    "competitive_mode_layout" : {
+      "header_panel" : {
+        "id" : "competitiveHeaderContainer",
+        "type" : "horizontal_layout",
+        "width" : "match_parent",
+        "height" : "wrap_content",
+        "position" : {
+          "x" : 0,
+          "y" : 0
+        },
+        "components" : [ {
+          "id" : "playerInfo",
+          "type" : "player_card",
+          "width" : "0dp",
+          "weight" : 1,
+          "background" : "#F0D9B5",
+          "content" : "You (WHITE)"
+        }, {
+          "id" : "vsIndicator",
+          "type" : "text",
+          "content" : "⚔️\nVS",
+          "width" : "wrap_content"
+        }, {
+          "id" : "masterInfo",
+          "type" : "master_card",
+          "width" : "0dp",
+          "weight" : 1,
+          "background" : "#B8860B",
+          "content" : "Mikhail Tal"
+        } ]
+      },
+      "chess_board_area" : {
+        "id" : "chessBoardFrame",
+        "type" : "frame_layout",
+        "width" : "match_parent",
+        "height" : "0dp",
+        "weight" : 8,
+        "components" : [ {
+          "id" : "evaluationBar",
+          "type" : "evaluation_bar",
+          "width" : "16dp",
+          "height" : "match_parent",
+          "position" : "left_edge",
+          "background" : "#4CAF50"
+        }, {
+          "id" : "chessBoard",
+          "type" : "chess_board",
+          "width" : "0dp",
+          "height" : "0dp",
+          "aspect_ratio" : "1:1",
+          "position" : "center",
+          "background" : "chess_pattern"
+        }, {
+          "id" : "thinkingIndicator",
+          "type" : "progress_bar",
+          "width" : "32dp",
+          "height" : "32dp",
+          "position" : "top_right",
+          "visibility" : "hidden"
+        } ]
+      },
+      "control_panel" : {
+        "id" : "controlButtons",
+        "type" : "vertical_layout",
+        "width" : "match_parent",
+        "height" : "wrap_content",
+        "background" : "#FAFAFA",
+        "rows" : [ {
+          "type" : "horizontal_layout",
+          "buttons" : [ {
+            "id" : "pauseButton",
+            "text" : "⏸️",
+            "background" : "#FFC107",
+            "weight" : 1
+          }, {
+            "id" : "voiceComment",
+            "text" : "🎤",
+            "background" : "#B8860B",
+            "weight" : 1
+          }, {
+            "id" : "difficultyToggle",
+            "text" : "⚙️",
+            "background" : "#F0D9B5",
+            "weight" : 1
+          }, {
+            "id" : "surrenderButton",
+            "text" : "🏳️",
+            "background" : "#F44336",
+            "weight" : 1
+          } ]
+        }, {
+          "type" : "horizontal_layout",
+          "buttons" : [ {
+            "id" : "hintButton",
+            "text" : "💡",
+            "background" : "#2196F3",
+            "weight" : 1
+          }, {
+            "id" : "undoButton",
+            "text" : "↶",
+            "background" : "#FF9800",
+            "weight" : 1
+          }, {
+            "id" : "resetButton",
+            "text" : "🔄",
+            "background" : "#9C27B0",
+            "weight" : 1
+          } ]
+        } ]
+      }
+    },
+    "glassmorphic_panels" : {
+      "enable_glassmorphism" : true,
+      "blur_radius" : 20.0,
+      "opacity" : 0.18,
+      "corner_radius" : 24.0,
+      "elevation" : 12.0,
+      "animated_panels" : [ {
+        "id" : "headerPanel",
+        "label" : "Header Panel",
+        "base_color" : "#1976D2",
+        "opacity" : 0.6,
+        "width" : 80,
+        "height" : 40,
+        "animates_from" : "header_panel",
+        "animation_priority" : 1
+      }, {
+        "id" : "moveListPanel",
+        "label" : "Move List",
+        "base_color" : "#388E3C",
+        "opacity" : 0.6,
+        "width" : 120,
+        "height" : 80,
+        "animates_from" : "control_panel",
+        "animation_priority" : 2
+      }, {
+        "id" : "controlsPanel",
+        "label" : "Controls",
+        "base_color" : "#F57C00",
+        "opacity" : 0.6,
+        "width" : 100,
+        "height" : 50,
+        "animates_from" : "control_panel",
+        "animation_priority" : 3
+      }, {
+        "id" : "statusPanel",
+        "label" : "Status",
+        "base_color" : "#7B1FA2",
+        "opacity" : 0.6,
+        "width" : 90,
+        "height" : 35,
+        "animates_from" : "evaluation_bar",
+        "animation_priority" : 4
+      } ]
+    }
+  }
+}
