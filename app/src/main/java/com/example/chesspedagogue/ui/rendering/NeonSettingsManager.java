@@ -8,6 +8,7 @@ import android.util.Log;
 // Using direct SharedPreferences access consistent with existing SettingsActivity
 
 import com.example.chesspedagogue.ChessBoardView;
+import com.example.chesspedagogue.ui.rendering.shaders.ShaderConfig;
 
 /**
  * Manager class for applying neon settings from SharedPreferences to ChessBoardView.
@@ -231,5 +232,53 @@ public class NeonSettingsManager {
         prefs.edit().putString(PREF_NEON_COLOR_THEME, themeKey).apply();
         ColorTheme theme = getColorTheme(themeKey);
         Log.d(TAG, "🌈 Neon color theme preference saved: " + theme.name);
+    }
+    
+    /**
+     * Sync preferences with AGSL ShaderConfig for unified configuration
+     */
+    public static void syncWithShaderConfig(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences("ChessPedagoguePrefs", Context.MODE_PRIVATE);
+        ShaderConfig config = ShaderConfig.getInstance();
+        
+        // Load all neon preferences into shader config
+        boolean neonEnabled = prefs.getBoolean(PREF_NEON_MODE_ENABLED, false);
+        float intensity = prefs.getInt(PREF_NEON_GLOW_INTENSITY, 80) / 100.0f;
+        boolean pulsingEnabled = prefs.getBoolean(PREF_NEON_PULSING_ENABLED, false);
+        String themeKey = prefs.getString(PREF_NEON_COLOR_THEME, THEME_ELECTRIC_BLUE_GREEN);
+        
+        // Apply to shader config
+        config.setIntensity(intensity);
+        config.setAnimationType(pulsingEnabled ? ShaderConfig.AnimationType.PULSE : ShaderConfig.AnimationType.STATIC);
+        
+        // Update theme colors
+        ColorTheme theme = getColorTheme(themeKey);
+        config.updateThemeColors(theme.lightSquareColor, theme.darkSquareColor, theme.gridColor);
+        
+        // Save shader config to its own preferences
+        config.saveToPreferences(context);
+        
+        Log.d(TAG, "🚀 Synced preferences with AGSL ShaderConfig");
+    }
+    
+    /**
+     * Enhanced settings application with AGSL support
+     */
+    public static void applyNeonSettingsWithAGSL(Context context, ChessBoardView chessBoardView) {
+        // First sync preferences with shader config
+        syncWithShaderConfig(context);
+        
+        // Then apply standard settings
+        applyNeonSettings(context, chessBoardView);
+        
+        Log.d(TAG, "✅ Applied enhanced neon settings with AGSL support");
+    }
+    
+    /**
+     * Get shader configuration for current neon settings
+     */
+    public static ShaderConfig getShaderConfigForCurrentSettings(Context context) {
+        syncWithShaderConfig(context);
+        return ShaderConfig.getInstance();
     }
 }

@@ -1,11 +1,15 @@
 package com.example.chesspedagogue.ui.rendering;
 
+import android.content.Context;
 import android.graphics.BlurMaskFilter;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.Log;
+
+import com.example.chesspedagogue.ui.rendering.shaders.AGSLNeonRenderer;
+import com.example.chesspedagogue.ui.rendering.shaders.ShaderConfig;
 
 /**
  * Modular renderer for neon-glowing chessboard effects.
@@ -45,13 +49,47 @@ public class NeonChessboardRenderer {
     private boolean pulsingEnabled = false;
     private long animationStartTime = 0;
     
+    // AGSL Integration
+    private AGSLNeonRenderer agslRenderer;
+    private boolean useAGSL = true; // Prefer AGSL when available
+    private Context context;
+    
     // Reusable objects for performance
     private final RectF reusableGlowRect = new RectF();
     private final RectF reusableSquareRect = new RectF();
     
     public NeonChessboardRenderer() {
         initializePaints();
-        Log.d(TAG, "🎨 NeonChessboardRenderer initialized");
+        Log.d(TAG, "🎨 NeonChessboardRenderer initialized (Canvas mode)");
+    }
+    
+    /**
+     * Enhanced constructor with AGSL support
+     */
+    public NeonChessboardRenderer(Context context) {
+        this.context = context;
+        initializePaints();
+        initializeAGSL();
+        Log.d(TAG, "🎨 NeonChessboardRenderer initialized with AGSL support");
+    }
+    
+    /**
+     * Initialize AGSL renderer if supported
+     */
+    private void initializeAGSL() {
+        if (context != null && useAGSL) {
+            try {
+                agslRenderer = new AGSLNeonRenderer(context);
+                if (agslRenderer.isFallbackMode()) {
+                    Log.w(TAG, "⚠️ AGSL renderer in fallback mode, using Canvas rendering");
+                } else {
+                    Log.d(TAG, "✅ AGSL renderer initialized for incredible effects");
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "❌ Failed to initialize AGSL renderer: " + e.getMessage());
+                agslRenderer = null;
+            }
+        }
     }
     
     private void initializePaints() {
@@ -89,8 +127,8 @@ public class NeonChessboardRenderer {
     }
     
     /**
-     * Renders a single neon square with glow effect.
-     * Uses two-step drawing: glow layer first, then solid square on top.
+     * Renders a single neon square with incredible glow effects.
+     * Uses AGSL shaders when available for stunning visuals, falls back to Canvas rendering.
      */
     public void drawNeonSquare(Canvas canvas, float left, float top, float right, float bottom, 
                               boolean isLightSquare) {
@@ -98,6 +136,21 @@ public class NeonChessboardRenderer {
             return;
         }
         
+        // Try AGSL rendering first for incredible effects
+        if (agslRenderer != null && agslRenderer.isEnabled() && !agslRenderer.isFallbackMode()) {
+            agslRenderer.drawNeonSquare(canvas, left, top, right, bottom, isLightSquare);
+            return;
+        }
+        
+        // Fallback to Canvas rendering
+        drawNeonSquareCanvas(canvas, left, top, right, bottom, isLightSquare);
+    }
+    
+    /**
+     * Canvas-based neon rendering (original BlurMaskFilter implementation)
+     */
+    private void drawNeonSquareCanvas(Canvas canvas, float left, float top, float right, float bottom, 
+                                    boolean isLightSquare) {
         // Calculate current glow intensity (with optional pulsing)
         float currentIntensity = calculateCurrentGlowIntensity();
         
@@ -110,7 +163,7 @@ public class NeonChessboardRenderer {
             bottom + glowExpansion
         );
 
-        Paint glowPaint = isLightSquare ? lightSquareGlowPaint : darkSquareGlowPaint;
+         Paint glowPaint = isLightSquare ? lightSquareGlowPaint : darkSquareGlowPaint;
         
         // Adjust glow opacity based on intensity
         int glowAlpha = (int) (255 * currentIntensity * 0.6f); // Max 60% opacity for glow
@@ -246,6 +299,7 @@ public class NeonChessboardRenderer {
     }
     
     public void updateNeonColors(int lightSquareColor, int darkSquareColor, int gridColor) {
+        // Update Canvas paint colors
         lightSquareGlowPaint.setColor(lightSquareColor);
         lightSquareFillPaint.setColor(Color.argb(180, 
             Color.red(lightSquareColor), 
@@ -259,7 +313,79 @@ public class NeonChessboardRenderer {
             Color.blue(darkSquareColor)));
             
         gridLinePaint.setColor(gridColor);
-        Log.d(TAG, "🎨 Neon colors updated");
+        
+        // Update AGSL shader colors
+        if (agslRenderer != null) {
+            ShaderConfig config = agslRenderer.getConfig();
+            config.updateThemeColors(lightSquareColor, darkSquareColor, gridColor);
+            agslRenderer.updateConfiguration(config);
+        }
+        
+        Log.d(TAG, "🎨 Neon colors updated (Canvas + AGSL)");
+    }
+    
+    /**
+     * Update intensity for both Canvas and AGSL rendering
+     */
+    public void updateNeonIntensity(float intensity) {
+        this.glowIntensity = Math.max(0.0f, Math.min(1.0f, intensity));
+        
+        if (agslRenderer != null) {
+            ShaderConfig config = agslRenderer.getConfig();
+            config.setIntensity(intensity);
+            agslRenderer.updateConfiguration(config);
+        }
+        
+        Log.d(TAG, "⚡ Neon intensity updated: " + (int)(intensity * 100) + "%");
+    }
+    
+    /**
+     * Update pulsing animation settings
+     */
+    public void updatePulsingEnabled(boolean enabled) {
+        this.pulsingEnabled = enabled;
+        if (enabled && animationStartTime == 0) {
+            animationStartTime = System.currentTimeMillis();
+        }
+        
+        if (agslRenderer != null) {
+            ShaderConfig config = agslRenderer.getConfig();
+            config.setAnimationType(enabled ? ShaderConfig.AnimationType.PULSE : ShaderConfig.AnimationType.STATIC);
+            agslRenderer.updateConfiguration(config);
+        }
+        
+        Log.d(TAG, "💫 Pulsing animation " + (enabled ? "enabled" : "disabled"));
+    }
+    
+    /**
+     * Enable/disable AGSL rendering (for testing/performance)
+     */
+    public void setAGSLEnabled(boolean enabled) {
+        this.useAGSL = enabled;
+        if (agslRenderer != null) {
+            agslRenderer.setEnabled(enabled);
+        }
+        Log.d(TAG, "🚀 AGSL rendering " + (enabled ? "enabled" : "disabled"));
+    }
+    
+    /**
+     * Get performance statistics
+     */
+    public String getPerformanceStats() {
+        if (agslRenderer != null) {
+            return agslRenderer.getPerformanceStats();
+        }
+        return "Canvas rendering (no AGSL)";
+    }
+    
+    /**
+     * Cleanup resources
+     */
+    public void cleanup() {
+        if (agslRenderer != null) {
+            agslRenderer.cleanup();
+        }
+        Log.d(TAG, "🗑️ NeonChessboardRenderer cleanup complete");
     }
     
     // ═══════════════════════════════════════════════════════════════════════════════════

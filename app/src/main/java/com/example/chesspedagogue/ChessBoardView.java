@@ -130,10 +130,10 @@ public class ChessBoardView extends View {
         highlightPaint.setStyle(Paint.Style.FILL);
         highlightPaint.setAlpha(80);
         
-        // Enable hardware acceleration for smoother animations
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
-            setLayerType(LAYER_TYPE_HARDWARE, null);
-        }
+        // Enable software rendering for BlurMaskFilter to work properly
+        // BlurMaskFilter effects are not supported with hardware acceleration
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
+        Log.d("ChessBoardView", "🎨 Set to software layer for neon glow effects");
     }
     
     /* ───────── 🎯 BOARD SCALING FIX ───────── */
