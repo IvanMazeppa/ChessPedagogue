@@ -77,19 +77,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private Button surrenderButton;
     private Button pauseButton;
     private Button ttsToggleButton;
+    private Button voiceCommentButton;
+    private Button ratingToggleButton;
+    private Button hintButton;
     private ImageView settingsButton;
-    private Button difficultyToggleButton;
-    private Button personalityToggleButton;
-    private Button themeToggleButton;           // DESIGN button - chess set selector
     private ImageView analysisButton;
 
     // Connection line views for radial button animations
     private View connectionLinePause;
     private View connectionLineTTS;
     private View connectionLineSurrender;
-    private View connectionLinePersona;
-    private View connectionLineDesign;
-    private View connectionLineNormal;
+    private View connectionLineVoice;
+    private View connectionLineRating;
+    private View connectionLineHint;
 
     // Game state
     private GameViewModel gameViewModel;
@@ -143,6 +143,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     
     // 🎯 COMPETITIVE MODE SETTINGS
     private boolean useMaxDifficulty = false; // Toggle for max ELO vs splash difficulty
+    
+    // 🔗 LIVE MONITORING
+    private LiveMonitorClient liveMonitorClient;
+    private final Runnable performanceMonitorTask = new Runnable() {
+        @Override
+        public void run() {
+            if (liveMonitorClient != null && liveMonitorClient.isConnected()) {
+                liveMonitorClient.sendPerformanceUpdate();
+                // Schedule next update in 30 seconds
+                mainHandler.postDelayed(this, 30000);
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -340,6 +353,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Quick name diagnostic
             PersonalityEngineSystemDiagnostic.runQuickNameDiagnostic(this);
             
+            // 🔗 Initialize LiveMonitorClient
+            liveMonitorClient = LiveMonitorClient.getInstance(this);
+            liveMonitorClient.connect();
+            Log.d(TAG, "🔗 LiveMonitorClient initialized and connecting...");
+            
             return true;
             
         } catch (Exception e) {
@@ -388,10 +406,15 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 float personalityWeight = 0.3f; // 30% personality influence
                 boolean personalityEnabled = true;
                 
+                // CRITICAL FIX: Configure BOTH GameRepository AND GameViewModel
                 gameViewModel.getGameRepository().configurePersonalityEngine(
                     selectedMaster, personalityWeight, personalityEnabled);
                 
+                // MISSING: Also configure the GameViewModel's LiveData for the selected master
+                gameViewModel.configurePersonalityEngine(selectedMaster, personalityWeight, personalityEnabled);
+                
                 Log.d(TAG, "✅ GameRepository personality engine configured successfully!");
+                Log.d(TAG, "✅ GameViewModel personality engine configured successfully!");
                 Log.d(TAG, "🎯 Master: " + selectedMaster + ", Weight: " + personalityWeight + ", Enabled: " + personalityEnabled);
                 
                 // Verify the configuration worked
@@ -619,19 +642,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             surrenderButton = findViewById(R.id.surrenderButton);
             pauseButton = findViewById(R.id.pauseButton);
             ttsToggleButton = findViewById(R.id.ttsToggleButton);
+            voiceCommentButton = findViewById(R.id.voiceCommentButton);
+            ratingToggleButton = findViewById(R.id.ratingToggleButton);
+            hintButton = findViewById(R.id.hintButton);
             settingsButton = findViewById(R.id.settingsButton);
-            difficultyToggleButton = findViewById(R.id.difficultyToggleButton); // NORMAL button
-            personalityToggleButton = findViewById(R.id.personalityToggleButton); // PERSONA button
-            themeToggleButton = findViewById(R.id.themeToggleButton);           // DESIGN button 
             analysisButton = findViewById(R.id.analysisButton);
 
             // Initialize connection line views
             connectionLinePause = findViewById(R.id.connectionLinePause);
             connectionLineTTS = findViewById(R.id.connectionLineTTS);
             connectionLineSurrender = findViewById(R.id.connectionLineSurrender);
-            connectionLinePersona = findViewById(R.id.connectionLinePersona);
-            connectionLineDesign = findViewById(R.id.connectionLineDesign);
-            connectionLineNormal = findViewById(R.id.connectionLineNormal);
+            connectionLineVoice = findViewById(R.id.connectionLineVoice);
+            connectionLineRating = findViewById(R.id.connectionLineRating);
+            connectionLineHint = findViewById(R.id.connectionLineHint);
 
             // Set master and player names dynamically
             masterNameTextView.setText(formatMasterName(selectedMaster));
@@ -1035,7 +1058,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Get all interactive buttons
             View[] interactiveViews = {
                 pauseButton, ttsToggleButton,
-                difficultyToggleButton, personalityToggleButton, themeToggleButton,
+                ratingToggleButton, voiceCommentButton, hintButton,
                 surrenderButton, dismissDialogueButton
             };
             
@@ -1649,7 +1672,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Find all buttons in the 2x4 grid and apply subtle glass effect
             Button[] buttons = {
                 surrenderButton, pauseButton, ttsToggleButton,
-                difficultyToggleButton, personalityToggleButton, themeToggleButton
+                ratingToggleButton, voiceCommentButton, hintButton
             };
             
             for (Button button : buttons) {
@@ -1680,7 +1703,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Apply spring animations to all major buttons
             Button[] buttons = {
                 surrenderButton, pauseButton, ttsToggleButton,
-                difficultyToggleButton, personalityToggleButton, themeToggleButton
+                ratingToggleButton, voiceCommentButton, hintButton
             };
             
             for (Button button : buttons) {
@@ -1846,7 +1869,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Apply Material 3 styling to all buttons
             Button[] buttons = {
                 surrenderButton, pauseButton, ttsToggleButton,
-                difficultyToggleButton, personalityToggleButton, themeToggleButton
+                ratingToggleButton, voiceCommentButton, hintButton
             };
             
             int primaryColor = getMaterialYouPrimaryColor();
@@ -1992,7 +2015,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Apply glow to all major buttons
             Button[] buttons = {
                 surrenderButton, pauseButton, ttsToggleButton,
-                difficultyToggleButton, personalityToggleButton, themeToggleButton
+                ratingToggleButton, voiceCommentButton, hintButton
             };
             
             for (Button button : buttons) {
@@ -2147,6 +2170,27 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                     // FIXED: Only update display, don't trigger AI moves automatically
                     // AI moves are now handled properly by the game engine after valid player moves
                     // This prevents cascading automatic move issues
+                    
+                    // 🔗 Send game state to live monitor
+                    if (liveMonitorClient != null && gameViewModel.getCurrentFEN().getValue() != null) {
+                        String lastMove = moveHistory.isEmpty() ? "" : moveHistory.get(moveHistory.size() - 1);
+                        String currentFEN = gameViewModel.getCurrentFEN().getValue();
+                        Float evaluationFloat = gameViewModel.getCurrentEvaluation().getValue();
+                        double evaluation = evaluationFloat != null ? evaluationFloat.doubleValue() : 0.0;
+                        Boolean gameOverValue = gameViewModel.isGameOver().getValue();
+                        boolean isGameActive = gameOverValue == null || !gameOverValue;
+                        String currentPlayer = currentFEN.contains(" w ") ? "white" : "black";
+                        
+                        liveMonitorClient.sendGameState(
+                            lastMove,
+                            currentFEN,
+                            evaluation,
+                            "competitive",
+                            isGameActive,
+                            currentPlayer,
+                            moveHistory.size()
+                        );
+                    }
                 }
             });
 
@@ -2372,6 +2416,27 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // Show thinking indicator
             if (thinkingProgressBar != null) {
                 thinkingProgressBar.setVisibility(View.VISIBLE);
+            }
+            
+            // 🔗 Send master activity to live monitor
+            if (liveMonitorClient != null) {
+                String emotionalState = "calculating";
+                if (emotionalManager != null) {
+                    // Get current emotional state if available
+                    EmotionalIntelligenceManager.EmotionalState currentState = emotionalManager.getCurrentEmotionalState(selectedMaster);
+                    if (currentState != null) {
+                        emotionalState = currentState.name;
+                    }
+                }
+                
+                liveMonitorClient.sendMasterActivity(
+                    new String[]{selectedMaster},
+                    selectedMaster,
+                    emotionalState,
+                    (double) engineElo / 1000.0, // Sophistication level
+                    true, // isThinking
+                    "analyzing_position"
+                );
             }
             
             // Generate AI response with delay for better UX
@@ -2639,14 +2704,15 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             // TTS toggle with connection line
             setupRadialButtonWithConnectionLine(ttsToggleButton, connectionLineTTS, this::toggleTTS);
             
-            // Difficulty toggle button (NORMAL) with connection line
-            setupRadialButtonWithConnectionLine(difficultyToggleButton, connectionLineNormal, this::toggleDifficulty);
+            // Voice comment button with connection line
+            setupRadialButtonWithConnectionLine(voiceCommentButton, connectionLineVoice, this::startVoiceComment);
             
-            // Personality toggle button (PERSONA) with connection line
-            setupRadialButtonWithConnectionLine(personalityToggleButton, connectionLinePersona, this::togglePersonality);
+            // Rating toggle button with connection line
+            setupRadialButtonWithConnectionLine(ratingToggleButton, connectionLineRating, this::toggleRatingDisplay);
             
-            // Theme toggle button (DESIGN) with connection line
-            setupRadialButtonWithConnectionLine(themeToggleButton, connectionLineDesign, this::cycleChessSetDesign);
+            // Hint button with connection line
+            setupRadialButtonWithConnectionLine(hintButton, connectionLineHint, this::showHint);
+            
             
             // Settings and Analysis buttons (not radial, keep standard click listeners)
             settingsButton.setOnClickListener(v -> openSettingsActivity());
@@ -2679,19 +2745,24 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      */
     private void updateButtonStates() {
         try {
-            // Update difficulty button
-            difficultyToggleButton.setText(useMaxDifficulty ? "🔥 MAX" : "⚙️ Normal");
-            difficultyToggleButton.setBackgroundTintList(getColorStateList(
-                useMaxDifficulty ? android.R.color.holo_orange_dark : R.color.chess_light_square));
-            
-            // Update personality button
-            boolean personalityEnabled = personalityEngine != null && personalityEngine.isPersonalityPlayEnabled();
-            personalityToggleButton.setText(personalityEnabled ? "🎭 Personality On" : "🎭 Personality Off");
-            personalityToggleButton.setBackgroundTintList(getColorStateList(
-                personalityEnabled ? R.color.warning_amber : R.color.chess_light_square));
-            
             // Update TTS button
             updateTTSButtonState();
+            
+            // Update rating button
+            if (ratingToggleButton != null) {
+                SharedPreferences prefs = getSharedPreferences("ChessPedagogue", MODE_PRIVATE);
+                boolean showHistoricalRating = prefs.getBoolean("show_historical_rating", true);
+                updateRatingDisplay(showHistoricalRating);
+            }
+            
+            // Voice and hint buttons are static
+            if (voiceCommentButton != null) {
+                voiceCommentButton.setText("VOICE");
+            }
+            
+            if (hintButton != null) {
+                hintButton.setText("HINT");
+            }
             
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to update button states", e);
@@ -3373,6 +3444,23 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         if (masterDialogueTextView != null && masterDialogueCard != null) {
             masterDialogueTextView.setText(dialogue);
             masterDialogueCard.setVisibility(View.VISIBLE);
+            
+            // 🔗 Send conversation to live monitor
+            if (liveMonitorClient != null) {
+                String emotion = "thoughtful"; // Default emotion
+                if (dialogue.contains("!") || dialogue.contains("brilliant")) {
+                    emotion = "excited";
+                } else if (dialogue.contains("?") || dialogue.contains("interesting")) {
+                    emotion = "curious";
+                }
+                
+                liveMonitorClient.sendConversation(
+                    selectedMaster,
+                    dialogue,
+                    emotion,
+                    "master_dialogue"
+                );
+            }
             
             // Auto-hide after 10 seconds
             mainHandler.postDelayed(() -> {
@@ -4214,6 +4302,13 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        // 🔗 Send final performance update and disconnect from live monitor
+        if (liveMonitorClient != null) {
+            liveMonitorClient.sendPerformanceUpdate();
+            liveMonitorClient.sendSystemLog("Competitive mode ended", "INFO");
+            liveMonitorClient.disconnect();
+        }
         
         // 🧠 PHASE 3: Cleanup adaptive learning session if needed
         if (adaptiveManager != null && currentConversationId != null) {
@@ -5093,9 +5188,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             if (surrenderButton != null) applyGradientToButton(surrenderButton, primaryAccent);
             if (ttsToggleButton != null) applyGradientToButton(ttsToggleButton, primaryAccent);
             // Voice toggle button removed from UI
-            if (difficultyToggleButton != null) applyGradientToButton(difficultyToggleButton, primaryAccent);
-            if (personalityToggleButton != null) applyGradientToButton(personalityToggleButton, primaryAccent);
-            if (themeToggleButton != null) applyGradientToButton(themeToggleButton, primaryAccent);
+            if (ratingToggleButton != null) applyGradientToButton(ratingToggleButton, primaryAccent);
+            if (voiceCommentButton != null) applyGradientToButton(voiceCommentButton, primaryAccent);
+            if (hintButton != null) applyGradientToButton(hintButton, primaryAccent);
             
             Log.d(TAG, "🎨 Accent gradients applied to all buttons");
         } catch (Exception e) {
@@ -5179,9 +5274,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             addSpringPressToView(surrenderButton);
             addSpringPressToView(ttsToggleButton);
             // Voice toggle button removed from UI
-            addSpringPressToView(difficultyToggleButton);
-            addSpringPressToView(personalityToggleButton);
-            addSpringPressToView(themeToggleButton);
+            addSpringPressToView(ratingToggleButton);
+            addSpringPressToView(voiceCommentButton);
+            addSpringPressToView(hintButton);
             
             Log.d(TAG, "🌊 Spring press animations added to all buttons");
         } catch (Exception e) {
@@ -5247,25 +5342,132 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      * 🎯 RADIAL BUTTON TOUCH HANDLER - Combines click action with connection line animation
      */
     private void setupRadialButtonWithConnectionLine(Button button, View connectionLine, Runnable clickAction) {
+        if (button == null) {
+            Log.e(TAG, "❌ Button is null in setupRadialButtonWithConnectionLine");
+            return;
+        }
+        
+        String buttonText = button.getText() != null ? button.getText().toString() : "Unknown";
+        Log.d(TAG, "🎯 Setting up radial button: " + buttonText);
+        
         button.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
                 case android.view.MotionEvent.ACTION_DOWN:
+                    Log.d(TAG, "🎯 Button pressed: " + buttonText);
                     // Show connection line on press
-                    animateConnectionLine(connectionLine, true);
+                    if (connectionLine != null) {
+                        animateConnectionLine(connectionLine, true);
+                    }
                     break;
                 case android.view.MotionEvent.ACTION_UP:
                 case android.view.MotionEvent.ACTION_CANCEL:
+                    Log.d(TAG, "🎯 Button released: " + buttonText);
                     // Hide connection line on release
-                    animateConnectionLine(connectionLine, false);
+                    if (connectionLine != null) {
+                        animateConnectionLine(connectionLine, false);
+                    }
                     // Execute click action only on ACTION_UP
                     if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
-                        clickAction.run();
+                        Log.d(TAG, "🎯 Executing click action for: " + buttonText);
+                        try {
+                            clickAction.run();
+                        } catch (Exception e) {
+                            Log.e(TAG, "❌ Error executing click action for " + buttonText, e);
+                        }
                     }
                     break;
             }
             return true; // Consume the touch event
         });
     }
+    
+    
+    /**
+     * 🏆 TOGGLE RATING DISPLAY - Switch between historical peak rating and engine strength
+     */
+    private void toggleRatingDisplay() {
+        Log.d(TAG, "🏆 Toggling rating display...");
+        
+        // Get current rating display mode from preferences
+        SharedPreferences prefs = getSharedPreferences("ChessPedagogue", MODE_PRIVATE);
+        boolean showHistoricalRating = prefs.getBoolean("show_historical_rating", true);
+        
+        // Toggle the mode
+        boolean newMode = !showHistoricalRating;
+        prefs.edit().putBoolean("show_historical_rating", newMode).apply();
+        
+        // Update the display
+        updateRatingDisplay(newMode);
+        
+        // Show feedback
+        String message = newMode ? "Showing historical peak rating" : "Showing engine strength";
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+    
+    /**
+     * 💡 SHOW HINT - Get advice from Stockfish with square highlights
+     */
+    private void showHint() {
+        Log.d(TAG, "💡 Showing hint...");
+        
+        if (gameViewModel == null) return;
+        
+        // Get current position
+        String currentFen = gameViewModel.getCurrentFEN().getValue();
+        if (currentFen == null) return;
+        
+        // Simple hint implementation for now - just show a helpful message
+        Toast.makeText(this, "💡 Hint: Look for tactical opportunities and control the center!", Toast.LENGTH_LONG).show();
+        
+        // TODO: Implement Stockfish hint system
+        // This would require adding getBestMove method to GameRepository
+    }
+    
+    
+    /**
+     * 🎭 UPDATE RATING DISPLAY - Show either historical or engine rating
+     */
+    private void updateRatingDisplay(boolean showHistorical) {
+        if (masterNameTextView == null) return;
+        
+        if (showHistorical) {
+            // Show historical peak rating
+            String historicalRating = getHistoricalRating(selectedMaster);
+            // Update the AI master rating text if it exists
+            TextView aiMasterRatingText = findViewById(R.id.aiMasterRatingText);
+            if (aiMasterRatingText != null) {
+                aiMasterRatingText.setText(historicalRating);
+            }
+        } else {
+            // Show engine strength
+            TextView aiMasterRatingText = findViewById(R.id.aiMasterRatingText);
+            if (aiMasterRatingText != null) {
+                aiMasterRatingText.setText(String.valueOf(engineElo));
+            }
+        }
+    }
+    
+    /**
+     * 🏆 GET HISTORICAL RATING - Return the historical peak rating for a master
+     */
+    private String getHistoricalRating(String master) {
+        switch (master.toLowerCase()) {
+            case "alekhine": return "2690";
+            case "carlsen": return "2882";
+            case "kasparov": return "2851";
+            case "fischer": return "2785";
+            case "karpov": return "2780";
+            case "tal": return "2705";
+            case "kramnik": return "2817";
+            case "anand": return "2817";
+            case "capablanca": return "2725";
+            case "morphy": return "2650";
+            case "lasker": return "2680";
+            case "botvinnik": return "2720";
+            default: return "2700";
+        }
+    }
+    
     
     /**
      * 👆 ADD gesture-based panel interactions
@@ -5347,6 +5549,19 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             chessBoardView.applyNeonSettingsFromPreferences();
             Log.d(TAG, "🌈 Reapplied neon settings on resume");
         }
+        
+        // 🔗 Start periodic performance monitoring
+        if (liveMonitorClient != null) {
+            mainHandler.postDelayed(performanceMonitorTask, 5000); // Start after 5 seconds
+        }
+    }
+    
+    @Override
+    protected void onPause() {
+        super.onPause();
+        
+        // 🔗 Stop periodic performance monitoring
+        mainHandler.removeCallbacks(performanceMonitorTask);
     }
     
     /**

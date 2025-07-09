@@ -7,6 +7,7 @@ public class EmotionalContext {
     
     // 🔥 ENHANCED: Emotional contagion tracking
     private EmotionalIntelligenceManager emotionalManager;
+    private RelationshipPersistenceManager persistenceManager;
     private float contagionStrength = 0.3f; // Base contagion effect
     
     private String currentMaster;
@@ -42,6 +43,11 @@ public class EmotionalContext {
     // 🔥 ENHANCED: Set emotional intelligence manager for contagion
     public void setEmotionalManager(EmotionalIntelligenceManager manager) {
         this.emotionalManager = manager;
+    }
+    
+    // 🔥 ENHANCED: Set persistence manager for database recording
+    public void setPersistenceManager(RelationshipPersistenceManager manager) {
+        this.persistenceManager = manager;
     }
     
     public void updateEmotionalState(String master, String emotion, float intensity, float momentum) {
@@ -108,6 +114,34 @@ public class EmotionalContext {
             Log.d(TAG, String.format("🌟 EMERGENT BEHAVIOR DETECTED: %s (%s, %.2f) vs %s (%s, %.2f)", 
                 currentMaster, currentMasterEmotion, currentMasterIntensity,
                 otherMaster, otherMasterEmotion, otherMasterIntensity));
+            
+            // 🔥 ENHANCED: Record emergent behavior event to database
+            if (persistenceManager != null) {
+                String description = String.format("Emergent behavior detected: %s (%s, %.2f) vs %s (%s, %.2f)",
+                    currentMaster, currentMasterEmotion, currentMasterIntensity,
+                    otherMaster, otherMasterEmotion, otherMasterIntensity);
+                
+                String emotionalContext = String.format("Current: %s feeling %s (%.2f), Other: %s feeling %s (%.2f)",
+                    currentMaster, currentMasterEmotion, currentMasterIntensity,
+                    otherMaster, otherMasterEmotion, otherMasterIntensity);
+                
+                float combinedIntensity = currentMasterIntensity + otherMasterIntensity;
+                float impactLevel = Math.min(1.0f, combinedIntensity * 0.5f); // Impact based on combined intensity
+                
+                persistenceManager.recordEmergentEvent(
+                    "emergent_behavior",
+                    currentMaster,
+                    otherMaster,
+                    description,
+                    emotionalContext,
+                    "", // No conversation content available at this level
+                    impactLevel
+                );
+                
+                Log.d(TAG, String.format("💾 Recorded emergent behavior event to database (impact: %.2f)", impactLevel));
+            } else {
+                Log.w(TAG, "⚠️ Cannot record emergent behavior - RelationshipPersistenceManager not set");
+            }
         }
     }
     

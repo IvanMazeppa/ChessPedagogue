@@ -131,6 +131,7 @@ public class SpectatorGameViewModel extends AndroidViewModel {
         
         // 🎭 INITIALIZE EMOTIONAL CONTEXT for inter-master awareness
         this.emotionalContext = new EmotionalContext(whitePlayer, blackPlayer);
+        this.emotionalContext.setPersistenceManager(RelationshipPersistenceManager.getInstance(getApplication()));
         Log.d(TAG, "🎭 EmotionalContext initialized for " + whitePlayer + " vs " + blackPlayer);
 
         // CRITICAL: Initialize the AI vs AI game manager

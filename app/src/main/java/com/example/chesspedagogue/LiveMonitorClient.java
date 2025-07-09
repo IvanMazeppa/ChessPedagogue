@@ -5,19 +5,24 @@ import android.content.SharedPreferences;
 import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
 import okhttp3.*;
 import okio.ByteString;
 
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class LiveMonitorClient extends WebSocketListener {
     
     private static final String TAG = "🔗 LiveMonitorClient";
     private static final String DEFAULT_SERVER_IP = "192.168.0.237"; // Fallback IP
-    private static final int WEBSOCKET_PORT = 8082;
+    private static final int WEBSOCKET_PORT = 8080;
     private static final int RECONNECT_DELAY_MS = 10000; // Increased to 10 seconds to reduce spam
     private static final int MAX_RECONNECT_ATTEMPTS = 3; // Limit reconnection attempts
-    private static final boolean ENABLE_LIVE_MONITOR = false; // Set to false to disable WebSocket entirely
+    private static final boolean ENABLE_LIVE_MONITOR = true; // Set to false to disable WebSocket entirely
     
     private static LiveMonitorClient instance;
     private final Gson gson = new Gson();
@@ -231,6 +236,19 @@ public class LiveMonitorClient extends WebSocketListener {
                     boolean enabled = data.get("enabled").getAsBoolean();
                     Log.i(TAG, "🔧 Feature toggle: " + feature + " = " + enabled);
                     break;
+                case "query_database":
+                    handleDatabaseQuery(data);
+                    break;
+                case "list_tables":
+                    handleListTables();
+                    break;
+                case "table_info":
+                    String tableName = data.get("table").getAsString();
+                    handleTableInfo(tableName);
+                    break;
+                case "query_table":
+                    handleQueryTable(data);
+                    break;
                 default:
                     Log.d(TAG, "❓ Unknown command: " + command);
             }
@@ -420,5 +438,158 @@ public class LiveMonitorClient extends WebSocketListener {
         reconnectAttempts = 0;
         shouldReconnect = true;
         Log.i(TAG, "🔄 Reconnection attempts reset, re-enabling WebSocket connections");
+    }
+
+    // ===== DATABASE INSPECTION METHODS =====
+    
+    /**
+     * Handle database query commands from the configurator
+     */
+    private void handleDatabaseQuery(JsonObject data) {
+        try {
+            String query = data.get("query").getAsString();
+            Log.i(TAG, "🗃️ Executing database query: " + query);
+            
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(context);
+            List<Map<String, Object>> results = dbHelper.executeQuery(query);
+            
+            JsonObject response = new JsonObject();
+            response.addProperty("type", "database_query_result");
+            response.addProperty("query", query);
+            response.add("results", gson.toJsonTree(results));
+            response.addProperty("rowCount", results.size());
+            response.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(response);
+            Log.i(TAG, "📊 Database query result sent: " + results.size() + " rows");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Database query error: " + e.getMessage());
+            sendDatabaseError("Database query failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * List all tables in the database
+     */
+    private void handleListTables() {
+        try {
+            Log.i(TAG, "📋 Listing database tables");
+            
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(context);
+            List<String> tables = dbHelper.getAllTableNames();
+            
+            JsonObject response = new JsonObject();
+            response.addProperty("type", "database_tables");
+            response.add("tables", gson.toJsonTree(tables));
+            response.addProperty("tableCount", tables.size());
+            response.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(response);
+            Log.i(TAG, "📊 Database tables sent: " + tables.size() + " tables");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ List tables error: " + e.getMessage());
+            sendDatabaseError("Failed to list tables: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get table information (schema, row count, etc.)
+     */
+    private void handleTableInfo(String tableName) {
+        try {
+            Log.i(TAG, "🗂️ Getting table info for: " + tableName);
+            
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(context);
+            Map<String, Object> tableInfo = dbHelper.getTableInfo(tableName);
+            
+            JsonObject response = new JsonObject();
+            response.addProperty("type", "table_info");
+            response.addProperty("tableName", tableName);
+            response.add("info", gson.toJsonTree(tableInfo));
+            response.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(response);
+            Log.i(TAG, "📊 Table info sent for: " + tableName);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Table info error: " + e.getMessage());
+            sendDatabaseError("Failed to get table info for " + tableName + ": " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Query a specific table with optional filters
+     */
+    private void handleQueryTable(JsonObject data) {
+        try {
+            String tableName = data.get("table").getAsString();
+            int limit = data.has("limit") ? data.get("limit").getAsInt() : 100;
+            int offset = data.has("offset") ? data.get("offset").getAsInt() : 0;
+            String whereClause = data.has("where") ? data.get("where").getAsString() : null;
+            String orderBy = data.has("orderBy") ? data.get("orderBy").getAsString() : null;
+            
+            Log.i(TAG, "🗃️ Querying table: " + tableName + " (limit: " + limit + ", offset: " + offset + ")");
+            
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(context);
+            List<Map<String, Object>> results = dbHelper.queryTable(tableName, whereClause, orderBy, limit, offset);
+            
+            JsonObject response = new JsonObject();
+            response.addProperty("type", "table_query_result");
+            response.addProperty("tableName", tableName);
+            response.add("results", gson.toJsonTree(results));
+            response.addProperty("rowCount", results.size());
+            response.addProperty("limit", limit);
+            response.addProperty("offset", offset);
+            response.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(response);
+            Log.i(TAG, "📊 Table query result sent: " + results.size() + " rows from " + tableName);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Table query error: " + e.getMessage());
+            sendDatabaseError("Table query failed: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send database error response
+     */
+    private void sendDatabaseError(String errorMessage) {
+        try {
+            JsonObject response = new JsonObject();
+            response.addProperty("type", "database_error");
+            response.addProperty("error", errorMessage);
+            response.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(response);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to send database error: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Send database statistics to configurator
+     */
+    public void sendDatabaseStats() {
+        if (!ENABLE_LIVE_MONITOR || !isConnected || !shouldReconnect) return;
+        
+        try {
+            GameDatabaseHelper dbHelper = new GameDatabaseHelper(context);
+            Map<String, Object> stats = dbHelper.getComprehensiveDatabaseStats();
+            
+            JsonObject data = new JsonObject();
+            data.addProperty("type", "database_stats");
+            data.add("stats", gson.toJsonTree(stats));
+            data.addProperty("timestamp", System.currentTimeMillis());
+            
+            sendMessage(data);
+            Log.d(TAG, "📊 Database stats sent");
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error sending database stats: " + e.getMessage());
+        }
     }
 }

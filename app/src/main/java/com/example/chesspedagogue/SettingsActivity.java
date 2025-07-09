@@ -917,6 +917,9 @@ public class SettingsActivity extends AppCompatActivity {
                 try {
                     Thread.sleep(1000); // Wait 1 second
                     
+                    // CRITICAL FIX: Reset reconnection state before attempting reconnection
+                    client.resetReconnection();
+                    
                     // Refresh the URL and reconnect
                     client.refreshServerUrl();
                     client.connect();

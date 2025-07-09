@@ -641,9 +641,9 @@
                         app:layout_constraintHorizontal_bias="0.2"
                         app:layout_constraintVertical_bias="0.4" />
 
-                    <!-- Line to SURRENDER Button (4 o'clock) -->
+                    <!-- Line to VOICE Button (4 o'clock) -->
                     <View
-                        android:id="@+id/connectionLineSurrender"
+                        android:id="@+id/connectionLineVoice"
                         android:layout_width="35dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
@@ -655,9 +655,9 @@
                         app:layout_constraintHorizontal_bias="0.2"
                         app:layout_constraintVertical_bias="0.6" />
 
-                    <!-- Line to PERSONA Button (6 o'clock) -->
+                    <!-- Line to SURRENDER Button (6 o'clock) -->
                     <View
-                        android:id="@+id/connectionLinePersona"
+                        android:id="@+id/connectionLineSurrender"
                         android:layout_width="2dp"
                         android:layout_height="45dp"
                         android:alpha="0.0"
@@ -668,9 +668,9 @@
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintVertical_bias="0.1" />
 
-                    <!-- Line to DESIGN Button (8 o'clock) -->
+                    <!-- Line to HINT Button (8 o'clock) -->
                     <View
-                        android:id="@+id/connectionLineDesign"
+                        android:id="@+id/connectionLineHint"
                         android:layout_width="35dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
@@ -682,9 +682,9 @@
                         app:layout_constraintHorizontal_bias="0.8"
                         app:layout_constraintVertical_bias="0.6" />
 
-                    <!-- Line to NORMAL Button (10 o'clock) -->
+                    <!-- Line to RATING Button (10 o'clock) -->
                     <View
-                        android:id="@+id/connectionLineNormal"
+                        android:id="@+id/connectionLineRating"
                         android:layout_width="35dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
@@ -739,7 +739,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.4"
+                        app:layout_constraintHorizontal_bias="0.3"
                         app:layout_constraintVertical_bias="0.3">
 
                         <Button
@@ -757,9 +757,9 @@
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
-                    <!-- SURRENDER Button (Bottom Right - 4 o'clock) -->
+                    <!-- VOICE Button (Bottom Right - 4 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="70dp"
+                        android:layout_width="55dp"
                         android:layout_height="28dp"
                         android:background="@drawable/neon_orange_button_selector"
                         app:cardBackgroundColor="@android:color/transparent"
@@ -769,11 +769,11 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.4"
+                        app:layout_constraintHorizontal_bias="0.3"
                         app:layout_constraintVertical_bias="0.7">
 
                         <Button
-                            android:id="@+id/surrenderButton"
+                            android:id="@+id/voiceCommentButton"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@android:color/transparent"
@@ -781,13 +781,13 @@
                             android:fontFamily="sans-serif-medium"
                             android:gravity="center"
                             android:stateListAnimator="@null"
-                            android:text="SURRENDER"
+                            android:text="VOICE"
                             android:textColor="@android:color/white"
                             android:textSize="8sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
-                    <!-- PERSONA Button (Bottom - 6 o'clock) -->
+                    <!-- SURRENDER Button (Bottom - 6 o'clock) -->
                     <androidx.cardview.widget.CardView
                         android:layout_width="65dp"
                         android:layout_height="28dp"
@@ -802,7 +802,7 @@
                         app:layout_constraintVertical_bias="0.2">
 
                         <Button
-                            android:id="@+id/personalityToggleButton"
+                            android:id="@+id/surrenderButton"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@android:color/transparent"
@@ -810,15 +810,15 @@
                             android:fontFamily="sans-serif-medium"
                             android:gravity="center"
                             android:stateListAnimator="@null"
-                            android:text="PERSONA"
+                            android:text="RESIGN"
                             android:textColor="@android:color/white"
                             android:textSize="9sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
-                    <!-- DESIGN Button (Bottom Left - 8 o'clock) -->
+                    <!-- HINT Button (Bottom Left - 8 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="60dp"
+                        android:layout_width="55dp"
                         android:layout_height="28dp"
                         android:background="@drawable/neon_orange_button_selector"
                         app:cardBackgroundColor="@android:color/transparent"
@@ -828,11 +828,11 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.6"
+                        app:layout_constraintHorizontal_bias="0.7"
                         app:layout_constraintVertical_bias="0.7">
 
                         <Button
-                            android:id="@+id/themeToggleButton"
+                            android:id="@+id/hintButton"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@android:color/transparent"
@@ -840,15 +840,15 @@
                             android:fontFamily="sans-serif-medium"
                             android:gravity="center"
                             android:stateListAnimator="@null"
-                            android:text="DESIGN"
+                            android:text="HINT"
                             android:textColor="@android:color/white"
                             android:textSize="9sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
-                    <!-- NORMAL Button (Top Left - 10 o'clock) -->
+                    <!-- RATING Button (Top Left - 10 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="60dp"
+                        android:layout_width="55dp"
                         android:layout_height="28dp"
                         android:background="@drawable/neon_orange_button_selector"
                         app:cardBackgroundColor="@android:color/transparent"
@@ -858,11 +858,11 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.6"
+                        app:layout_constraintHorizontal_bias="0.7"
                         app:layout_constraintVertical_bias="0.3">
 
                         <Button
-                            android:id="@+id/difficultyToggleButton"
+                            android:id="@+id/ratingToggleButton"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:background="@android:color/transparent"
@@ -870,11 +870,12 @@
                             android:fontFamily="sans-serif-medium"
                             android:gravity="center"
                             android:stateListAnimator="@null"
-                            android:text="NORMAL"
+                            android:text="RATING"
                             android:textColor="@android:color/white"
-                            android:textSize="9sp"
+                            android:textSize="8sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
+
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
 

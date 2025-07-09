@@ -62,7 +62,15 @@ public class EmotionalIntelligenceManager {
         PHILOSOPHICAL(0, "philosophical", "Chess teaches us..."),
         PLAYFUL(0, "playful", "Let's have some fun!"),
         CONTEMPLATIVE(0, "contemplative", "Let me ponder this deeply..."),
-        CALM(0, "calm", "Everything is under control.");
+        CALM(0, "calm", "Everything is under control."),
+        RESPONSIVE(0, "responsive", "I'm listening and ready to respond."),
+        ENGAGED(0, "engaged", "I'm fully engaged with this position."),
+        THOUGHTFUL(0, "thoughtful", "This requires careful thought."),
+        LISTENING(0, "listening", "I'm listening to what you're saying."),
+        ANALYZING(0, "analyzing", "Let me analyze this situation."),
+        CONSIDERING(0, "considering", "I'm considering the options."),
+        PASSIONATE(0, "passionate", "This is what I live for!"),
+        TRIUMPHANT(0, "triumphant", "Victory is within reach!");
         
         public final int intensity;
         public final String name;
@@ -72,6 +80,16 @@ public class EmotionalIntelligenceManager {
             this.intensity = intensity;
             this.name = name;
             this.defaultExpression = defaultExpression;
+        }
+        
+        // Safe valueOf method that returns ANALYTICAL for unknown states
+        public static EmotionalState safeValueOf(String name) {
+            try {
+                return EmotionalState.valueOf(name.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                Log.w("EmotionalIntelligence", "Unknown emotional state: " + name + ", using ANALYTICAL");
+                return ANALYTICAL;
+            }
         }
     }
     
@@ -301,7 +319,7 @@ public class EmotionalIntelligenceManager {
             // Create a temporary event for pattern updating
             EmotionalIntelligenceManager.EmotionalEvent tempEvent = 
                 new EmotionalIntelligenceManager.EmotionalEvent(topic, 
-                    EmotionalState.valueOf(emotion.toUpperCase()), intensity);
+                    EmotionalState.safeValueOf(emotion.toUpperCase()), intensity);
             pattern.addOccurrence(tempEvent);
         }
         
@@ -999,7 +1017,7 @@ public class EmotionalIntelligenceManager {
             for (RelationshipPersistenceManager.EmotionalReaction reaction : recentReactions) {
                 EmotionalEvent event = new EmotionalEvent(
                     reaction.getTopic(),
-                    EmotionalState.valueOf(reaction.getEmotion().toUpperCase()),
+                    EmotionalState.safeValueOf(reaction.getEmotion().toUpperCase()),
                     reaction.getIntensity(),
                     reaction.getTimestamp()
                 );
@@ -1132,7 +1150,7 @@ public class EmotionalIntelligenceManager {
      */
     private float getEmotionMomentumValue(String emotion) {
         try {
-            EmotionalState state = EmotionalState.valueOf(emotion.toUpperCase());
+            EmotionalState state = EmotionalState.safeValueOf(emotion.toUpperCase());
             switch (state) {
                 case ECSTATIC: return 1.0f;
                 case THRILLED: return 0.8f;

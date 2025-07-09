@@ -1830,4 +1830,220 @@ public class GameDatabaseHelper extends SQLiteOpenHelper {
         Log.d(TAG, result);
         return result;
     }
+
+    // ===== DATABASE INSPECTION METHODS FOR LIVE MONITOR =====
+
+    /**
+     * Execute raw SQL query and return results as list of maps
+     */
+    public List<Map<String, Object>> executeQuery(String query) {
+        List<Map<String, Object>> results = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            Cursor cursor = db.rawQuery(query, null);
+            
+            if (cursor != null) {
+                String[] columnNames = cursor.getColumnNames();
+                
+                while (cursor.moveToNext()) {
+                    Map<String, Object> row = new HashMap<>();
+                    
+                    for (int i = 0; i < columnNames.length; i++) {
+                        String columnName = columnNames[i];
+                        Object value = null;
+                        
+                        switch (cursor.getType(i)) {
+                            case Cursor.FIELD_TYPE_STRING:
+                                value = cursor.getString(i);
+                                break;
+                            case Cursor.FIELD_TYPE_INTEGER:
+                                value = cursor.getLong(i);
+                                break;
+                            case Cursor.FIELD_TYPE_FLOAT:
+                                value = cursor.getDouble(i);
+                                break;
+                            case Cursor.FIELD_TYPE_BLOB:
+                                value = cursor.getBlob(i);
+                                break;
+                            case Cursor.FIELD_TYPE_NULL:
+                                value = null;
+                                break;
+                        }
+                        
+                        row.put(columnName, value);
+                    }
+                    
+                    results.add(row);
+                }
+                
+                cursor.close();
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error executing query: " + query, e);
+            throw new RuntimeException("Query execution failed: " + e.getMessage());
+        }
+        
+        return results;
+    }
+
+    /**
+     * Get all table names in the database
+     */
+    public List<String> getAllTableNames() {
+        List<String> tableNames = new ArrayList<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name", null);
+            
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    String tableName = cursor.getString(0);
+                    if (!tableName.startsWith("android_") && !tableName.equals("sqlite_sequence")) {
+                        tableNames.add(tableName);
+                    }
+                }
+                cursor.close();
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting table names", e);
+            throw new RuntimeException("Failed to get table names: " + e.getMessage());
+        }
+        
+        return tableNames;
+    }
+
+    /**
+     * Get detailed information about a specific table
+     */
+    public Map<String, Object> getTableInfo(String tableName) {
+        Map<String, Object> tableInfo = new HashMap<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            // Get table schema
+            List<Map<String, Object>> columns = new ArrayList<>();
+            Cursor schemaCursor = db.rawQuery("PRAGMA table_info(" + tableName + ")", null);
+            
+            if (schemaCursor != null) {
+                while (schemaCursor.moveToNext()) {
+                    Map<String, Object> column = new HashMap<>();
+                    column.put("cid", schemaCursor.getInt(0));
+                    column.put("name", schemaCursor.getString(1));
+                    column.put("type", schemaCursor.getString(2));
+                    column.put("notnull", schemaCursor.getInt(3) == 1);
+                    column.put("dflt_value", schemaCursor.getString(4));
+                    column.put("pk", schemaCursor.getInt(5) == 1);
+                    columns.add(column);
+                }
+                schemaCursor.close();
+            }
+            
+            // Get row count
+            long rowCount = 0;
+            Cursor countCursor = db.rawQuery("SELECT COUNT(*) FROM " + tableName, null);
+            if (countCursor != null && countCursor.moveToFirst()) {
+                rowCount = countCursor.getLong(0);
+                countCursor.close();
+            }
+            
+            // Get indexes
+            List<String> indexes = new ArrayList<>();
+            Cursor indexCursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index' AND tbl_name=?", new String[]{tableName});
+            if (indexCursor != null) {
+                while (indexCursor.moveToNext()) {
+                    String indexName = indexCursor.getString(0);
+                    if (!indexName.startsWith("sqlite_autoindex_")) {
+                        indexes.add(indexName);
+                    }
+                }
+                indexCursor.close();
+            }
+            
+            tableInfo.put("tableName", tableName);
+            tableInfo.put("columns", columns);
+            tableInfo.put("rowCount", rowCount);
+            tableInfo.put("indexes", indexes);
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting table info for " + tableName, e);
+            throw new RuntimeException("Failed to get table info: " + e.getMessage());
+        }
+        
+        return tableInfo;
+    }
+
+    /**
+     * Query a table with optional filters, ordering, and pagination
+     */
+    public List<Map<String, Object>> queryTable(String tableName, String whereClause, String orderBy, int limit, int offset) {
+        StringBuilder query = new StringBuilder();
+        query.append("SELECT * FROM ").append(tableName);
+        
+        if (whereClause != null && !whereClause.trim().isEmpty()) {
+            query.append(" WHERE ").append(whereClause);
+        }
+        
+        if (orderBy != null && !orderBy.trim().isEmpty()) {
+            query.append(" ORDER BY ").append(orderBy);
+        }
+        
+        if (limit > 0) {
+            query.append(" LIMIT ").append(limit);
+            if (offset > 0) {
+                query.append(" OFFSET ").append(offset);
+            }
+        }
+        
+        return executeQuery(query.toString());
+    }
+
+    /**
+     * Get comprehensive database statistics for Live Monitor
+     */
+    public Map<String, Object> getComprehensiveDatabaseStats() {
+        Map<String, Object> stats = new HashMap<>();
+        SQLiteDatabase db = this.getReadableDatabase();
+        
+        try {
+            // Database size
+            String dbPath = db.getPath();
+            java.io.File dbFile = new java.io.File(dbPath);
+            long dbSize = dbFile.length();
+            stats.put("databaseSize", dbSize);
+            stats.put("databasePath", dbPath);
+            
+            // Table statistics
+            Map<String, Object> tableStats = new HashMap<>();
+            List<String> tables = getAllTableNames();
+            
+            for (String tableName : tables) {
+                try {
+                    Cursor cursor = db.rawQuery("SELECT COUNT(*) FROM " + tableName, null);
+                    if (cursor != null && cursor.moveToFirst()) {
+                        long count = cursor.getLong(0);
+                        tableStats.put(tableName, count);
+                        cursor.close();
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Error getting count for table: " + tableName, e);
+                    tableStats.put(tableName, "ERROR");
+                }
+            }
+            
+            stats.put("tableStats", tableStats);
+            stats.put("totalTables", tables.size());
+            stats.put("databaseVersion", DATABASE_VERSION);
+            stats.put("timestamp", System.currentTimeMillis());
+            
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting database stats", e);
+            stats.put("error", e.getMessage());
+        }
+        
+        return stats;
+    }
 }

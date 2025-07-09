@@ -399,11 +399,13 @@ public class SpectatorConversationOrchestrator {
                                 state.turns.add(new ConversationTurn(speaker, cleanedResponse, triggerType));
                                 state.turnCount++;
                                 
-                                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
-                                conversationMemory.recordConversation(speaker, cleanedResponse, gameContext);
-                                
-                                // Check for emotional context using enhanced system
+                                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking WITH OPPONENT for database persistence
+                                String opponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
                                 String emotionalState = detectEmotionalContext(state, state.currentEval, state.previousEval);
+                                conversationMemory.recordConversationWithEmotionAndOpponent(
+                                    speaker, cleanedResponse, gameContext, 
+                                    emotionalState != null ? emotionalState : "engaged", 
+                                    0.7f, opponent, "listening");
                                 
                                 // 🎭 ENHANCED: Record emotional event for relationship evolution
                                 recordEmotionalEventForConversation(state, speaker, cleanedResponse, emotionalState);
@@ -596,9 +598,12 @@ public class SpectatorConversationOrchestrator {
                                         state.turns.add(new ConversationTurn(responder, cleanedResponse, emotionalContext));
                                         state.turnCount++;
                                         
-                                        // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
-                                        conversationMemory.recordConversation(responder, cleanedResponse, 
-                                                                             buildConversationContext(state));
+                                        // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking WITH OPPONENT for database persistence
+                                        String opponent = responder.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                                        conversationMemory.recordConversationWithEmotionAndOpponent(
+                                            responder, cleanedResponse, buildConversationContext(state), 
+                                            emotionalContext != null ? emotionalContext : "responsive", 
+                                            0.6f, opponent, "analyzing");
                                         
                                         // 🎭 ENHANCED: Record emotional event for relationship evolution
                                         recordEmotionalEventForConversation(state, responder, cleanedResponse, emotionalContext);
@@ -936,6 +941,10 @@ public class SpectatorConversationOrchestrator {
                 String opponent = state.currentSpeaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
                 EmotionalContext tempContext = new EmotionalContext(state.currentSpeaker, opponent);
                 tempContext.updateGameContext(state.turnCount, "spectator_game");
+                
+                // 🔥 ENHANCED: Set managers for database persistence
+                tempContext.setEmotionalManager(emotionalIntelligence);
+                tempContext.setPersistenceManager(RelationshipPersistenceManager.getInstance(context));
                 
                 // 🔥 NEW: Use enhanced emotional analysis with situational awareness
                 emotionalResult = emotionalIntelligence.analyzeEmotionalStateWithSituation(
@@ -1992,8 +2001,12 @@ public class SpectatorConversationOrchestrator {
                 state.turns.add(new ConversationTurn(speaker, dialogue, triggerType));
                 state.turnCount++;
                 
-                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
-                conversationMemory.recordConversation(speaker, dialogue, gameContext);
+                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking WITH OPPONENT for database persistence
+                String dbOpponent = speaker.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                conversationMemory.recordConversationWithEmotionAndOpponent(
+                    speaker, dialogue, gameContext, 
+                    emotionalTone != null ? emotionalTone : "analytical", 
+                    0.5f, dbOpponent, "considering");
                 
                 // Deliver dialogue
                 mainHandler.post(() -> {
@@ -2055,8 +2068,12 @@ public class SpectatorConversationOrchestrator {
                 state.turns.add(new ConversationTurn(responder, response, "response"));
                 state.turnCount++;
                 
-                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking
-                conversationMemory.recordConversation(responder, response, buildConversationContext(state));
+                // 🧠 CONVERSATION MEMORY: Record conversation for topic tracking WITH OPPONENT for database persistence
+                String dbOpponent = responder.equals(state.whitePlayer) ? state.blackPlayer : state.whitePlayer;
+                conversationMemory.recordConversationWithEmotionAndOpponent(
+                    responder, response, buildConversationContext(state), 
+                    emotionalTone != null ? emotionalTone : "thoughtful", 
+                    0.6f, dbOpponent, "engaging");
                 
                 // Deliver response
                 mainHandler.post(() -> {
