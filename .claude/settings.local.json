@@ -94,7 +94,12 @@
       "Bash(echo $PATH)",
       "Bash(alias git-lfs=\"/mnt/c/Program Files/Git/cmd/git-lfs.exe\")",
       "Bash(ln:*)",
-      "Bash(sudo ln:*)"
+      "Bash(sudo ln:*)",
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" clean compile)",
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" dependency:resolve)",
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" clean)",
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" compile -X)",
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" compile)"
     ],
     "deny": []
   },

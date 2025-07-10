@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thin sci-fi radial arms matching concept art -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    
+    <!-- Central Core - Three concentric circles -->
+    <group android:name="central_core">
+        <!-- Outer ring -->
+        <path
+            android:pathData="M100,65 A35,35 0 1,1 100,135 A35,35 0 1,1 100,65 Z"
+            android:strokeWidth="1.5"
+            android:strokeColor="#66FF6600"
+            android:fillColor="@android:color/transparent" />
+        
+        <!-- Middle ring -->
+        <path
+            android:pathData="M100,75 A25,25 0 1,1 100,125 A25,25 0 1,1 100,75 Z"
+            android:strokeWidth="1"
+            android:strokeColor="#99FF6600"
+            android:fillColor="@android:color/transparent" />
+        
+        <!-- Inner core -->
+        <path
+            android:pathData="M100,85 A15,15 0 1,1 100,115 A15,15 0 1,1 100,85 Z"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600"
+            android:fillColor="#33FF6600" />
+    </group>
+    
+    <!-- Thin Radial Arms (1.5dp stroke width) -->
+    
+    <!-- Top Arm (12 o'clock) - PAUSE -->
+    <group android:name="arm_pause">
+        <path
+            android:pathData="M100,65 L100,15"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- Small segments on arm -->
+        <path
+            android:pathData="M97,45 L103,45"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M97,25 L103,25"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+    <!-- Top-Right Arm (2 o'clock) - TTS -->
+    <group android:name="arm_tts">
+        <path
+            android:pathData="M125,75 L170,40"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- 90-degree intersections -->
+        <path
+            android:pathData="M135,68 L141,62"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M138,65 L144,71"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M150,54 L156,48"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M153,51 L159,57"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+    <!-- Bottom-Right Arm (4 o'clock) - VOICE -->
+    <group android:name="arm_voice">
+        <path
+            android:pathData="M125,125 L170,160"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- 90-degree intersections -->
+        <path
+            android:pathData="M135,132 L141,138"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M138,135 L144,129"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M150,146 L156,152"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M153,149 L159,143"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+    <!-- Bottom Arm (6 o'clock) - RESIGN -->
+    <group android:name="arm_resign">
+        <path
+            android:pathData="M100,135 L100,185"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- Small segments -->
+        <path
+            android:pathData="M97,155 L103,155"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M97,175 L103,175"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+    <!-- Bottom-Left Arm (8 o'clock) - HINT -->
+    <group android:name="arm_hint">
+        <path
+            android:pathData="M75,125 L30,160"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- 90-degree intersections -->
+        <path
+            android:pathData="M65,132 L59,138"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M62,135 L56,129"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M50,146 L44,152"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M47,149 L41,143"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+    <!-- Top-Left Arm (10 o'clock) - RATING -->
+    <group android:name="arm_rating">
+        <path
+            android:pathData="M75,75 L30,40"
+            android:strokeWidth="1.5"
+            android:strokeColor="#80FF6600" />
+        <!-- 90-degree intersections -->
+        <path
+            android:pathData="M65,68 L59,62"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M62,65 L56,71"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M50,54 L44,48"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+        <path
+            android:pathData="M47,51 L41,57"
+            android:strokeWidth="2"
+            android:strokeColor="#FFFF6600" />
+    </group>
+    
+</vector>

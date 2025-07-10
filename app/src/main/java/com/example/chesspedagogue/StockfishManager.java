@@ -848,19 +848,55 @@ public class StockfishManager {
 
     /**
      * Checks if a move is legal from the current position.
+     * IMPROVED: Uses perft to get all legal moves and validates against the list.
      */
     public boolean isLegalMove(String move) {
         try {
-            Log.d(TAG, "Checking if move is legal: " + move);
-            String posCommand = "position fen " + currentFEN + " moves " + move;
-            sendCommand(posCommand);
+            Log.d(TAG, "🔍 LEGAL MOVE CHECK: Validating " + move + " from FEN: " + currentFEN);
+            
+            // Set the current position first
+            sendCommand("position fen " + currentFEN);
+            if (!waitForReady(200)) {
+                Log.e(TAG, "❌ Engine not ready for position setup");
+                return false;
+            }
 
-            // Log the result
-            boolean isValid = waitForReady(100);
-            Log.d(TAG, "Move " + move + " is " + (isValid ? "legal" : "illegal"));
-            return isValid;
-        } catch (IOException e) {
-            Log.e(TAG, "Error checking legal move", e);
+            // Clear output buffer for clean perft results
+            outputBuffer.clear();
+
+            // Get all legal moves using perft 1
+            sendCommand("go perft 1");
+
+            // Wait for perft results
+            Thread.sleep(300);
+
+            // Parse perft output to extract legal moves
+            List<String> legalMoves = new ArrayList<>();
+            for (String line : outputBuffer) {
+                Log.d(TAG, "🔍 PERFT LINE: " + line);
+                if (line.contains(": ") && !line.startsWith("Nodes")) {
+                    String[] parts = line.split(": ");
+                    if (parts.length >= 2) {
+                        String moveStr = parts[0].trim();
+                        legalMoves.add(moveStr);
+                    }
+                }
+            }
+
+            Log.d(TAG, "🎯 LEGAL MOVES: " + legalMoves.size() + " moves found: " + legalMoves);
+            
+            // Check if the requested move is in the legal moves list
+            boolean isLegal = legalMoves.contains(move);
+            Log.d(TAG, "✅ MOVE VALIDATION: " + move + " is " + (isLegal ? "LEGAL" : "ILLEGAL"));
+            
+            if (!isLegal) {
+                Log.w(TAG, "⚠️ ILLEGAL MOVE DETECTED: " + move + " not in legal moves: " + legalMoves);
+            }
+            
+            return isLegal;
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error checking legal move", e);
             return false;
         }
     }

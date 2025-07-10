@@ -53,10 +53,12 @@
                 android:layout_width="84dp"
                 android:layout_height="84dp"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/icon_glow_background"
+                android:background="@color/material3_expressive_on_primary_container"
+                android:backgroundTint="#3F51B5"
                 android:contentDescription="Chess Crown"
-                android:elevation="4dp"
-                android:src="@drawable/ic_chess_crown" />
+                android:elevation="10dp"
+                android:foregroundTint="#3F51B5"
+                android:src="@drawable/ic_chess_pedagogue_logo" />
 
             <!-- App Title -->
             <TextView
@@ -225,6 +227,7 @@
             style="@style/GlassSliderContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="#1D009688"
             android:orientation="vertical">
 
             <TextView

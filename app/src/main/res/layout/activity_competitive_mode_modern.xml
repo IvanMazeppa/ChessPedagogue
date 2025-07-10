@@ -600,6 +600,19 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:padding="16dp">
+                    
+                    <!-- Sci-Fi Radial Arms Background -->
+                    <ImageView
+                        android:id="@+id/sciFiRadialArms"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/sci_fi_radial_thin"
+                        android:alpha="0.5"
+                        android:scaleType="fitCenter"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <!-- Central Glowing Orb -->
                     <View
@@ -612,25 +625,25 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
-                    <!-- HEXAGON CONNECTION LINES (initially invisible) -->
+                    <!-- COMPACT CONNECTION LINES (initially invisible) -->
 
                     <!-- Line to PAUSE Button (12 o'clock) -->
                     <View
                         android:id="@+id/connectionLinePause"
                         android:layout_width="2dp"
-                        android:layout_height="45dp"
+                        android:layout_height="35dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintVertical_bias="0.9" />
+                        app:layout_constraintVertical_bias="0.85" />
 
                     <!-- Line to TTS Button (2 o'clock) -->
                     <View
                         android:id="@+id/connectionLineTTS"
-                        android:layout_width="35dp"
+                        android:layout_width="25dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
@@ -638,13 +651,13 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.2"
-                        app:layout_constraintVertical_bias="0.4" />
+                        app:layout_constraintHorizontal_bias="0.1"
+                        app:layout_constraintVertical_bias="0.35" />
 
                     <!-- Line to VOICE Button (4 o'clock) -->
                     <View
                         android:id="@+id/connectionLineVoice"
-                        android:layout_width="35dp"
+                        android:layout_width="25dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
@@ -652,26 +665,26 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.2"
-                        app:layout_constraintVertical_bias="0.6" />
+                        app:layout_constraintHorizontal_bias="0.1"
+                        app:layout_constraintVertical_bias="0.65" />
 
                     <!-- Line to SURRENDER Button (6 o'clock) -->
                     <View
                         android:id="@+id/connectionLineSurrender"
                         android:layout_width="2dp"
-                        android:layout_height="45dp"
+                        android:layout_height="35dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintVertical_bias="0.1" />
+                        app:layout_constraintVertical_bias="0.15" />
 
                     <!-- Line to HINT Button (8 o'clock) -->
                     <View
                         android:id="@+id/connectionLineHint"
-                        android:layout_width="35dp"
+                        android:layout_width="25dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
@@ -679,13 +692,13 @@
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.8"
-                        app:layout_constraintVertical_bias="0.6" />
+                        app:layout_constraintHorizontal_bias="0.9"
+                        app:layout_constraintVertical_bias="0.65" />
 
                     <!-- Line to RATING Button (10 o'clock) -->
                     <View
                         android:id="@+id/connectionLineRating"
-                        android:layout_width="35dp"
+                        android:layout_width="25dp"
                         android:layout_height="2dp"
                         android:alpha="0.0"
                         android:background="@drawable/orange_connection_line"
@@ -693,24 +706,24 @@
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.8"
-                        app:layout_constraintVertical_bias="0.4" />
+                        app:layout_constraintHorizontal_bias="0.9"
+                        app:layout_constraintVertical_bias="0.35" />
 
-                    <!-- HEXAGON BUTTON ARRANGEMENT - Perfect spacing around central orb -->
+                    <!-- COMPACT RADIAL BUTTON ARRANGEMENT - Smaller buttons that fit within constraints -->
 
                     <!-- PAUSE Button (Top - 12 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="65dp"
-                        android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintVertical_bias="0.8">
+                        app:layout_constraintVertical_bias="0.75">
 
                         <Button
                             android:id="@+id/pauseButton"
@@ -723,24 +736,24 @@
                             android:stateListAnimator="@null"
                             android:text="PAUSE"
                             android:textColor="@android:color/white"
-                            android:textSize="10sp"
+                            android:textSize="11sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
                     <!-- TTS Button (Top Right - 2 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="55dp"
-                        android:layout_height="28dp"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.3"
-                        app:layout_constraintVertical_bias="0.3">
+                        app:layout_constraintHorizontal_bias="0.15"
+                        app:layout_constraintVertical_bias="0.25">
 
                         <Button
                             android:id="@+id/ttsToggleButton"
@@ -759,18 +772,18 @@
 
                     <!-- VOICE Button (Bottom Right - 4 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="55dp"
-                        android:layout_height="28dp"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.3"
-                        app:layout_constraintVertical_bias="0.7">
+                        app:layout_constraintHorizontal_bias="0.15"
+                        app:layout_constraintVertical_bias="0.75">
 
                         <Button
                             android:id="@+id/voiceCommentButton"
@@ -783,23 +796,23 @@
                             android:stateListAnimator="@null"
                             android:text="VOICE"
                             android:textColor="@android:color/white"
-                            android:textSize="8sp"
+                            android:textSize="9sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
                     <!-- SURRENDER Button (Bottom - 6 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="65dp"
-                        android:layout_height="28dp"
+                        android:layout_width="48dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="parent"
-                        app:layout_constraintVertical_bias="0.2">
+                        app:layout_constraintVertical_bias="0.25">
 
                         <Button
                             android:id="@+id/surrenderButton"
@@ -812,24 +825,24 @@
                             android:stateListAnimator="@null"
                             android:text="RESIGN"
                             android:textColor="@android:color/white"
-                            android:textSize="9sp"
+                            android:textSize="10sp"
                             android:textStyle="bold" />
                     </androidx.cardview.widget.CardView>
 
                     <!-- HINT Button (Bottom Left - 8 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="55dp"
-                        android:layout_height="28dp"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.7"
-                        app:layout_constraintVertical_bias="0.7">
+                        app:layout_constraintHorizontal_bias="0.85"
+                        app:layout_constraintVertical_bias="0.75">
 
                         <Button
                             android:id="@+id/hintButton"
@@ -848,18 +861,18 @@
 
                     <!-- RATING Button (Top Left - 10 o'clock) -->
                     <androidx.cardview.widget.CardView
-                        android:layout_width="55dp"
-                        android:layout_height="28dp"
+                        android:layout_width="40dp"
+                        android:layout_height="24dp"
                         android:background="@drawable/neon_orange_button_selector"
-                        app:cardBackgroundColor="@android:color/transparent"
-                        app:cardCornerRadius="12dp"
-                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#2A1565C0"
+                        app:cardCornerRadius="10dp"
+                        app:cardElevation="4dp"
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.7"
-                        app:layout_constraintVertical_bias="0.3">
+                        app:layout_constraintHorizontal_bias="0.85"
+                        app:layout_constraintVertical_bias="0.25">
 
                         <Button
                             android:id="@+id/ratingToggleButton"

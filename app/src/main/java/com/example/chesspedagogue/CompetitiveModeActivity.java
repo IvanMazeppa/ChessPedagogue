@@ -645,6 +645,15 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             voiceCommentButton = findViewById(R.id.voiceCommentButton);
             ratingToggleButton = findViewById(R.id.ratingToggleButton);
             hintButton = findViewById(R.id.hintButton);
+            
+            // Debug button initialization
+            Log.d(TAG, "🔍 Button initialization:");
+            Log.d(TAG, "  - pauseButton: " + (pauseButton != null ? "OK" : "NULL"));
+            Log.d(TAG, "  - ttsToggleButton: " + (ttsToggleButton != null ? "OK" : "NULL"));
+            Log.d(TAG, "  - voiceCommentButton: " + (voiceCommentButton != null ? "OK" : "NULL"));
+            Log.d(TAG, "  - ratingToggleButton: " + (ratingToggleButton != null ? "OK" : "NULL"));
+            Log.d(TAG, "  - hintButton: " + (hintButton != null ? "OK" : "NULL"));
+            Log.d(TAG, "  - surrenderButton: " + (surrenderButton != null ? "OK" : "NULL"));
             settingsButton = findViewById(R.id.settingsButton);
             analysisButton = findViewById(R.id.analysisButton);
 
@@ -1107,6 +1116,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                         .setDuration(300)
                         .setInterpolator(new android.view.animation.OvershootInterpolator(1.5f))
                         .start();
+                    
+                    // Handle button click action on ACTION_UP
+                    if (event.getAction() == android.view.MotionEvent.ACTION_UP) {
+                        handleButtonClick(v);
+                    }
                     break;
             }
             return false; // Allow click to proceed
@@ -5379,6 +5393,42 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             }
             return true; // Consume the touch event
         });
+    }
+    
+    /**
+     * 🎯 Handle button click actions for radial buttons
+     */
+    private void handleButtonClick(View view) {
+        if (view == null) return;
+        
+        try {
+            String buttonText = "";
+            if (view instanceof Button) {
+                buttonText = ((Button) view).getText().toString();
+            }
+            
+            Log.d(TAG, "🎯 Button clicked: " + buttonText + " (ID: " + view.getId() + ")");
+            
+            // Execute appropriate action based on button ID
+            if (view.getId() == R.id.pauseButton) {
+                toggleGamePause();
+            } else if (view.getId() == R.id.surrenderButton) {
+                showSurrenderDialog();
+            } else if (view.getId() == R.id.ttsToggleButton) {
+                toggleTTS();
+            } else if (view.getId() == R.id.voiceCommentButton) {
+                startVoiceComment();
+            } else if (view.getId() == R.id.ratingToggleButton) {
+                toggleRatingDisplay();
+            } else if (view.getId() == R.id.hintButton) {
+                showHint();
+            } else {
+                Log.w(TAG, "⚠️ Unknown button clicked: " + buttonText);
+            }
+            
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Error handling button click", e);
+        }
     }
     
     
