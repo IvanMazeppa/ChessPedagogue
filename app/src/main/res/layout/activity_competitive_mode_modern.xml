@@ -599,22 +599,37 @@
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:padding="16dp">
-                    
-                    <!-- Sci-Fi Radial Arms Background -->
-                    <ImageView
-                        android:id="@+id/sciFiRadialArms"
+                    android:padding="4dp">
+
+                    <!-- NASA Accretion Disc Video Background with Transparency -->
+                    <VideoView
+                        android:id="@+id/accretionDiscVideoView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:src="@drawable/sci_fi_radial_thin"
-                        android:alpha="0.5"
-                        android:scaleType="fitCenter"
+                        android:alpha="0.0"
+                        android:background="@android:color/transparent"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
-                    <!-- Central Glowing Orb -->
+                    <!-- Sci-Fi Radial Arms Background (On top of accretion disc) - TEMPORARILY DISABLED -->
+                    <!--
+                    <ImageView
+                        android:id="@+id/sciFiRadialArms"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:alpha="0.5"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/sci_fi_radial_thin"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+                    -->
+
+                    <!-- Central Glowing Orb - TEMPORARILY DISABLED -->
+                    <!--
                     <View
                         android:id="@+id/centralGlowingOrb"
                         android:layout_width="80dp"
@@ -624,6 +639,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
+                    -->
 
                     <!-- COMPACT CONNECTION LINES (initially invisible) -->
 
@@ -649,9 +665,9 @@
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.1"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.1"
                         app:layout_constraintVertical_bias="0.35" />
 
                     <!-- Line to VOICE Button (4 o'clock) -->
@@ -663,9 +679,9 @@
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintHorizontal_bias="0.1"
                         app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.1"
                         app:layout_constraintVertical_bias="0.65" />
 
                     <!-- Line to SURRENDER Button (6 o'clock) -->
@@ -690,9 +706,9 @@
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.9"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.9"
                         app:layout_constraintVertical_bias="0.65" />
 
                     <!-- Line to RATING Button (10 o'clock) -->
@@ -704,9 +720,9 @@
                         android:background="@drawable/orange_connection_line"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.9"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.9"
                         app:layout_constraintVertical_bias="0.35" />
 
                     <!-- COMPACT RADIAL BUTTON ARRANGEMENT - Smaller buttons that fit within constraints -->
@@ -719,9 +735,9 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
+                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
-                        app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toTopOf="parent"
                         app:layout_constraintVertical_bias="0.75">
 
@@ -748,11 +764,11 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
-                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
-                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.15"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintVertical_bias="0.25">
 
                         <Button
@@ -778,11 +794,11 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
-                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.15"
+                        app:layout_constraintStart_toEndOf="@+id/centralGlowingOrb"
+                        app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintVertical_bias="0.75">
 
                         <Button
@@ -808,10 +824,10 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="@+id/centralGlowingOrb"
                         app:layout_constraintStart_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintVertical_bias="0.25">
 
                         <Button
@@ -837,11 +853,11 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
+                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
                         app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
+                        app:layout_constraintHorizontal_bias="0.85"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintBottom_toBottomOf="@+id/centralGlowingOrb"
-                        app:layout_constraintHorizontal_bias="0.85"
                         app:layout_constraintVertical_bias="0.75">
 
                         <Button
@@ -867,11 +883,11 @@
                         app:cardBackgroundColor="#2A1565C0"
                         app:cardCornerRadius="10dp"
                         app:cardElevation="4dp"
-                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
-                        app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintBottom_toTopOf="@+id/centralGlowingOrb"
-                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
+                        app:layout_constraintEnd_toStartOf="@+id/centralGlowingOrb"
                         app:layout_constraintHorizontal_bias="0.85"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="@+id/centralGlowingOrb"
                         app:layout_constraintVertical_bias="0.25">
 
                         <Button

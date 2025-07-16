@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Foreground sharp layer - thin, crisp, high opacity -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+    
+    <group android:pivotX="120" android:pivotY="120">
+        
+        <!-- Sharp, thin spiral arms -->
+        <!-- Arm 1 - bright leading edge -->
+        <path
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C120,100 130,85 150,80
+                C170,75 190,85 200,105
+                C210,125 205,150 195,170
+                C185,190 165,205 140,210
+                C115,215 90,205 75,185
+                C60,165 55,140 65,115" />
+        
+        <!-- Arm 2 -->
+        <path
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C140,120 155,130 160,150
+                C165,170 155,190 135,200
+                C115,210 90,205 70,195
+                C50,185 35,165 30,140" />
+        
+        <!-- Arm 3 -->
+        <path
+            android:strokeWidth="3"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C100,120 85,110 80,90
+                C75,70 85,50 105,40
+                C125,30 150,35 170,45" />
+        
+        <!-- Hot plasma trails - very thin bright lines -->
+        <path
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFFF"
+            android:pathData="
+                M150,80 C170,75 190,85 200,105" />
+        
+        <path
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFFF"
+            android:pathData="
+                M160,150 C165,170 155,190 135,200" />
+        
+        <path
+            android:strokeWidth="1.5"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFFF"
+            android:pathData="
+                M80,90 C75,70 85,50 105,40" />
+        
+        <!-- Bright central point -->
+        <path
+            android:pathData="M120,116 A4,4 0 1,1 120,124 A4,4 0 1,1 120,116 Z"
+            android:fillColor="#FFFFFF" />
+        
+    </group>
+    
+</vector>

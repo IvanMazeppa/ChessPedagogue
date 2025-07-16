@@ -24,8 +24,13 @@ import android.graphics.Shader;
 import android.graphics.RuntimeShader;
 import android.animation.ValueAnimator;
 import android.animation.ObjectAnimator;
+import android.animation.AnimatorSet;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
 import android.view.animation.AnticipateOvershootInterpolator;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.OvershootInterpolator;
 import android.graphics.drawable.GradientDrawable;
 import androidx.dynamicanimation.animation.FlingAnimation;
 import androidx.dynamicanimation.animation.DynamicAnimation;
@@ -38,6 +43,11 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import android.net.Uri;
+import android.widget.VideoView;
+import android.media.MediaPlayer;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.ArrayList;
@@ -90,6 +100,13 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private View connectionLineVoice;
     private View connectionLineRating;
     private View connectionLineHint;
+    
+    // Radial animation components
+    private View centralGlowingOrb;
+    private ImageView sciFiRadialArms;
+    
+    // NASA Accretion Disc Video System
+    private VideoView accretionDiscVideoView;
 
     // Game state
     private GameViewModel gameViewModel;
@@ -187,6 +204,10 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 // 🎨 APPLY MATERIAL 3 GLASSMORPHISM EFFECTS AFTER VIEWS ARE READY
                 Log.d(TAG, "🎨 About to apply Material 3 glassmorphism effects...");
                 applyTrueGlassmorphismEffects();
+                
+                // 🌟 START RADIAL ANIMATION SEQUENCE AFTER PANEL EFFECTS
+                Log.d(TAG, "🌟 Starting radial animation sequence...");
+                startRadialAnimationSequence();
                 
                 // 🎯 Add test button for capture effects (temporary)
                 // ✅ FIXED: Capture animation system no longer causing board issues
@@ -664,6 +685,14 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             connectionLineVoice = findViewById(R.id.connectionLineVoice);
             connectionLineRating = findViewById(R.id.connectionLineRating);
             connectionLineHint = findViewById(R.id.connectionLineHint);
+            
+            // Initialize radial animation components
+            // centralGlowingOrb = findViewById(R.id.centralGlowingOrb); // TEMPORARILY DISABLED
+            // sciFiRadialArms = findViewById(R.id.sciFiRadialArms); // TEMPORARILY DISABLED
+            
+            // Initialize NASA accretion disc video system
+            accretionDiscVideoView = findViewById(R.id.accretionDiscVideoView);
+            initializeVideoPlayer();
 
             // Set master and player names dynamically
             masterNameTextView.setText(formatMasterName(selectedMaster));
@@ -769,6 +798,68 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             Log.d(TAG, "✅ Captured pieces manager initialized");
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to initialize captured pieces manager", e);
+        }
+    }
+
+    /**
+     * 🌌 Initialize NASA accretion disc video player
+     */
+    private void initializeVideoPlayer() {
+        try {
+            Log.d(TAG, "🎬 Initializing VideoView...");
+            
+            if (accretionDiscVideoView != null) {
+                Log.d(TAG, "🎬 VideoView found, setting up video...");
+                
+                // Load the side-on NASA accretion disc video
+                String videoPath = "android.resource://" + getPackageName() + "/" + R.raw.side_on_loop_orange_color_corrected_looped;
+                Log.d(TAG, "🎬 Loading side-on accretion disc video from: " + videoPath);
+                Uri videoUri = Uri.parse(videoPath);
+                accretionDiscVideoView.setVideoURI(videoUri);
+                
+                // Apply additive blend mode to make dark areas transparent while keeping bright areas
+                accretionDiscVideoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                android.graphics.Paint paint = new android.graphics.Paint();
+                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
+                accretionDiscVideoView.setLayerPaint(paint);
+                
+                // Set up listeners
+                accretionDiscVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        Log.d(TAG, "🎬 Video prepared! Duration: " + mp.getDuration() + "ms");
+                        mp.setLooping(true); // Set infinite loop
+                        Log.d(TAG, "🎬 Video looping enabled");
+                    }
+                });
+                
+                accretionDiscVideoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                    @Override
+                    public boolean onError(MediaPlayer mp, int what, int extra) {
+                        Log.e(TAG, "🎬 Video error: what=" + what + ", extra=" + extra);
+                        return true;
+                    }
+                });
+                
+                accretionDiscVideoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                    @Override
+                    public void onCompletion(MediaPlayer mp) {
+                        Log.d(TAG, "🎬 Video completed, should loop...");
+                    }
+                });
+                
+                Log.d(TAG, "🌌 NASA accretion disc VideoView initialized");
+                Log.d(TAG, "📹 Video Credit: NASA/JPL-Caltech/R. Hurt (IPAC) - Modified color-grade");
+                
+                // Force trigger accretion disc animation since vector overlays are disabled
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    animateAccretionDiscAppearance();
+                }, 2000);
+            } else {
+                Log.e(TAG, "❌ accretionDiscVideoView is null in layout!");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize VideoView", e);
         }
     }
     
@@ -2753,6 +2844,360 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             return false;
         }
     }
+    
+    /**
+     * 🌟 RADIAL ANIMATION SYSTEM - Clockwise arm animation followed by central orb
+     */
+    public void startRadialAnimationSequence() {
+        Log.d(TAG, "🌟 Starting radial animation sequence...");
+        
+        // First, hide all components for clean animation start
+        prepareRadialComponentsForAnimation();
+        
+        // Wait for panel animations to complete, then start radial sequence
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            animateRadialArmsClockwise();
+        }, 400); // Reduced wait to start during panel motion (as requested)
+    }
+    
+    /**
+     * 🎭 Prepare radial components for animation by hiding them initially
+     */
+    private void prepareRadialComponentsForAnimation() {
+        Log.d(TAG, "🎭 Preparing radial components for animation...");
+        
+        // Hide central orb
+        if (centralGlowingOrb != null) {
+            centralGlowingOrb.setAlpha(0.0f);
+            centralGlowingOrb.setScaleX(0.0f);
+            centralGlowingOrb.setScaleY(0.0f);
+        }
+        
+        // Hide sci-fi arms
+        if (sciFiRadialArms != null) {
+            sciFiRadialArms.setAlpha(0.0f);
+        }
+        
+        // Hide accretion disc video
+        if (accretionDiscVideoView != null) {
+            accretionDiscVideoView.setAlpha(0.0f);
+            accretionDiscVideoView.setScaleX(0.0f);
+            accretionDiscVideoView.setScaleY(0.0f);
+        }
+        
+        // Hide all buttons initially
+        Button[] buttons = {pauseButton, ttsToggleButton, voiceCommentButton, 
+                           surrenderButton, hintButton, ratingToggleButton};
+        for (Button button : buttons) {
+            if (button != null) {
+                button.setAlpha(0.0f);
+                button.setScaleX(0.8f);
+                button.setScaleY(0.8f);
+            }
+        }
+        
+        // Hide all connection lines
+        View[] connectionLines = {connectionLinePause, connectionLineTTS, connectionLineVoice,
+                                connectionLineSurrender, connectionLineHint, connectionLineRating};
+        for (View line : connectionLines) {
+            if (line != null) {
+                line.setAlpha(0.0f);
+            }
+        }
+        
+        Log.d(TAG, "✅ Radial components prepared for animation");
+    }
+    
+    /**
+     * 🕐 Animate radial arms and buttons in clockwise order (12, 2, 4, 6, 8, 10 o'clock)
+     */
+    private void animateRadialArmsClockwise() {
+        Log.d(TAG, "🕐 Starting clockwise arm animation sequence...");
+        
+        // Enhanced sci-fi arms background with dramatic blue deepening effect
+        if (sciFiRadialArms != null) {
+            AnimatorSet armsSet = new AnimatorSet();
+            
+            // Multiple alpha stages for dramatic blue deepening
+            ObjectAnimator armsAlpha = ObjectAnimator.ofFloat(sciFiRadialArms, "alpha", 0.0f, 0.2f, 0.7f, 0.5f);
+            ObjectAnimator armsScale = ObjectAnimator.ofFloat(sciFiRadialArms, "scaleX", 0.8f, 1.1f, 1.0f);
+            ObjectAnimator armsScaleY = ObjectAnimator.ofFloat(sciFiRadialArms, "scaleY", 0.8f, 1.1f, 1.0f);
+            ObjectAnimator armsRotation = ObjectAnimator.ofFloat(sciFiRadialArms, "rotation", 0f, 360f);
+            
+            armsAlpha.setDuration(1000);
+            armsScale.setDuration(800);
+            armsScaleY.setDuration(800);
+            armsRotation.setDuration(1200);
+            
+            armsAlpha.setInterpolator(new AccelerateDecelerateInterpolator());
+            armsScale.setInterpolator(new OvershootInterpolator(0.3f));
+            armsScaleY.setInterpolator(new OvershootInterpolator(0.3f));
+            armsRotation.setInterpolator(new AccelerateDecelerateInterpolator());
+            
+            armsSet.playTogether(armsAlpha, armsScale, armsScaleY, armsRotation);
+            armsSet.start();
+            
+            Log.d(TAG, "🌟 Enhanced sci-fi arms animation with blue deepening effect");
+        }
+        
+        // Define the clockwise order: 12, 2, 4, 6, 8, 10 o'clock
+        Button[] clockwiseButtons = {
+            pauseButton,        // 12 o'clock
+            ttsToggleButton,    // 2 o'clock
+            voiceCommentButton, // 4 o'clock
+            surrenderButton,    // 6 o'clock
+            hintButton,         // 8 o'clock
+            ratingToggleButton  // 10 o'clock
+        };
+        
+        View[] clockwiseLines = {
+            connectionLinePause,     // 12 o'clock
+            connectionLineTTS,       // 2 o'clock
+            connectionLineVoice,     // 4 o'clock
+            connectionLineSurrender, // 6 o'clock
+            connectionLineHint,      // 8 o'clock
+            connectionLineRating     // 10 o'clock
+        };
+        
+        // Animate each button and line in sequence
+        for (int i = 0; i < clockwiseButtons.length; i++) {
+            final int index = i;
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                animateButtonAndLineAppearance(clockwiseButtons[index], clockwiseLines[index], index);
+                
+                // After last button, animate central orb
+                if (index == clockwiseButtons.length - 1) {
+                    new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                        animateCentralOrbAppearance();
+                    }, 200); // Small delay after last button
+                }
+            }, i * 120); // Faster spiral - 120ms delay between each button
+        }
+    }
+    
+    /**
+     * ✨ Animate individual button and connection line appearance with SPIRAL MOTION
+     */
+    private void animateButtonAndLineAppearance(Button button, View connectionLine, int index) {
+        if (button == null) return;
+        
+        String buttonText = button.getText() != null ? button.getText().toString() : "Button" + index;
+        Log.d(TAG, "✨ Animating button: " + buttonText + " (position " + (index + 1) + "/6) with SPIRAL MOTION");
+        
+        // Store final position
+        float finalX = button.getX();
+        float finalY = button.getY();
+        
+        // Calculate center position (approximately where central orb is)
+        float centerX = finalX + (button.getWidth() / 2) - 40; // Adjust for orb center
+        float centerY = finalY + (button.getHeight() / 2) - 40;
+        
+        // Calculate spiral motion path (start closer to center, spiral outward)
+        float startX = centerX - (finalX - centerX) * 0.3f; // Start 30% from center
+        float startY = centerY - (finalY - centerY) * 0.3f;
+        
+        // Set starting position (closer to center)
+        button.setX(startX);
+        button.setY(startY);
+        
+        // Enhanced button entrance animation with spiral motion
+        AnimatorSet buttonSet = new AnimatorSet();
+        
+        // Movement animations (spiral outward)
+        ObjectAnimator moveXAnim = ObjectAnimator.ofFloat(button, "x", startX, finalX);
+        ObjectAnimator moveYAnim = ObjectAnimator.ofFloat(button, "y", startY, finalY);
+        
+        // Scale and alpha animations
+        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(button, "alpha", 0.0f, 1.0f);
+        ObjectAnimator scaleXAnim = ObjectAnimator.ofFloat(button, "scaleX", 0.5f, 1.2f, 1.0f);
+        ObjectAnimator scaleYAnim = ObjectAnimator.ofFloat(button, "scaleY", 0.5f, 1.2f, 1.0f);
+        
+        // Rotation for spiral effect (each button rotates as it moves)
+        float rotationAngle = index * 60f; // Each button at different angle (60° apart)
+        ObjectAnimator rotationAnim = ObjectAnimator.ofFloat(button, "rotation", 
+                rotationAngle - 90f, rotationAngle + 15f, 0f);
+        
+        // Enhanced timing for more dramatic effect
+        moveXAnim.setDuration(500);
+        moveYAnim.setDuration(500);
+        alphaAnim.setDuration(400);
+        scaleXAnim.setDuration(600);
+        scaleYAnim.setDuration(600);
+        rotationAnim.setDuration(700);
+        
+        // Enhanced interpolators for spiral motion
+        moveXAnim.setInterpolator(new OvershootInterpolator(0.6f));
+        moveYAnim.setInterpolator(new OvershootInterpolator(0.6f));
+        scaleXAnim.setInterpolator(new OvershootInterpolator(1.0f));
+        scaleYAnim.setInterpolator(new OvershootInterpolator(1.0f));
+        rotationAnim.setInterpolator(new OvershootInterpolator(0.8f));
+        alphaAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        buttonSet.playTogether(moveXAnim, moveYAnim, alphaAnim, scaleXAnim, scaleYAnim, rotationAnim);
+        buttonSet.start();
+        
+        // Enhanced connection line animation with wave effect
+        if (connectionLine != null) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                AnimatorSet lineSet = new AnimatorSet();
+                
+                ObjectAnimator lineAlpha = ObjectAnimator.ofFloat(connectionLine, "alpha", 0.0f, 1.0f, 0.3f);
+                ObjectAnimator lineScale = ObjectAnimator.ofFloat(connectionLine, "scaleY", 0.0f, 1.2f, 1.0f);
+                
+                lineAlpha.setDuration(800);
+                lineScale.setDuration(600);
+                
+                lineAlpha.setInterpolator(new AccelerateDecelerateInterpolator());
+                lineScale.setInterpolator(new OvershootInterpolator(0.5f));
+                
+                lineSet.playTogether(lineAlpha, lineScale);
+                lineSet.start();
+                
+                Log.d(TAG, "🌊 Enhanced connection line animated for " + buttonText);
+            }, 150); // Slight delay for line animation
+        }
+    }
+    
+    /**
+     * 🔥 Animate central glowing orb appearance with ENHANCED dramatic effect
+     */
+    private void animateCentralOrbAppearance() {
+        if (centralGlowingOrb == null) return;
+        
+        Log.d(TAG, "🔥 Animating ENHANCED central glowing orb appearance...");
+        
+        AnimatorSet orbSet = new AnimatorSet();
+        
+        // More dramatic scale up with multiple overshoots
+        ObjectAnimator scaleXAnim = ObjectAnimator.ofFloat(centralGlowingOrb, "scaleX", 0.0f, 1.6f, 0.8f, 1.2f, 1.0f);
+        ObjectAnimator scaleYAnim = ObjectAnimator.ofFloat(centralGlowingOrb, "scaleY", 0.0f, 1.6f, 0.8f, 1.2f, 1.0f);
+        
+        // Enhanced fade in with multiple alpha stages
+        ObjectAnimator alphaAnim = ObjectAnimator.ofFloat(centralGlowingOrb, "alpha", 0.0f, 0.3f, 1.0f, 0.8f, 1.0f);
+        
+        // Multiple rotation cycles for more dramatic effect
+        ObjectAnimator rotationAnim = ObjectAnimator.ofFloat(centralGlowingOrb, "rotation", 0f, 540f); // 1.5 full rotations
+        
+        // Enhanced durations for more impact
+        scaleXAnim.setDuration(900);
+        scaleYAnim.setDuration(900);
+        alphaAnim.setDuration(700);
+        rotationAnim.setDuration(1200);
+        
+        // More dramatic interpolators
+        scaleXAnim.setInterpolator(new OvershootInterpolator(1.8f));
+        scaleYAnim.setInterpolator(new OvershootInterpolator(1.8f));
+        alphaAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+        rotationAnim.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        orbSet.playTogether(scaleXAnim, scaleYAnim, alphaAnim, rotationAnim);
+        orbSet.start();
+        
+        // Add enhanced final pulse effect
+        orbSet.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd(Animator animation) {
+                addEnhancedCentralOrbPulseEffect();
+                
+                // After orb animation, start the accretion disc
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    animateAccretionDiscAppearance();
+                }, 300); // Small delay before accretion disc
+                
+                Log.d(TAG, "✅ ENHANCED radial animation sequence complete!");
+            }
+        });
+    }
+    
+    /**
+     * 💫 Add ENHANCED pulse effect to central orb with scale and alpha
+     */
+    private void addEnhancedCentralOrbPulseEffect() {
+        if (centralGlowingOrb == null) return;
+        
+        // Enhanced pulse with both alpha and subtle scale changes
+        ObjectAnimator pulseAlpha = ObjectAnimator.ofFloat(centralGlowingOrb, "alpha", 1.0f, 0.6f, 1.0f);
+        ObjectAnimator pulseScaleX = ObjectAnimator.ofFloat(centralGlowingOrb, "scaleX", 1.0f, 1.05f, 1.0f);
+        ObjectAnimator pulseScaleY = ObjectAnimator.ofFloat(centralGlowingOrb, "scaleY", 1.0f, 1.05f, 1.0f);
+        
+        pulseAlpha.setDuration(2500);
+        pulseScaleX.setDuration(2500);
+        pulseScaleY.setDuration(2500);
+        
+        pulseAlpha.setRepeatCount(ObjectAnimator.INFINITE);
+        pulseScaleX.setRepeatCount(ObjectAnimator.INFINITE);
+        pulseScaleY.setRepeatCount(ObjectAnimator.INFINITE);
+        
+        pulseAlpha.setInterpolator(new AccelerateDecelerateInterpolator());
+        pulseScaleX.setInterpolator(new AccelerateDecelerateInterpolator());
+        pulseScaleY.setInterpolator(new AccelerateDecelerateInterpolator());
+        
+        pulseAlpha.start();
+        pulseScaleX.start();
+        pulseScaleY.start();
+        
+        Log.d(TAG, "💫 ENHANCED central orb pulse effect started with scale animation");
+    }
+    
+    /**
+     * 💫 Add subtle pulse effect to central orb (legacy method)
+     */
+    private void addCentralOrbPulseEffect() {
+        // Call enhanced version
+        addEnhancedCentralOrbPulseEffect();
+    }
+    
+    /**
+     * 🌌 MOTION BLUR ACCRETION DISC - 3-Layer dramatic appearance with realistic motion blur
+     */
+    private void animateAccretionDiscAppearance() {
+        if (accretionDiscVideoView == null) {
+            Log.e(TAG, "❌ accretionDiscVideoView is null!");
+            return;
+        }
+        
+        Log.d(TAG, "🌌 COSMIC EVENT: NASA accretion disc portal opening...");
+        
+        // Start video playback
+        Log.d(TAG, "🎬 Starting video playback...");
+        accretionDiscVideoView.start();
+        
+        // Set video with reduced alpha to blend with UI background
+        Log.d(TAG, "🎬 Setting video alpha to 0.9 for screen blending");
+        accretionDiscVideoView.setAlpha(0.9f);
+        accretionDiscVideoView.setScaleX(1.0f);
+        accretionDiscVideoView.setScaleY(1.0f);
+        accretionDiscVideoView.setVisibility(View.VISIBLE);
+        
+        Log.d(TAG, "🌌 Video should now be visible. Alpha: " + accretionDiscVideoView.getAlpha() + 
+                   ", Visibility: " + accretionDiscVideoView.getVisibility() +
+                   ", ScaleX: " + accretionDiscVideoView.getScaleX() +
+                   ", IsPlaying: " + accretionDiscVideoView.isPlaying());
+    }
+    
+    /**
+     * 🌊 MOTION BLUR SMOOTH TRANSITION from formation burst to eternal rotation
+     */
+    private void startAccretionDiscSmoothTransition() {
+        if (accretionDiscVideoView == null) return;
+        
+        Log.d(TAG, "🌊 NASA VIDEO TRANSITION: Disc video is already looping smoothly...");
+        
+        // Video is already looping, no additional transition needed
+        // Just ensure it continues playing
+    }
+    
+    /**
+     * ♾️ MOTION BLUR CONTINUOUS ROTATION - Eternal cosmic motion with realistic motion blur
+     */
+    private void startAccretionDiscContinuousRotation() {
+        if (accretionDiscVideoView == null) return;
+        
+        Log.d(TAG, "♾️ ETERNAL MOTION: NASA accretion disc video already continuously looping...");
+        
+        // Video is already set to infinite loop, no additional rotation needed
+        // The NASA footage provides natural motion and churning
+    }
 
     /**
      * 🔄 Update button states to reflect current settings
@@ -4316,6 +4761,11 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        
+        // 🌌 Cleanup video player
+        if (accretionDiscVideoView != null) {
+            accretionDiscVideoView.stopPlayback();
+        }
         
         // 🔗 Send final performance update and disconnect from live monitor
         if (liveMonitorClient != null) {
