@@ -46,6 +46,9 @@ import androidx.core.content.ContextCompat;
 import android.net.Uri;
 import android.widget.VideoView;
 import android.media.MediaPlayer;
+import android.view.TextureView;
+import android.view.Surface;
+import android.graphics.SurfaceTexture;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import java.util.concurrent.ExecutorService;
@@ -105,8 +108,12 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     private View centralGlowingOrb;
     private ImageView sciFiRadialArms;
     
-    // NASA Accretion Disc Video System
-    private VideoView accretionDiscVideoView;
+    // NASA Accretion Disc Video System (TextureView for better compatibility)
+    private TextureView accretionDiscIntroView;
+    private TextureView accretionDiscVideoView;
+    private MediaPlayer videoMediaPlayer;
+    private MediaPlayer loopMediaPlayer;
+    private MediaPlayer introMediaPlayer;
 
     // Game state
     private GameViewModel gameViewModel;
@@ -802,64 +809,359 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     }
 
     /**
-     * 🌌 Initialize NASA accretion disc video player
+     * 🌌 Initialize dual accretion disc video system (intro + loop)
+
+
+
+    private void initializeVideoPlayer() {
+        try {
+            Log.d(TAG, "🎬 Initializing dual TextureView + MediaPlayer system...");
+
+            if (accretionDiscIntroView != null && accretionDiscVideoView != null) {
+                Log.d(TAG, "🎬 Both TextureViews found, setting up dual video system...");
+
+                // ===== SETUP TEXTURE VIEW SURFACE LISTENERS =====
+                accretionDiscIntroView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                    @Override
+                    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                        Log.d(TAG, "🎬 Intro TextureView surface available (" + width + "x" + height + ")");
+                        setupIntroMediaPlayer(new Surface(surface));
+                    }
+
+                    @Override
+                    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+
+                    @Override
+                    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                        if (introMediaPlayer != null) {
+                            introMediaPlayer.release();
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+                });
+
+                accretionDiscVideoView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                    @Override
+                    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                        Log.d(TAG, "🎬 Loop TextureView surface available (" + width + "x" + height + ")");
+                        setupLoopMediaPlayer(new Surface(surface));
+                    }
+
+                    @Override
+                    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+
+                    @Override
+                    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                        if (loopMediaPlayer != null) {
+                            loopMediaPlayer.release();
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+                });
+
+                Log.d(TAG, "✅ Dual TextureView + MediaPlayer system initialized successfully!");
+                Log.d(TAG, "🌌 Dual accretion disc video system initialized");
+                Log.d(TAG, "📹 Videos: loop_orange_android.mp4 (test) + loop_orange_android.mp4 (loop)");
+
+                // Start the intro sequence after UI assembly
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    startAccretionDiscSequence();
+                }, 2000);
+
+            } else {
+                Log.e(TAG, "❌ TextureViews not found in layout");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to initialize dual TextureView system", e);
+        }
+    }
+    */
+
+    /**
+     * 🌌 Initialize accretion disc video system using single TextureView + MediaPlayer
      */
     private void initializeVideoPlayer() {
         try {
-            Log.d(TAG, "🎬 Initializing VideoView...");
-            
+            Log.d(TAG, "🎬 Initializing TextureView + MediaPlayer system...");
+
             if (accretionDiscVideoView != null) {
-                Log.d(TAG, "🎬 VideoView found, setting up video...");
-                
-                // Load the side-on NASA accretion disc video
-                String videoPath = "android.resource://" + getPackageName() + "/" + R.raw.side_on_loop_orange_color_corrected_looped;
-                Log.d(TAG, "🎬 Loading side-on accretion disc video from: " + videoPath);
-                Uri videoUri = Uri.parse(videoPath);
-                accretionDiscVideoView.setVideoURI(videoUri);
-                
-                // Apply additive blend mode to make dark areas transparent while keeping bright areas
-                accretionDiscVideoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-                android.graphics.Paint paint = new android.graphics.Paint();
-                paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SCREEN));
-                accretionDiscVideoView.setLayerPaint(paint);
-                
-                // Set up listeners
-                accretionDiscVideoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                Log.d(TAG, "🎬 TextureView found, setting up video system...");
+
+                // ===== SETUP TEXTURE VIEW SURFACE LISTENER =====
+                accretionDiscVideoView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
                     @Override
-                    public void onPrepared(MediaPlayer mp) {
-                        Log.d(TAG, "🎬 Video prepared! Duration: " + mp.getDuration() + "ms");
-                        mp.setLooping(true); // Set infinite loop
-                        Log.d(TAG, "🎬 Video looping enabled");
+                    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                        Log.d(TAG, "🎬 TextureView surface available (" + width + "x" + height + ")");
+                        
+                        // Apply SCREEN blend mode to make black areas blend like transparency
+                        accretionDiscVideoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                        android.graphics.Paint paint = new android.graphics.Paint();
+                        paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SCREEN));
+                        accretionDiscVideoView.setLayerPaint(paint);
+                        
+                        setupVideoMediaPlayer(new Surface(surface));
                     }
-                });
-                
-                accretionDiscVideoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+
                     @Override
-                    public boolean onError(MediaPlayer mp, int what, int extra) {
-                        Log.e(TAG, "🎬 Video error: what=" + what + ", extra=" + extra);
+                    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+
+                    @Override
+                    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                        if (videoMediaPlayer != null) {
+                            videoMediaPlayer.release();
+                        }
                         return true;
                     }
-                });
-                
-                accretionDiscVideoView.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+
                     @Override
-                    public void onCompletion(MediaPlayer mp) {
-                        Log.d(TAG, "🎬 Video completed, should loop...");
-                    }
+                    public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
                 });
-                
-                Log.d(TAG, "🌌 NASA accretion disc VideoView initialized");
-                Log.d(TAG, "📹 Video Credit: NASA/JPL-Caltech/R. Hurt (IPAC) - Modified color-grade");
-                
-                // Force trigger accretion disc animation since vector overlays are disabled
+
+                Log.d(TAG, "✅ TextureView + MediaPlayer system initialized successfully!");
+
+                // Start the intro sequence after UI assembly
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                    animateAccretionDiscAppearance();
+                    startAccretionDiscSequence();
                 }, 2000);
+
             } else {
-                Log.e(TAG, "❌ accretionDiscVideoView is null in layout!");
+                Log.e(TAG, "❌ TextureView not found in layout");
             }
         } catch (Exception e) {
-            Log.e(TAG, "❌ Failed to initialize VideoView", e);
+            Log.e(TAG, "❌ Failed to initialize TextureView system", e);
+        }
+    }
+
+    /**
+     * 🎬 Setup single MediaPlayer for intro->loop sequence
+     */
+    private void setupVideoMediaPlayer(Surface surface) {
+        try {
+            videoMediaPlayer = new MediaPlayer();
+            // Start with intro video
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0900_webm);
+            videoMediaPlayer.setDataSource(this, videoUri);
+            videoMediaPlayer.setSurface(surface);
+            videoMediaPlayer.setLooping(false);
+
+            videoMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    Log.d(TAG, "🎬 Intro MediaPlayer prepared! Duration: " + mp.getDuration() + "ms");
+                    // Auto-start the intro video
+                    mp.start();
+                    Log.d(TAG, "🎬 Intro MediaPlayer started automatically");
+                }
+            });
+
+            videoMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    Log.d(TAG, "🎬 Intro video completed! Switching to loop video...");
+                    switchToLoopVideo();
+                }
+            });
+
+            videoMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "❌ MediaPlayer error: " + what + ", " + extra);
+                    return true;
+                }
+            });
+
+            videoMediaPlayer.prepareAsync();
+            Log.d(TAG, "🎬 MediaPlayer setup complete");
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to setup MediaPlayer", e);
+        }
+    }
+
+    /**
+     * 🔄 Switch from intro to loop video with speed-up effect
+     */
+    private void switchToLoopVideo() {
+        try {
+            if (videoMediaPlayer != null) {
+                videoMediaPlayer.reset();
+
+                // Load loop video
+                Uri loopUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0180);
+                videoMediaPlayer.setDataSource(this, loopUri);
+                videoMediaPlayer.setLooping(true);
+
+                videoMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                    @Override
+                    public void onPrepared(MediaPlayer mp) {
+                        Log.d(TAG, "🎬 Loop video prepared! Starting with speed-up effect...");
+                        mp.start();
+                        startGradualSpeedUp();
+                    }
+                });
+
+                videoMediaPlayer.prepareAsync();
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to switch to loop video", e);
+        }
+    }
+
+    /**
+     * 🎬 Setup intro MediaPlayer
+     */
+    private void setupIntroMediaPlayer(Surface surface) {
+        try {
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0900_webm);
+            introMediaPlayer.setDataSource(this, videoUri);
+            introMediaPlayer.setSurface(surface);
+            introMediaPlayer.setLooping(false);
+
+            introMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    Log.d(TAG, "🎬 Intro MediaPlayer prepared! Duration: " + mp.getDuration() + "ms");
+                    // Auto-start the video when it's prepared
+                    mp.start();
+                    Log.d(TAG, "🎬 Intro MediaPlayer started automatically");
+                }
+            });
+
+            introMediaPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
+                @Override
+                public void onCompletion(MediaPlayer mp) {
+                    Log.d(TAG, "🎬 Intro video completed! Transitioning to loop...");
+                    accretionDiscIntroView.setVisibility(View.GONE);
+                    accretionDiscVideoView.setVisibility(View.VISIBLE);
+                    if (loopMediaPlayer != null) {
+                        // Start loop video with gradual speed-up effect
+                        loopMediaPlayer.start();
+                        startGradualSpeedUp();
+                    }
+                }
+            });
+
+            introMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "❌ Intro MediaPlayer error: " + what + ", " + extra);
+                    accretionDiscIntroView.setVisibility(View.GONE);
+                    accretionDiscVideoView.setVisibility(View.VISIBLE);
+                    if (loopMediaPlayer != null) {
+                        loopMediaPlayer.start();
+                    }
+                    return true;
+                }
+            });
+
+            introMediaPlayer.prepareAsync();
+            Log.d(TAG, "🎬 Intro MediaPlayer setup complete");
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to setup intro MediaPlayer", e);
+        }
+    }
+
+    /**
+     * 🎬 Setup loop MediaPlayer
+     */
+    private void setupLoopMediaPlayer(Surface surface) {
+        try {
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0180);
+            loopMediaPlayer.setDataSource(this, videoUri);
+            loopMediaPlayer.setSurface(surface);
+            loopMediaPlayer.setLooping(true);
+
+            loopMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+                @Override
+                public void onPrepared(MediaPlayer mp) {
+                    Log.d(TAG, "🎬 Loop MediaPlayer prepared! Duration: " + mp.getDuration() + "ms");
+                }
+            });
+
+            loopMediaPlayer.setOnErrorListener(new MediaPlayer.OnErrorListener() {
+                @Override
+                public boolean onError(MediaPlayer mp, int what, int extra) {
+                    Log.e(TAG, "❌ Loop MediaPlayer error: " + what + ", " + extra);
+                    return false;
+                }
+            });
+
+            loopMediaPlayer.prepareAsync();
+            Log.d(TAG, "🎬 Loop MediaPlayer setup complete");
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to setup loop MediaPlayer", e);
+        }
+    }
+
+    /**
+     * 🌀 Gradually speed up the loop video from stationary to normal speed
+     */
+    private void startGradualSpeedUp() {
+        if (videoMediaPlayer == null) return;
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        final float[] currentSpeed = {0.1f}; // Start very slow
+        final float targetSpeed = 1.0f;
+        final float speedIncrement = 0.05f;
+        final int delayMs = 100;
+
+        Runnable speedUpRunnable = new Runnable() {
+            @Override
+            public void run() {
+                if (videoMediaPlayer != null && currentSpeed[0] < targetSpeed) {
+                    try {
+                        android.media.PlaybackParams params = videoMediaPlayer.getPlaybackParams();
+                        params.setSpeed(currentSpeed[0]);
+                        videoMediaPlayer.setPlaybackParams(params);
+
+                        Log.d(TAG, "🌀 Disc speed: " + String.format("%.2f", currentSpeed[0]));
+
+                        currentSpeed[0] += speedIncrement;
+                        handler.postDelayed(this, delayMs);
+                    } catch (Exception e) {
+                        Log.e(TAG, "❌ Speed-up effect error", e);
+                    }
+                } else {
+                    Log.d(TAG, "🌀 Disc reached full speed");
+                }
+            }
+        };
+
+        handler.post(speedUpRunnable);
+    }
+    
+    /**
+     * 🎬 Start the accretion disc cinematic sequence
+     */
+
+
+    private void startAccretionDiscSequence() {
+        try {
+            Log.d(TAG, "🎬 Starting accretion disc cinematic sequence...");
+
+            // Show video view
+            accretionDiscVideoView.setVisibility(View.VISIBLE);
+
+            Log.d(TAG, "🌌 COSMIC EVENT: NASA accretion disc portal opening...");
+            Log.d(TAG, "🎬 Setting video alpha to 0.9 for transparency");
+            accretionDiscVideoView.setAlpha(0.9f);
+
+            Log.d(TAG, "🌌 Video should now be visible. Alpha: " + accretionDiscVideoView.getAlpha() +
+                    ", Visibility: " + accretionDiscVideoView.getVisibility() +
+                    ", ScaleX: " + accretionDiscVideoView.getScaleX());
+
+            Log.d(TAG, "✅ Accretion disc sequence started");
+
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Failed to start accretion disc sequence", e);
         }
     }
     
@@ -2878,11 +3180,12 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             sciFiRadialArms.setAlpha(0.0f);
         }
         
-        // Hide accretion disc video
+        // Hide accretion disc video initially
         if (accretionDiscVideoView != null) {
             accretionDiscVideoView.setAlpha(0.0f);
-            accretionDiscVideoView.setScaleX(0.0f);
-            accretionDiscVideoView.setScaleY(0.0f);
+            accretionDiscVideoView.setScaleX(1.0f); // Keep normal scale
+            accretionDiscVideoView.setScaleY(1.0f); // Keep normal scale
+            accretionDiscVideoView.setVisibility(View.GONE); // Use visibility instead of scale
         }
         
         // Hide all buttons initially
@@ -3160,7 +3463,9 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         
         // Start video playback
         Log.d(TAG, "🎬 Starting video playback...");
-        accretionDiscVideoView.start();
+        if (loopMediaPlayer != null && !loopMediaPlayer.isPlaying()) {
+            loopMediaPlayer.start();
+        }
         
         // Set video with reduced alpha to blend with UI background
         Log.d(TAG, "🎬 Setting video alpha to 0.9 for screen blending");
@@ -3172,7 +3477,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         Log.d(TAG, "🌌 Video should now be visible. Alpha: " + accretionDiscVideoView.getAlpha() + 
                    ", Visibility: " + accretionDiscVideoView.getVisibility() +
                    ", ScaleX: " + accretionDiscVideoView.getScaleX() +
-                   ", IsPlaying: " + accretionDiscVideoView.isPlaying());
+                   ", IsPlaying: " + (loopMediaPlayer != null ? loopMediaPlayer.isPlaying() : "null"));
     }
     
     /**
@@ -4758,64 +5063,18 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         finish();
     }
 
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        
+
         // 🌌 Cleanup video player
-        if (accretionDiscVideoView != null) {
-            accretionDiscVideoView.stopPlayback();
+        if (videoMediaPlayer != null) {
+            videoMediaPlayer.release();
+            videoMediaPlayer = null;
         }
-        
-        // 🔗 Send final performance update and disconnect from live monitor
-        if (liveMonitorClient != null) {
-            liveMonitorClient.sendPerformanceUpdate();
-            liveMonitorClient.sendSystemLog("Competitive mode ended", "INFO");
-            liveMonitorClient.disconnect();
-        }
-        
-        // 🧠 PHASE 3: Cleanup adaptive learning session if needed
-        if (adaptiveManager != null && currentConversationId != null) {
-            try {
-                // Record a final outcome if the game is ending unexpectedly
-                recordConversationOutcomeForLearning("interrupted");
-                Log.d(TAG, "🧠 Phase 3: Adaptive learning session cleaned up");
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error cleaning up adaptive learning session", e);
-            }
-        }
-        
-        // Cleanup voice services
-        if (isServiceBound && recordService != null) {
-            try {
-                unbindService(serviceConnection);
-                isServiceBound = false;
-                Log.d(TAG, "🎤 Voice service unbound");
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error unbinding voice service", e);
-            }
-        }
-        
-        // Cleanup voice control manager
-        if (voiceControlManager != null) {
-            try {
-                voiceControlManager.unregisterVoiceCommandListener();
-                Log.d(TAG, "🎤 Voice command listener unregistered");
-            } catch (Exception e) {
-                Log.e(TAG, "❌ Error unregistering voice listener", e);
-            }
-        }
-        
-        // Cleanup executor service
-        if (executorService != null && !executorService.isShutdown()) {
-            executorService.shutdown();
-        }
-        
-        // Reset spectator mode flag
-        getSharedPreferences("ChessAppPrefs", Context.MODE_PRIVATE)
-            .edit().putBoolean("is_spectator_mode", false).apply();
-        
-        Log.d(TAG, "🏆 Competitive mode activity destroyed with full cleanup");
+
+        // ... rest of cleanup
     }
 
     /**

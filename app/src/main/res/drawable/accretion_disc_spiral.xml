@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Accretion disc with 3 spiral arms, tapering effect, and motion blur -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+    
+    <group android:pivotX="120" android:pivotY="120">
+        
+        <!-- Spiral Arm 1: Starting at 12 o'clock, curving clockwise -->
+        <!-- Motion blur layers - multiple overlapping paths with decreasing opacity -->
+        <path
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#20FF6600"
+            android:pathData="
+                M120,120
+                C120,100 130,85 150,80
+                C170,75 190,85 200,105
+                C210,125 205,150 195,170
+                C185,190 165,205 140,210
+                C115,215 90,205 75,185
+                C60,165 55,140 65,115
+                C75,90 95,75 120,80
+                C145,85 165,100 175,125
+                C185,150 180,175 170,195
+                C160,215 140,225 120,220" />
+        
+        <path
+            android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#40FF6600"
+            android:pathData="
+                M120,120
+                C120,100 130,85 150,80
+                C170,75 190,85 200,105
+                C210,125 205,150 195,170
+                C185,190 165,205 140,210
+                C115,215 90,205 75,185
+                C60,165 55,140 65,115
+                C75,90 95,75 120,80
+                C145,85 165,100 175,125
+                C185,150 180,175 170,195" />
+        
+        <path
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#80FF6600"
+            android:pathData="
+                M120,120
+                C120,100 130,85 150,80
+                C170,75 190,85 200,105
+                C210,125 205,150 195,170
+                C185,190 165,205 140,210
+                C115,215 90,205 75,185
+                C60,165 55,140 65,115
+                C75,90 95,75 120,80
+                C145,85 165,100 175,125" />
+        
+        <path
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C120,100 130,85 150,80
+                C170,75 190,85 200,105
+                C210,125 205,150 195,170
+                C185,190 165,205 140,210
+                C115,215 90,205 75,185
+                C60,165 55,140 65,115" />
+        
+        <!-- Spiral Arm 2: Starting at 4 o'clock, 120° offset -->
+        <path
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#20FF6600"
+            android:pathData="
+                M120,120
+                C140,120 155,130 160,150
+                C165,170 155,190 135,200
+                C115,210 90,205 70,195
+                C50,185 35,165 30,140
+                C25,115 35,90 55,75
+                C75,60 100,55 125,65
+                C150,75 170,95 175,120
+                C180,145 170,170 155,185
+                C140,200 115,205 95,195
+                C75,185 60,165 65,140" />
+        
+        <path
+            android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#40FF6600"
+            android:pathData="
+                M120,120
+                C140,120 155,130 160,150
+                C165,170 155,190 135,200
+                C115,210 90,205 70,195
+                C50,185 35,165 30,140
+                C25,115 35,90 55,75
+                C75,60 100,55 125,65
+                C150,75 170,95 175,120
+                C180,145 170,170 155,185
+                C140,200 115,205 95,195" />
+        
+        <path
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#80FF6600"
+            android:pathData="
+                M120,120
+                C140,120 155,130 160,150
+                C165,170 155,190 135,200
+                C115,210 90,205 70,195
+                C50,185 35,165 30,140
+                C25,115 35,90 55,75
+                C75,60 100,55 125,65
+                C150,75 170,95 175,120" />
+        
+        <path
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C140,120 155,130 160,150
+                C165,170 155,190 135,200
+                C115,210 90,205 70,195
+                C50,185 35,165 30,140" />
+        
+        <!-- Spiral Arm 3: Starting at 8 o'clock, 240° offset -->
+        <path
+            android:strokeWidth="16"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#20FF6600"
+            android:pathData="
+                M120,120
+                C100,120 85,110 80,90
+                C75,70 85,50 105,40
+                C125,30 150,35 170,45
+                C190,55 205,75 210,100
+                C215,125 205,150 185,165
+                C165,180 140,185 115,175
+                C90,165 75,145 70,120
+                C65,95 75,70 95,55
+                C115,40 140,35 160,45
+                C180,55 195,75 190,100" />
+        
+        <path
+            android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#40FF6600"
+            android:pathData="
+                M120,120
+                C100,120 85,110 80,90
+                C75,70 85,50 105,40
+                C125,30 150,35 170,45
+                C190,55 205,75 210,100
+                C215,125 205,150 185,165
+                C165,180 140,185 115,175
+                C90,165 75,145 70,120
+                C65,95 75,70 95,55" />
+        
+        <path
+            android:strokeWidth="8"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#80FF6600"
+            android:pathData="
+                M120,120
+                C100,120 85,110 80,90
+                C75,70 85,50 105,40
+                C125,30 150,35 170,45
+                C190,55 205,75 210,100
+                C215,125 205,150 185,165" />
+        
+        <path
+            android:strokeWidth="4"
+            android:strokeLineCap="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFF6600"
+            android:pathData="
+                M120,120
+                C100,120 85,110 80,90
+                C75,70 85,50 105,40
+                C125,30 150,35 170,45" />
+        
+        <!-- Central galactic core - Bright and prominent -->
+        <path
+            android:pathData="M120,85 A35,35 0 1,1 120,155 A35,35 0 1,1 120,85 Z"
+            android:fillColor="#40FF6600" />
+        
+        <path
+            android:pathData="M120,95 A25,25 0 1,1 120,145 A25,25 0 1,1 120,95 Z"
+            android:fillColor="#80FF6600" />
+        
+        <path
+            android:pathData="M120,105 A15,15 0 1,1 120,135 A15,15 0 1,1 120,105 Z"
+            android:fillColor="#FFFF6600" />
+        
+        <path
+            android:pathData="M120,112 A8,8 0 1,1 120,128 A8,8 0 1,1 120,112 Z"
+            android:fillColor="#FFFFFF" />
+        
+    </group>
+    
+</vector>

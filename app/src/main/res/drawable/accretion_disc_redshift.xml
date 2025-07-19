@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Red-shifted plasma regions - many small diffuse zones following spiral pattern -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+    
+    <group android:pivotX="120" android:pivotY="120">
+        
+        <!-- Many small red-shifted plasma pockets scattered along spiral arms -->
+        
+        <!-- Spiral Arm 1 - Dense cluster of small red regions -->
+        <path android:pathData="M145,85 A8,6 0 1,1 145,97 A8,6 0 1,1 145,85 Z" android:fillColor="#35FF3300" />
+        <path android:pathData="M155,90 A6,4 0 1,1 155,98 A6,4 0 1,1 155,90 Z" android:fillColor="#40FF3300" />
+        <path android:pathData="M165,110 A7,5 0 1,1 165,120 A7,5 0 1,1 165,110 Z" android:fillColor="#30FF3300" />
+        <path android:pathData="M175,125 A9,7 0 1,1 175,139 A9,7 0 1,1 175,125 Z" android:fillColor="#38FF3300" />
+        <path android:pathData="M180,145 A6,5 0 1,1 180,155 A6,5 0 1,1 180,145 Z" android:fillColor="#42FF3300" />
+        <path android:pathData="M185,165 A8,6 0 1,1 185,177 A8,6 0 1,1 185,165 Z" android:fillColor="#33FF3300" />
+        <path android:pathData="M175,185 A7,5 0 1,1 175,195 A7,5 0 1,1 175,185 Z" android:fillColor="#36FF3300" />
+        <path android:pathData="M165,200 A9,6 0 1,1 165,212 A9,6 0 1,1 165,200 Z" android:fillColor="#28FF3300" />
+        <path android:pathData="M150,215 A6,4 0 1,1 150,223 A6,4 0 1,1 150,215 Z" android:fillColor="#32FF3300" />
+        <path android:pathData="M135,225 A8,5 0 1,1 135,235 A8,5 0 1,1 135,225 Z" android:fillColor="#29FF3300" />
+        <path android:pathData="M115,230 A7,6 0 1,1 115,242 A7,6 0 1,1 115,230 Z" android:fillColor="#34FF3300" />
+        <path android:pathData="M95,220 A9,7 0 1,1 95,234 A9,7 0 1,1 95,220 Z" android:fillColor="#26FF3300" />
+        <path android:pathData="M80,200 A6,5 0 1,1 80,210 A6,5 0 1,1 80,200 Z" android:fillColor="#31FF3300" />
+        <path android:pathData="M70,180 A8,6 0 1,1 70,192 A8,6 0 1,1 70,180 Z" android:fillColor="#37FF3300" />
+        <path android:pathData="M65,160 A7,5 0 1,1 65,170 A7,5 0 1,1 65,160 Z" android:fillColor="#25FF3300" />
+        
+        <!-- Spiral Arm 2 - Dense cluster along second arm -->
+        <path android:pathData="M155,155 A9,6 0 1,1 155,167 A9,6 0 1,1 155,155 Z" android:fillColor="#39FF3300" />
+        <path android:pathData="M140,170 A7,5 0 1,1 140,180 A7,5 0 1,1 140,170 Z" android:fillColor="#33FF3300" />
+        <path android:pathData="M125,180 A8,6 0 1,1 125,192 A8,6 0 1,1 125,180 Z" android:fillColor="#41FF3300" />
+        <path android:pathData="M110,190 A6,4 0 1,1 110,198 A6,4 0 1,1 110,190 Z" android:fillColor="#27FF3300" />
+        <path android:pathData="M95,200 A9,7 0 1,1 95,214 A9,7 0 1,1 95,200 Z" android:fillColor="#35FF3300" />
+        <path android:pathData="M80,205 A7,5 0 1,1 80,215 A7,5 0 1,1 80,205 Z" android:fillColor="#30FF3300" />
+        <path android:pathData="M65,205 A8,6 0 1,1 65,217 A8,6 0 1,1 65,205 Z" android:fillColor="#38FF3300" />
+        <path android:pathData="M50,200 A6,5 0 1,1 50,210 A6,5 0 1,1 50,200 Z" android:fillColor="#24FF3300" />
+        <path android:pathData="M40,185 A9,6 0 1,1 40,197 A9,6 0 1,1 40,185 Z" android:fillColor="#32FF3300" />
+        <path android:pathData="M35,165 A7,5 0 1,1 35,175 A7,5 0 1,1 35,165 Z" android:fillColor="#36FF3300" />
+        <path android:pathData="M35,145 A8,6 0 1,1 35,157 A8,6 0 1,1 35,145 Z" android:fillColor="#28FF3300" />
+        <path android:pathData="M40,125 A6,4 0 1,1 40,133 A6,4 0 1,1 40,125 Z" android:fillColor="#34FF3300" />
+        <path android:pathData="M50,105 A9,7 0 1,1 50,119 A9,7 0 1,1 50,105 Z" android:fillColor="#26FF3300" />
+        <path android:pathData="M65,90 A7,5 0 1,1 65,100 A7,5 0 1,1 65,90 Z" android:fillColor="#31FF3300" />
+        
+        <!-- Spiral Arm 3 - Dense cluster along third arm -->
+        <path android:pathData="M85,95 A8,6 0 1,1 85,107 A8,6 0 1,1 85,95 Z" android:fillColor="#37FF3300" />
+        <path android:pathData="M95,85 A6,4 0 1,1 95,93 A6,4 0 1,1 95,85 Z" android:fillColor="#29FF3300" />
+        <path android:pathData="M105,75 A9,7 0 1,1 105,89 A9,7 0 1,1 105,75 Z" android:fillColor="#35FF3300" />
+        <path android:pathData="M115,65 A7,5 0 1,1 115,75 A7,5 0 1,1 115,65 Z" android:fillColor="#42FF3300" />
+        <path android:pathData="M125,55 A8,6 0 1,1 125,67 A8,6 0 1,1 125,55 Z" android:fillColor="#33FF3300" />
+        <path android:pathData="M135,45 A6,5 0 1,1 135,55 A6,5 0 1,1 135,45 Z" android:fillColor="#38FF3300" />
+        <path android:pathData="M145,35 A9,6 0 1,1 145,47 A9,6 0 1,1 145,35 Z" android:fillColor="#25FF3300" />
+        <path android:pathData="M155,30 A7,5 0 1,1 155,40 A7,5 0 1,1 155,30 Z" android:fillColor="#32FF3300" />
+        <path android:pathData="M165,35 A8,6 0 1,1 165,47 A8,6 0 1,1 165,35 Z" android:fillColor="#36FF3300" />
+        <path android:pathData="M175,45 A6,4 0 1,1 175,53 A6,4 0 1,1 175,45 Z" android:fillColor="#28FF3300" />
+        <path android:pathData="M185,55 A9,7 0 1,1 185,69 A9,7 0 1,1 185,55 Z" android:fillColor="#34FF3300" />
+        <path android:pathData="M195,70 A7,5 0 1,1 195,80 A7,5 0 1,1 195,70 Z" android:fillColor="#30FF3300" />
+        <path android:pathData="M200,85 A8,6 0 1,1 200,97 A8,6 0 1,1 200,85 Z" android:fillColor="#39FF3300" />
+        
+        <!-- Additional scattered small regions for density -->
+        <path android:pathData="M130,100 A5,4 0 1,1 130,108 A5,4 0 1,1 130,100 Z" android:fillColor="#22FF3300" />
+        <path android:pathData="M140,140 A6,5 0 1,1 140,150 A6,5 0 1,1 140,140 Z" android:fillColor="#27FF3300" />
+        <path android:pathData="M160,180 A5,4 0 1,1 160,188 A5,4 0 1,1 160,180 Z" android:fillColor="#24FF3300" />
+        <path android:pathData="M120,190 A7,6 0 1,1 120,202 A7,6 0 1,1 120,190 Z" android:fillColor="#31FF3300" />
+        <path android:pathData="M100,170 A5,4 0 1,1 100,178 A5,4 0 1,1 100,170 Z" android:fillColor="#26FF3300" />
+        <path android:pathData="M90,140 A6,5 0 1,1 90,150 A6,5 0 1,1 90,140 Z" android:fillColor="#29FF3300" />
+        <path android:pathData="M110,110 A5,4 0 1,1 110,118 A5,4 0 1,1 110,110 Z" android:fillColor="#23FF3300" />
+        <path android:pathData="M150,120 A7,6 0 1,1 150,132 A7,6 0 1,1 150,120 Z" android:fillColor="#35FF3300" />
+        <path android:pathData="M170,160 A5,4 0 1,1 170,168 A5,4 0 1,1 170,160 Z" android:fillColor="#28FF3300" />
+        <path android:pathData="M180,110 A6,5 0 1,1 180,120 A6,5 0 1,1 180,110 Z" android:fillColor="#32FF3300" />
+        
+        <!-- Even smaller micro-regions for realistic clumping -->
+        <path android:pathData="M135,75 A4,3 0 1,1 135,81 A4,3 0 1,1 135,75 Z" android:fillColor="#20FF3300" />
+        <path android:pathData="M148,105 A3,2 0 1,1 148,109 A3,2 0 1,1 148,105 Z" android:fillColor="#18FF3300" />
+        <path android:pathData="M172,135 A4,3 0 1,1 172,141 A4,3 0 1,1 172,135 Z" android:fillColor="#21FF3300" />
+        <path android:pathData="M158,195 A3,2 0 1,1 158,199 A3,2 0 1,1 158,195 Z" android:fillColor="#19FF3300" />
+        <path android:pathData="M105,205 A4,3 0 1,1 105,211 A4,3 0 1,1 105,205 Z" android:fillColor="#22FF3300" />
+        <path android:pathData="M75,165 A3,2 0 1,1 75,169 A3,2 0 1,1 75,165 Z" android:fillColor="#17FF3300" />
+        <path android:pathData="M55,135 A4,3 0 1,1 55,141 A4,3 0 1,1 55,135 Z" android:fillColor="#20FF3300" />
+        <path android:pathData="M78,115 A3,2 0 1,1 78,119 A3,2 0 1,1 78,115 Z" android:fillColor="#18FF3300" />
+        <path android:pathData="M118,80 A4,3 0 1,1 118,86 A4,3 0 1,1 118,80 Z" android:fillColor="#21FF3300" />
+        <path android:pathData="M165,65 A3,2 0 1,1 165,69 A3,2 0 1,1 165,65 Z" android:fillColor="#19FF3300" />
+        <path android:pathData="M190,90 A4,3 0 1,1 190,96 A4,3 0 1,1 190,90 Z" android:fillColor="#23FF3300" />
+        <path android:pathData="M205,115 A3,2 0 1,1 205,119 A3,2 0 1,1 205,115 Z" android:fillColor="#16FF3300" />
+        
+    </group>
+    
+</vector>

@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Spiral arms overlay – 8‑arm variant -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+        android:width="240dp"
+        android:height="240dp"
+        android:viewportWidth="240"
+        android:viewportHeight="240">
+
+    <!-- Every arm uses the same cubic‑Bézier path, duplicated with 45° rotations.
+         Keep fill transparent so only the strokes show; your glow layers beneath. -->
+
+    <group android:pivotX="120" android:pivotY="120">
+        <!-- base arm -->
+        <path
+            android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="@android:color/transparent"
+            android:strokeColor="#FFFFC155"
+            android:pathData="
+                M120,48
+                C170,60 200,100 190,145
+                C180,185 140,215 95,215
+                C55,215 25,185 22,145" />
+
+        <!-- 45° rotations -->
+        <group android:rotation="45"  android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#EEFFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="90"  android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#DDFFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="135" android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#CCFFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="180" android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#BBFFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="225" android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#AAFFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="270" android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#99FFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+        <group android:rotation="315" android:pivotX="120" android:pivotY="120">
+            <path android:strokeWidth="12" android:strokeLineCap="round" android:strokeLineJoin="round"
+                  android:fillColor="@android:color/transparent"
+                  android:strokeColor="#88FFC155"
+                  android:pathData="
+                      M120,48
+                      C170,60 200,100 190,145
+                      C180,185 140,215 95,215
+                      C55,215 25,185 22,145" />
+        </group>
+    </group>
+
+</vector>

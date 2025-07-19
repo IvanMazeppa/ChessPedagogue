@@ -601,13 +601,13 @@
                     android:layout_height="match_parent"
                     android:padding="4dp">
 
-                    <!-- NASA Accretion Disc Video Background with Transparency -->
-                    <VideoView
+                    <!-- Accretion Disc Video (loops continuously) -->
+                    <TextureView
                         android:id="@+id/accretionDiscVideoView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:alpha="0.0"
-                        android:background="@android:color/transparent"
+                        android:alpha="0.8"
+                        android:visibility="gone"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
