@@ -99,7 +99,11 @@
       "Bash(\"./apache-maven-3.9.5/bin/mvn\" dependency:resolve)",
       "Bash(\"./apache-maven-3.9.5/bin/mvn\" clean)",
       "Bash(\"./apache-maven-3.9.5/bin/mvn\" compile -X)",
-      "Bash(\"./apache-maven-3.9.5/bin/mvn\" compile)"
+      "Bash(\"./apache-maven-3.9.5/bin/mvn\" compile)",
+      "Bash(ffmpeg:*)",
+      "Bash(sudo apt:*)",
+      "Bash(sudo apt install:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": []
   },

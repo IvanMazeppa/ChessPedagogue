@@ -70,7 +70,8 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
     
     // NEW: Responses API integration for enhanced challenge generation
     private ResponsesAPIIntegrationHelper integrationHelper;
-    private ChessMasterResponseManager responsesManager;
+    // REFACTORED: Using unified manager instead of duplicate classes
+    private UnifiedChessMasterManager unifiedChessMasterManager;
     
     // NEW: Live monitoring integration with configurator
     private LiveMonitorClient liveMonitorClient;
@@ -798,7 +799,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         Boolean currentState = gameViewModel.getPersonalityEngineEnabled().getValue();
         boolean isEnabled = currentState != null && currentState;
 
-        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+        String selectedMaster = UnifiedChessMasterManager.getInstance(this).getSelectedChessMaster();
 
         if (isEnabled) {
             // Turn OFF personality engine
@@ -809,7 +810,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         } else {
             // Turn ON personality engine
             gameViewModel.configurePersonalityEngine(selectedMaster, 0.3f, true);
-            String masterName = FineTunedModelManager.getInstance(this).getMasterDisplayName(selectedMaster);
+            String masterName = UnifiedChessMasterManager.getInstance(this).getMasterDisplayName(selectedMaster);
 
             Toast.makeText(this, "🎭 " + masterName + " mode activated! Moves may take longer as we search game history.", Toast.LENGTH_LONG).show();
             showPersonalityActivationMessage(masterName);
@@ -1215,7 +1216,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
 
     private void updateCoachPortrait() {
         // Get the currently selected master
-        String selectedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+        String selectedMaster = UnifiedChessMasterManager.getInstance(this).getSelectedChessMaster();
 
         // Find the coach portrait in the message card
         ImageView coachPortrait = findViewById(R.id.coachPortraitImageView);
@@ -1282,7 +1283,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
 
     private void updateVoiceForCurrentMaster() {
         // Get the current selected master
-        String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+        String currentMaster = UnifiedChessMasterManager.getInstance(this).getSelectedChessMaster();
 
         // Update TTS settings to auto (which will use master-appropriate voice)
         ChessCoachManager.getInstance(this).updateTTSSettings("auto", true);
@@ -1396,7 +1397,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
         String[] displayNames = new String[masters.length];
 
         for (int i = 0; i < masters.length; i++) {
-            displayNames[i] = FineTunedModelManager.getInstance(this).getMasterDisplayName(masters[i]);
+            displayNames[i] = UnifiedChessMasterManager.getInstance(this).getMasterDisplayName(masters[i]);
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -1475,7 +1476,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             try {
                 Log.d(TAG, "📡 Initializing Responses API services asynchronously...");
                 integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
-                responsesManager = ChessMasterResponseManager.getInstance(this);
+                unifiedChessMasterManager = UnifiedChessMasterManager.getInstance(this);
                 Log.d(TAG, "✅ Responses API services initialized successfully");
             } catch (Exception e) {
                 Log.e(TAG, "❌ Error initializing Responses API services", e);
@@ -1999,83 +2000,51 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                 // Build game context for the challenge
                 String gameContext = "POSITION: " + currentFEN + "\nCONTEXT: challenge_generation";
                 
-                // Create a session for challenge generation
-                responsesManager.createResponseSession(masterName, "challenge_generation",
-                    new ChessMasterResponseManager.ResponseCallback() {
+                // Generate challenge using unified manager
+                unifiedChessMasterManager.generateResponse(masterName, prompt + "\n" + gameContext,
+                    new UnifiedChessMasterManager.ResponseCallback() {
+                        private StringBuilder challengeResponse = new StringBuilder();
+                        
                         @Override
-                        public void onResponseStart(String sessionId) {
-                            Log.d(TAG, "✅ Challenge session created: " + sessionId);
-                            // Send the challenge prompt
-                            responsesManager.sendMessage(sessionId, prompt, gameContext,
-                                new ChessMasterResponseManager.ResponseCallback() {
-                                    private StringBuilder challengeResponse = new StringBuilder();
-                                    
-                                    @Override
-                                    public void onResponseStart(String sessionId) {
-                                        Log.d(TAG, "📡 Challenge generation started");
-                                    }
-                                    
-                                    @Override
-                                    public void onResponseChunk(String chunk, boolean isFirst) {
-                                        challengeResponse.append(chunk);
-                                    }
-                                    
-                                    @Override
-                                    public void onResponseComplete(String fullResponse) {
-                                        String finalChallenge = !challengeResponse.toString().trim().isEmpty() 
-                                            ? challengeResponse.toString().trim() 
-                                            : fullResponse;
-                                            
-                                        if (finalChallenge != null && !finalChallenge.trim().isEmpty()) {
-                                            Log.d(TAG, "✅ Responses API challenge generated");
-                                            mainHandler.post(() -> {
-                                                showChallengeLoading(false);
-                                                parseChallengeResponse(finalChallenge);
-                                            });
-                                        } else {
-                                            Log.w(TAG, "⚠️ Empty challenge from Responses API, falling back");
-                                            generateChallengeWithChatCompletions(prompt);
-                                        }
-                                    }
-                                    
-                                    @Override
-                                    public void onConversationTurn(String speaker, String message) {
-                                        // Not needed for challenge generation
-                                    }
-                                    
-                                    @Override
-                                    public void onError(String error) {
-                                        Log.e(TAG, "❌ Challenge generation error: " + error);
-                                        generateChallengeWithChatCompletions(prompt);
-                                    }
+                        public void onProgress(String partialResponse) {
+                            challengeResponse.append(partialResponse);
+                            Log.d(TAG, "📡 Challenge generation in progress...");
+                        }
+                        
+                        @Override
+                        public void onResponse(String fullResponse) {
+                            String finalChallenge = !challengeResponse.toString().trim().isEmpty() 
+                                ? challengeResponse.toString().trim() 
+                                : fullResponse;
+                                
+                            if (finalChallenge != null && !finalChallenge.trim().isEmpty()) {
+                                Log.d(TAG, "✅ Challenge generated successfully");
+                                mainHandler.post(() -> {
+                                    showChallengeLoading(false);
+                                    parseChallengeResponse(finalChallenge);
                                 });
-                        }
-                        
-                        @Override
-                        public void onResponseChunk(String chunk, boolean isFirst) {
-                            // Not used for session creation
-                        }
-                        
-                        @Override
-                        public void onResponseComplete(String fullResponse) {
-                            // Not used for session creation
-                        }
-                        
-                        @Override
-                        public void onConversationTurn(String speaker, String message) {
-                            // Not used for session creation
+                            } else {
+                                Log.w(TAG, "⚠️ Empty challenge, falling back to chat completions");
+                                generateChallengeWithChatCompletions(prompt);
+                            }
                         }
                         
                         @Override
                         public void onError(String error) {
-                            Log.e(TAG, "❌ Challenge session creation failed: " + error);
-                            generateChallengeWithChatCompletions(prompt);
+                            Log.e(TAG, "❌ Challenge generation error: " + error);
+                            mainHandler.post(() -> {
+                                showChallengeLoading(false);
+                                generateChallengeWithChatCompletions(prompt);
+                            });
                         }
                     });
                     
             } catch (Exception e) {
-                Log.e(TAG, "❌ Error in Responses API challenge generation", e);
-                generateChallengeWithChatCompletions(prompt);
+                Log.e(TAG, "❌ Error in challenge generation", e);
+                mainHandler.post(() -> {
+                    showChallengeLoading(false);
+                    generateChallengeWithChatCompletions(prompt);
+                });
             }
         });
     }
@@ -2980,11 +2949,11 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                 Log.d(TAG, "🎭 Switching to master: " + masterName);
                 
                 // Switch master
-                FineTunedModelManager.getInstance(this).setSelectedChessMaster(masterName);
+                UnifiedChessMasterManager.getInstance(this).setSelectedChessMaster(masterName);
                 updateVoiceForCurrentMaster();
                 
                 // Show feedback
-                String displayName = FineTunedModelManager.getInstance(this).getMasterDisplayName(masterName);
+                String displayName = UnifiedChessMasterManager.getInstance(this).getMasterDisplayName(masterName);
                 Toast.makeText(this, "🎭 Switched to " + displayName, Toast.LENGTH_SHORT).show();
                 
                 // Start voice recording if commanded
@@ -3121,7 +3090,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
                                    "\nUser question: " + voiceText;
                 
                 // Get the current master
-                String currentMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+                String currentMaster = UnifiedChessMasterManager.getInstance(this).getSelectedChessMaster();
                 Log.d(TAG, "🎭 Current master: " + currentMaster);
                 
                 // Create a ThreeStageResponseManager instance and process the voice input
@@ -3290,7 +3259,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             
             // Get FineTunedModelManager master (if available)
             try {
-                fineTunedMaster = FineTunedModelManager.getInstance(this).getSelectedChessMaster();
+                fineTunedMaster = UnifiedChessMasterManager.getInstance(this).getSelectedChessMaster();
             } catch (Exception e) {
                 Log.w(TAG, "Could not get FineTunedModelManager master: " + e.getMessage());
             }
@@ -3320,7 +3289,7 @@ MainActivity extends AppCompatActivity implements VoiceControlManager.VoiceComma
             
             if (fineTunedMaster == null || !fineTunedMaster.toLowerCase().equals(masterToUse)) {
                 try {
-                    FineTunedModelManager.getInstance(this).setSelectedChessMaster(masterToUse);
+                    UnifiedChessMasterManager.getInstance(this).setSelectedChessMaster(masterToUse);
                 } catch (Exception e) {
                     Log.w(TAG, "Could not set FineTunedModelManager master: " + e.getMessage());
                 }

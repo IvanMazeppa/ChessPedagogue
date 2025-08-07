@@ -88,6 +88,8 @@ dependencies {
 
     // If you need UI controls
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.19.1'
+    // Lottie animations
+    implementation 'com.airbnb.android:lottie:6.1.0'
     implementation libs.firebase.inappmessaging
 
 

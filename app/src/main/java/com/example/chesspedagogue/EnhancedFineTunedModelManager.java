@@ -11,6 +11,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
+ * @deprecated This functionality has been merged into {@link FineTunedModelManager}
+ * Use FineTunedModelManager.getInstance(context).enableEnhancements(true) instead.
+ * This class will be removed in the next version.
+ * 
  * 🚀 ENHANCED FineTunedModelManager with AI Enhancement Integration
  * 
  * This enhanced version adds AI enhancement capabilities to your existing chess master system.
@@ -22,6 +26,7 @@ import java.util.concurrent.Executors;
  * 
  * Integration is seamless and includes fallback to original responses.
  */
+@Deprecated
 public class EnhancedFineTunedModelManager {
     private static final String TAG = "EnhancedFineTunedModelManager";
     
