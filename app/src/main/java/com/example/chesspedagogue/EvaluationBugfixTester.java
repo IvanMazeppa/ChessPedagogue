@@ -4,9 +4,6 @@ import android.content.Context;
 import android.util.Log;
 
 /**
- * @deprecated Testing class should only be used in debug builds.
- * Consider using proper unit tests or instrumentation tests instead.
- * 
  * 🧪 EVALUATION BUGFIX TESTER
  * 
  * Simple tester for the UCI communication bugfix.
@@ -15,7 +12,6 @@ import android.util.Log;
  * Usage:
  * EvaluationBugfixTester.testFix(this);
  */
-@Deprecated
 public class EvaluationBugfixTester {
     private static final String TAG = "EvalBugfixTester";
     

@@ -11,6 +11,11 @@
     tools:context=".CompetitiveModeActivity">
 
     <!-- Background Blur Layer for blue-grey appearance (same as 2025 version) -->
+    <View
+        android:id="@+id/backgroundBlurLayer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/material3_dynamic_background" />
 
     <!-- Enhanced Player Header with Country Info - Raised to cover status bar -->
     <androidx.cardview.widget.CardView
@@ -322,11 +327,13 @@
             android:id="@+id/fileLabels"
             android:layout_width="0dp"
             android:layout_height="12dp"
+            android:layout_marginStart="0dp"
             android:layout_marginTop="-12dp"
+            android:layout_marginEnd="0dp"
             android:alpha="0.9"
             android:background="#99000000"
             android:elevation="20dp"
-            android:orientation="vertical"
+            android:orientation="horizontal"
             app:layout_constraintEnd_toEndOf="@+id/competitiveChessBoardView"
             app:layout_constraintStart_toStartOf="@+id/competitiveChessBoardView"
             app:layout_constraintTop_toTopOf="@+id/competitiveChessBoardView">
@@ -511,12 +518,6 @@
 
         </LinearLayout>
 
-        <View
-            android:id="@+id/backgroundBlurLayer"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/material3_dynamic_background" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- REMOVED: Duplicate eval bar - now positioned on LEFT side above -->
@@ -600,8 +601,8 @@
                     android:layout_height="match_parent"
                     android:padding="4dp">
 
-                    <!-- Accretion Disc Lottie Animation (loops continuously) -->
-                    <com.airbnb.lottie.LottieAnimationView
+                    <!-- Accretion Disc Video (loops continuously) -->
+                    <TextureView
                         android:id="@+id/accretionDiscVideoView"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
@@ -610,10 +611,7 @@
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:lottie_autoPlay="false"
-                        app:lottie_fileName="accretion_disc.json"
-                        app:lottie_loop="true" />
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <!-- Sci-Fi Radial Arms Background (On top of accretion disc) - TEMPORARILY DISABLED -->
                     <!--

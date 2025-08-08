@@ -4,9 +4,6 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -35,8 +32,6 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.OvershootInterpolator;
 import android.graphics.drawable.GradientDrawable;
-
-import androidx.annotation.RequiresPermission;
 import androidx.dynamicanimation.animation.FlingAnimation;
 import androidx.dynamicanimation.animation.DynamicAnimation;
 import com.google.android.material.color.DynamicColors;
@@ -115,7 +110,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     
     // NASA Accretion Disc Video System (TextureView for better compatibility)
     private TextureView accretionDiscIntroView;
-    private com.airbnb.lottie.LottieAnimationView accretionDiscVideoView;
+    private TextureView accretionDiscVideoView;
     private MediaPlayer videoMediaPlayer;
     private MediaPlayer loopMediaPlayer;
     private MediaPlayer introMediaPlayer;
@@ -889,29 +884,57 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     */
 
     /**
-     * 🌌 Initialize accretion disc Lottie animation system
+     * 🌌 Initialize accretion disc video system using single TextureView + MediaPlayer
      */
     private void initializeVideoPlayer() {
         try {
-            Log.d(TAG, "🎬 Initializing Lottie animation system...");
+            Log.d(TAG, "🎬 Initializing TextureView + MediaPlayer system...");
+
             if (accretionDiscVideoView != null) {
-                Log.d(TAG, "🎬 LottieAnimationView found, setting up animation...");
-                
-                // Lottie handles transparency automatically - no complex setup needed!
-                accretionDiscVideoView.setSpeed(1.0f);
-                accretionDiscVideoView.setRepeatCount(com.airbnb.lottie.LottieDrawable.INFINITE);
-                
-                Log.d(TAG, "✅ Lottie animation system initialized successfully!");
-                
-                // Start the animation sequence after UI assembly
+                Log.d(TAG, "🎬 TextureView found, setting up video system...");
+
+                // ===== SETUP TEXTURE VIEW SURFACE LISTENER =====
+                accretionDiscVideoView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+                    @Override
+                    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                        Log.d(TAG, "🎬 TextureView surface available (" + width + "x" + height + ")");
+                        
+                        // Apply SCREEN blend mode to make black areas blend like transparency
+                        accretionDiscVideoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+                        android.graphics.Paint paint = new android.graphics.Paint();
+                        paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SCREEN));
+                        accretionDiscVideoView.setLayerPaint(paint);
+                        
+                        setupVideoMediaPlayer(new Surface(surface));
+                    }
+
+                    @Override
+                    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {}
+
+                    @Override
+                    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                        if (videoMediaPlayer != null) {
+                            videoMediaPlayer.release();
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public void onSurfaceTextureUpdated(SurfaceTexture surface) {}
+                });
+
+                Log.d(TAG, "✅ TextureView + MediaPlayer system initialized successfully!");
+
+                // Start the intro sequence after UI assembly
                 new Handler(Looper.getMainLooper()).postDelayed(() -> {
                     startAccretionDiscSequence();
                 }, 2000);
+
             } else {
-                Log.e(TAG, "❌ LottieAnimationView not found in layout");
+                Log.e(TAG, "❌ TextureView not found in layout");
             }
         } catch (Exception e) {
-            Log.e(TAG, "❌ Failed to initialize Lottie system", e);
+            Log.e(TAG, "❌ Failed to initialize TextureView system", e);
         }
     }
 
@@ -922,7 +945,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
         try {
             videoMediaPlayer = new MediaPlayer();
             // Start with intro video
-            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_magenta_test);
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0900_webm);
             videoMediaPlayer.setDataSource(this, videoUri);
             videoMediaPlayer.setSurface(surface);
             videoMediaPlayer.setLooping(false);
@@ -934,9 +957,6 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                     // Auto-start the intro video
                     mp.start();
                     Log.d(TAG, "🎬 Intro MediaPlayer started automatically");
-                    
-                    // Apply chromakey effect to remove magenta background
-                    applyChromakeyEffect();
                 }
             });
 
@@ -973,7 +993,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
                 videoMediaPlayer.reset();
 
                 // Load loop video
-                Uri loopUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_magenta_test);
+                Uri loopUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0180);
                 videoMediaPlayer.setDataSource(this, loopUri);
                 videoMediaPlayer.setLooping(true);
 
@@ -998,7 +1018,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      */
     private void setupIntroMediaPlayer(Surface surface) {
         try {
-            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_magenta_test);
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0900_webm);
             introMediaPlayer.setDataSource(this, videoUri);
             introMediaPlayer.setSurface(surface);
             introMediaPlayer.setLooping(false);
@@ -1053,7 +1073,7 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
      */
     private void setupLoopMediaPlayer(Surface surface) {
         try {
-            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_magenta_test);
+            Uri videoUri = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.disc_0001_0180);
             loopMediaPlayer.setDataSource(this, videoUri);
             loopMediaPlayer.setSurface(surface);
             loopMediaPlayer.setLooping(true);
@@ -1125,41 +1145,26 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
 
     private void startAccretionDiscSequence() {
         try {
-            Log.d(TAG, "🎬 Starting accretion disc Lottie animation...");
+            Log.d(TAG, "🎬 Starting accretion disc cinematic sequence...");
 
-            // Show and start Lottie animation
+            // Show video view
             accretionDiscVideoView.setVisibility(View.VISIBLE);
-            accretionDiscVideoView.setAlpha(0.9f);
-            accretionDiscVideoView.playAnimation();
 
             Log.d(TAG, "🌌 COSMIC EVENT: NASA accretion disc portal opening...");
-            Log.d(TAG, "🎬 Lottie animation started with perfect transparency!");
+            Log.d(TAG, "🎬 Setting video alpha to 0.9 for transparency");
+            accretionDiscVideoView.setAlpha(0.9f);
 
-            Log.d(TAG, "✅ Accretion disc Lottie sequence started");
+            Log.d(TAG, "🌌 Video should now be visible. Alpha: " + accretionDiscVideoView.getAlpha() +
+                    ", Visibility: " + accretionDiscVideoView.getVisibility() +
+                    ", ScaleX: " + accretionDiscVideoView.getScaleX());
+
+            Log.d(TAG, "✅ Accretion disc sequence started");
 
         } catch (Exception e) {
             Log.e(TAG, "❌ Failed to start accretion disc sequence", e);
         }
     }
-
-    /**
-     * 🎨 Disable chromakey effect - restore normal video
-     */
-    private void applyChromakeyEffect() {
-        if (accretionDiscVideoView == null) return;
-
-        try {
-            // For now, just ensure video is visible with transparency
-            accretionDiscVideoView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-            accretionDiscVideoView.setAlpha(0.9f);  // Slight transparency
-            
-            Log.d(TAG, "🎨 Video restored to normal visibility with slight transparency");
-        } catch (Exception e) {
-            Log.e(TAG, "❌ Error applying effect: " + e.getMessage());
-        }
-    }
-
-
+    
     /**
      * 🎨 Apply Modern 2025 Glassmorphism Effects - CLEAN IMPLEMENTATION
      * Based on latest Android 15 best practices and BUILDING-A-MODERN-CHESS-APP-UI.md
@@ -4312,7 +4317,6 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     /**
      * 🤔 Start voice comment from player
      */
-    @RequiresPermission(Manifest.permission.RECORD_AUDIO)
     private void startVoiceComment() {
         Log.d(TAG, "🎤 Starting player voice comment...");
         
@@ -5056,7 +5060,6 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
     @Override
     public void onBackPressed() {
         // Same behavior as action bar back button - just finish the activity
-        super.onBackPressed();
         finish();
     }
 
@@ -6123,16 +6126,6 @@ public class CompetitiveModeActivity extends AppCompatActivity implements VoiceC
             } else if (view.getId() == R.id.ttsToggleButton) {
                 toggleTTS();
             } else if (view.getId() == R.id.voiceCommentButton) {
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                    return;
-                }
                 startVoiceComment();
             } else if (view.getId() == R.id.ratingToggleButton) {
                 toggleRatingDisplay();

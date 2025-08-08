@@ -30,13 +30,9 @@ import okhttp3.sse.EventSourceListener;
 import okhttp3.sse.EventSources;
 
 /**
- * @deprecated Use {@link ChessMasterResponseManager} instead (without the 's')
- * This class is a duplicate and will be removed in the next version.
- * 
  * Manages chess master responses using OpenAI's Responses API
  * Integrates with existing assistant configurations for Tal, Fischer, and Carlsen
  */
-@Deprecated
 public class ChessMasterResponsesManager {
     private static final String TAG = "ChessMasterResponsesManager";
     
