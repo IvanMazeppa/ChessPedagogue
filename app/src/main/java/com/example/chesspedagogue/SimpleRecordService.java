@@ -92,7 +92,7 @@ public class SimpleRecordService extends Service {
     private ThreeStageResponseManager threeStageManager;
     
     // NEW: Direct Responses API integration for enhanced voice responses
-    private ChessMasterResponsesManager responsesManager;
+    private UnifiedChessMasterManager unifiedChessMasterManager;
     private ResponsesAPIIntegrationHelper integrationHelper;
     private String currentVoiceSessionId = null;
     private String lastSessionMaster = null; // Track master consistency
@@ -140,7 +140,7 @@ public class SimpleRecordService extends Service {
         threeStageManager = ThreeStageResponseManager.getInstance(this);
         
         // NEW: Initialize Responses API integration for enhanced voice interactions
-        responsesManager = ChessMasterResponsesManager.getInstance(this);
+        unifiedChessMasterManager = UnifiedChessMasterManager.getInstance(this);
         integrationHelper = ResponsesAPIIntegrationHelper.getInstance(this);
         
         // CONVERSATION THREADING FIX: Restore session state for conversation continuity
@@ -634,7 +634,7 @@ public class SimpleRecordService extends Service {
         }
         
         // Check if session is still valid in responsesManager
-        if (responsesManager != null && !responsesManager.isSessionActive(currentVoiceSessionId)) {
+        if (unifiedChessMasterManager != null && !unifiedChessMasterManager.isSessionActive(currentVoiceSessionId)) {
             Log.d(TAG, "💀 Current session expired or invalid: " + currentVoiceSessionId);
             return true;
         }
@@ -650,8 +650,13 @@ public class SimpleRecordService extends Service {
         // Save session state for persistence
         saveSessionState(masterName);
         
-        responsesManager.createResponseSession(masterName, "voice_conversation_thread",
-            new ChessMasterResponsesManager.ResponseCallback() {
+        unifiedChessMasterManager.createResponseSession(masterName, "voice_conversation_thread",
+            new UnifiedChessMasterManager.ResponseCallback() {
+                @Override
+                public void onResponse(String response) {
+                    // Not used - using streaming callbacks instead
+                }
+                
                 @Override
                 public void onResponseStart(String sessionId) {
                     currentVoiceSessionId = sessionId;
@@ -743,7 +748,7 @@ public class SimpleRecordService extends Service {
             
             if (savedSessionId != null && savedMaster != null && isRecentSession) {
                 // Validate that the session still exists
-                if (responsesManager != null && responsesManager.isSessionActive(savedSessionId)) {
+                if (unifiedChessMasterManager != null && unifiedChessMasterManager.isSessionActive(savedSessionId)) {
                     currentVoiceSessionId = savedSessionId;
                     lastSessionMaster = savedMaster;
                     conversationThreadActive = savedThreadActive;
@@ -812,10 +817,15 @@ public class SimpleRecordService extends Service {
      * NEW: Send voice message to established Responses API session
      */
     private void sendVoiceMessageToSession(String sessionId, String transcribedText, String gameContext) {
-        responsesManager.sendMessage(sessionId, transcribedText, gameContext,
-            new ChessMasterResponsesManager.ResponseCallback() {
+        unifiedChessMasterManager.sendMessage(sessionId, transcribedText, gameContext,
+            new UnifiedChessMasterManager.ResponseCallback() {
                 private StringBuilder responseBuilder = new StringBuilder();
                 private boolean hasSpoken = false;
+                
+                @Override
+                public void onResponse(String response) {
+                    // Not used - using streaming callbacks instead
+                }
                 
                 @Override
                 public void onResponseStart(String sessionId) {

@@ -15,6 +15,11 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
+import com.example.chesspedagogue.performance.PerformanceMonitor;
+import com.example.chesspedagogue.performance.APIPerformanceTracker;
+import com.example.chesspedagogue.performance.StockfishPerformanceMonitor;
+import com.example.chesspedagogue.performance.UIPerformanceTracker;
+
 public class LiveMonitorClient extends WebSocketListener {
     
     private static final String TAG = "🔗 LiveMonitorClient";
@@ -34,10 +39,17 @@ public class LiveMonitorClient extends WebSocketListener {
     private Context context;
     private int reconnectAttempts = 0;
     
-    // Performance tracking
-    private int totalApiCalls = 0;
-    private int errorCount = 0;
+    // Enhanced performance tracking with monitoring package
+    private PerformanceMonitor performanceMonitor;
+    private APIPerformanceTracker apiPerformanceTracker;
+    private StockfishPerformanceMonitor stockfishMonitor;
+    private UIPerformanceTracker uiTracker;
+    private long lastPerformanceUpdate = 0;
+    private static final long PERFORMANCE_UPDATE_INTERVAL = 2000; // 2 seconds
+    
+    // Legacy compatibility variables
     private long lastMessageTime = 0;
+    private int errorCount = 0;
     
     private LiveMonitorClient(Context context) {
         this.context = context.getApplicationContext();
@@ -49,7 +61,14 @@ public class LiveMonitorClient extends WebSocketListener {
                 .readTimeout(30, TimeUnit.SECONDS)   // Set reasonable read timeout
                 .build();
         
+        // Initialize performance monitors
+        this.performanceMonitor = PerformanceMonitor.getInstance(context);
+        this.apiPerformanceTracker = APIPerformanceTracker.getInstance(context);
+        this.stockfishMonitor = StockfishPerformanceMonitor.getInstance(context);
+        this.uiTracker = UIPerformanceTracker.getInstance(context);
+        
         Log.i(TAG, "LiveMonitorClient initialized with server URL: " + serverUrl);
+        Log.i(TAG, "Performance monitoring system initialized");
     }
     
     public static synchronized LiveMonitorClient getInstance(Context context) {
@@ -349,26 +368,75 @@ public class LiveMonitorClient extends WebSocketListener {
     public void sendPerformanceUpdate() {
         if (!ENABLE_LIVE_MONITOR || !isConnected || !shouldReconnect) return;
         
+        // Only send performance updates at specified intervals
+        long now = System.currentTimeMillis();
+        if (now - lastPerformanceUpdate < PERFORMANCE_UPDATE_INTERVAL) {
+            return;
+        }
+        lastPerformanceUpdate = now;
+        
         try {
-            totalApiCalls++; // Increment for this call
-            
-            Runtime runtime = Runtime.getRuntime();
-            long memoryUsage = runtime.totalMemory() - runtime.freeMemory();
-            
             JsonObject data = new JsonObject();
             data.addProperty("type", "performance");
-            data.addProperty("totalApiCalls", totalApiCalls);
-            data.addProperty("errorCount", errorCount);
-            data.addProperty("avgResponseTime", calculateAvgResponseTime());
-            data.addProperty("memoryUsage", memoryUsage);
-            data.addProperty("systemHealth", determineSystemHealth());
+            data.addProperty("timestamp", now);
+            
+            // Memory metrics from PerformanceMonitor
+            PerformanceMonitor.MemoryInfo memInfo = performanceMonitor.getMemoryInfo();
+            JsonObject memoryMetrics = new JsonObject();
+            memoryMetrics.addProperty("memoryUsed", memInfo.usedMemory);
+            memoryMetrics.addProperty("memoryTotal", memInfo.totalMemory);
+            memoryMetrics.addProperty("memoryMax", memInfo.maxMemory);
+            memoryMetrics.addProperty("pssMemory", memInfo.pssMemory);
+            data.add("memoryMetrics", memoryMetrics);
+            
+            // UI Performance metrics
+            if (uiTracker != null) {
+                JsonObject uiMetrics = new JsonObject();
+                uiMetrics.addProperty("fps", uiTracker.getAverageFPS());
+                uiMetrics.addProperty("avgFPS", uiTracker.getAverageFPS());
+                uiMetrics.addProperty("droppedFrames", uiTracker.getDroppedFramePercentage());
+                uiMetrics.addProperty("avgBoardRedrawTime", uiTracker.getAverageBoardRedrawTime());
+                uiMetrics.addProperty("avgAnimationTime", uiTracker.getAverageAnimationTime());
+                data.add("uiMetrics", uiMetrics);
+            }
+            
+            // API Performance metrics
+            JsonObject apiMetrics = new JsonObject();
+            for (Map.Entry<String, APIPerformanceTracker.APIMetrics> entry : 
+                 apiPerformanceTracker.getAllMetrics().entrySet()) {
+                    
+                APIPerformanceTracker.APIMetrics metrics = entry.getValue();
+                JsonObject apiData = new JsonObject();
+                apiData.addProperty("calls", metrics.totalCalls.get());
+                apiData.addProperty("successRate", metrics.getSuccessRate());
+                apiData.addProperty("avgResponseTime", metrics.getAverageResponseTime());
+                apiData.addProperty("totalCost", metrics.totalCost.get() / 1000000.0); // Convert to dollars
+                apiData.addProperty("totalTokens", metrics.totalTokensUsed.get());
+                apiData.addProperty("timeouts", metrics.timeoutCalls.get());
+                
+                apiMetrics.add(entry.getKey(), apiData);
+            }
+            data.add("apiMetrics", apiMetrics);
+            
+            // Stockfish Performance metrics
+            if (stockfishMonitor != null) {
+                JsonObject stockfishMetrics = new JsonObject();
+                stockfishMetrics.addProperty("nps", stockfishMonitor.getAverageNodesPerSecond());
+                stockfishMetrics.addProperty("avgEvalTime", stockfishMonitor.getAverageEvalTime());
+                stockfishMetrics.addProperty("avgMoveGenTime", stockfishMonitor.getAverageMoveGenTime());
+                stockfishMetrics.addProperty("isUnderHeavyLoad", stockfishMonitor.isUnderHeavyLoad());
+                data.add("stockfish", stockfishMetrics);
+            }
+            
+            // System health summary
+            data.addProperty("systemHealth", calculateSystemHealth());
             data.addProperty("activeThreads", Thread.activeCount());
-            data.addProperty("timestamp", System.currentTimeMillis());
             
             sendMessage(data);
+            Log.d(TAG, "📊 Performance metrics sent to configurator");
             
         } catch (Exception e) {
-            Log.e(TAG, "❌ Error sending performance update: " + e.getMessage());
+            Log.e(TAG, "❌ Error sending performance update: " + e.getMessage(), e);
         }
     }
     
@@ -397,16 +465,47 @@ public class LiveMonitorClient extends WebSocketListener {
         }
     }
     
-    private double calculateAvgResponseTime() {
-        // Placeholder - implement actual response time tracking
-        return 1.2; // seconds
-    }
-    
-    private String determineSystemHealth() {
-        if (errorCount == 0) return "Excellent";
-        if (errorCount < 5) return "Good";
-        if (errorCount < 10) return "Fair";
-        return "Poor";
+    private String calculateSystemHealth() {
+        // Calculate system health based on multiple factors
+        try {
+            double memoryUsage = (double) performanceMonitor.getMemoryInfo().usedMemory / 
+                                performanceMonitor.getMemoryInfo().maxMemory;
+            double avgFPS = uiTracker != null ? uiTracker.getAverageFPS() : 60;
+            
+            // Get overall API success rate
+            double avgApiSuccess = 100.0;
+            int apiCount = 0;
+            for (APIPerformanceTracker.APIMetrics metrics : apiPerformanceTracker.getAllMetrics().values()) {
+                avgApiSuccess = (avgApiSuccess * apiCount + metrics.getSuccessRate()) / (apiCount + 1);
+                apiCount++;
+            }
+            
+            // Calculate health score (0-100)
+            double healthScore = 100;
+            
+            // Memory usage penalty
+            if (memoryUsage > 0.8) healthScore -= 30;
+            else if (memoryUsage > 0.6) healthScore -= 15;
+            
+            // FPS penalty
+            if (avgFPS < 30) healthScore -= 30;
+            else if (avgFPS < 45) healthScore -= 15;
+            
+            // API success rate penalty
+            if (avgApiSuccess < 90) healthScore -= 20;
+            else if (avgApiSuccess < 95) healthScore -= 10;
+            
+            // Determine health category
+            if (healthScore >= 90) return "Excellent";
+            if (healthScore >= 75) return "Good";
+            if (healthScore >= 60) return "Fair";
+            if (healthScore >= 40) return "Poor";
+            return "Critical";
+            
+        } catch (Exception e) {
+            Log.w(TAG, "Error calculating system health: " + e.getMessage());
+            return "Unknown";
+        }
     }
     
     // Getters
@@ -414,20 +513,32 @@ public class LiveMonitorClient extends WebSocketListener {
         return isConnected;
     }
     
-    public int getTotalApiCalls() {
-        return totalApiCalls;
+    /**
+     * Get the PerformanceMonitor instance for other components to use
+     */
+    public PerformanceMonitor getPerformanceMonitor() {
+        return performanceMonitor;
     }
     
-    public int getErrorCount() {
-        return errorCount;
+    /**
+     * Get the APIPerformanceTracker instance for other components to use
+     */
+    public APIPerformanceTracker getAPIPerformanceTracker() {
+        return apiPerformanceTracker;
     }
     
-    public void incrementApiCalls() {
-        totalApiCalls++;
+    /**
+     * Get the StockfishPerformanceMonitor instance for other components to use
+     */
+    public StockfishPerformanceMonitor getStockfishMonitor() {
+        return stockfishMonitor;
     }
     
-    public void incrementErrorCount() {
-        errorCount++;
+    /**
+     * Get the UIPerformanceTracker instance for other components to use
+     */
+    public UIPerformanceTracker getUITracker() {
+        return uiTracker;
     }
     
     /**

@@ -52,7 +52,7 @@ public class ThreeStageResponseManager {
     private final EnhancedContextManager contextManager;
     
     // NEW: Responses API integration
-    private final ChessMasterResponsesManager responsesManager;
+    private final UnifiedChessMasterManager unifiedChessMasterManager;
     private final ResponsesAPIIntegrationHelper integrationHelper;
     
     // Session tracking for stateful conversations
@@ -131,7 +131,7 @@ public class ThreeStageResponseManager {
         this.contextManager = EnhancedContextManager.getInstance();
         
         // NEW: Initialize Responses API integration
-        this.responsesManager = ChessMasterResponsesManager.getInstance(context);
+        this.unifiedChessMasterManager = UnifiedChessMasterManager.getInstance(context);
         this.integrationHelper = ResponsesAPIIntegrationHelper.getInstance(context);
         
         Log.d(TAG, "🚀 Enhanced ThreeStageResponseManager initialized with Responses API integration!");
@@ -697,13 +697,18 @@ public class ThreeStageResponseManager {
                     // Use the same async pattern as Stage 1
                     // Create a simple session and get response
                     String sessionId = "stage2_" + System.currentTimeMillis();
-                    responsesManager.sendMessage(sessionId, contextualUserMessage, gameContext, 
-                        new ChessMasterResponsesManager.ResponseCallback() {
+                    unifiedChessMasterManager.sendMessage(sessionId, contextualUserMessage, gameContext, 
+                        new UnifiedChessMasterManager.ResponseCallback() {
                             private StringBuilder fullResponse = new StringBuilder();
                             
                             @Override
                             public void onResponseStart(String sessionId) {
                                 // Session started
+                            }
+                            
+                            @Override
+                            public void onResponse(String response) {
+                                // Not used - using streaming callbacks instead
                             }
                             
                             @Override
@@ -1318,8 +1323,13 @@ public class ThreeStageResponseManager {
             String contextualMessage = buildContextualMessage(userInput, gameContext);
             
             // Create session first, then send message in the callback (like spectator mode)
-            responsesManager.createResponseSession(masterName, "main_game", 
-                new ChessMasterResponsesManager.ResponseCallback() {
+            unifiedChessMasterManager.createResponseSession(masterName, "main_game", 
+                new UnifiedChessMasterManager.ResponseCallback() {
+                    
+                    @Override
+                    public void onResponse(String response) {
+                        // Not used - using onResponseStart instead
+                    }
                     
                     @Override
                     public void onResponseStart(String sessionId) {
@@ -1327,13 +1337,18 @@ public class ThreeStageResponseManager {
                         
                         // Now that session is created, send the message
                         Log.d(TAG, "🚨 ABOUT TO CALL sendMessage with sessionId: " + sessionId);
-                        Log.d(TAG, "🚨 responsesManager instance: " + responsesManager);
+                        Log.d(TAG, "🚨 unifiedChessMasterManager instance: " + unifiedChessMasterManager);
                         Log.d(TAG, "🚨 contextualMessage length: " + (contextualMessage != null ? contextualMessage.length() : "null"));
                         
                         // Use the normal sendMessage method (not debug alternative)
-                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
-                            new ChessMasterResponsesManager.ResponseCallback() {
+                        unifiedChessMasterManager.sendMessage(sessionId, contextualMessage, gameContext,
+                            new UnifiedChessMasterManager.ResponseCallback() {
                                 private StringBuilder response = new StringBuilder();
+                                
+                                @Override
+                                public void onResponse(String fullResponse) {
+                                    // Not used - using streaming callbacks instead
+                                }
                                 
                                 @Override
                                 public void onResponseStart(String sessionId) {
@@ -1481,17 +1496,27 @@ public class ThreeStageResponseManager {
             CompletableFuture<String> responseFuture = new CompletableFuture<>();
             
             // FIXED: Create session first, then send message in the callback (like spectator mode)
-            responsesManager.createResponseSession(masterName, "main_game", 
-                new ChessMasterResponsesManager.ResponseCallback() {
+            unifiedChessMasterManager.createResponseSession(masterName, "main_game", 
+                new UnifiedChessMasterManager.ResponseCallback() {
+                    
+                    @Override
+                    public void onResponse(String response) {
+                        // Not used - using onResponseStart instead
+                    }
                     
                     @Override
                     public void onResponseStart(String sessionId) {
                         Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
                         
                         // Now that session is created, send the message
-                        responsesManager.sendMessage(sessionId, contextualMessage, gameContext,
-                            new ChessMasterResponsesManager.ResponseCallback() {
+                        unifiedChessMasterManager.sendMessage(sessionId, contextualMessage, gameContext,
+                            new UnifiedChessMasterManager.ResponseCallback() {
                                 private StringBuilder response = new StringBuilder();
+                                
+                                @Override
+                                public void onResponse(String fullResponse) {
+                                    // Not used - using streaming callbacks instead
+                                }
                                 
                                 @Override
                                 public void onResponseStart(String sessionId) {
@@ -1582,8 +1607,13 @@ public class ThreeStageResponseManager {
             activeSessions.put(masterName, sessionId);
             
             // Create the session asynchronously
-            responsesManager.createResponseSession(masterName, "main_game", 
-                new ChessMasterResponsesManager.ResponseCallback() {
+            unifiedChessMasterManager.createResponseSession(masterName, "main_game", 
+                new UnifiedChessMasterManager.ResponseCallback() {
+                    @Override
+                    public void onResponse(String response) {
+                        // Not used - using onResponseStart instead
+                    }
+                    
                     @Override
                     public void onResponseStart(String sessionId) {
                         Log.d(TAG, "✅ Main game session created for " + masterName + ": " + sessionId);
@@ -1623,7 +1653,7 @@ public class ThreeStageResponseManager {
      * Cleanup sessions periodically
      */
     public void cleanupSessions() {
-        responsesManager.cleanupOldSessions();
+        unifiedChessMasterManager.cleanupOldSessions();
         
         // Also clean our local session tracking
         if (activeSessions.size() > 10) {

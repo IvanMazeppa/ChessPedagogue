@@ -23,7 +23,7 @@ public class SpectatorConversationOrchestrator {
     
     private static SpectatorConversationOrchestrator instance;
     private final Context context;
-    private final ChessMasterResponsesManager responsesManager;
+    private final UnifiedChessMasterManager unifiedChessMasterManager;
     private final TTSServiceManager ttsServiceManager;
     private final OpenAITTSService ttsService; // Can be wrapper around ElevenLabs
     private final EvaluationTracker evaluationTracker;
@@ -123,9 +123,9 @@ public class SpectatorConversationOrchestrator {
         this.context = context.getApplicationContext();
         Log.d(TAG, "🔧 Initializing SpectatorConversationOrchestrator...");
         
-        Log.d(TAG, "📡 Getting ChessMasterResponsesManager instance...");
-        this.responsesManager = ChessMasterResponsesManager.getInstance(context);
-        Log.d(TAG, "✅ ChessMasterResponsesManager initialized: " + (responsesManager != null));
+        Log.d(TAG, "📡 Getting UnifiedChessMasterManager instance...");
+        this.unifiedChessMasterManager = UnifiedChessMasterManager.getInstance(context);
+        Log.d(TAG, "✅ UnifiedChessMasterManager initialized: " + (unifiedChessMasterManager != null));
         
         this.ttsServiceManager = TTSServiceManager.getInstance(context);
         // Get OpenAI TTS service (which may be a wrapper around ElevenLabs)
@@ -341,12 +341,17 @@ public class SpectatorConversationOrchestrator {
         executorService.execute(() -> {
             try {
                 Log.d(TAG, "📡 About to call responsesManager.createResponseSession for " + speaker);
-                Log.d(TAG, "📡 responsesManager is: " + (responsesManager != null ? "AVAILABLE" : "NULL"));
+                Log.d(TAG, "📡 unifiedChessMasterManager is: " + (unifiedChessMasterManager != null ? "AVAILABLE" : "NULL"));
                 
                 // Create response session
-                responsesManager.createResponseSession(speaker, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
+                unifiedChessMasterManager.createResponseSession(speaker, gameContext, new UnifiedChessMasterManager.ResponseCallback() {
                     private StringBuilder responseBuilder = new StringBuilder();
                     private String currentSessionId = null;
+                    
+                    @Override
+                    public void onResponse(String response) {
+                        // Not used - using streaming callbacks instead
+                    }
                     
                     @Override
                     public void onResponseStart(String sessionId) {
@@ -360,16 +365,21 @@ public class SpectatorConversationOrchestrator {
                         
                         try {
                             Log.d(TAG, "🚨 ORCHESTRATOR: Calling sendMessage NOW");
-                            Log.d(TAG, "🔧 ORCHESTRATOR: responsesManager class: " + responsesManager.getClass().getSimpleName());
-                            Log.d(TAG, "🔧 ORCHESTRATOR: responsesManager instance: " + responsesManager);
+                            Log.d(TAG, "🔧 ORCHESTRATOR: unifiedChessMasterManager class: " + unifiedChessMasterManager.getClass().getSimpleName());
+                            Log.d(TAG, "🔧 ORCHESTRATOR: unifiedChessMasterManager instance: " + unifiedChessMasterManager);
                             
                             // DEBUG: Test static method call first
                             Log.d(TAG, "🔧 ORCHESTRATOR: Testing static debugTest method...");
-                            ChessMasterResponsesManager.debugTest();
+                            // Debug test removed - no longer needed
                             Log.d(TAG, "🔧 ORCHESTRATOR: Static debugTest call completed");
                             
                             // 🧠 ENHANCED: Pass emotional context to Responses API
-                            responsesManager.sendMessage(sessionId, prompt, gameContext, new ChessMasterResponsesManager.ResponseCallback() {
+                            unifiedChessMasterManager.sendMessage(sessionId, prompt, gameContext, new UnifiedChessMasterManager.ResponseCallback() {
+                            @Override
+                            public void onResponse(String response) {
+                                // Not used - using streaming callbacks instead
+                            }
+                            
                             @Override
                             public void onResponseStart(String sessionId) {
                                 Log.d(TAG, "📡 CALLBACK: onResponseStart called for sessionId: " + sessionId);
@@ -561,9 +571,14 @@ public class SpectatorConversationOrchestrator {
                 // Check for emotional context
                 String emotionalContext = detectEmotionalContext(state, state.currentEval, state.previousEval);
                 
-                responsesManager.createResponseSession(responder, buildConversationContext(state), 
-                    new ChessMasterResponsesManager.ResponseCallback() {
+                unifiedChessMasterManager.createResponseSession(responder, buildConversationContext(state), 
+                    new UnifiedChessMasterManager.ResponseCallback() {
                         private StringBuilder responseBuilder = new StringBuilder();
+                        
+                        @Override
+                        public void onResponse(String response) {
+                            // Not used - using streaming callbacks instead
+                        }
                         
                         @Override
                         public void onResponseStart(String sessionId) {
@@ -571,8 +586,13 @@ public class SpectatorConversationOrchestrator {
                             
                             // Create response prompt with valid session
                             String prompt = createResponsePrompt(responder, previousStatement, state);
-                            responsesManager.sendMessage(sessionId, prompt, 
-                                buildConversationContext(state), new ChessMasterResponsesManager.ResponseCallback() {
+                            unifiedChessMasterManager.sendMessage(sessionId, prompt, 
+                                buildConversationContext(state), new UnifiedChessMasterManager.ResponseCallback() {
+                                    @Override
+                                    public void onResponse(String response) {
+                                        // Not used - using streaming callbacks instead
+                                    }
+                                    
                                     @Override
                                     public void onResponseStart(String sessionId) {
                                         Log.d(TAG, "📡 Response prompt started for " + responder);
@@ -2447,6 +2467,6 @@ public class SpectatorConversationOrchestrator {
     public void cleanup() {
         forceStop();
         executorService.shutdown();
-        responsesManager.shutdown();
+        unifiedChessMasterManager.shutdown();
     }
 }

@@ -450,6 +450,25 @@ public class UnifiedChessMasterManager {
     }
     
     /**
+     * Check if session is active (for backward compatibility)
+     */
+    public boolean isSessionActive(String sessionId) {
+        // In the new architecture, we don't track sessions
+        // Return true if sessionId is not null for compatibility
+        return sessionId != null && !sessionId.isEmpty();
+    }
+    
+    /**
+     * Clean up old sessions (for backward compatibility)
+     */
+    public void cleanupOldSessions() {
+        // In the new architecture, we don't need to clean up sessions
+        // Just clear the response cache periodically
+        responseCache.clear();
+        Log.d(TAG, "Response cache cleared");
+    }
+    
+    /**
      * Clean up resources
      */
     public void shutdown() {
